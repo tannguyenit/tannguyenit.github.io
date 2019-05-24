@@ -117,4 +117,4 @@ Dưới đây là 1 service demo đơn giản, bạn có thể chạy thử đ�
  minikube stop // Dừng minikube
 ```
 
-C
+Cảm ơn các bạn đã đọc 
