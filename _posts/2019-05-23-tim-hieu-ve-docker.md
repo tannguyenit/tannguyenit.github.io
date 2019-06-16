@@ -1,15 +1,15 @@
 ---
 layout: post
-title:  "Một số thuật ngữ trong Docker"
+title:  "Một số khái niệm trong Docker"
 author: tannguyen
 categories: [ docker ]
-image: assets/images/post/2019-03-16/lemp.png
-description: "Thuật ngữ trong docker, Docker image, docker network "
+image: assets/images/post/2019-05-23/mot-so-khai-niem-trong-docker.png
+description: "Thuật ngữ trong docker, Docker image, docker network"
 featured: true
 hidden: true
 ---
 
-### Một số thuật ngữ trong Docker
+### Một số khái niệm trong Docker
 * Image: 
  -- Là một khuôn mẫu, lớp chưá các file cần thiết để taọ nên 1 container
  -- Chứa các tài nguyên có sẵn 
@@ -29,9 +29,11 @@ hidden: true
  -- Giao tiếp với các máy chủ của Docker thông qua daemon
  * Docker Hub,
  -- Chứa các component Docker
- -- Lưu, sử dụng, tìm kiếm các image 
- ### Điểm mạnh của Docker
+ -- Lưu, sử dụng, tìm kiếm các image
+ 
+ 
  ### Một số lầm tưởng về Docker
+ 
  Dưới đây là một số lầm tưởng nhiều người hay gặp phải khi liên tưởng Docker với các công nghệ khác trên thị trường
  * **KHÔNG** phải là một công cụ quản lý thiết lập hay thiết lập tự động ( Peppet, chef)
  * **KHÔNG** phải là giải pháp ảo hoá phần cứng (VMWare KVM)
@@ -39,7 +41,9 @@ hidden: true
  * **KHÔNG** phải là một deployment framwork ( Capistrano,Fabric .. dùng để chạy script deploy trên nhiều server khác nhau)
  * **KHÔNG** phải là một công cụ quản lý wokload (Mesos, Fleet...)
  * **KHÔNG** phải là một môi trường phát triển (vagrant)
+ 
  ### Docker life cycle
+ 
  <img src="https://i.ibb.co/3yjcMPB/image.png">
   
  ### Cơ chế lưu trữ của Docker
@@ -48,11 +52,12 @@ hidden: true
  * Tạo một hệ thống mới ngay lập tức mà không cần copy tất cả file hệ thống - cứ mỗi khi tạo ra 1 thay đổi trên đó thì thay đổi được ghi lại nhưng ở 1 vùng lưu trữ khác 
  * Hệ thống lưu trữ lại mỗi thay đổi 
  
- ### Chạy các tiến trình trong Container 
+ ### Chạy các tiến trình trong Container
+ 
  **docker run**
  
  
- ### Liên kết các containe
+ ### Liên kết các container
  
  1 Liên kết thông qua host
   <img src="https://i.ibb.co/MPx2GN0/image.png">
@@ -61,6 +66,7 @@ hidden: true
   bằng cách expose cổng trên mỗi container,
   
   <img src="https://i.ibb.co/QYbvTT4/image.png">
+  
  2 Liên kết trực tiếp các container
  
   Tức là liên kết sao cho thông tin được truyền thẳng từ container A đến container B mà không thông qua host
@@ -84,6 +90,7 @@ hidden: true
    * Liên kết có thể bị đứt nên container `server` khởi động lại --> tính rủi ro khá cao
    
  ### Liên kết động giữa các container
+ 
   * Docker cung cấp tính năng tạo mạng riêng nội bộ // dễ dàng thêm/xoá các container vào mạng 
   * Name server với cơ chế quản lý `IP & name` // Các container sẽ tìm lẫn nhau qua tên 
   * Cần tạo lập mạng trước rồi chạy các container liên quan
