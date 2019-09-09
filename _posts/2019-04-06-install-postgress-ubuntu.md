@@ -45,8 +45,10 @@ Và lúc này bạn có thể tương tác với cơ sở dữ liệu và dùng 
 postgres=# \q
 ```
 ### 4 Một số lệnh cơ bản tương tác với postgres
+
 #### 4.1 PostgreSQL commands
- Command            |       Actions
+
+| Command           |       Actions
 --------------------|-------------------------------
 `\c dbname `        | Connect to new database.            
 `\dt`               | To view list of relations/tables     
@@ -63,12 +65,14 @@ postgres=# \q
 `\du `              | List all users ( role )
 
 #### 4.2 Managing databases
+
 Command                                     |       Actions
 --------------------------------------------|-------------------------------
 `CREATE DATABASE [IF NOT EXISTS] db_name;`  | Create a new database
 `DROP DATABASE [IF EXISTS] db_name; `       | Delete a database permanently
 
 #### 4.3 Managing tables
+
 Command                                                                     |       Actions
 ----------------------------------------------------------------------------|-------------------------------
 `ALTER TABLE table_name ADD COLUMN new_column_name TYPE;`                   | Add a new column to a table
