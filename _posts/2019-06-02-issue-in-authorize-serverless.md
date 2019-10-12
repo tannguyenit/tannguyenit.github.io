@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ serverless ]
 image: assets/images/post/2019-06-16/serverless-custom-auth.png
 description: "serverless, serverless custom authorize, authorize in servereless"
-featured: true
-hidden: true
 ---
 
 *Khi bạn build API thì bạn sẽ phải quan tâm đến việc authenticate và authorize, vậy làm sao để dùng 

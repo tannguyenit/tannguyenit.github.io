@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ php ]
 image: assets/images/post/2019-03-16/PHP-CS-Sublime-text.png
 description: "Nếu bạn đang code PHP và thường xuyên mắc phải một số lỗi về coding convertion hoặc bạn muốn kiểm tra code mình đã chuẩn chưa thì hôm nay mình xin giới thiệu tới các bạn 1 plugins của sublimetext"
-featured: true
-hidden: true
 ---
 
 Nếu bạn đang code PHP và thường xuyên mắc phải một số lỗi về coding convertion hoặc bạn muốn kiểm tra code mình đã chuẩn chưa thì hôm nay mình xin giới thiệu tới các bạn 1 plugins của sublimetext

@@ -5,7 +5,6 @@ author: tannguyen
 categories: [ Install-tool ]
 image: assets/images/post/2019-04-29/postgres.png
 description: "Cách cài đặt postgresql trên ubuntu"
-featured: true
 ---
 ### 1 Cài đặt
 Trong bài viết này mình hướng dẫn cài đặt *postgresql* trên *Ubuntu 16.04*

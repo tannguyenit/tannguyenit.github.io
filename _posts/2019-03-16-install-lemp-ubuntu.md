@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ tutorial ]
 image: assets/images/post/2019-03-16/lemp.png
 description: "Trong bài này mình xin hướng dẫn các bạn cài đặt LEMP trên Ubuntu"
-featured: true
-hidden: true
 ---
 
 Trong bài này mình xin hướng dẫn các bạn cài đặt LEMP trên Ubuntu. Giới thiệu sơ qua . LEMP là 1 nhóm phần mềm được sử dụng để chạy các trang web và ứng dụng web động. LEMP là viết tắt của Linux, Nginx (phát âm là : Engine-X), MySql và PHP.

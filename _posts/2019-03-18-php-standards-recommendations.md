@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ php ]
 image: assets/images/post/2019-03-18/php-standard-recommendation.jpg
 description: "Tìm hiểu về PSR - PHP Standard Recommendation trong lập trình PHP"
-featured: true
-hidden: true
 ---
 
 Khi code 1 ngôn ngữ nào đó thì mỗi người có 1 cách viết khác nhau từ cách đặt tên biến, khai báo function

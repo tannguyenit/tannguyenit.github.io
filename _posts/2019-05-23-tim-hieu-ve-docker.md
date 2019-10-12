@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ docker ]
 image: assets/images/post/2019-05-23/mot-so-khai-niem-trong-docker.png
 description: "Thuật ngữ trong docker, Docker image, docker network"
-featured: true
-hidden: true
 ---
 
 ### Một số khái niệm trong Docker

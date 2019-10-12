@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ serverless ]
 image: assets/images/post/2019-08-06/tim-hieu-ve-git-submodule.png
 description: "Git submodule, submodule, git"
-featured: true
-hidden: true
 ---
 
 *Git cho phép bạn đưa/thêm 1 repo khác vào repo chính của bạn gọi là `submodule`. Điều này cho phép bạn tracking các thay đổi thông qua repo chính. 

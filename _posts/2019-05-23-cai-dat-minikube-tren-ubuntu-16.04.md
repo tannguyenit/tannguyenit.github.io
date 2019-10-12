@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ microservice ]
 image: assets/images/post/2019-05-23/minikube.jpeg
 description: "Trong bài viết lần này mình sẽ hướng dẫn các bạn cài đặt Minikube trên Ubuntu 16.04"
-featured: true
-hidden: true
 ---
 
 
