@@ -5,17 +5,19 @@ author: tannguyen
 categories: [ php ]
 image: assets/images/post/2019-03-18/php-standard-recommendation.jpg
 description: "Tìm hiểu về PSR - PHP Standard Recommendation trong lập trình PHP"
+featured: true
+hidden: true
 ---
 
-Khi code 1 ngôn ngữ nào đó thì mỗi người có 1 cách viết khác nhau từ cách đặt tên biến, khai báo <code>function</code> 
+Khi code 1 ngôn ngữ nào đó thì mỗi người có 1 cách viết khác nhau từ cách đặt tên biến, khai báo function
 vâng vâng và mây mây. Do đó khi chúng ta làm việc nhóm thì chúng ta cần phải thống nhất 
  style code với nhau, nếu không sau này dự án nhìn vào rất lộn xộn
  
-Ở mỗi ngôn ngữ sẽ có 1 chuẩn riêng, và với <code>PHP</code> cũng có 1 tiêu chuẩn đó là <code>PSR - PHP Standard Recommendation </code>
+Ở mỗi ngôn ngữ sẽ có 1 chuẩn riêng, và với `PHP` cũng có 1 tiêu chuẩn đó là `PSR - PHP Standard Recommendation`
 Trong bài viết này chúng ta cùng tìm hiểu <code> PSR</code> là gì và tại sao các PHP developer cần tuân thủ theo chuẩn này
 
 ## PSR là gì?
-PSR có nghĩa là PHP Standards Recommendations, nó là tiêu chuẩn được khuyến nghị áp dụng khi lập trình PHP và được các lập trình viên, tổ chức chấp nhận sử dụng.
+PSR có nghĩa là `PHP Standards Recommendations`, nó là tiêu chuẩn được khuyến nghị áp dụng khi lập trình PHP và được các lập trình viên, tổ chức chấp nhận sử dụng.
 
 PSR được soạn thảo, đánh giá và khuyến khích sử dụng bởi một nhóm chuyên gia PHP những người phát triển cho các Framework và hệ thống PHP phổ biến ([thành viên PSR](https://www.php-fig.org/personnel/)).
 PSR bao gồm 7 phần (http://www.php-fig.org/psr/) từ PSR-0, PSR-1, PSR-2, PSR-3, PSR-4, PSR-6, PSR-7.

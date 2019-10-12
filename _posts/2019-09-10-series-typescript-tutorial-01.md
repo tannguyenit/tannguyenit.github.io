@@ -10,8 +10,9 @@ hidden: true
 ---
 Đây là phần thứ 1 trong series tìm hiểu Typescript-express
 
-1 Typescript express: Init source code ( bài này )
-2 ...
+1 Typescript express #1: Init source code ( bài này )
+
+2 [Typescript Express #2 Build Infrastructure Source Code](https://tannguyenit.github.io/series-typescript-tutorial-02-infrastructure-source-code)
 
 Đây là series mới, mình sẽ build 1 ứng dụng với `Typescript Express`. Trong loạt bài này mình tập trung chủ yếu về `express framework`, bạn cần có một số kiến thức căn bản về `Typescript` để dễ dàng tiếp cận hơn.
 
