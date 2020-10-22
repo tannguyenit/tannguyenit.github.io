@@ -1,8 +1,7 @@
 ---
 layout: test-mqtt
 title: MQTT Testing
-permalink: /test-mqtt.html
+permalink: /mqtt-testing.html
 comments: false
 ---
 
-Thanks for reading !

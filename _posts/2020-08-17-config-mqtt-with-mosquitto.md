@@ -189,7 +189,7 @@ Nếu bạn chạy command trên, port mặc định sẽ lấy là 1883 tức l
 mosquitto_sub -h mqtt.mydomain.com -t work -p 8883 --capath /etc/ssl/certs/ -u "your-username" -P "your-password"
 ```
 
-Để test với port 8081, thì bạn có thể lên trang web này để test xem thử nó có work chưa nhé: http://www.hivemq.com/demos/websocket-client/
+Để test với port 8081, thì bạn có thể lên trang web này để test xem thử nó có work chưa nhé: http://tannguyenit.github.io/mqtt-testing.html
 
 ![MQTT Connected](/assets/images/post/2020-08/mqtt.png)
 
