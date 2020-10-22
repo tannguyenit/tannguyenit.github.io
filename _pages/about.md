@@ -2,7 +2,7 @@
 layout: page
 title: About
 permalink: /about
-comments: true
+comments: false
 ---
 
 Thanks for reading !
