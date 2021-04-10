@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Deployer Laravel with bitbucket pipeline"
+title:  "Deploy Laravel to EC2 using Deployer by Bitbucket"
 author: tannguyen
 categories: [ server, ci-cd ]
 image: assets/images/post/2021/Laravel-bitbucket-deployer.png
@@ -8,7 +8,7 @@ description: "PHP Deployer, Deploy Laravel, Bitbucket with Laravel"
 featured: true
 ---
 
-Trong bài viết lần [trước](https://tannguyenit.github.io/deployment-tool-deployer) mình đã giới thiệu về `Deployer` và hôm nay mình sẽ hướng dẫn các bạn dùng deployer để deploy project Laravel kết hợp với Bitbucket pipeline
+Trong bài viết lần [trước](https://tannguyenit.github.io/deployment-tool-Deployer) mình đã giới thiệu về `Deployer` và hôm nay mình sẽ hướng dẫn các bạn dùng deployer để deploy project Laravel kết hợp với Bitbucket pipeline
 
 ## 1 Init source code
 
@@ -32,6 +32,7 @@ Bạn sẽ thấy 1 file `deploy.php` được add vào root folder
 Đầu tiên mình sẽ config lại host nhé, Mình nghĩ nên dùng file yaml để define cho hosts
 
 > hosts.yml
+
 ```yaml
 .base: &base
   user: ubuntu
@@ -128,6 +129,7 @@ Tiếp theo bạn cần update lại file `bitbucket-pipelines.yml`
 Đây là file của mình, bạn có thể tham khảo hoặc tự tìm hiểu và viết theo cách của bạn:
 
 > bitbucket-pipelines.yml
+
 ```yaml
 image: php:7.3
 
@@ -164,6 +166,7 @@ Cái quan trong chỗ này là đoạn script
 ```bash 
 /root/.composer/vendor/bin/dep deploy $BITBUCKET_BRANCH
 ```
+
 Mình sẽ cài đặt deployer và các recipes thông qua composer ở mode global. Sau khi install xong thì sẽ chạy deploy cho branch được meged
 
 Tức là khi source code được merge vào develop thì nó sẽ deploy develop ( host)
