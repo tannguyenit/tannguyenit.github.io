@@ -6,14 +6,13 @@ categories: [ server, ci-cd ]
 image: assets/images/post/2021/deployer_cover.jpeg
 description: "PHP Deployment, Deployer, Deployer la gi, Deployer là gì"
 featured: true
-hidden: true
 ---
 
 > Đặt vấn đề: Khi bạn làm việc trong một dự án thì bạn sẽ có lúc gặp vấn đề về deploy code lên Server. Cách đầu tiên là bạn chọn cách deploy thủ công, tự mình làm từ a-z, điều này dẫn đến việc deploy dễ bị sai sót. Cách thứ 2 là chọn 1 thèn thứ 3 nào đó nó làm giúp việc đó cho mình, thì hôm nay mình sẽ giới thiệu với các bạn 1 tool deploy dành cho PHP. Đó là Deployer
 
 ## 1 What is Deployer?
 
-> Như đã nói ở trên, Đây là một deployment tool viết bằng PHP và nó support cho nhiều framework như Laravel, Cake ... Bạn có thể tìm hiểu thêm ở [đây](https://github.com/deployphp/deployer/tree/master/recipe)
+> Như đã nói ở trên, Đây là một deployment tool viết bằng PHP và nó support cho nhiều framework như Laravel, codeigniter ... Bạn có thể tìm hiểu thêm ở [đây](https://github.com/deployphp/deployer/tree/master/recipe)
 
 Một số tính năng nổi bật:
 
@@ -162,11 +161,13 @@ task('do', ...)->once();
 ```
 #### By stage
 > chỉ run trên stage được define
+
 ```php
 task('test', function () {
     ...
 })->onStage('staging');
 ```
+
 #### By roles
 > chỉ run trên role được define
 
@@ -275,4 +276,4 @@ beta1.domain.com:
 ```
 
 Bài viết này mình chỉ giới thiệu về `Deployer`, Bài viết tiếp theo mình sẽ giới thiệu về cách deploy 
-Laravel project lên EC2 bằng `Deployer` thông qua `Bitbucket pipeline` tại [đây]()
+Laravel project lên EC2 bằng `Deployer` thông qua `Bitbucket pipeline` tại [đây](https://tannguyenit.github.io/deploy-laravel-to-ec2-using-deployer-via-bitbucket)
