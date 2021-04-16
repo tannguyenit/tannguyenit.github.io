@@ -36,7 +36,7 @@ Bạn sẽ thấy 1 file `deploy.php` được add vào root folder
 ```yaml
 .base: &base
   user: ubuntu
-  deploy_path: ~/apps/test/htdocs
+  deploy_path: ~/apps/project/htdocs
   keep_releases: 2
   ...
 
@@ -171,7 +171,9 @@ Mình sẽ cài đặt deployer và các recipes thông qua composer ở mode gl
 
 Tức là khi source code được merge vào develop thì nó sẽ deploy develop ( host)
 
-#### Config SSH key of bitbucket
+#### Config bitbucket
+
+##### 1. SSH key
 
 Deployer sẽ access đến EC2 thông qua SSH, vậy chúng ta cần phải add SSH key từ bitbucket vô EC2 bằng cách sau:
 
@@ -185,11 +187,31 @@ Sau khi add xong bạn nhập server name hoặc IP vào ô `Host address` và c
 
 ![bitbucket pipeline](/assets/images/post/2021/bitbucket-ssh-success.png)
 
+##### 2. Access key
+
+Để có thể clone source code từ EC2 thì bạn cần config SSH key từ EC2
+
+* Access EC2 Instance
+* Run bellow command:
+
+```sh
+ssh-keyscan -H bitbucket.org >> /home/ubuntu/.ssh/known_hosts // command này sẽ add bitbucket vào known_hosts nhé
+```
+
+```sh
+ssh-keygen
+cat ~/.ssh/id_rsa.pub
+```
+
+* Copy key vừa tạo và add vào Access key của bitbucket
+
 ## 4 Test
 
 Sau khi đã config xong thì bạn hãy push 1 file gì đó lên và merge vào branch develop thử nhé. Và đây là kết quả 
 
 ![bitbucket pipeline](/assets/images/post/2021/deploy-success.png)
 
+
 Khi deploy lên EC2 thì bạn hãy vào thử mục bạn đã config ở `deploy_path` để check lại nhé
 
+![ec2-deploy-success](/assets/images/post/2021/deploy-success-ec2.png)
