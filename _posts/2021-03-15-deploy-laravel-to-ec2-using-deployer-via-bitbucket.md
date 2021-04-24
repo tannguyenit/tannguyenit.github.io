@@ -2,10 +2,11 @@
 layout: post
 title:  "Deploy Laravel to EC2 using Deployer by Bitbucket"
 author: tannguyen
-categories: [ server, ci-cd ]
+categories: [ server, ci-cd, bitbucket ]
 image: assets/images/post/2021/Laravel-bitbucket-deployer.png
 description: "PHP Deployer, Deploy Laravel, Bitbucket with Laravel"
 featured: true
+hidden: true
 ---
 
 Trong bài viết lần [trước](https://tannguyenit.github.io/deployment-tool-Deployer) mình đã giới thiệu về `Deployer` và hôm nay mình sẽ hướng dẫn các bạn dùng deployer để deploy project Laravel kết hợp với Bitbucket pipeline

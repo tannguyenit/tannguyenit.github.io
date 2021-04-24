@@ -6,6 +6,7 @@ categories: [ server, ci-cd ]
 image: assets/images/post/2021/deployer_cover.jpeg
 description: "PHP Deployment, Deployer, Deployer la gi, Deployer là gì"
 featured: true
+hidden: true
 ---
 
 > Đặt vấn đề: Khi bạn làm việc trong một dự án thì bạn sẽ có lúc gặp vấn đề về deploy code lên Server. Cách đầu tiên là bạn chọn cách deploy thủ công, tự mình làm từ a-z, điều này dẫn đến việc deploy dễ bị sai sót. Cách thứ 2 là chọn 1 thèn thứ 3 nào đó nó làm giúp việc đó cho mình, thì hôm nay mình sẽ giới thiệu với các bạn 1 tool deploy dành cho PHP. Đó là Deployer

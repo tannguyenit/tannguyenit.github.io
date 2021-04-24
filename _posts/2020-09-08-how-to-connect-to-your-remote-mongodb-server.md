@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ server ]
 image: assets/images/post/2020-08/mongodb.jpeg
 description: "MongoDB, AWS EC2, Connection to mongodb"
-featured: true
-hidden: true
 ---
 
 ## Problem

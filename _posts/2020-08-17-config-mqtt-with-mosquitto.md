@@ -5,8 +5,6 @@ author: tannguyen
 categories: [ server ]
 image: assets/images/post/2020-08/mosquitto.jpg
 description: "MQTT, Mosquitto"
-featured: true
-hidden: true
 ---
 
 Trong bài viết hôm nay thì mình sẽ giới thiệu về cách mình install, configuration `mosquitto` trên UbuntuUbuntu
