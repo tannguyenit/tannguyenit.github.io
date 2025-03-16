@@ -1,12 +1,12 @@
 ---
 layout: post
-title:  "Redis: 1. Tổng quan về Redis"
+title:  "Redis: 1. Redis overview"
 author: tannguyen
 categories: [ redis ]
 image: assets/images/post/2025/redis.png
 description: "Redis"
 featured: false
-hidden: true
+hidden: false
 ---
 
 ## Đặt vấn đề
