@@ -141,9 +141,9 @@ Redis không chỉ là một key-value store đơn giản mà còn hỗ trợ nh
 |-----------|-------|--------------------|----------------------|
 | **Kiểu lưu trữ** | In-memory | Disk-based | Disk-based |
 | **Tốc độ** | Rất nhanh | Trung bình | Nhanh |
-| **Hỗ trợ giao dịch** | Hạn chế | Có | Có (tùy hệ thống) |
+| **Hỗ trợ transaction** | Hạn chế | Có | Có (tùy hệ thống) |
 | **Cấu trúc dữ liệu** | Key-Value | Bảng (Table) | Document, Column |
-| **Trường hợp sử dụng** | Cache, Queue, Realtime | CRUD, giao dịch | Big Data, Logging |
+| **Trường hợp sử dụng** | Cache, Queue, Realtime | CRUD, transaction | Big Data, Logging |
 
 ## 6. Kết Luận
 
