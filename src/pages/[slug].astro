@@ -1,0 +1,83 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/base-layout.astro';
+import { getPosts, inSeries, formatDate, readingMinutes, tagSlug } from '../lib/posts';
+import { series } from '../lib/site';
+
+export async function getStaticPaths() {
+  const all = await getPosts();
+  return all.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+const { post } = Astro.props;
+const d = post.data;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const all = await getPosts();
+const s = d.series ? series[d.series] : undefined;
+const mates = d.series ? inSeries(all, d.series) : [];
+const idx = mates.findIndex((p) => p.id === post.id);
+const prev = idx > 0 ? mates[idx - 1] : undefined;
+const next = idx >= 0 && idx < mates.length - 1 ? mates[idx + 1] : undefined;
+---
+<Base title={d.title} description={d.description}>
+  <div class="wrap article-layout">
+    <article>
+      <header class="article-head">
+        <div class="chips">
+          {d.series && <a class="chip series" href={`/series/${d.series}`}>{s?.title ?? d.series}</a>}
+          {d.categories.map((c) => <a class="chip" href={`/tags/${tagSlug(c)}`}>{c}</a>)}
+        </div>
+        <h1>{d.title}</h1>
+        <div class="meta">
+          <time datetime={d.date.toISOString()}>{formatDate(d.date)}</time>
+          <span>{readingMinutes(post.body)} phút đọc</span>
+        </div>
+        {d.image && <img class="cover" src={d.image} alt="" />}
+      </header>
+
+      {s && (
+        <div class="series-box">
+          <h4>Series: <a href={`/series/${d.series}`}>{s.title}</a></h4>
+          <ol start={s.parts ? 0 : 1}>
+            {s.parts
+              ? s.parts.map((t, i) => {
+                  const p = mates.find((m) => m.data.seriesOrder === i);
+                  return p ? <li class={p.id === post.id ? 'cur' : ''}><a href={`/${p.id}`}>{t}</a></li> : <li class="soon">{t} (sắp có)</li>;
+                })
+              : mates.map((p) => <li class={p.id === post.id ? 'cur' : ''}><a href={`/${p.id}`}>{p.data.title}</a></li>)}
+          </ol>
+        </div>
+      )}
+
+      <div class="prose"><Content /></div>
+
+      {(prev || next) && (
+        <nav class="pager" aria-label="Bài trong series">
+          {prev && <a class="prev" href={`/${prev.id}`}><small>← Bài trước</small>{prev.data.title}</a>}
+          {next && <a class="next" href={`/${next.id}`}><small>Bài sau →</small>{next.data.title}</a>}
+        </nav>
+      )}
+    </article>
+
+    {toc.length > 0 && (
+      <aside class="toc" aria-label="Mục lục">
+        <h4>Trong bài này</h4>
+        <ul>{toc.map((h) => <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+      </aside>
+    )}
+  </div>
+  <script is:inline>
+    (function () {
+      var links = [].slice.call(document.querySelectorAll('aside.toc a'));
+      if (!links.length || !('IntersectionObserver' in window)) return;
+      var map = {};
+      links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting) { links.forEach(function (a) { a.classList.remove('on'); }); var a = map[e.target.id]; if (a) a.classList.add('on'); }
+        });
+      }, { rootMargin: '-80px 0px -70% 0px' });
+      Object.keys(map).forEach(function (id) { var el = document.getElementById(id); if (el) io.observe(el); });
+    })();
+  </script>
+</Base>

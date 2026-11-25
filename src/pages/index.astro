@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/base-layout.astro';
+import PostCard from '../components/post-card.astro';
+import { getPosts, listed, inSeries } from '../lib/posts';
+import { site, series } from '../lib/site';
+const all = await getPosts();
+const posts = listed(all);
+const cards = Object.entries(series).map(([id, s]) => {
+  const have = inSeries(all, id).length;
+  const total = s.parts?.length ?? have;
+  return { id, ...s, have, total };
+});
+---
+<Base>
+  <div class="wrap">
+    <section class="hero">
+      <h1>{site.name}</h1>
+      <p>{site.tagline}</p>
+      <div class="links">
+        <a class="btn primary" href="/series/embeddings">Đọc series Embeddings</a>
+        <a class="btn" href="/posts">Tất cả bài viết</a>
+      </div>
+    </section>
+
+    <h2 class="section">Series</h2>
+    <div class="series-grid">
+      {cards.map((c, i) => (
+        <a class={`series-card ${i === 0 ? 'feature' : ''}`} href={`/series/${c.id}`}>
+          <span class="kicker">{i === 0 ? 'Đang viết' : 'Series'} · {c.have}/{c.total} bài</span>
+          <h3>{c.title}</h3>
+          <p>{c.description}</p>
+          <div class="progress" aria-hidden="true"><i style={`width:${(c.have / c.total) * 100}%`}></i></div>
+        </a>
+      ))}
+    </div>
+
+    <h2 class="section">Bài mới</h2>
+    <div class="card-grid">{posts.slice(0, 9).map((p) => <PostCard post={p} />)}</div>
+    <p class="more"><a href="/posts">Xem tất cả {posts.length} bài →</a></p>
+  </div>
+</Base>

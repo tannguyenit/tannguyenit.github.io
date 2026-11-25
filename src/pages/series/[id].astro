@@ -1,0 +1,37 @@
+---
+import Base from '../../layouts/base-layout.astro';
+import { getPosts, inSeries, formatDate, readingMinutes } from '../../lib/posts';
+import { series } from '../../lib/site';
+
+export function getStaticPaths() {
+  return Object.keys(series).map((id) => ({ params: { id } }));
+}
+const { id } = Astro.params;
+const s = series[id as string];
+const mates = inSeries(await getPosts(), id as string);
+const rows = s.parts
+  ? s.parts.map((title, i) => ({ n: i, title, post: mates.find((m) => m.data.seriesOrder === i) }))
+  : mates.map((p, i) => ({ n: i + 1, title: p.data.title, post: p }));
+---
+<Base title={s.title} description={s.description}>
+  <div class="wrap">
+    <h1 class="page-title">{s.title}</h1>
+    <p class="lead">{s.description}</p>
+    <p class="meta">{mates.length}/{rows.length} bài đã đăng</p>
+    <ul class="post-list">
+      {rows.map((r) => (
+        <li class="post-row" style={r.post ? '' : 'opacity:.55'}>
+          <time>Bài {r.n}</time>
+          <div>
+            <h3>{r.post ? <a href={`/${r.post.id}`}>{r.title}</a> : r.title}</h3>
+            <div class="chips">
+              {r.post
+                ? <span class="meta">{formatDate(r.post.data.date)} · {readingMinutes(r.post.body)} phút đọc</span>
+                : <span class="chip">Sắp có</span>}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>

@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/base-layout.astro';
+import PostCard from '../../components/post-card.astro';
+import { getPosts, listed, tagSlug } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = listed(await getPosts());
+  const names = new Map<string, string>();
+  posts.forEach((p) => p.data.categories.forEach((c) => names.set(tagSlug(c), c)));
+  return [...names.entries()].map(([tag, name]) => ({
+    params: { tag },
+    props: { name, posts: posts.filter((p) => p.data.categories.some((c) => tagSlug(c) === tag)) }
+  }));
+}
+const { name, posts } = Astro.props;
+---
+<Base title={`Chủ đề: ${name}`}>
+  <div class="wrap">
+    <h1 class="page-title">{name}</h1>
+    <p class="lead">{posts.length} bài. <a href="/tags">Tất cả chủ đề</a></p>
+    <div class="card-grid">{posts.map((p) => <PostCard post={p} />)}</div>
+  </div>
+</Base>

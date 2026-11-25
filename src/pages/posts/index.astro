@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/base-layout.astro';
+import PostCard from '../../components/post-card.astro';
+import { getPosts, listed } from '../../lib/posts';
+const posts = listed(await getPosts());
+const years = [...new Set(posts.map((p) => p.data.date.getFullYear()))];
+---
+<Base title="Bài viết">
+  <div class="wrap">
+    <h1 class="page-title">Bài viết</h1>
+    <div class="toolbar">
+      <p class="lead" style="margin:0">{posts.length} bài, mới nhất ở trên.</p>
+      <div class="view-toggle" role="group" aria-label="Kiểu hiển thị">
+        <button type="button" data-view="grid" aria-pressed="true">Lưới</button>
+        <button type="button" data-view="list" aria-pressed="false">Danh sách</button>
+      </div>
+    </div>
+    {years.map((y) => (
+      <section>
+        <h2 class="year">{y}</h2>
+        <div class="card-grid">{posts.filter((p) => p.data.date.getFullYear() === y).map((p) => <PostCard post={p} />)}</div>
+      </section>
+    ))}
+  </div>
+  <script is:inline>
+    (function () {
+      var btns = [].slice.call(document.querySelectorAll('.view-toggle button'));
+      var grids = [].slice.call(document.querySelectorAll('.card-grid'));
+      function set(v) {
+        grids.forEach(function (g) { g.classList.toggle('list', v === 'list'); });
+        btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.view === v)); });
+        try { localStorage.setItem('posts-view', v); } catch (e) {}
+      }
+      btns.forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.view); }); });
+      var saved = null; try { saved = localStorage.getItem('posts-view'); } catch (e) {}
+      if (saved === 'list') set('list');
+    })();
+  </script>
+</Base>
