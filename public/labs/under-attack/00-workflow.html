@@ -1,0 +1,720 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Under Attack Lab 00</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a class="off" href="#">← Lab trước</a><a href="01-triage.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/under-attack/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const LIM = { other: 20, syn: 200, util: 90 };
+  const CMD = {
+    triage: "ss -Htn state established '( sport = :80 or sport = :443 )' \\\n  | awk '{print $4}' | sed 's/:[0-9]*$//' | sort | uniq -c | sort -rn | head -20\nss -Htn state syn-recv | wc -l\nsar -n DEV 1",
+    uam: 'curl -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/security_level" \\\n  -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \\\n  --data \'{"value":"under_attack"}\'',
+    cfgApi: 'Rules → Configuration Rules:\nstarts_with(http.request.uri.path, "/api/")  →  I\'m Under Attack = Off',
+    sig: 'Security → Analytics: top Path, Query string, Method, User-Agent, ASN, Country, Host',
+    rules: '# Path bị flood + UA của thư viện HTTP → Block\nhttp.request.uri.path eq "/search" and http.user_agent contains "python-requests"\n\n# Các ASN hosting đang bắn → Managed Challenge, chừa bot hợp lệ\nip.src.asnum in {14061 16509 24940} and not cf.client.bot\n\n# Cache busting vào trang chủ: trang chủ không dùng query → Block\nhttp.request.uri.path eq "/" and http.request.uri.query ne ""',
+    rl: 'Free: http.request.uri.path eq "/login"  →  10 request / 10 giây / IP → Block 10 giây',
+    a5: 'Cache-Control: public, s-maxage=60   (trang không phụ thuộc người dùng)\nCaching → Cache Rules: Eligible for cache, Edge TTL dùng header của origin',
+    tunnelClose: "nft -f - <<'EOF'\ntable inet cf_guard\ndelete table inet cf_guard\ntable inet cf_guard {\n  chain input {\n    type filter hook input priority -10; policy accept;\n    tcp dport { 80, 443 } drop\n  }\n}\nEOF",
+    cfOnly: "/usr/local/sbin/cf-only.sh   # chạy bằng root\n# tải https://www.cloudflare.com/ips-v4 và ips-v6, rồi trong một transaction:\ntable inet cf_guard {\n  set cf4 { type ipv4_addr; flags interval; elements = { $v4 } }\n  set cf6 { type ipv6_addr; flags interval; elements = { $v6 } }\n  chain input {\n    type filter hook input priority -10; policy accept;\n    tcp dport { 80, 443 } ip  saddr @cf4 accept\n    tcp dport { 80, 443 } ip6 saddr @cf6 accept\n    tcp dport { 80, 443 } drop\n  }\n}",
+    b2: 'Gọi nhà cung cấp hosting / datacenter / ISP:\n- có lọc DDoS upstream không?\n- đặt được ACL chỉ cho dải IP Cloudflare vào 80/443 không?\nChuẩn bị tinh thần: IP có thể bị null-route.',
+    b3: 'Zone → DNS → Records: lọc record DNS-only (mail, ftp, direct, cpanel...)\nTXT/MX: SPF có ip4:<IP origin>?\ncurl -vk https://<IP-origin>/   # từ máy ngoài: có trả certificate chứa domain?'
+  };
+  const STEPS = {
+    A: [
+      { t: [2, 3], k: 'A1', name: 'Bật Under Attack Mode', cmd: 'uam', note: 'ShopViet có app mobile: tạo luôn Configuration Rule chừa /api/.', cmd2: 'cfgApi' },
+      { t: [3, 8], k: 'A2', name: 'Tìm signature', cmd: 'sig' },
+      { t: [8, 15], k: 'A3', name: 'Chặn signature bằng custom rule', cmd: 'rules', note: 'Rule đã chặn đúng và origin đã ổn → tắt Under Attack toàn zone.' },
+      { t: [15, 25], k: 'A4', name: 'Rate limiting', cmd: 'rl' },
+      { t: [25, 35], k: 'A5', name: 'Giảm tải origin', cmd: 'a5' }
+    ],
+    B: (tunnel, bw) => [
+      { t: [2, 3], k: 'B1', name: tunnel ? 'Đóng hẳn 80/443 (đang dùng Tunnel)' : 'Chỉ cho dải IP Cloudflare vào 80/443', cmd: tunnel ? 'tunnelClose' : 'cfOnly', note: bw ? 'Băng thông đã gần trần: B1 không cứu được phần đã lấp đầy đường truyền.' : 'Kiểm tra cả SSH và cổng quản trị.' },
+      ...(bw ? [{ t: [3, 10], k: 'B2', name: 'Gọi nhà cung cấp lọc upstream', cmd: 'b2' }] : []),
+      { t: [bw ? 10 : 3, 35], k: 'B3', name: 'Bịt chỗ lộ IP, rồi mới đổi IP', cmd: 'b3' }
+    ]
+  };
+  const PRESETS = [
+    ['a', 'HTTP flood qua Cloudflare', { cf: 'spike', other: 2, syn: 6, util: 22, health: 'down', tunnel: false }],
+    ['b', 'Đánh thẳng IP origin', { cf: 'normal', other: 74, syn: 4200, util: 48, health: 'down', tunnel: false }],
+    ['bw', 'Đường truyền bị lấp đầy', { cf: 'normal', other: 60, syn: 9000, util: 100, health: 'down', tunnel: false }],
+    ['both', 'Cả hai', { cf: 'spike', other: 55, syn: 3000, util: 40, health: 'down', tunnel: false }],
+    ['ok', 'Cloudflare đang chặn tốt', { cf: 'spike', other: 1, syn: 5, util: 15, health: 'up', tunnel: false }],
+    ['tun', 'Tunnel nhưng 80/443 vẫn mở', { cf: 'normal', other: 100, syn: 2500, util: 35, health: 'down', tunnel: true }]
+  ];
+  const CODES = [['none', 'Không thấy mã lỗi'], ['520', '520'], ['521', '521'], ['522', '522'], ['523', '523'], ['524', '524']];
+  const CODE_TXT = { 520: 'Origin trả response rỗng hoặc lỗi định dạng', 521: 'Origin từ chối kết nối (web server chết, hoặc firewall chặn IP Cloudflare)', 522: 'Hết thời gian chờ kết nối tới origin — thường gặp nhất khi origin quá tải', 523: 'Không định tuyến được tới origin', 524: 'Đã kết nối nhưng origin không trả lời trong 125 giây' };
+
+  function route(s) {
+    const sig = { cf: s.cf === 'spike', other: s.other > LIM.other, syn: s.syn > LIM.syn, bw: s.util >= LIM.util, down: s.health === 'down' };
+    const direct = sig.other || sig.syn || sig.bw;
+    let leaf;
+    if (sig.cf && direct) leaf = 'both';
+    else if (sig.cf) leaf = sig.down ? 'A' : 'watch';
+    else if (direct) leaf = 'B';
+    else leaf = sig.down ? 'none' : 'calm';
+    return { sig, direct, leaf };
+  }
+
+  const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+  const pre = (txt) => el('pre', { class: 'mono', style: 'white-space:pre;overflow-x:auto;font-size:11.5px;background:var(--bg);padding:8px;border-radius:6px;border:1px solid var(--line);margin:4px 0 8px', text: txt });
+
+  return {
+    id: 'workflow', nav: '0. Workflow', ref: 'Tổng quan',
+    title: 'Bị DDoS giữa flash sale: hai phút đầu không bấm gì cả, chỉ trả lời "traffic tấn công có đi qua Cloudflare không"',
+    hook: 'Đặt các tín hiệu bạn đọc được (Analytics Cloudflare, kết nối từ IP lạ, SYN-RECV, băng thông, origin còn khoẻ không) hoặc chọn một kịch bản có sẵn. Cây quyết định dẫn tới nhánh của runbook, hiện các việc đầu tiên kèm đúng lệnh README và dòng thời gian theo phút.',
+    terms: [
+      ['DDoS', 'Distributed Denial of Service: nhiều máy cùng gửi traffic để làm hệ thống không phục vụ được khách thật. Ví dụ hàng nghìn IP cùng gọi /search của ShopViet lúc flash sale.'],
+      ['Runbook', 'Tài liệu từng bước cho sự cố, viết trước khi sự cố xảy ra, để người trực làm theo không phải nghĩ từ đầu. Runbook này xếp việc theo phút: việc giảm thiệt hại nhanh nhất làm trước.'],
+      ['Origin', 'Server thật của ShopViet: máy vật lý chạy nginx và ứng dụng. Cloudflare đứng trước nó như một lớp proxy.'],
+      ['Proxy (orange cloud)', 'Record DNS bật proxy thì shopviet.vn trỏ về IP Cloudflare. Khách nói chuyện với Cloudflare, Cloudflare nói chuyện với origin.'],
+      ['IP origin bị lộ', 'Kẻ tấn công biết IP thật của origin (qua record DNS-only, SPF, email, lịch sử DNS...) và đánh thẳng vào đó, đi vòng qua Cloudflare.'],
+      ['L7 / HTTP flood', 'Tấn công bằng request HTTP trông hợp lệ, ví dụ GET /search?q=... dồn dập. Đi qua Cloudflare được và làm nghẽn CPU/DB của origin.'],
+      ['L3/L4 (SYN flood, UDP flood)', 'Tấn công ở tầng mạng, không cần request hợp lệ. Với zone đã proxy, Cloudflare tự hấp thụ trên mọi plan; chỉ nguy hiểm khi đánh thẳng vào IP origin.'],
+      ['ASN', 'Số hiệu của một mạng trên internet: một ISP hay một nhà cung cấp cloud. Ví dụ ASN 16509 là Amazon AWS. Botnet thuê thường nằm trong vài ASN hosting, còn khách ShopViet đi từ ASN của nhà mạng trong nước.'],
+      ['Signature', 'Một đặc điểm chung mà traffic tấn công có và khách thật không có. Ví dụ: mọi request flood đều gọi /search với User-Agent "python-requests".'],
+      ['Custom rule, Managed Challenge', 'Custom rule là một dòng "request khớp điều kiện thì làm action" trên Cloudflare. Action Block trả lỗi luôn; Managed Challenge bắt qua trang kiểm tra trình duyệt, người thật qua được, script thì kẹt.'],
+      ['Rate limiting', 'Đếm request theo IP trong một chu kỳ, quá ngưỡng thì chặn. Ví dụ Free: 10 request / 10 giây / IP vào /login → Block 10 giây.'],
+      ['Security → Analytics', 'Trang của zone trên dashboard Cloudflare cho thấy số request theo thời gian và bảng top theo path, User-Agent, ASN, country.'],
+      ['SYN-RECV (half-open)', 'Kết nối TCP mới đi được nửa bắt tay. Vài cái là bình thường, hàng nghìn cái ở origin là dấu hiệu SYN flood đánh thẳng.'],
+      ['%ifutil', 'Phần trăm công suất card mạng đang dùng, in bởi sar -n DEV 1. Gần 100% nghĩa là đường truyền đã đầy.'],
+      ['Under Attack Mode', 'Bắt mọi visitor qua trang kiểm tra trình duyệt. Chặn được script flood vì chúng không chạy JavaScript, nhưng làm hỏng API, app mobile, webhook.'],
+      ['nftables (nft)', 'Firewall của Linux. Lệnh nft -f nạp cả một bảng rule trong một transaction. B1 dùng nó để chỉ cho IP Cloudflare vào 80/443.'],
+      ['Cloudflare Tunnel', 'cloudflared trên origin tự mở kết nối ra Cloudflare, nên origin không cần mở cổng web ra internet. Dù IP lộ cũng không có gì để đánh vào cổng web. Request của khách đi vào nginx từ chính máy, theo Service URL, ví dụ của README là http://localhost:8080.'],
+      ['Null-route (blackhole)', 'Nhà cung cấp vứt mọi gói tin tới IP bị tấn công để bảo vệ mạng của họ. Server mất kết nối hoàn toàn trên IP đó.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> (cửa hàng điện tử online) chạy origin trên một server vật lý, mọi record web proxy qua Cloudflare, có app mobile gọi <code>/api/</code>. 20:00 mở flash sale. 20:03 khách báo trang trắng, Cloudflare trả lỗi 522, CPU origin 100%. Bạn là backend dev trực ca, chưa từng xử lý một đợt tấn công.',
+      scenario: 'Phản xạ tự nhiên là bật Under Attack hoặc chặn những IP đầu bảng. Cả hai có thể vô tác dụng hoặc tự làm sập site, tuỳ traffic tấn công đi đường nào. Các tín hiệu trong lab do bạn đặt hoặc chọn từ kịch bản có sẵn (giả lập); ngưỡng "nhiều" là <b>giả định của lab</b>. Bảng quyết định, các bước, mốc phút và lệnh lấy nguyên từ README.',
+      ask: 'Đọc những tín hiệu nào trong 2 phút đầu? Tín hiệu nào dẫn tới Nhánh A (qua Cloudflare), Nhánh B (thẳng vào origin), hay cả hai? Mỗi nhánh làm gì ở phút 2, phút 8, phút 15? Gỡ biện pháp khẩn cấp theo thứ tự nào?',
+      solves: 'Runbook của README theo thời gian: phút 0–2 triage (Analytics Cloudflare + ba lệnh ss/sar trên origin), rồi Nhánh A (A1 Under Attack → A2 signature → A3 custom rule → A4 rate limiting → A5 giảm tải) hoặc Nhánh B (B1 chỉ cho Cloudflare vào → B2 gọi nhà cung cấp nếu đường truyền đầy → B3 bịt chỗ lộ rồi đổi IP), cả hai thì B1 trước. Cuối cùng hạ nhiệt theo thứ tự ngược.',
+      read: [
+        'Hàng nút trên cùng: các kịch bản có sẵn. Hàng điều khiển: từng tín hiệu, đặt tay được. Ô "Phản xạ đầu tiên" để thử điều gì xảy ra nếu bỏ qua triage.',
+        'Cây quyết định: câu hỏi ở ô tròn góc, kết luận ở ô vuông. Đường đang đi được tô đậm, nhánh không đi bị làm mờ. Nhãn trên cạnh là câu trả lời.',
+        'Dòng thời gian bên dưới: các bước của nhánh đã chọn theo phút (README), kèm lệnh hoặc rule cần chạy ở bước đó.',
+        'Khung màu tự hiện khi tín hiệu có bất thường (Tunnel mà vẫn có kết nối từ ngoài, đường truyền đầy, phản xạ sai): chuyện gì xảy ra, vì sao, không có nghĩa là gì, và việc nên làm trong hệ thống thật.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Mọi rule trên Cloudflare chỉ có tác dụng với traffic đi qua Cloudflare. Vì vậy câu hỏi đầu tiên không phải "bật gì" mà là "traffic tấn công đi đường nào". Hai phút trả lời câu đó quyết định 30 phút sau.</p>
+<h4>Runbook theo thời gian (README)</h4>
+<div class="tbl"><table>
+<tr><th>Mốc</th><th>Nhánh A: qua Cloudflare (L7)</th><th>Nhánh B: thẳng vào origin</th></tr>
+<tr><td>Phút 0–2</td><td colspan="2">Triage: Analytics Cloudflare + top IP, <code>syn-recv</code>, <code>sar</code> trên origin</td></tr>
+<tr><td>Phút 2</td><td>A1. Bật Under Attack Mode</td><td>B1. Chặn mọi thứ không đến từ Cloudflare</td></tr>
+<tr><td>Phút 3–8</td><td>A2. Tìm signature</td><td>B2. Nếu đường truyền đã nghẽn: gọi nhà cung cấp</td></tr>
+<tr><td>Phút 8–15</td><td>A3. Chặn signature bằng custom rule, rồi tắt Under Attack</td><td rowspan="3">B3. Bịt chỗ lộ IP, rồi mới đổi IP; chuyển sang Tunnel nếu có thể</td></tr>
+<tr><td>Phút 15–25</td><td>A4. Rate limiting</td></tr>
+<tr><td>Phút 25+</td><td>A5. Giảm tải origin; A6 theo dõi mỗi 5–10 phút</td></tr>
+</table></div>
+<p>Cả hai cùng lúc: làm <b>B1 trước</b> (mất 1 phút), rồi sang Nhánh A. Analytics Cloudflare tăng nhưng origin vẫn khoẻ: Cloudflare đang chặn tốt, theo dõi, làm A2 để chắc chắn, không cần vội.</p>
+<h4>Hai chỗ bảng README không nói</h4>
+<ul>
+<li><b>Origin sập, Cloudflare bình thường, không IP lạ, không SYN-RECV, băng thông còn dư.</b> Bảng quyết định của README có 4 hàng, không hàng nào khớp ca này. POC 00 duyệt cả 32 tổ hợp tín hiệu: đúng 1 tổ hợp rơi vào đây. Đây có thể không phải DDoS (DB chậm, deploy lỗi, khách flash sale thật vượt sức máy) hoặc tấn công vào cổng khác 80/443 mà lệnh <code>ss</code> không lọc tới. Đừng bật Under Attack "cho chắc"; so với baseline và đọc log ứng dụng trước (diễn giải của lab).</li>
+<li><b>Dùng Tunnel thì lệnh top IP của README không thấy khách.</b> Lệnh lọc <code>sport = :80 or sport = :443</code>, còn cloudflared gửi request vào nginx ở <code>localhost:8080</code> (Service URL ví dụ của README). Vì vậy với Tunnel, bộ lọc 80/443 trả về rỗng khi mọi thứ đúng; dòng nào hiện ra đều là kết nối từ ngoài vào cổng web chưa đóng. Muốn thấy kết nối của cloudflared, thêm port của Service URL vào bộ lọc (Lab 01).</li>
+</ul>
+<h4>Hạ nhiệt (README)</h4>
+<ol>
+<li>Tắt Under Attack Mode toàn zone (nếu chưa tắt ở A3).</li>
+<li>Chuyển các rule Block rộng (chặn cả quốc gia, cả ASN) sang Managed Challenge, rồi tắt hẳn (disable, chưa xoá).</li>
+<li>Bỏ các cache rule TTL ngắn tạm thời nếu chúng gây dữ liệu cũ.</li>
+<li>Bật lại các tính năng đã tắt tạm.</li>
+</ol>
+<p>Mỗi bước chờ 15–30 phút xem có tái phát không. Trong 1–3 ngày sau: post-mortem, giữ lại rule có giá trị ở trạng thái tắt sẵn, đổi IP nếu đã lộ (kể cả khi tấn công đã dừng), hoàn thiện danh sách chuẩn bị.</p>
+<div class="verdict"><b>Nguồn số liệu:</b> bảng quyết định, các bước, mốc phút, lệnh, rule và thứ tự hạ nhiệt lấy từ README. Giá trị tín hiệu trong các kịch bản và ngưỡng ${LIM.other}% kết nối lạ / ${LIM.syn} SYN-RECV / ${LIM.util}% %ifutil là giả định của lab; ngoài đời so với baseline lúc bình thường.</div>`,
+    why: {
+      c: 'Triage trước, hành động sau: 2 phút đọc Analytics Cloudflare và ba lệnh trên origin để chọn đúng nhánh. Mỗi nhánh làm việc giảm thiệt hại nhanh nhất trước (A1 hoặc B1 ở phút 2), rồi thay bằng biện pháp nhắm đúng mục tiêu.',
+      s: 'Bật Under Attack ngay khi thấy chậm: vô tác dụng nếu traffic đánh thẳng vào origin, và làm hỏng app mobile. Chặn top IP bằng firewall: nếu đó là IP Cloudflare thì chặn chính khách. Đổi IP origin ngay: chưa bịt chỗ lộ thì IP mới lộ tiếp sau vài giờ.',
+      p: 'Hai phút site vẫn chết trong lúc bạn đọc số. Runbook chỉ chạy nhanh nếu đã chuẩn bị trước: API token, Zone ID, rule tạo sẵn ở trạng thái tắt, baseline lúc bình thường, số điện thoại khẩn của nhà cung cấp.'
+    },
+    deep: [
+      {
+        q: 'Site đang chết, sao không bật Under Attack ngay mà phải mất 2 phút đọc số?',
+        a: `<p>Vì Under Attack là một tính năng <b>của Cloudflare</b>: nó chỉ chạm được request đi qua Cloudflare. Nếu kẻ tấn công đã biết IP origin và gửi thẳng vào <code>192.0.2.10</code> (IP giả lập), traffic đó không bao giờ đi qua Cloudflare. Bạn bật Under Attack, khách thật bắt đầu phải qua trang kiểm tra, app mobile hỏng, còn origin vẫn chết như cũ.</p>
+<p>Ngược lại, nếu tấn công đi qua Cloudflare mà bạn chạy firewall chặn top IP trên origin, bạn chặn đúng IP Cloudflare đang chở khách của mình. Hai phản xạ đúng ở nhánh này lại sai ở nhánh kia. Thử ô "Phản xạ đầu tiên" trong hình chính với từng kịch bản.</p>`,
+        take: 'Hai phút triage rẻ hơn nhiều so với 20 phút làm đúng việc cho sai nhánh.'
+      },
+      {
+        q: 'DNS trỏ về Cloudflare rồi, làm sao kẻ tấn công biết IP thật của origin?',
+        a: `<p>IP origin rò ra từ những chỗ không đi qua proxy. README B3 liệt kê theo thứ tự hay gặp:</p>
+<div class="tbl"><table>
+<tr><th>Chỗ lộ</th><th>Kiểm tra</th></tr>
+<tr><td>Record DNS không proxy (grey cloud) cùng IP: <code>mail</code>, <code>ftp</code>, <code>direct</code>, <code>cpanel</code>, subdomain cũ</td><td>DNS → Records, lọc DNS-only</td></tr>
+<tr><td>SPF chứa <code>ip4:&lt;IP origin&gt;</code>, MX trỏ về cùng máy</td><td>Xem record TXT, MX</td></tr>
+<tr><td>Email gửi đi từ chính server (header <code>Received:</code>)</td><td>Gửi thử một email, xem header</td></tr>
+<tr><td>Server tự fetch URL theo yêu cầu người dùng (webhook, preview link, upload từ URL)</td><td>Tìm tính năng gọi HTTP ra ngoài</td></tr>
+<tr><td>Origin trả certificate chứa domain khi truy cập thẳng IP (Censys, Shodan đã ghi lại)</td><td><code>curl -vk https://&lt;IP-origin&gt;/</code> từ máy ngoài</td></tr>
+<tr><td>Lịch sử DNS trước khi dùng Cloudflare</td><td>Dịch vụ DNS history công khai</td></tr>
+<tr><td>Trang lỗi, header, debug endpoint in ra IP</td><td>Rà <code>X-Backend</code>, trang lỗi framework</td></tr>
+</table></div>
+<p>Đó là lý do B3 nói "bịt chỗ lộ rồi mới đổi IP": đổi trước thì IP mới lộ tiếp qua đúng chỗ cũ sau vài giờ.</p>`,
+        take: 'Proxy chỉ che những gì đi qua proxy. Mọi đường khác ra khỏi server đều có thể mang IP thật theo.'
+      },
+      {
+        q: 'Cả hai đường cùng bị đánh. Vì sao README bảo làm B1 trước rồi mới tới A1?',
+        a: `<p>B1 mất khoảng 1 phút (một script nft) và cắt sạch phần đánh thẳng: mọi kết nối 80/443 không đến từ dải IP Cloudflare bị drop. Nếu làm A1 trước, Cloudflare có lọc tốt đến đâu thì phần đánh thẳng vẫn đè chết origin, và bạn không đo được A1 có tác dụng hay không vì CPU vẫn 100%.</p>
+<p>Sau B1, mọi thứ còn tới origin đều đã đi qua Cloudflare. Từ đó các bước A1–A5 mới có tác dụng và đo được. Chọn kịch bản "Cả hai" để thấy dòng thời gian ghép B1 trước A1.</p>
+<p>Một ngoại lệ: nếu băng thông đã đầy, B1 cũng không đủ. Gói tin chiếm đường truyền trước khi tới firewall trên máy; chỉ nhà cung cấp chặn được từ phía trên (B2).</p>`,
+        take: 'Bịt đường vòng trước, rồi mới tối ưu đường chính. Không thì không đo được gì.'
+      },
+      {
+        q: 'Khách thấy lỗi 522. Vậy là bị đánh thẳng vào origin đúng không?',
+        a: `<p>Không suy ra được. Các trang 520–524 do Cloudflare sinh ra khi không nói chuyện được với origin. 522 (hết thời gian chờ kết nối) thường gặp nhất khi origin quá tải, mà origin quá tải vì HTTP flood qua Cloudflare hay vì SYN flood đánh thẳng thì đều ra 522. Mã lỗi cho biết origin đang không trả lời được, không cho biết traffic tấn công đi đường nào.</p>
+<p>Có một trường hợp mã lỗi đáng đọc kỹ: <b>521 ngay sau khi chạy script firewall</b>. README Phụ lục 3: đang dùng Tunnel mà chạy script allowlist, hoặc tải thiếu dải IP Cloudflare, khiến firewall chặn chính Cloudflare. Kiểm tra bằng <code>nft list table inet cf_guard</code>. Chọn mã lỗi trong hình chính để xem diễn giải.</p>`,
+        take: 'Mã 52x là triệu chứng ở phía Cloudflare, không phải chẩn đoán. Đường đi phải đọc từ Analytics và từ origin.'
+      },
+      {
+        q: 'Origin sập, Analytics Cloudflare bình thường, không IP lạ, không SYN-RECV. Bảng README bảo làm gì?',
+        a: `<p>Không bảo gì cả. Bảng quyết định có 4 hàng: A (Cloudflare tăng, kết nối toàn IP Cloudflare), B (dấu hiệu đánh thẳng), cả hai, và "Cloudflare tăng nhưng origin khoẻ". Không hàng nào cho "không thấy gì bất thường nhưng origin vẫn chết". POC 00 duyệt cả 32 tổ hợp của 5 tín hiệu có/không: 31 tổ hợp có đường đi, đúng 1 tổ hợp này không có. Trong hình chính, đặt Analytics "bình thường", ba thanh trượt về 0, Origin "quá tải": cây dừng ở ô xám "Ngoài bảng README".</p>
+<p>Lab đọc ca này là "có thể không phải DDoS" (diễn giải của lab, README không viết): DB chậm, bản deploy lỗi, hoặc chính lượng khách flash sale vượt sức máy. Cũng có thể là tấn công vào cổng khác 80/443 (SSH, cổng quản trị) mà lệnh top IP không lọc tới, vì nó chỉ đếm <code>sport = :80 or sport = :443</code>. Bật Under Attack lúc này chỉ làm khách phải qua trang kiểm tra mà không chữa gì.</p>`,
+        take: 'Runbook DDoS bắt đầu bằng câu "có phải DDoS không". Khi mọi tín hiệu đều xanh mà site vẫn chết, đi tìm lỗi ở app và DB trước.'
+      },
+      {
+        q: 'Under Attack hiệu quả vậy, sao README lại bảo tắt nó ngay khi có rule theo signature?',
+        a: `<p>Under Attack lọc theo "có chạy được JavaScript không", không theo "có phải tấn công không". Cái giá:</p>
+<ul>
+<li>Mọi khách đang mua hàng đều qua trang kiểm tra, đúng lúc flash sale.</li>
+<li>App mobile, webhook, health check hỏng (challenge là trang HTML). Response bị challenge có header <code>cf-mitigated: challenge</code>.</li>
+</ul>
+<p>Nó là băng cầm máu ở phút 2: mua thời gian để làm A2 (tìm signature) và A3 (chặn đúng signature). Khi rule đã chặn đúng và origin ổn, tắt Under Attack toàn zone. Lab 02 cho thấy bằng số: Under Attack dừng gần hết flood nhưng hỏi gần như mọi khách; rule theo signature dừng tương đương mà gần như không chạm ai.</p>`,
+        take: 'Dùng biện pháp rộng để sống sót, thay bằng biện pháp hẹp để vận hành.'
+      },
+      {
+        q: 'Tấn công có vẻ đã dừng. Gỡ hết rule khẩn cấp luôn được không?',
+        a: `<p>README: gỡ theo <b>thứ tự ngược</b>, mỗi bước chờ 15–30 phút xem có tái phát không. Kẻ tấn công thường thử lại khi thấy hàng rào biến mất; gỡ từng bước thì biết ngay bước nào là cần thiết. Rule Block rộng chuyển sang Managed Challenge trước rồi mới tắt (disable, chưa xoá). Kéo thời gian chờ để xem cả quá trình hạ nhiệt dài bao lâu:</p>`,
+        viz(vb) {
+          const steps = ['Tắt Under Attack toàn zone', 'Rule Block rộng → Managed Challenge, rồi tắt (disable)', 'Bỏ cache rule TTL ngắn tạm thời', 'Bật lại tính năng đã tắt tạm'];
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          let wait = 15, relapse = -1;
+          function draw() {
+            const W = 640, total = steps.length * wait, x = (m) => 150 + (m / Math.max(total, 1)) * (W - 170);
+            const kids = steps.map((s, i) => [
+              el('text', { x: 0, y: 22 + i * 26, style: 'font-size:11px', text: (i + 1) + '. ' + (s.length > 24 ? s.slice(0, 24) + '…' : s) }, [el('title', { text: s })]),
+              el('rect', { x: x(i * wait), y: 10 + i * 26, width: Math.max(2, x((i + 1) * wait) - x(i * wait) - 2), height: 16, rx: 3, fill: relapse === i ? 'var(--bad)' : i < relapse || relapse < 0 ? 'var(--accent)' : 'var(--dim)' }),
+              el('text', { x: x(i * wait) + 4, y: 22 + i * 26, style: 'font-size:10.5px;fill:#fff', text: 'phút ' + i * wait + '–' + (i + 1) * wait })]).flat();
+            out.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${steps.length * 26 + 14}`, role: 'img', 'aria-label': 'Dòng thời gian hạ nhiệt' }, kids));
+            cap.innerHTML = relapse >= 0 ? `<span class="bad">Tấn công quay lại trong lúc chờ sau bước ${relapse + 1}.</span> Vì gỡ từng bước, bạn biết chính xác biện pháp nào còn cần: bật lại đúng bước đó, không phải dựng lại cả hệ thống. Không có nghĩa runbook thất bại: đây là lý do có thời gian chờ.`
+              : `Hạ nhiệt đủ ${steps.length} bước mất ${total} phút với thời gian chờ ${wait} phút mỗi bước (README: 15–30 phút). Gỡ hết một lần thì nhanh hơn, nhưng nếu tấn công quay lại, bạn không biết bước nào là cần thiết.`;
+          }
+          const s = slider('Chờ mỗi bước (phút)', 15, 30, 5, wait, (v) => { wait = v; draw(); });
+          const r = select('Tấn công tái phát', [['-1', 'Không'], ['0', 'Sau bước 1'], ['1', 'Sau bước 2'], ['2', 'Sau bước 3']], '-1', (v) => { relapse = +v; draw(); });
+          vb.append(el('div', { class: 'row' }, [s.node, r.node]), out, cap);
+          draw();
+        },
+        take: 'Gỡ từng bước, chờ đủ lâu giữa các bước. Hàng rào bị gỡ hết một lần thì lần quay lại không biết dựng lại cái nào.'
+      },
+      {
+        q: 'Tấn công đã dừng hẳn. Còn phải đổi IP origin làm gì?',
+        a: `<p>README: nếu IP đã lộ, đổi IP <b>ngay cả khi tấn công đã dừng</b>. IP đó đã nằm trong danh sách của kẻ tấn công; lần sau họ không cần tìm lại. Thứ tự đúng vẫn là B3: bịt chỗ lộ trước, xin IP mới tốt nhất ở dải khác (không cùng /24 với IP cũ, tức không chung ba số đầu như <code>192.0.2.x</code>), không gắn IP mới vào record DNS-only nào, rồi chạy lại B1 trên IP mới.</p>
+<p>Tốt hơn nữa là chuyển sang Cloudflare Tunnel: origin không mở cổng web ra internet, nên dù IP có lộ cũng không có gì để đánh vào cổng web.</p>`,
+        take: 'Tấn công dừng không có nghĩa lỗ hổng đã đóng. IP đã lộ là món nợ, trả trong 1–3 ngày sau sự cố.'
+      },
+      {
+        q: 'Phải chuẩn bị gì trước để lần sau runbook chạy trong vài phút?',
+        a: `<p>README Phụ lục 2, mỗi mục "cắt được vài phút đến vài giờ khi sự cố xảy ra":</p>
+<ul>
+<li>Mọi record web đã proxy; không record DNS-only nào trỏ cùng IP với origin. Đã đổi IP sau khi chuyển sang Cloudflare.</li>
+<li>Origin dùng Tunnel, hoặc firewall chỉ cho IP Cloudflare vào 80/443 + Authenticated Origin Pulls với certificate riêng. SSH không mở cho cả internet.</li>
+<li>nginx lấy IP thật của visitor và không trả certificate khi truy cập bằng IP.</li>
+<li>API token, Zone ID, ID các ruleset lưu sẵn chỗ đội trực vào được kể cả khi dashboard không vào được.</li>
+<li>Rule ở Phụ lục 1 tạo sẵn ở trạng thái tắt (Free chỉ có 5 custom rule).</li>
+<li>Bật alert <b>HTTP DDoS Attack Alert</b>; ghi baseline request/giây, top path, top ASN; có số khẩn của nhà cung cấp.</li>
+<li>Đã diễn tập: bật Under Attack, bật một rule, chạy script B1, và biết mỗi bước tốn bao lâu.</li>
+</ul>
+<p>Không có baseline thì các ngưỡng trong hình chính (do lab giả định) không có gì để so ngoài đời: "nhiều SYN-RECV" chỉ có nghĩa khi biết lúc bình thường là bao nhiêu.</p>`,
+        take: 'Runbook nhanh là runbook đã chạy thử. Thứ đắt nhất trong sự cố là thời gian đi tìm token, ID và lệnh.'
+      },
+      {
+        q: 'Bị đánh lặp lại nhiều lần, khi nào nên nâng plan?',
+        a: `<p>README phần sau sự cố: nếu tấn công lặp lại với quy mô lớn, cân nhắc nâng plan. Business cho rate limiting đủ dùng (5 rule, chu kỳ tới 10 phút, field Method, IP hỗ trợ NAT) và Waiting Room. Enterprise cho Advanced Rate Limiting, Bot Management, Magic Transit.</p>
+<p>Lưu ý ranh giới: không plan zone nào bảo vệ được IP origin đã lộ. Bảo vệ L3/L4 cho chính dải IP của bạn chỉ có qua Magic Transit (Enterprise). Với server vật lý của ShopViet, đóng đường vòng (Tunnel, đổi IP, B1) rẻ hơn và hiệu quả hơn nâng plan.</p>`,
+        take: 'Plan cao mua thêm công cụ cho Nhánh A. Nhánh B được giải bằng cách không để lộ origin.'
+      }
+    ],
+    poc: {
+      goal: "Dựng 7 ảnh chụp tín hiệu <b>synthetic</b> (dòng <code>ss</code>, dòng <code>sar</code>, số request/phút của Cloudflare), tính 5 tín hiệu có/không rồi đi qua cây quyết định phút 0–2 của README. Sau đó duyệt cả 32 tổ hợp tín hiệu để xem tổ hợp nào bảng README không trả lời.",
+      file: "docs/under-attack/pocs/00_workflow.py",
+      run: "uv run docs/under-attack/pocs/00_workflow.py",
+      needs: "Chỉ Python chuẩn, chạy dưới 1 giây. Dữ liệu là synthetic; POC không chạm firewall hay mạng thật.",
+      output: "=== Ảnh chụp tín hiệu synthetic → cây quyết định phút 0–2 của README\nkịch bản                    CF rpm  IP lạ / kết nối  SYN-RECV  %ifutil  origin  nhánh  việc đầu tiên\n--------------------------  ------  ---------------  --------  -------  ------  -----  -------------------------------------------------------------\nHTTP flood qua Cloudflare   x9.0    0% /1500         6         22%      sập     A      A1 phút 2: bật Under Attack (+ Configuration Rule chừa /api/)\nĐánh thẳng IP origin        x1.0    74% /2300        4200      48%      sập     B      B1 phút 2: chỉ cho IP Cloudflare vào 80/443\nĐường truyền bị lấp đầy     x1.1    60% /1500        9000      100%     sập     B+bw   B1 phút 2: chỉ cho IP Cloudflare vào 80/443\nCả hai                      x6.0    38% /2100        3000      40%      sập     both   B1 phút 2 (1 phút)\nCloudflare đang chặn tốt    x12.0   1% /609          5         15%      khoẻ    watch  Theo dõi\nTunnel nhưng 80/443 vẫn mở  x1.0    100% /700        2500      35%      sập     B      B1 phút 2: chỉ cho IP Cloudflare vào 80/443\nKhông phải DDoS (DB chậm)   x1.1    0% /603          4         12%      sập     none   README không có hàng cho ca này\nNgưỡng của POC (giả định, ngoài đời so với baseline): CF ≥ x3 median 30 phút, IP lạ > 20%, SYN-RECV > 200, %ifutil ≥ 90%, origin sập = CPU ≥ 95%.\n\n=== Duyệt cả 32 tổ hợp tín hiệu (CF tăng, IP lạ, SYN, băng thông, origin sập): rơi vào hàng nào của bảng README?\nnhánh  số tổ hợp  bảng README  làm gì\n-----  ---------  -----------  -------------------------------------------------------------\nboth   14         hàng 3       B1 phút 2 (1 phút)\nB      14         hàng 2       B1 phút 2: chỉ cho IP Cloudflare vào 80/443\nA      1          hàng 1       A1 phút 2: bật Under Attack (+ Configuration Rule chừa /api/)\nwatch  1          hàng 4       Theo dõi\ncalm   1          KHÔNG CÓ     Không làm gì\nnone   1          KHÔNG CÓ     README không có hàng cho ca này\n\n1 tổ hợp 'CF bình thường, không dấu hiệu đánh thẳng, origin vẫn sập' không có hàng nào trong README: đó là ca của lỗi app/DB hoặc tấn công vào cổng khác 80/443 mà lệnh ss của README không lọc tới.\nRút ra: chỉ cần 5 tín hiệu nhị phân là chọn được nhánh; 'Cả hai' luôn làm B1 trước vì B1 mất 1 phút và rule Cloudflare không cứu được traffic đánh thẳng. Mọi số liệu ở đây là synthetic, không lệnh nào chạm firewall hay mạng thật.",
+      measured: true,
+      read: ["Bảng đầu: cột <b>IP lạ / kết nối</b> được tính bằng cách đối chiếu từng peer trong output <code>ss</code> giả với dải IP Cloudflare của README (module <code>ipaddress</code>). HTTP flood qua Cloudflare: 0% IP lạ; đánh thẳng: 74%.", "\"Tunnel nhưng 80/443 vẫn mở\": 100% IP lạ, vì với Tunnel khách thật vào qua <code>cloudflared</code> tới <code>localhost:8080</code>, bộ lọc 80/443 của README không bao giờ thấy các kết nối đó; mọi dòng còn lại đều từ ngoài vào cổng chưa đóng.", "Bảng 32 tổ hợp: \"Cả hai\" và \"Nhánh B\" mỗi loại chiếm 14 tổ hợp, vì chỉ cần một dấu hiệu đánh thẳng là đã sang B. Một tổ hợp (Cloudflare bình thường, không dấu hiệu đánh thẳng, origin vẫn sập) không có hàng nào trong README: nghĩ tới lỗi app/DB trước khi nghĩ tới DDoS.", "Các ngưỡng (×3, 20%, 200, 90%) là giả định của POC, giống lab; ngoài đời so với baseline lúc bình thường."]
+    },
+    mount(stage) {
+      const st = Object.assign({ reflex: 'runbook', code: '522' }, PRESETS[0][2]);
+      const presetBtns = PRESETS.map(([k, t, p]) => el('button', { text: t, onclick: () => { Object.assign(st, p); sync(); draw(); } }));
+      const sCf = select('Analytics Cloudflare', [['spike', 'tăng vọt cùng lúc sự cố'], ['normal', 'bình thường']], st.cf, (v) => { st.cf = v; draw(); });
+      const sOther = slider('Kết nối 80/443 từ IP không phải Cloudflare (%)', 0, 100, 1, st.other, (v) => { st.other = v; draw(); });
+      const sSyn = slider('SYN-RECV', 0, 10000, 50, st.syn, (v) => { st.syn = v; draw(); });
+      const sUtil = slider('%ifutil', 0, 100, 1, st.util, (v) => { st.util = v; draw(); });
+      const sHealth = select('Origin', [['down', 'quá tải (CPU 100%)'], ['up', 'vẫn khoẻ']], st.health, (v) => { st.health = v; draw(); });
+      const tunIn = el('input', { type: 'checkbox' });
+      tunIn.addEventListener('change', () => { st.tunnel = tunIn.checked; draw(); });
+      const sCode = select('Khách thấy mã lỗi', CODES, st.code, (v) => { st.code = v; draw(); });
+      const sReflex = select('Phản xạ đầu tiên', [['runbook', 'Làm theo runbook'], ['uam', 'Bật Under Attack ngay'], ['fw', 'Chặn top IP bằng firewall']], st.reflex, (v) => { st.reflex = v; draw(); });
+      function sync() {
+        sCf.sel.value = st.cf; sHealth.sel.value = st.health; tunIn.checked = st.tunnel;
+        [[sOther, st.other], [sSyn, st.syn], [sUtil, st.util]].forEach(([s, v]) => { s.input.value = v; s.node.querySelector('output').textContent = v; });
+      }
+      const tree = el('svg', { class: 'canvas', role: 'img', 'aria-label': 'Cây quyết định phút 0–2' });
+      const sigRow = el('div', { class: 'stat' }), ver = el('div'), timeline = el('svg', { class: 'canvas', role: 'img', 'aria-label': 'Dòng thời gian các bước' }), steps = el('div'), flags = el('div', { style: 'font-size:13.5px' });
+
+      const W = 760;
+      const N = {
+        q1: { x: 380, y: 34, q: true, l: ['Analytics Cloudflare', 'tăng vọt?'] },
+        q2a: { x: 190, y: 112, q: true, l: ['Origin: IP lạ / SYN-RECV', '/ băng thông đầy?'] },
+        q2b: { x: 570, y: 112, q: true, l: ['Origin: IP lạ / SYN-RECV', '/ băng thông đầy?'] },
+        both: { x: 70, y: 196, leaf: 'both', l: ['Cả hai', 'B1 trước, rồi A1'] },
+        q3a: { x: 290, y: 196, q: true, l: ['Origin', 'còn khoẻ?'] },
+        B: { x: 460, y: 196, leaf: 'B', l: ['Nhánh B', 'đánh thẳng origin'] },
+        q3b: { x: 640, y: 196, q: true, l: ['Origin', 'còn khoẻ?'] },
+        watch: { x: 220, y: 280, leaf: 'watch', l: ['Cloudflare chặn tốt', 'theo dõi, làm A2'] },
+        A: { x: 360, y: 280, leaf: 'A', l: ['Nhánh A', 'L7 qua Cloudflare'] },
+        calm: { x: 570, y: 280, leaf: 'calm', l: ['Không thấy', 'dấu hiệu tấn công'] },
+        none: { x: 694, y: 280, leaf: 'none', l: ['Ngoài bảng', 'README'] }
+      };
+      const E = [['q1', 'q2a', 'có'], ['q1', 'q2b', 'không'], ['q2a', 'both', 'có'], ['q2a', 'q3a', 'không'], ['q2b', 'B', 'có'], ['q2b', 'q3b', 'không'], ['q3a', 'watch', 'khoẻ'], ['q3a', 'A', 'quá tải'], ['q3b', 'calm', 'khoẻ'], ['q3b', 'none', 'quá tải']];
+      const PATH = { both: ['q1', 'q2a', 'both'], A: ['q1', 'q2a', 'q3a', 'A'], watch: ['q1', 'q2a', 'q3a', 'watch'], B: ['q1', 'q2b', 'B'], calm: ['q1', 'q2b', 'q3b', 'calm'], none: ['q1', 'q2b', 'q3b', 'none'] };
+      const LEAF_COLOR = { both: 'var(--bad)', B: 'var(--bad)', A: 'var(--warn)', watch: 'var(--ok)', calm: 'var(--ok)', none: 'var(--g1)' };
+
+      function drawTree(r) {
+        const on = new Set(PATH[r.leaf]), kids = [];
+        tree.setAttribute('viewBox', `0 0 ${W} 312`);
+        E.forEach(([a, b, lbl]) => {
+          const A = N[a], B = N[b], act = on.has(a) && on.has(b);
+          kids.push(el('line', { x1: A.x, y1: A.y + 17, x2: B.x, y2: B.y - 17, stroke: act ? 'var(--accent)' : 'var(--line)', 'stroke-width': act ? 3 : 1.4 }),
+            el('text', { x: (A.x + B.x) / 2 + (B.x < A.x ? -6 : 6), y: (A.y + B.y) / 2 + 4, 'text-anchor': B.x < A.x ? 'end' : 'start', class: act ? '' : 'mute', style: 'font-size:11px' + (act ? ';font-weight:700' : ''), text: lbl }));
+        });
+        Object.entries(N).forEach(([k, n]) => {
+          const act = on.has(k), w = n.leaf ? 120 : 150, col = n.leaf ? LEAF_COLOR[n.leaf] : 'var(--accent)';
+          kids.push(el('g', { opacity: act ? 1 : 0.38 }, [
+            el('rect', { x: n.x - w / 2, y: n.y - 17, width: w, height: 34, rx: n.q ? 17 : 5, fill: act && n.leaf ? 'var(--accent-soft)' : 'var(--panel)', stroke: act ? col : 'var(--line)', 'stroke-width': act ? 2.4 : 1.2 }),
+            el('text', { x: n.x, y: n.y - 3, 'text-anchor': 'middle', style: 'font-size:11px;font-weight:' + (n.leaf ? 700 : 500), text: n.l[0] }),
+            el('text', { x: n.x, y: n.y + 11, 'text-anchor': 'middle', style: 'font-size:10.5px', class: 'mute', text: n.l[1] })]));
+        });
+        tree.replaceChildren(...kids);
+      }
+
+      function stepsFor(r) {
+        const triage = { t: [0, 2], k: 'T', name: 'Triage: traffic đi qua đâu?', cmd: 'triage' };
+        if (r.leaf === 'A') return [triage, ...STEPS.A];
+        if (r.leaf === 'B') return [triage, ...STEPS.B(st.tunnel, r.sig.bw)];
+        if (r.leaf === 'both') {
+          const b = STEPS.B(st.tunnel, r.sig.bw);
+          const shift = r.sig.bw ? 8 : 1;
+          return [triage, b[0], ...(r.sig.bw ? [b[1]] : []), ...STEPS.A.map((s) => Object.assign({}, s, { t: [s.t[0] + shift, s.t[1] + shift] }))];
+        }
+        if (r.leaf === 'watch') return [triage, { t: [2, 8], k: 'A2', name: 'Làm A2 để chắc chắn, không cần vội', cmd: 'sig' }];
+        return [triage];
+      }
+
+      function drawTimeline(list) {
+        const maxT = Math.max(35, ...list.map((s) => s.t[1])), x = (m) => 40 + (m / maxT) * (W - 60), kids = [];
+        timeline.setAttribute('viewBox', `0 0 ${W} ${list.length * 24 + 34}`);
+        for (let m = 0; m <= maxT; m += 5) kids.push(el('line', { x1: x(m), x2: x(m), y1: 4, y2: list.length * 24 + 10, stroke: 'var(--line)', 'stroke-dasharray': '2 4' }), el('text', { x: x(m), y: list.length * 24 + 26, 'text-anchor': 'middle', class: 'mute', style: 'font-size:10.5px', text: m + "'" }));
+        list.forEach((s, i) => {
+          const col = s.k === 'T' ? 'var(--g1)' : s.k[0] === 'B' ? 'var(--bad)' : 'var(--warn)';
+          kids.push(el('rect', { x: x(s.t[0]), y: 6 + i * 24, width: Math.max(4, x(s.t[1]) - x(s.t[0]) - 1), height: 18, rx: 3, fill: col, opacity: 0.85 }, [el('title', { text: s.k + ' ' + s.name })]),
+            el('text', { x: 2, y: 19 + i * 24, style: 'font-size:11px;font-weight:700', text: s.k }),
+            el('text', { x: x(s.t[1]) + 4 > W - 150 ? x(s.t[0]) - 4 : x(s.t[1]) + 4, y: 19 + i * 24, 'text-anchor': x(s.t[1]) + 4 > W - 150 ? 'end' : 'start', style: 'font-size:11px', text: s.name }));
+        });
+        timeline.replaceChildren(...kids);
+      }
+
+      function draw() {
+        const r = route(st);
+        drawTree(r);
+        const chip = (t, v, bad) => `<span>${t}: <b class="${bad ? 'bad' : 'ok'}">${v}</b></span>`;
+        sigRow.innerHTML = chip('Analytics CF', r.sig.cf ? 'tăng vọt' : 'bình thường', r.sig.cf) + chip('IP lạ', st.other + '% (ngưỡng ' + LIM.other + '%)', r.sig.other) + chip('SYN-RECV', st.syn + ' (ngưỡng ' + LIM.syn + ')', r.sig.syn) + chip('%ifutil', st.util + '% (ngưỡng ' + LIM.util + '%)', r.sig.bw) + chip('Origin', r.sig.down ? 'quá tải' : 'khoẻ', r.sig.down);
+        const VERD = {
+          A: 'Nhánh A: tấn công L7 qua Cloudflare. Mọi rule Cloudflare đều có tác dụng.',
+          B: 'Nhánh B: origin IP đã lộ, bị đánh trực tiếp. Rule Cloudflare không chạm được phần này.',
+          both: 'Cả hai: làm B1 trước (mất 1 phút), rồi sang Nhánh A.',
+          watch: 'Analytics Cloudflare tăng nhưng origin vẫn khoẻ: Cloudflare đang chặn tốt. Theo dõi; làm A2 để chắc chắn, không cần vội.',
+          calm: 'Không có dấu hiệu tấn công. Tiếp tục theo dõi.',
+          none: 'Ngoài bảng README: bảng quyết định chỉ có 4 hàng (A, B, cả hai, Cloudflare chặn tốt), không hàng nào cho "origin quá tải nhưng không thấy tấn công ở cả Cloudflare lẫn origin". Lab gọi đây là ca ngoài runbook DDoS (diễn giải của lab).'
+        };
+        ver.innerHTML = box(LEAF_COLOR[r.leaf], '<b>Kết luận:</b> ' + VERD[r.leaf]);
+        const list = stepsFor(r);
+        drawTimeline(list);
+        steps.replaceChildren(...list.flatMap((s) => [
+          el('div', { style: 'font-size:13px;margin-top:6px', html: `<b>${s.k === 'T' ? 'Phút 0–2' : s.t[1] >= 35 ? 'Phút ' + s.t[0] + '+' : 'Phút ' + s.t[0] + '–' + s.t[1]} · ${s.k === 'T' ? '' : s.k + '. '}${esc(s.name)}</b>${s.note ? ' <span class="mute" style="color:var(--mute)">' + esc(s.note) + '</span>' : ''}` }),
+          pre(CMD[s.cmd]), s.cmd2 ? pre(CMD[s.cmd2]) : null]).filter(Boolean));
+        const f = [];
+        if (st.tunnel && st.other > 0) f.push(box('var(--bad)', `<b>Đang dùng Tunnel nhưng ${st.other}% kết nối 80/443 đến từ IP bên ngoài.</b> Vì sao: với Tunnel, cloudflared gửi request vào nginx ở <code>localhost:8080</code> (ví dụ Service URL của README), nên bộ lọc <code>sport = :80 or sport = :443</code> của README không bao giờ thấy kết nối của khách. Dòng nào lọt vào bộ lọc đó đều đến từ ngoài: cổng web vẫn mở ra internet. Vì thế kịch bản có sẵn ra 100%. Không có nghĩa Tunnel hỏng: Tunnel không tự đóng cổng. Trong hệ thống thật: B1 bản cho Tunnel (đóng hẳn 80/443), đừng chạy script allowlist IP Cloudflare.`));
+        if (st.tunnel && st.other === 0) f.push(box('var(--g1)', '<b>Dùng Tunnel và 0% kết nối 80/443 từ ngoài.</b> Ngoài đời, lệnh top IP của README lúc này trả về <b>rỗng</b>: kết nối của cloudflared đi vào <code>localhost:8080</code>, không nằm trong bộ lọc 80/443. Không có nghĩa không có ai truy cập hay đã hết tấn công. Trong hệ thống thật: đọc Analytics Cloudflare để biết có bị đánh không; muốn thấy kết nối cloudflared thì thêm <code>or sport = :8080</code> (port Service URL của bạn) vào bộ lọc (Lab 01).'));
+        if (r.sig.bw && (r.leaf === 'B' || r.leaf === 'both')) f.push(box('var(--bad)', `<b>%ifutil ${st.util}%: đường truyền đã đầy.</b> Vì sao: gói tin chiếm hết đường trước khi tới firewall trên máy, nên B1 không cứu được. Không có nghĩa bỏ qua B1: nó vẫn chặn phần HTTP flood lọt vào. Trong hệ thống thật: B2, gọi nhà cung cấp lọc upstream; chuẩn bị bị null-route và chuyển sang B3.`));
+        if (r.leaf === 'none') f.push(box('var(--g1)', '<b>Origin chết mà không thấy tấn công, và README không có hàng cho ca này.</b> POC 00 duyệt 32 tổ hợp tín hiệu: đây là tổ hợp duy nhất bảng không trả lời. Vì sao có thể xảy ra: khoảng thời gian trên Analytics chưa bao trọn sự cố; đây không phải DDoS (DB chậm, deploy lỗi, chính lượng khách flash sale vượt sức máy); hoặc bị đánh vào cổng khác 80/443 mà lệnh <code>ss</code> của README không lọc tới. Không có nghĩa nên bật Under Attack "cho chắc": nó làm khổ khách mà không giải quyết gì. Trong hệ thống thật: so với baseline đã ghi, kiểm tra log ứng dụng và DB, xem <code>ss</code> không lọc port (diễn giải của lab).'));
+        if (st.reflex === 'uam') {
+          if (r.leaf === 'B') f.push(box('var(--bad)', '<b>Bật Under Attack: origin vẫn chết.</b> Vì sao: traffic tấn công đi thẳng vào IP origin, không qua Cloudflare. Trong khi đó khách thật bắt đầu phải qua trang kiểm tra và app mobile hỏng. Không có nghĩa Under Attack kém: nó không được thiết kế cho đường này. Trong hệ thống thật: B1.'));
+          else if (r.leaf === 'both') f.push(box('var(--warn)', '<b>Bật Under Attack: chỉ xử lý một nửa.</b> Phần đánh thẳng vẫn đè origin, nên CPU không giảm và bạn không biết Under Attack có tác dụng hay không. Trong hệ thống thật: B1 trước (1 phút), rồi A1.'));
+          else if (r.leaf === 'A') f.push(box('var(--warn)', '<b>Bật Under Attack: đúng nhánh, có tác dụng sau 1–2 phút.</b> Nhưng app mobile gọi <code>/api/</code> sẽ hỏng nếu không có Configuration Rule chừa <code>/api/</code>. Bạn đã bỏ qua triage và may mắn chọn đúng.'));
+          else f.push(box('var(--warn)', '<b>Bật Under Attack khi không cần.</b> Mọi khách đang mua hàng phải qua trang kiểm tra, app mobile hỏng, trong khi origin vốn không bị tấn công (hoặc Cloudflare đã chặn tốt).'));
+        }
+        if (st.reflex === 'fw') {
+          if (r.leaf === 'A' || r.leaf === 'watch') f.push(box('var(--bad)', '<b>Chặn top IP bằng firewall: chặn chính khách.</b> Vì sao: ở nhánh này top IP trên origin là IP Cloudflare, mỗi IP chở cả khách thật lẫn bot. Khách đi qua các data center đó nhận 521/522, bot qua data center khác vẫn vào. Trong hệ thống thật: chặn trên Cloudflare theo signature (Lab 02).'));
+          else if (r.leaf === 'B' || r.leaf === 'both') f.push(box('var(--warn)', '<b>Chặn top IP bằng firewall: đúng hướng nhưng chậm.</b> Botnet có hàng trăm IP và SYN flood thường giả IP nguồn; chặn từng IP là chạy theo. Trong hệ thống thật: B1 chặn mọi IP không phải Cloudflare trong một lệnh.'));
+        }
+        if (st.code !== 'none') f.push(box('var(--g1)', `<b>Mã ${st.code}:</b> ${CODE_TXT[st.code]}. Mã 52x do Cloudflare sinh ra, cho biết origin đang không trả lời được, không cho biết tấn công đi đường nào.` + (st.code === '521' && (r.leaf === 'B' || r.leaf === 'both') ? ' Nếu 521 xuất hiện ngay sau khi chạy B1: kiểm tra <code>nft list table inet cf_guard</code>; dùng Tunnel mà chạy script allowlist, hoặc tải thiếu dải IP Cloudflare, sẽ chặn chính Cloudflare.' : '')));
+        flags.innerHTML = f.join('');
+      }
+
+      stage.append(
+        el('div', { class: 'row' }, presetBtns),
+        el('div', { class: 'row' }, [sCf.node, sHealth.node, el('label', { class: 'ctl' }, [tunIn, 'Origin dùng Cloudflare Tunnel'])]),
+        el('div', { class: 'row' }, [sOther.node, sSyn.node, sUtil.node]),
+        el('div', { class: 'row' }, [sCode.node, sReflex.node]),
+        sigRow, tree, ver,
+        el('h4', { style: 'margin:14px 0 2px;font-size:13px', text: 'Dòng thời gian (phút, theo README) và việc đầu tiên của mỗi bước' }), timeline,
+        el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--g1)' }), 'triage']), el('span', {}, [el('i', { style: 'background:var(--bad)' }), 'Nhánh B']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'Nhánh A'])]),
+        flags, steps,
+        el('p', { class: 'hint', text: 'Tín hiệu trong các kịch bản và ngưỡng là giả lập. Bảng quyết định, bước, mốc phút và lệnh lấy từ README. Sau Nhánh A hoặc B là hạ nhiệt theo thứ tự ngược (câu hỏi 6).' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,723 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Under Attack Lab 05</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-rules-rate-limiting.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/under-attack/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fmt = (n) => Math.round(n).toLocaleString('vi-VN');
+  const pct = (x) => Math.round(x * 100) + '%';
+  const noteBox = (kind, html) => el('div', { style: `border-left:3px solid var(--${kind});padding:4px 10px;margin:6px 0;font-size:13px`, html });
+  const chk = (label, on, f) => el('label', { class: 'ctl' }, [el('input', Object.assign({ type: 'checkbox', onchange: (e) => f(e.target.checked) }, on ? { checked: '' } : {})), label]);
+  const preBox = (html) => el('pre', { class: 'mono', style: 'margin:6px 0;max-height:280px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px', html });
+  const td = (h, st = '') => `<td style="border:1px solid var(--line);padding:5px 8px;vertical-align:top;${st}">${h}</td>`;
+  const th = (h) => `<th style="border:1px solid var(--line);padding:5px 8px;text-align:left;background:var(--bg)">${h}</th>`;
+
+  const CF4 = ['173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22'];
+  const CF6 = ['2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'];
+  const LOOP = ['127.0.0.1', '::1'];
+  const isV6 = (s) => s.includes(':');
+  const ip4 = (s) => s.split('.').reduce((a, x) => a * 256 + Number(x), 0);
+  const ip6 = (s) => {
+    const parts = s.split('::');
+    const h = parts[0] ? parts[0].split(':') : [], t = parts.length > 1 && parts[1] ? parts[1].split(':') : [];
+    const all = parts.length > 1 ? [...h, ...Array(8 - h.length - t.length).fill('0'), ...t] : h;
+    return all.reduce((a, x) => (a << 16n) + BigInt(parseInt(x || '0', 16)), 0n);
+  };
+  const inCidr = (ip, cidr) => {
+    const [b, m] = cidr.split('/');
+    if (isV6(ip) !== isV6(b)) return false;
+    if (isV6(ip)) { const sh = BigInt(128 - Number(m ?? 128)); return (ip6(ip) >> sh) === (ip6(b) >> sh); }
+    const sh = 32 - Number(m ?? 32);
+    return Math.floor(ip4(ip) / 2 ** sh) === Math.floor(ip4(b) / 2 ** sh);
+  };
+
+  const CUST = '113.161.45.7';
+  const ROUTES = {
+    cf: { t: 'Khách → Cloudflare (edge IPv4) → nginx', src: '172.70.142.31', hdr: CUST, direct: false },
+    cf6: { t: 'Khách → Cloudflare (edge IPv6) → nginx', src: '2a06:98c0:3600::103', hdr: CUST, direct: false },
+    tunnel: { t: 'Khách → Cloudflare → Tunnel → cloudflared → nginx', src: '127.0.0.1', hdr: CUST, direct: false },
+    spoof: { t: 'Kẻ tấn công đánh thẳng origin, tự đặt CF-Connecting-IP', src: '45.83.12.9', hdr: '1.2.3.4', direct: true }
+  };
+  const CONFS = {
+    none: { t: 'Chưa cấu hình realip', from: [] },
+    readme: { t: 'README: dải CF IPv4 + IPv6 + 127.0.0.1, ::1', from: [...CF4, ...CF6, ...LOOP] },
+    v4only: { t: 'Chỉ dải CF IPv4', from: [...CF4] },
+    notun: { t: 'Dải CF IPv4 + IPv6, thiếu 127.0.0.1, ::1', from: [...CF4, ...CF6] },
+    any: { t: 'set_real_ip_from 0.0.0.0/0 và ::/0 (tin mọi nguồn)', from: ['0.0.0.0/0', '::/0'] }
+  };
+  function realip(routeK, confK, fw) {
+    const r = ROUTES[routeK], c = CONFS[confK];
+    if (r.direct && fw) return { dropped: true, r };
+    const trusted = c.from.find((x) => inCidr(r.src, x)) || null;
+    return { r, trusted, remote: trusted ? r.hdr : r.src, realRemote: r.src };
+  }
+
+  function limitReq(times, rate, burst) {
+    let st = null, ok = 0, rej = 0;
+    for (const t of times) {
+      if (!st) { st = { ex: 0, last: t }; ok++; continue; }
+      const ex = Math.max(0, st.ex - rate * (t - st.last)) + 1;
+      if (ex > burst) { rej++; continue; }
+      st.ex = ex; st.last = t; ok++;
+    }
+    return { ok, rej };
+  }
+  function flashSecond(nCust, keyMode, edges) {
+    const rnd = seeded(5);
+    const byKey = {}, owner = {};
+    for (let c = 0; c < nCust; c++) {
+      const start = rnd() * 5;
+      for (let p = start; p < 10; p += 5) for (let j = 0; j < 4; j++) {
+        const t = p + j * 0.05 + rnd() * 0.05;
+        const key = keyMode === 'cust' ? 'c' + c : keyMode === 'loop' ? '127.0.0.1' : 'edge' + Math.floor(rnd() * edges);
+        (byKey[key] = byKey[key] || []).push({ t, c });
+      }
+    }
+    let ok = 0, rej = 0;
+    const hurt = new Set();
+    for (const k of Object.keys(byKey)) {
+      const arr = byKey[k].sort((a, b) => a.t - b.t);
+      let st = null;
+      for (const q of arr) {
+        if (!st) { st = { ex: 0, last: q.t }; ok++; continue; }
+        const ex = Math.max(0, st.ex - 20 * (q.t - st.last)) + 1;
+        if (ex > 40) { rej++; hurt.add(q.c); continue; }
+        st.ex = ex; st.last = q.t; ok++;
+      }
+    }
+    return { ok, rej, hurt: hurt.size, keys: Object.keys(byKey).length };
+  }
+
+  const CHECK = [
+    ['dns', 'Mọi record web đã proxy; không record DNS-only nào trỏ cùng IP origin', 'B3', 'IP origin lộ qua record mail / ftp / subdomain cũ: bị đánh thẳng (Nhánh B).'],
+    ['origin', 'Origin dùng Tunnel, hoặc firewall chỉ nhận IP Cloudflare + AOP certificate riêng', 'B1', 'Phải chạy firewall giữa sự cố; zone Cloudflare của người khác vẫn lọt.'],
+    ['ssh', 'SSH và cổng quản trị không mở cho cả internet', 'B1', 'Botnet dò SSH; dễ tự khoá mình khi vội sửa firewall.'],
+    ['ipnew', 'Đã đổi IP origin sau khi chuyển sang Cloudflare', 'B3', 'IP cũ nằm trong lịch sử DNS công khai.'],
+    ['nginx', 'nginx lấy IP thật và không trả certificate khi truy cập bằng IP', 'A5', 'Log và rate limit ở origin sai; máy quét gắn được IP với domain.'],
+    ['token', 'API token, Zone ID, ID các ruleset lưu sẵn nơi đội trực mở được', 'A1, A3', 'Dashboard đơ thì không bật được Under Attack hay thêm rule.'],
+    ['rules', 'Các rule Phụ lục 1 tạo sẵn ở trạng thái tắt', 'A3', 'Phải viết expression giữa sự cố: dễ sai cú pháp, sai ý.'],
+    ['alert', 'Đã bật HTTP DDoS Attack Alert (mọi plan) trong Notifications', 'Phút 0', 'Biết bị tấn công khi khách báo, không phải khi Cloudflare phát hiện.'],
+    ['base', 'Có baseline lúc bình thường: req/s, top path, top ASN', 'A2, A4', 'Không biết thế nào là bất thường; không có số để chọn ngưỡng rate limit.'],
+    ['isp', 'Có số điện thoại / kênh hỗ trợ khẩn của nhà cung cấp', 'B2', 'Đường truyền đầy mà không biết gọi ai.'],
+    ['drill', 'Đã diễn tập: bật Under Attack, bật một rule, chạy script B1', 'Mọi bước', 'Không biết mỗi bước tốn bao lâu; lần đầu chạy script là lúc đang bị đánh.']
+  ];
+
+  return {
+    id: 'prepare', nav: '5. Chuẩn bị, hạ nhiệt', ref: 'Phụ lục 2, Hạ nhiệt, Phụ lục 3',
+    title: 'Sau Cloudflare, nginx thấy IP của ai? Thiếu real_ip thì rate limit ở origin chặn đúng khách thật',
+    hook: 'Chọn đường request đi vào và cấu hình realip; lab tính $remote_addr thật sự, rồi chạy limit_req của README trên 10 giây flash sale để xem chặn ai. Bên dưới là bảng chấm điểm chuẩn bị.',
+    terms: [
+      ['Edge Cloudflare', 'Một máy chủ Cloudflare nhận request của khách rồi mở kết nối mới tới origin. Nhiều khách đi qua cùng một edge, nên nhiều khách chung một IP nguồn khi tới nginx, ví dụ 172.70.142.31.'],
+      ['$remote_addr', 'Biến nginx chứa địa chỉ client. Không cấu hình gì thì đó là bên mở kết nối TCP tới nginx: sau Cloudflare là edge Cloudflare, ví dụ 172.70.142.31, không phải khách 113.161.45.7.'],
+      ['CF-Connecting-IP', 'Header Cloudflare gắn vào request gửi tới origin, chứa IP của khách: CF-Connecting-IP: 113.161.45.7. Ai cũng tự đặt được header này nếu kết nối thẳng tới origin.'],
+      ['realip (ngx_http_realip_module)', 'Module nginx thay $remote_addr bằng giá trị trong một header, nhưng chỉ khi kết nối đến từ nguồn liệt kê trong set_real_ip_from.'],
+      ['set_real_ip_from', 'Danh sách nguồn được tin. set_real_ip_from 172.64.0.0/13 nghĩa là kết nối từ dải đó được phép khai IP thật qua header.'],
+      ['$realip_remote_addr', 'Địa chỉ kết nối gốc trước khi realip thay. Log biến này để biết request đến từ Cloudflare (172.70.x.x), từ Tunnel (127.0.0.1) hay từ ngoài.'],
+      ['limit_req, burst, nodelay', 'Rate limit của nginx. Khoá (key) là thứ nó đếm theo, ở README là $binary_remote_addr (IP client). rate=20r/s burst=40 nodelay: mỗi khoá gửi đều 20 request/giây thoải mái, được dồn thêm tối đa 40 request vượt tốc độ và phục vụ ngay; quá nữa thì trả lỗi. Ví dụ một IP bắn 60 request cùng lúc: 41 qua, 19 bị từ chối.'],
+      ['ssl_reject_handshake', 'Lệnh nginx (từ 1.19.4) từ chối bắt tay TLS ở server mặc định, nên ai gõ https://IP-origin không nhận được certificate shopviet.vn.'],
+      ['return 444', 'Mã đặc biệt của nginx: đóng kết nối, không gửi gì về. Dùng cho server mặc định cổng 80 với Host lạ.'],
+      ['Post-mortem', 'Bản ghi sau sự cố: mốc thời gian, signature, rule nào hiệu quả, rule nào chặn nhầm, mất bao lâu từ phát hiện tới ổn.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> đã qua đợt DDoS lúc flash sale. Trong lúc xử lý, một bạn bật <code>limit_req zone=perip rate=20r/s</code> ở nginx "cho chắc". Ba phút sau khách báo lỗi 503 hàng loạt (mã mặc định của limit_req khi chưa đặt <code>limit_req_status 429</code>), dù Cloudflare đã chặn phần lớn tấn công. Access log toàn IP <code>172.70.x.x</code> và <code>162.158.x.x</code>.',
+      scenario: 'Một request synthetic của khách 113.161.45.7 đi vào nginx theo một trong bốn đường (qua edge Cloudflare IPv4 / IPv6, qua Tunnel, hoặc kẻ tấn công kết nối thẳng và tự đặt header). Bạn chọn cấu hình realip. Sau đó 300 khách (giả định) mỗi người mở một trang (4 request) mỗi 5 giây, đi qua 8 edge Cloudflare (giả định), gặp limit_req của README. Tổng 2.400 request / 10 giây = 240 request/giây.',
+      ask: 'Với từng cấu hình, nginx coi request là của ai? limit_req chặn khách thật hay chặn kẻ tấn công? Và ShopViet còn thiếu gì để lần sau xử lý nhanh hơn?',
+      solves: 'realip với set_real_ip_from đúng dải Cloudflare (cả IPv6, cả 127.0.0.1 khi dùng Tunnel) trả lại IP khách cho log và rate limit. Tin mọi nguồn thì kẻ tấn công tự khai IP. Firewall B1 là điều kiện để tin header. Thiếu realip thì đừng bật rate limit ở nginx. Bảng chuẩn bị biến các bước runbook thành một cú bấm.',
+      read: ['Khung request: kết nối TCP đến từ đâu và header mang gì.', 'Bảng biến: $realip_remote_addr (ai mở kết nối), $remote_addr (nginx coi là client), khoá mà limit_req dùng.', 'Thanh limit_req: request bị trả 429 trong 10 giây và số khách bị ảnh hưởng, so với khi realip đúng. Thử: realip "Chưa cấu hình", kéo "Số edge Cloudflare" lên 30 rồi xuống 6; sau đó chọn đường Tunnel.', 'Khung cảnh báo bật khi cấu hình rơi vào lỗi: rate limit theo IP Cloudflare, tin header giả, thiếu IPv6 hay 127.0.0.1.', 'Bảng chuẩn bị: tích những gì ShopViet đã có; lab liệt kê bước runbook nào sẽ chậm và vì sao.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Phụ lục 2: danh sách chuẩn bị</h4>
+<ul><li>Mọi record web đã proxy; không record DNS-only nào trỏ cùng IP origin.</li><li>Tunnel, hoặc firewall chỉ cho IP Cloudflare vào 80/443 + Authenticated Origin Pulls certificate riêng.</li><li>SSH, cổng quản trị không mở cho cả internet.</li><li>Đã đổi IP origin sau khi chuyển sang Cloudflare.</li><li>nginx lấy IP thật, không trả certificate khi truy cập bằng IP.</li><li>API token, Zone ID, ID ruleset lưu sẵn.</li><li>Rule Phụ lục 1 tạo sẵn, để tắt.</li><li>Bật HTTP DDoS Attack Alert.</li><li>Có baseline: req/s, top path, top ASN.</li><li>Có kênh hỗ trợ khẩn của nhà cung cấp.</li><li>Đã diễn tập.</li></ul>
+<h4>nginx</h4>
+<ul><li><code>set_real_ip_from</code> các dải trong cloudflare.com/ips (IPv4 và IPv6, kiểm tra lại trước khi dùng), thêm <code>127.0.0.1</code>, <code>::1</code> khi dùng Tunnel với Service URL localhost; <code>real_ip_header CF-Connecting-IP</code>. Log thêm <code>$realip_remote_addr</code>.</li>
+<li>Chỉ tin <code>CF-Connecting-IP</code> khi request thực sự đến từ Cloudflare: cần firewall B1.</li>
+<li>Server mặc định: <code>ssl_reject_handshake on</code> (nginx ≥ 1.19.4) cho 443, <code>return 444</code> cho 80.</li>
+<li><code>limit_req_zone $binary_remote_addr zone=perip:10m rate=20r/s</code>, <code>zone=login rate=5r/m</code>, <code>limit_conn conn 50</code>, <code>limit_req_status 429</code> (mặc định 503, dễ nhầm với lỗi origin), timeout header / body 10s, keepalive 30s.</li></ul>
+<h4>Cấu hình Cloudflare nền</h4>
+<p>SSL Full (strict). Bot Fight Mode (Free) hoặc Super Bot Fight Mode (Pro+); Bot Fight Mode có thể challenge API và app, không chừa ra được bằng custom rule. WAF Managed Rules bật. HTTP DDoS ruleset luôn bật, Free / Pro / Business có một override sensitivity cho toàn zone; chỉ hạ khi bị chặn nhầm. Cache Rules cho tài nguyên tĩnh TTL dài.</p>
+<h4>Hạ nhiệt và sau sự cố</h4>
+<ol><li>Tắt Under Attack Mode toàn zone.</li><li>Rule Block rộng (quốc gia, ASN) → Managed Challenge → disable (chưa xoá).</li><li>Bỏ cache rule TTL ngắn tạm thời nếu gây dữ liệu cũ.</li><li>Bật lại tính năng đã tắt tạm.</li></ol>
+<p>Mỗi bước chờ 15–30 phút. Trong 1–3 ngày: post-mortem; giữ rule có giá trị lâu dài ở trạng thái tắt sẵn; IP đã lộ thì đổi ngay cả khi tấn công đã dừng; hoàn thiện Phụ lục 2; tấn công lặp lại lớn thì cân nhắc nâng plan (Business: rate limiting đủ dùng, Waiting Room; Enterprise: Advanced Rate Limiting, Bot Management, Magic Transit).</p>
+<div class="verdict"><b>Điều cần nhớ:</b> sau một proxy, "IP client" là thứ phải được khôi phục có điều kiện. Khôi phục sai thì mọi biện pháp theo IP ở origin (log, ban, rate limit) đều nhắm sai người.</div>`,
+    why: {
+      c: 'Cấu hình realip với đúng dải Cloudflare cả IPv4 lẫn IPv6 (và loopback khi dùng Tunnel), log $realip_remote_addr, đặt firewall B1 để header không giả được. Rate limit ở nginx chỉ bật sau khi realip đã kiểm tra bằng access log. Chuẩn bị theo Phụ lục 2 và diễn tập. Hạ nhiệt theo thứ tự ngược, mỗi bước chờ 15–30 phút.',
+      s: 'set_real_ip_from 0.0.0.0/0: ai cũng tự khai IP. Bật limit_req khi chưa có realip: chặn cả nhóm khách đi chung một edge Cloudflare. Xoá ngay rule sau sự cố: lần sau phải viết lại giữa lúc vội. Gỡ hết biện pháp cùng lúc: tấn công quay lại không biết bước nào làm nó quay lại.',
+      p: 'Danh sách dải IP Cloudflare phải cập nhật ở cả firewall lẫn nginx. Diễn tập tốn thời gian của cả đội. Hạ nhiệt từng bước kéo dài một đến hai giờ, người dùng chịu challenge lâu hơn.'
+    },
+    deep: [
+      {
+        q: 'Khách ở 113.161.45.7 gửi request, sao nginx lại ghi 172.70.142.31?',
+        a: `<p>Vì có hai kết nối TCP, không phải một. Kết nối thứ nhất: trình duyệt của khách → edge Cloudflare. Kết nối thứ hai: edge Cloudflare → nginx. Nginx chỉ thấy kết nối thứ hai, nên địa chỉ nguồn là IP của edge. Cloudflare chuyển IP khách sang bằng một header:</p>
+<pre class="mono" style="font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:pre-wrap">Kết nối TCP: 172.70.142.31:41822 → 192.0.2.50:443
+GET /products/tai-nghe-pro-x HTTP/1.1
+Host: shopviet.vn
+CF-Connecting-IP: 113.161.45.7</pre>
+<p>Dùng Tunnel thì kết nối thứ hai là từ <code>cloudflared</code> trên cùng máy, nên nginx thấy <code>127.0.0.1</code>. README: mọi rate limit, log, ban IP ở origin đều sai cho đến khi khôi phục IP thật. Hình chính tính đúng điều này cho bốn đường vào.</p>`,
+        take: 'Sau proxy, IP nguồn của kết nối là IP của proxy. IP của khách là một header, và header thì ai cũng gửi được.'
+      },
+      {
+        q: 'Header ai cũng gửi được, vậy realip tin header thế nào cho an toàn?',
+        a: `<p>Nó không tin header, nó tin <b>bên mở kết nối</b>. <code>set_real_ip_from</code> liệt kê nguồn được phép khai IP: chỉ khi <code>$realip_remote_addr</code> nằm trong danh sách, nginx mới lấy <code>CF-Connecting-IP</code>. Kẻ tấn công kết nối thẳng từ 45.83.12.9 kèm <code>CF-Connecting-IP: 1.2.3.4</code>: 45.83.12.9 không thuộc dải Cloudflare nên header bị bỏ qua, <code>$remote_addr</code> vẫn là 45.83.12.9.</p>
+<p>Hai cách làm hỏng điều này:</p>
+<ul><li><code>set_real_ip_from 0.0.0.0/0</code>: tin mọi nguồn. Kẻ tấn công khai IP gì cũng được, mỗi request một IP ngẫu nhiên là né mọi rate limit theo IP, hoặc khai IP của khách thật để khách bị ban.</li>
+<li>Origin vẫn nhận kết nối từ internet: README nhắc "chỉ tin CF-Connecting-IP khi request thực sự đến từ Cloudflare", vì vậy cần firewall B1. Đúng dải nhưng zone Cloudflare của kẻ tấn công vẫn mang IP Cloudflare (Bài 3).</li></ul>
+<p>Thử trong hình chính: chọn "Kẻ tấn công đánh thẳng origin" với cấu hình "tin mọi nguồn", rồi bật firewall B1.</p>`,
+        take: 'Tin header chỉ an toàn khi danh sách nguồn được tin đúng bằng dải Cloudflare, và chỉ Cloudflare mở được kết nối tới cổng web.'
+      },
+      {
+        q: 'Danh sách dải IP Cloudflare dán một lần là xong, sao README cứ nhắc kiểm tra lại?',
+        a: `<p>Vì danh sách nằm ở hai chỗ (firewall cf_guard và <code>set_real_ip_from</code>) và Cloudflare có thể thay đổi nó. Nếu một phần edge bắt đầu kết nối từ dải bạn chưa có, hai chuyện xảy ra cùng lúc với đúng phần traffic đó: firewall drop kết nối (khách thấy 521/522 lúc có lúc không), hoặc nếu firewall cho qua thì realip không tin dải đó và log ghi IP Cloudflare. Lỗi chỉ ảnh hưởng một phần khách, nên khó tìm. Kéo phần traffic đi qua dải chưa có trong danh sách (giả định):</p>`,
+        viz(box) {
+          let share = 5, fwStale = true, rlStale = true;
+          const out = el('div');
+          function draw() {
+            const s = share / 100;
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Khách gặp 52x do firewall <b class="${fwStale && s ? 'bad' : 'ok'}">${fwStale ? pct(s) : '0%'}</b></span><span>Request ghi sai IP trong log <b class="${!fwStale && rlStale && s ? 'bad' : 'ok'}">${!fwStale && rlStale ? pct(s) : '0%'}</b></span>` }),
+              fwStale && s ? noteBox('bad', `${pct(s)} kết nối từ edge mới bị cf_guard drop. Vì sao: script tạo bảng từ danh sách lúc chạy, không tự cập nhật. Không có nghĩa là origin quá tải. Trong hệ thống thật: chạy lại cf-only.sh định kỳ (nó thay toàn bộ bảng trong một transaction, chạy lại bao nhiêu lần cũng được) và dừng nếu tải danh sách thất bại.`)
+                : !fwStale && rlStale && s ? noteBox('warn', `${pct(s)} request có $remote_addr là IP Cloudflare: rate limit ở nginx gộp chúng theo edge. Cập nhật set_real_ip_from cùng lúc với firewall.`) : noteBox('ok', 'Hai danh sách cùng cập nhật: không có phần traffic nào bị xử lý khác.'));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Traffic qua dải mới', 0, 30, 1, share, (v) => { share = v; draw(); }, (v) => v + '%').node, chk('Firewall chưa cập nhật', fwStale, (v) => { fwStale = v; draw(); }), chk('set_real_ip_from chưa cập nhật', rlStale, (v) => { rlStale = v; draw(); })]), out);
+          draw();
+        },
+        take: 'Một danh sách dùng ở hai chỗ thì cập nhật bằng một script cho cả hai, chạy định kỳ.'
+      },
+      {
+        q: 'Gõ https://192.0.2.50 thì nginx trả certificate shopviet.vn, có sao đâu?',
+        a: `<p>Có: đó là một chỗ lộ IP (Bài 3, B3). Máy quét Internet như Censys, Shodan kết nối tới mọi IP, ghi lại certificate trả về. Certificate chứa <code>shopviet.vn</code> là đủ để tìm "IP nào phục vụ shopviet.vn" mà không cần lịch sử DNS. Nguyên nhân: kết nối không có SNI (tên miền trong bắt tay TLS) hoặc có SNI lạ rơi vào server mặc định, mà server mặc định lại là site thật. Chọn cách quét:</p>`,
+        viz(box) {
+          let sni = 'none', guard = false;
+          const out = el('div');
+          function draw() {
+            const known = sni === 'shopviet.vn';
+            const ans = known ? 'certificate shopviet.vn (đúng, vì đã biết tên miền)' : guard ? 'bắt tay TLS bị từ chối (ssl_reject_handshake on)' : 'certificate shopviet.vn (server mặc định là site thật)';
+            const leak = !known && !guard;
+            out.replaceChildren(preBox(esc(`curl -vk https://192.0.2.50/${sni === 'none' ? '' : '  (SNI: ' + sni + ')'}\n→ ${ans}`)),
+              leak ? noteBox('bad', 'Máy quét không biết tên miền mà vẫn nhận certificate shopviet.vn: IP này được gắn với domain trong cơ sở dữ liệu của họ. Trong hệ thống thật: server mặc định 443 với ssl_reject_handshake on, cổng 80 return 444; kiểm tra bằng curl -vk từ máy ngoài.')
+                : known ? noteBox('warn', 'Ai đã biết tên miền và IP thì vẫn nhận certificate: ssl_reject_handshake chống máy quét dò tên, không thay được firewall B1.') : noteBox('ok', 'Máy quét không nhận được gì để gắn IP với domain.'));
+          }
+          box.append(el('div', { class: 'row' }, [select('SNI máy quét gửi', [['none', 'Không có SNI (quét theo IP)'], ['random.example', 'Tên lạ'], ['shopviet.vn', 'shopviet.vn (đã biết)']], sni, (v) => { sni = v; draw(); }).node, chk('Server mặc định có ssl_reject_handshake on', guard, (v) => { guard = v; draw(); })]), out);
+          draw();
+        },
+        take: 'Server mặc định không được là site thật. Mọi thứ trả về cho một IP trần đều là dữ liệu cho máy quét.'
+      },
+      {
+        q: 'limit_req rate=20r/s burst=40 nodelay nghĩa là một IP được bao nhiêu request?',
+        a: `<p>Nginx dùng leaky bucket: mỗi khoá có một "mức vượt" (excess). Mỗi request cộng 1, thời gian trôi trừ đi <code>rate × giây</code>. Mức vượt lớn hơn <code>burst</code> thì request bị từ chối với mã <code>limit_req_status</code>. <code>nodelay</code> nghĩa là request trong burst được phục vụ ngay thay vì xếp hàng giãn ra. README đặt <code>limit_req_status 429</code> vì mặc định là 503, dễ nhầm với origin sập. Lab mô phỏng một khoá gửi một loạt dồn rồi gửi đều (đơn giản hoá theo mô tả thuật toán của nginx):</p>`,
+        viz(box) {
+          let burstN = 60, steady = 25;
+          const out = el('div');
+          function draw() {
+            const ts = [];
+            for (let i = 0; i < burstN; i++) ts.push(i * 0.001);
+            for (let t = 1; t < 6; t += 1 / steady) ts.push(t);
+            const r = limitReq(ts, 20, 40);
+            out.replaceChildren(hbars([['Được phục vụ', r.ok, false], ['Bị trả 429', r.rej, true]], { max: ts.length, fmt: (v) => fmt(v) }),
+              el('div', { class: 'stat', html: `<span>Tổng request <b>${fmt(ts.length)}</b></span><span>Tới cùng một lúc, qua được tối đa <b>41</b> (1 + burst 40)</span>` }),
+              steady > 20 ? noteBox('warn', `Gửi đều ${steady} r/s &gt; rate 20 r/s: mức vượt tăng dần tới burst rồi bị chặn đều đặn, khoảng ${steady - 20} request mỗi giây.`) : noteBox('ok', 'Gửi đều dưới rate: sau loạt đầu, mức vượt giảm dần về 0.'));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Loạt dồn cùng lúc', 1, 120, 1, burstN, (v) => { burstN = v; draw(); }).node, slider('Sau đó gửi đều (r/s)', 1, 60, 1, steady, (v) => { steady = v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Một khoá = một $binary_remote_addr. Nếu khoá là IP edge Cloudflare thay vì IP khách, "một khoá" là hàng trăm khách cộng lại.' }));
+          draw();
+        },
+        take: '20 r/s là quá rộng cho một người và quá hẹp cho một edge Cloudflare. Con số chỉ có nghĩa khi khoá là IP thật.'
+      },
+      {
+        q: 'README bảo thiếu realip thì nginx chặn khách thật, nhưng thử hình chính với 30 edge lại không ai bị chặn. README sai à?',
+        a: `<p>Không sai, nhưng chỉ đúng khi một khoá gánh quá 20 r/s. Chưa có realip thì khoá là IP edge, nên mỗi khoá nhận <code>tổng request/giây ÷ số edge</code>. Flash sale của lab là 240 r/s: chia cho 30 edge còn 8 r/s mỗi khoá, dưới 20 r/s nên limit_req không chặn ai; chia cho 6 edge là 40 r/s mỗi khoá, gấp đôi rate, chặn gần hết. Dùng Tunnel mà thiếu <code>127.0.0.1</code> thì chỉ có một khoá gánh cả 240 r/s. Kéo số khách để thấy ranh giới dịch chuyển:</p>`,
+        viz(box) {
+          let n = 300;
+          const out = el('div');
+          function draw() {
+            const rows = [[30, 'edge'], [12, 'edge'], [6, 'edge'], [3, 'edge'], [1, 'loop']].map(([e, m]) => { const r = flashSecond(n, m, e); return { e, m, r, rate: (r.ok + r.rej) / 10 / r.keys }; });
+            out.replaceChildren(el('div', { style: 'overflow-x:auto', html: `<table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:460px"><tr>${th('Khoá limit_req')}${th('Số khoá')}${th('r/s mỗi khoá')}${th('Khách bị chặn')}</tr>` + rows.map((x) => `<tr>${td(x.m === 'loop' ? 'Tunnel, thiếu 127.0.0.1' : 'IP edge, ' + x.e + ' edge')}${td(x.r.keys, 'font-family:var(--mono)')}${td(x.rate.toFixed(1).replace('.', ','), `font-family:var(--mono);color:var(--${x.rate > 20 ? 'bad' : 'ok'})`)}${td(fmt(x.r.hurt) + ' / ' + fmt(n), `font-family:var(--mono);color:var(--${x.r.hurt / n > 0.05 ? 'bad' : 'ok'})`)}</tr>`).join('') + '</table>' }),
+              noteBox('warn', 'Đỏ ở cột r/s nghĩa là khoá vượt rate 20 r/s; từ đó trở đi khách bị chặn hàng loạt. Cùng một cấu hình nginx, kết quả lật từ "không ai" sang "gần hết" chỉ vì traffic dồn vào ít edge hơn hoặc đông khách hơn. Trong hệ thống thật: bạn không điều khiển được biến đó, nên coi "thiếu realip" là lỗi, không phải rủi ro nhỏ.'));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Số khách', 20, 1000, 20, n, (v) => { n = v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Synthetic: mỗi khách 4 request mỗi 5 giây, request rơi ngẫu nhiên vào một edge. Số edge là giả định của lab, không phải số edge thật của Cloudflare.' }));
+          draw();
+        },
+        take: 'Thiếu realip không phải lúc nào cũng chặn khách ngay; nó chặn khi tải mỗi edge vượt rate, tức đúng lúc đông khách nhất.'
+      },
+      {
+        q: 'Tấn công đã dừng, gỡ hết các biện pháp một lượt cho khách đỡ khó chịu được không?',
+        a: `<p>README: gỡ theo thứ tự ngược, mỗi bước chờ 15–30 phút xem có tái phát: (1) tắt Under Attack toàn zone, (2) rule Block rộng chuyển sang Managed Challenge rồi disable (chưa xoá), (3) bỏ cache rule TTL ngắn tạm thời, (4) bật lại tính năng đã tắt. Gỡ từng bước để nếu tấn công quay lại, bạn biết bước nào để lộ ra, và các lớp còn lại vẫn đang đỡ. Kẻ tấn công thường đổi pattern hoặc thử lại khi thấy bị chặn. Kéo thời điểm tấn công quay lại:</p>`,
+        viz(box) {
+          let wait = 20, back = 50, allAtOnce = false;
+          const STEPS = ['Under Attack Mode toàn zone', 'Rule Block rộng (ASN / quốc gia)', 'Cache rule TTL ngắn', 'Tính năng nặng đã tắt (search, export)'];
+          const out = el('div');
+          function draw() {
+            const offAt = STEPS.map((_, i) => allAtOnce ? 0 : i * wait);
+            const still = STEPS.filter((_, i) => back < offAt[i]);
+            const gone = STEPS.filter((_, i) => back >= offAt[i]);
+            const last = gone.length ? gone[gone.length - 1] : null;
+            out.replaceChildren(el('div', { html: `<table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr>${th('Biện pháp')}${th('Gỡ ở phút')}${th('Lúc tấn công quay lại (phút ' + back + ')')}</tr>` + STEPS.map((s, i) => `<tr>${td(s)}${td(offAt[i], 'font-family:var(--mono)')}${td(back < offAt[i] ? 'vẫn bật' : 'đã gỡ', `color:var(--${back < offAt[i] ? 'ok' : 'warn'})`)}</tr>`).join('') + '</table>' }),
+              allAtOnce ? noteBox('bad', 'Gỡ tất cả cùng lúc: tấn công quay lại gặp một zone không còn lớp nào, và bạn không biết biện pháp nào đã giữ được nó. Phải bật lại từ đầu, quay về A1.')
+                : still.length ? noteBox('ok', `Tấn công quay lại khi ${still.length} biện pháp vẫn đang bật. Biện pháp vừa gỡ gần nhất (${esc(last || 'chưa gỡ gì')}) là nghi phạm đầu tiên: bật lại nó, giữ nguyên phần còn lại.`)
+                  : noteBox('warn', 'Mọi bước đã gỡ trước khi tấn công quay lại: các rule đã disable (chưa xoá) bật lại được bằng một cú bấm. Nếu đã xoá thì phải viết lại giữa sự cố.'));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Chờ giữa các bước', 15, 30, 5, wait, (v) => { wait = v; draw(); }, (v) => v + ' phút').node, slider('Tấn công quay lại ở phút', 0, 120, 5, back, (v) => { back = v; draw(); }).node, chk('Gỡ tất cả cùng lúc', false, (v) => { allAtOnce = v; draw(); })]), out);
+          draw();
+        },
+        take: 'Hạ nhiệt từng bước biến "tấn công quay lại" từ một sự cố mới thành một phép thử cho biết lớp nào đang thực sự đỡ.'
+      },
+      {
+        q: 'Xong rồi, việc gì trong 1–3 ngày sau là bắt buộc chứ không phải "nên làm"?',
+        a: `<p>Hai việc có hạn chót thật:</p>
+<ul><li><b>IP đã lộ thì đổi, ngay cả khi tấn công đã dừng.</b> README: IP đó đã nằm trong danh sách của kẻ tấn công. Đợt sau không cần tìm lại.</li>
+<li><b>Giữ lại rule có giá trị lâu dài ở trạng thái tắt sẵn</b> (UA rỗng vào API, rate limit login): lần sau bật bằng một cú bấm. Xoá đi là lần sau viết lại lúc đang vội, và Free chỉ có 5 custom rule nên phải chọn kỹ.</li></ul>
+<p>Còn lại là để lần sau nhanh hơn: post-mortem (mốc thời gian, signature, rule nào hiệu quả, rule nào chặn nhầm, mất bao lâu từ phát hiện tới ổn), hoàn thiện danh sách chuẩn bị (hình chính, phần dưới), và nếu tấn công lặp lại lớn thì cân nhắc nâng plan: Business cho rate limiting đủ dùng và Waiting Room; Enterprise cho Advanced Rate Limiting, Bot Management, Magic Transit.</p>`,
+        take: 'Ghi mốc thời gian mọi thay đổi ngay trong lúc xử lý (A6). Post-mortem không có mốc thời gian chỉ là cảm giác.'
+      },
+      {
+        q: 'Lần sau gặp một triệu chứng lạ giữa sự cố, tra nguyên nhân ở đâu cho nhanh?',
+        a: `<p>Phụ lục 3 gom các triệu chứng hay gặp. Phần lớn là hệ quả của chính biện pháp vừa bật, không phải của tấn công. Chọn triệu chứng:</p>`,
+        viz(box) {
+          const T = [
+            ['Đã bật Under Attack nhưng origin vẫn quá tải', 'Traffic đánh thẳng vào IP origin', 'Nhánh B (Bài 3)'],
+            ['App mobile, webhook, health check hỏng sau khi bật Under Attack', 'Challenge không vượt được với client không phải trình duyệt', 'Configuration Rule tắt I\'m Under Attack cho path API, hoặc thay bằng rule R1'],
+            ['Custom rule không khớp request nào', 'Sai cú pháp (starts_with, set có dấu phẩy), path phân biệt hoa thường, sai hostname', 'Xem bảng lỗi expression (Bài 4); thử expression trên dashboard'],
+            ['Request khớp rule nhưng không bị chặn', 'Có rule Skip hoặc IP Access Rule Allow đứng trước', 'Xem Security Events: rule nào đã xử lý request'],
+            ['Rate limiting không chặn', 'Botnet trải rộng, mỗi IP dưới ngưỡng; counter tính riêng từng data center', 'Chặn theo signature (A3)'],
+            ['Người dùng thật bị rate limit hàng loạt ở Cloudflare', 'Ngưỡng thấp, nhiều người sau cùng một NAT', 'Tăng ngưỡng; Business+ dùng IP có hỗ trợ NAT'],
+            ['Người dùng thật bị rate limit hàng loạt ở nginx', 'nginx đếm theo IP Cloudflare hoặc 127.0.0.1', 'Cấu hình realip hoặc tắt rate limit ở nginx'],
+            ['Origin trả 521 ngay sau khi chạy script firewall', 'Đang dùng Tunnel nhưng chạy script allowlist, hoặc dải IP tải thiếu', 'nft list table inet cf_guard; với Tunnel dùng lệnh đóng 80/443'],
+            ['Googlebot bị chặn, traffic SEO giảm', 'Rule chặn rộng thiếu not cf.client.bot', 'Thêm điều kiện, rà lại rule tạm'],
+            ['WebSocket qua Tunnel lỗi bad handshake', 'Super Bot Fight Mode chặn Definitely automated', 'Để nhóm đó ở Allow'],
+            ['Không thêm được rule mới', 'Hết quota rule của plan (Free: 5 custom, 1 rate limit)', 'Sửa rule cũ; gộp điều kiện bằng or'],
+            ['Tấn công quay lại ngay sau khi đổi IP', 'Chưa bịt chỗ lộ', 'B3 (Bài 3)']
+          ];
+          let i = 6;
+          const out = el('div');
+          function draw() {
+            const [s, c, f] = T[i];
+            const self = [1, 5, 6, 7, 8, 9].includes(i);
+            out.replaceChildren(el('div', { html: `<table style="border-collapse:collapse;font-size:13px;width:100%"><tr>${th('Nguyên nhân khả dĩ')}${td(esc(c))}</tr><tr>${th('Xử lý')}${td(esc(f))}</tr></table>` }),
+              noteBox(self ? 'warn' : 'mute', self ? 'Triệu chứng này do biện pháp phòng thủ gây ra, không phải do tấn công. Gỡ hoặc sửa biện pháp đó, đừng thêm biện pháp mới.' : 'Triệu chứng này cho biết tấn công đi đường khác hoặc rule chưa đúng chỗ.'));
+          }
+          box.append(select('Triệu chứng', T.map((x, k) => [k, x[0]]), i, (v) => { i = +v; draw(); }).node, out);
+          draw();
+        },
+        take: 'Một nửa bảng Phụ lục 3 là lỗi do chính mình gây ra khi phòng thủ. Mỗi biện pháp bật lên cần một câu "nó có thể chặn nhầm ai?".'
+      }
+    ],
+    poc: {
+      goal: "Đọc khối <code>set_real_ip_from</code>, <code>real_ip_header</code> và <code>limit_req</code> trong README, tính <code>$remote_addr</code> theo luật của module realip cho 4 đường vào × 5 cấu hình, rồi chạy thuật toán leaky bucket của <code>limit_req</code> (chép theo mã nguồn nginx: đơn vị phần nghìn request, mili-giây) trên 10 giây flash sale synthetic.",
+      file: "docs/under-attack/pocs/05_prepare_cooldown.py",
+      run: "uv run docs/under-attack/pocs/05_prepare_cooldown.py",
+      needs: "Python chuẩn, dưới 1 giây. Không chạy nginx; cấu hình đọc từ README. Dữ liệu là synthetic; POC không chạm firewall hay mạng thật.",
+      output: "Đọc từ README: 24 dòng set_real_ip_from, real_ip_header CF-Connecting-IP, zone {'perip': '20r/s', 'login': '5r/m'}, burst {'perip': 40, 'login': 5}\n\n=== $remote_addr nginx thấy (khách thật là 113.161.45.7)\nđường vào                             chưa cấu hình realip  README (CF v4+v6 + loopback)  chỉ dải CF IPv4      thiếu 127.0.0.1, ::1  tin mọi nguồn 0.0.0.0/0, ::/0\n------------------------------------  --------------------  ----------------------------  -------------------  --------------------  -----------------------------\nQua Cloudflare, edge IPv4             172.70.142.31         113.161.45.7                  113.161.45.7         113.161.45.7          113.161.45.7\nQua Cloudflare, edge IPv6             2a06:98c0:3600::103   113.161.45.7                  2a06:98c0:3600::103  113.161.45.7          113.161.45.7\nQua Tunnel (cloudflared → 127.0.0.1)  127.0.0.1             113.161.45.7                  127.0.0.1            127.0.0.1             113.161.45.7\nĐánh thẳng origin, tự đặt header      45.83.12.9            45.83.12.9                    45.83.12.9           45.83.12.9            1.2.3.4\n\n=== 10 giây flash sale, 300 khách, mỗi lượt xem = 4 request; limit_req zone=perip rate=20r/s burst=40 nodelay\ncấu hình                                   số khoá  request  bị 429  khách bị chặn\n-----------------------------------------  -------  -------  ------  -------------\nrealip đúng: khoá = IP khách               300      2400     0       0/300\nchưa realip: khoá = IP edge, 30 edge       30       2400     0       0/300\nchưa realip: khoá = IP edge, 12 edge       12       2400     1       1/300\nchưa realip: khoá = IP edge, 6 edge        6        2400     956     290/300\nchưa realip: khoá = IP edge, 3 edge        3        2400     1675    300/300\nTunnel, thiếu 127.0.0.1: khoá = 127.0.0.1  1        2400     2157    300/300\n2.400 request / 10 giây = 240 request/giây. Chưa realip thì mỗi IP edge gánh 240 / số edge: dưới 20 r/s thì gần như không ai bị chặn.\n\n=== Bot 1 IP gửi 50 request/giây trong 10 giây\nREADME         | qua Cloudflare                       | lọt 240 / 500 | số khoá 1\nREADME         | đánh thẳng, đổi header mỗi request   | lọt 240 / 500 | số khoá 1\ntin mọi nguồn  | qua Cloudflare                       | lọt 240 / 500 | số khoá 1\ntin mọi nguồn  | đánh thẳng, đổi header mỗi request   | lọt 500 / 500 | số khoá 500\n\n=== location = /login: zone login rate=5r/m burst=5 (nginx lưu rate 83 phần nghìn request/giây)\nBot 1 request/giây trong 60 giây   lọt 10 / 60\nNgười gõ sai 3 lần trong 20 giây   lọt 3 / 3\nRút ra: thiếu realip thì khách dùng chung khoá IP edge, bị chặn hay không tuỳ request/giây dồn lên mỗi edge; Tunnel thiếu 127.0.0.1 thì mọi khách chung một khoá và bị chặn hết. Tin mọi nguồn thì kẻ đánh thẳng đổi header mỗi request để có khoá mới và không bao giờ bị chặn. Cấu hình đọc từ README; nginx không chạy, request là synthetic.",
+      measured: true,
+      read: ["Bảng realip: cấu hình README cho ra IP khách ở cả 3 đường hợp lệ và giữ IP kẻ tấn công khi hắn tự đặt header. \"Chỉ dải CF IPv4\": khách qua edge IPv6 hiện IP edge. Thiếu loopback: khách qua Tunnel hiện 127.0.0.1. Tin mọi nguồn: header giả 1.2.3.4 được tin.", "Flash sale 240 request/giây: realip đúng thì 0 khách bị chặn. Chưa realip thì tuỳ số IP edge: 30 hay 12 edge gần như không sao, 6 edge chặn 290/300 khách; Tunnel thiếu 127.0.0.1 chặn 300/300. Câu \"chặn luôn người dùng thật\" của README đúng khi mỗi edge gánh quá 20 r/s.", "Bot 50 r/s: lọt 240 / 500 (41 nhờ burst + 20 r/s × 10 s). Với cấu hình tin mọi nguồn, kẻ đánh thẳng đổi header mỗi request có 500 khoá riêng và lọt 500 / 500.", "Zone login 5r/m: nginx lưu 83 phần nghìn request/giây; bot 1 r/s chỉ lọt 10 / 60, người gõ sai 3 lần lọt cả 3."]
+    },
+    mount(stage) {
+      const o = { route: 'cf', conf: 'none', fw: false, n: 300, edges: 8 };
+      const done = { dns: true, origin: false, ssh: false, ipnew: false, nginx: false, token: false, rules: false, alert: true, base: false, isp: false, drill: false };
+      const trap = { lreq: true, bfm: false };
+      const reqBox = el('div'), varBox = el('div'), rlBox = el('div'), notes = el('div'), scoreBox = el('div'), scoreNotes = el('div');
+      function draw() {
+        const x = realip(o.route, o.conf, o.fw);
+        const r = ROUTES[o.route];
+        reqBox.replaceChildren(preBox(esc(`Kết nối TCP: ${r.src} → ${r.src === '127.0.0.1' ? '127.0.0.1:8080 (cloudflared → nginx)' : '192.0.2.50:443'}\nGET /api/cart HTTP/1.1\nHost: shopviet.vn\nCF-Connecting-IP: ${r.hdr}`)));
+        const ns = [];
+        if (x.dropped) {
+          varBox.innerHTML = '';
+          ns.push(['ok', 'Firewall B1 drop kết nối từ 45.83.12.9 trước khi tới nginx: header giả không bao giờ được đọc.']);
+        } else {
+          const isCust = x.remote === CUST, isAtt = r.direct;
+          varBox.innerHTML = `<table style="border-collapse:collapse;font-size:12.5px;width:100%;margin-top:6px"><tr>${th('Biến')}${th('Giá trị')}${th('Nghĩa')}</tr>
+<tr>${td('<code>$realip_remote_addr</code>')}${td(esc(x.realRemote), 'font-family:var(--mono)')}${td('Ai mở kết nối TCP tới nginx')}</tr>
+<tr>${td('Nguồn được tin?')}${td(x.trusted ? 'có, khớp ' + esc(x.trusted) : 'không', `color:var(--${x.trusted ? 'ok' : 'mute'})`)}${td('So $realip_remote_addr với set_real_ip_from')}</tr>
+<tr>${td('<code>$remote_addr</code>')}${td(esc(x.remote), `font-family:var(--mono);color:var(--${isAtt ? (x.remote === r.src ? 'ok' : 'bad') : isCust ? 'ok' : 'bad'})`)}${td('IP nginx dùng cho log, allow/deny, limit_req')}</tr></table>`;
+          if (!isAtt && !isCust) ns.push(['bad', `$remote_addr là ${esc(x.remote)}, không phải khách ${CUST}. ${o.conf === 'none' ? 'Chưa cấu hình realip.' : o.route === 'cf6' && o.conf === 'v4only' ? 'Edge kết nối bằng IPv6 mà set_real_ip_from chỉ có dải IPv4.' : o.route === 'tunnel' ? 'Dùng Tunnel mà set_real_ip_from thiếu 127.0.0.1 / ::1.' : ''} Hệ quả: limit_req ở nginx đếm theo IP này, gộp mọi khách đi cùng đường (xem thanh bên dưới).`]);
+          if (isAtt && x.remote !== r.src) ns.push(['bad', `Kẻ tấn công từ ${r.src} được ghi là ${esc(x.remote)}: nginx tin header từ nguồn không phải Cloudflare. Đổi header mỗi request là né mọi rate limit theo IP, hoặc khai IP khách thật để khách bị ban. Trong hệ thống thật: set_real_ip_from chỉ dải Cloudflare + firewall B1.`]);
+          if (isAtt && x.remote === r.src) ns.push([o.fw ? 'ok' : 'warn', 'Header giả bị bỏ qua vì 45.83.12.9 không thuộc nguồn được tin. Nhưng kết nối vẫn tới được nginx: bật firewall B1 để nó không tới nữa.']);
+          if (isCust) ns.push(['ok', `nginx thấy đúng khách ${CUST}; log $realip_remote_addr cho biết request đi qua ${r.src === '127.0.0.1' ? 'Tunnel' : 'edge Cloudflare ' + r.src}.`]);
+        }
+        notes.replaceChildren(...ns.map(([k, h]) => noteBox(k, h)));
+        const keyMode = (() => { if (o.route === 'spoof') return null; const y = realip(o.route, o.conf, false); return y.remote === CUST ? 'cust' : o.route === 'tunnel' ? 'loop' : 'edge'; })();
+        if (keyMode) {
+          const cur = flashSecond(o.n, keyMode, o.edges), good = flashSecond(o.n, 'cust', o.edges);
+          const tot = cur.ok + cur.rej;
+          rlBox.replaceChildren(el('h4', { text: `limit_req zone=perip rate=20r/s burst=40 nodelay, ${o.n} khách trong 10 giây`, style: 'margin:12px 0 6px;font-size:13px' }),
+            hbars([['Cấu hình đang chọn: bị 429', cur.rej, true], ['Nếu realip đúng: bị 429', good.rej, false]], { max: Math.max(1, tot), fmt: (v) => fmt(v) + ' / ' + fmt(tot) }),
+            el('div', { class: 'stat', html: `<span>Khoá limit_req <b>${fmt(cur.keys)}</b></span><span>Khách bị ảnh hưởng <b class="${cur.hurt ? 'bad' : 'ok'}">${fmt(cur.hurt)} / ${fmt(o.n)}</b></span><span>Tốc độ mỗi khoá <b>${(tot / 10 / cur.keys).toFixed(1).replace('.', ',')} r/s</b></span>` }),
+            keyMode === 'loop' && cur.hurt ? noteBox('bad', `Tunnel thiếu 127.0.0.1 trong set_real_ip_from: cả ${fmt(o.n)} khách chung đúng một khoá 127.0.0.1, ${fmt(cur.hurt)} / ${fmt(o.n)} bị chặn (POC: 300/300). Khác với trường hợp edge, ở đây không có "may mắn được chia đều": mọi request qua Tunnel đều tới từ cloudflared trên cùng máy.`) : null,
+            keyMode === 'edge' && cur.hurt / o.n < 0.05 ? noteBox('warn', `Chưa có realip mà ${cur.hurt ? 'gần như ' : ''}không khách nào bị chặn. Chuyện gì xảy ra: ${fmt(o.n)} khách chia đều cho ${fmt(cur.keys)} IP edge, mỗi edge gánh ${(tot / 10 / cur.keys).toFixed(1).replace('.', ',')} r/s, dưới rate 20 r/s. Vì sao: limit_req chỉ chặn khi một khoá vượt 20 r/s (cộng 40 burst), nó không biết khoá là một người hay một edge. Không có nghĩa là bỏ qua realip được: kéo "Số edge" về 6 (POC: 290/300 khách bị chặn) hoặc tăng "Số khách" là cùng cấu hình đó chặn gần hết; log và lệnh ban IP vẫn nhắm vào IP Cloudflare. Trong hệ thống thật: bạn không chọn được số edge hay lưu lượng mỗi edge, nên README nói chưa có realip thì đừng bật rate limit ở nginx.`) : null,
+            trap.lreq && cur.hurt ? noteBox('bad', `Rate limit theo IP ${keyMode === 'loop' ? '127.0.0.1' : 'Cloudflare'}: ${fmt(cur.keys)} khoá gánh ${fmt(o.n)} khách, ${pct(cur.rej / tot)} request bị 429 dù không có kẻ tấn công nào trong mô phỏng này. Vì sao: mỗi khoá là ${keyMode === 'loop' ? 'mọi khách qua Tunnel' : 'mọi khách đi qua cùng một edge'}. Không có nghĩa là limit_req sai: con số 20r/s được chọn cho một người. Trong hệ thống thật (README A5): chưa cấu hình realip thì đừng bật rate limit ở nginx.`) : null);
+        } else rlBox.replaceChildren();
+        const missing = CHECK.filter(([k]) => !done[k]);
+        const score = CHECK.length - missing.length;
+        scoreBox.replaceChildren(hbars([['Đã chuẩn bị', score, true]], { max: CHECK.length, fmt: (v) => v + ' / ' + CHECK.length }),
+          missing.length ? el('div', { style: 'overflow-x:auto', html: `<table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:520px;margin-top:6px"><tr>${th('Còn thiếu')}${th('Bước runbook bị ảnh hưởng')}${th('Chuyện gì xảy ra khi sự cố tới')}</tr>` + missing.map(([, t, s, c]) => `<tr>${td(esc(t))}${td(esc(s), 'font-family:var(--mono)')}${td(esc(c))}</tr>`).join('') + '</table>' }) : null);
+        const sn = [];
+        if (trap.lreq && !done.nginx) sn.push(['bad', 'Đã bật limit_req ở nginx nhưng chưa có realip: đúng tình huống của ShopViet ở trên, rate limit theo IP Cloudflare (hoặc 127.0.0.1 khi dùng Tunnel) chặn khách thật.']);
+        if (trap.lreq && done.nginx && keyMode && keyMode !== 'cust') sn.push(['warn', 'Bảng ghi "nginx lấy IP thật" nhưng cấu hình đang chọn ở trên chưa trả về IP khách cho đường này. Kiểm tra bằng access log, đừng tin checklist.']);
+        if (trap.bfm) sn.push(['warn', 'Bot Fight Mode (Free) bật khi có API công khai / app: có thể challenge app và không chừa ra được bằng custom rule. README: kiểm tra kỹ trước khi bật.']);
+        if (!done.origin && !done.dns) sn.push(['bad', 'Origin không được bảo vệ và còn record DNS-only: kịch bản Bài 3 gần như chắc chắn. Hai mục này đáng làm trước mọi mục khác.']);
+        if (!missing.length) sn.push(['ok', 'Đủ 11 mục. Lần diễn tập tiếp theo: đo lại thời gian mỗi bước.']);
+        scoreNotes.replaceChildren(...sn.map(([k, h]) => noteBox(k, h)));
+      }
+      const checklist = el('div', { class: 'cols', style: 'gap:2px 14px;margin:6px 0' }, CHECK.map(([k, t]) => chk(t, done[k], (v) => { done[k] = v; draw(); })));
+      stage.append(el('h4', { text: 'Một request, bốn đường vào, năm cấu hình realip', style: 'margin:0 0 8px' }),
+        el('div', { class: 'row' }, [
+          select('Đường vào', Object.entries(ROUTES).map(([k, v]) => [k, v.t]), o.route, (v) => { o.route = v; draw(); }).node,
+          select('realip', Object.entries(CONFS).map(([k, v]) => [k, v.t]), o.conf, (v) => { o.conf = v; draw(); }).node,
+          chk('Firewall B1 (chỉ Cloudflare vào 80/443)', false, (v) => { o.fw = v; draw(); })]),
+        reqBox, varBox, notes,
+        el('div', { class: 'row', style: 'margin-top:10px' }, [slider('Số khách', 20, 1000, 20, o.n, (v) => { o.n = v; draw(); }).node, slider('Số edge Cloudflare', 1, 30, 1, o.edges, (v) => { o.edges = v; draw(); }).node]),
+        rlBox,
+        el('h4', { text: 'Bảng chấm điểm chuẩn bị (Phụ lục 2)', style: 'margin:20px 0 4px' }), checklist,
+        el('div', { class: 'row' }, [chk('Đã bật limit_req ở nginx', true, (v) => { trap.lreq = v; draw(); }), chk('Bật Bot Fight Mode, có API công khai / app', false, (v) => { trap.bfm = v; draw(); })]),
+        scoreBox, scoreNotes,
+        el('div', { class: 'cap', style: 'font-size:12.5px;color:var(--mute);margin-top:8px', text: 'Giả định của lab: mỗi khách mở một trang (4 request trong khoảng 0,2 giây) mỗi 5 giây; khi không có realip, request rơi ngẫu nhiên vào một trong các edge; limit_req mô phỏng theo mô tả leaky bucket của nginx (đơn giản hoá). IP, header và số khách là synthetic; dải IP Cloudflare và cấu hình nginx lấy từ README.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

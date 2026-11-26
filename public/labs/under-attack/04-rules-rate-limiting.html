@@ -1,0 +1,802 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Under Attack Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-branch-b-origin.html">← Lab trước</a><a href="05-prepare-cooldown.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/under-attack/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fmt = (n) => Math.round(n).toLocaleString('vi-VN');
+  const pct = (x) => Math.round(x * 100) + '%';
+  const noteBox = (kind, html) => el('div', { style: `border-left:3px solid var(--${kind});padding:4px 10px;margin:6px 0;font-size:13px`, html });
+  const chk = (label, on, f) => el('label', { class: 'ctl' }, [el('input', Object.assign({ type: 'checkbox', onchange: (e) => f(e.target.checked) }, on ? { checked: '' } : {})), label]);
+  const preBox = (html) => el('pre', { class: 'mono', style: 'margin:6px 0;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px', html });
+  const td = (h, st = '') => `<td style="border:1px solid var(--line);padding:5px 8px;vertical-align:top;${st}">${h}</td>`;
+  const th = (h) => `<th style="border:1px solid var(--line);padding:5px 8px;text-align:left;background:var(--bg)">${h}</th>`;
+  const PLANS = ['Free', 'Pro', 'Business', 'Enterprise'];
+
+  const CHROME = 'Mozilla/5.0 (Windows NT 10.0) Chrome/131.0';
+  const APP = 'ShopVietApp/5.2 (Android)';
+  const T = 60;
+  const GROUPS = [
+    { k: 'botA', t: 'Bot A, 1 IP (python-requests)', attack: true },
+    { k: 'botB', t: 'Bot B, 1 IP (Go-http-client)', attack: true },
+    { k: 'net', t: 'Botnet 40 IP, UA giả Chrome', attack: true },
+    { k: 'solo', t: 'Khách lẻ, 4G riêng', attack: false },
+    { k: 'office', t: 'Văn phòng 20 người, 1 IP NAT', attack: false },
+    { k: 'cgnat', t: 'App, 60 thuê bao sau CGNAT', attack: false }
+  ];
+  const REQS = (() => {
+    const rnd = seeded(20261127), out = [];
+    const add = (g, t, ip, method, path, ua, colo, cookie, person) => { if (t >= 0 && t < T) out.push({ g, t, ip, method, path, ua, colo, cookie, person }); };
+    for (let i = 0; i < T * 6; i++) add('botA', i / 6, '45.83.12.9', 'POST', '/login', 'python-requests/2.31', 'DC1', false, 'botA');
+    for (let i = 0; i < T * 4; i++) add('botB', i / 4 + 0.1, '45.83.12.10', 'GET', '/api/products', 'Go-http-client/1.1', 'DC1', false, 'botB');
+    for (let n = 0; n < 40; n++) { const off = rnd() * 15, dc = 'DC' + (1 + (n % 3)); for (let t = off; t < T; t += 15) add('net', t, '185.220.' + (10 + n) + '.4', 'POST', '/login', CHROME, dc, false, 'net' + n); }
+    const browse = (g, ip, person, start, gap) => {
+      for (let t = start; t < T; t += gap * (0.7 + rnd() * 0.6)) {
+        add(g, t, ip, 'GET', '/products/tai-nghe-pro-x', CHROME, 'DC1', true, person);
+        for (let j = 1; j <= 3; j++) add(g, t + 0.1 * j + rnd() * 0.2, ip, 'GET', '/api/' + ['cart', 'stock', 'price'][j - 1], CHROME, 'DC1', true, person);
+      }
+    };
+    add('solo', 1.5, '113.161.45.7', 'GET', '/login', CHROME, 'DC1', true, 'solo');
+    add('solo', 6.2, '113.161.45.7', 'POST', '/login', CHROME, 'DC1', true, 'solo');
+    add('solo', 7.8, '113.161.45.7', 'POST', '/login', CHROME, 'DC1', true, 'solo');
+    browse('solo', '113.161.45.7', 'solo', 9, 8);
+    for (let p = 0; p < 20; p++) {
+      const t0 = rnd() * 3;
+      add('office', t0, '14.160.32.5', 'GET', '/login', CHROME, 'DC1', true, 'nv' + p);
+      add('office', t0 + 2 + rnd() * 3, '14.160.32.5', 'POST', '/login', CHROME, 'DC1', true, 'nv' + p);
+      if (rnd() < 0.3) add('office', t0 + 6 + rnd() * 3, '14.160.32.5', 'POST', '/login', CHROME, 'DC1', true, 'nv' + p);
+      browse('office', '14.160.32.5', 'nv' + p, t0 + 8, 9);
+    }
+    for (let u = 0; u < 60; u++) {
+      const off = rnd() * 5;
+      if (u < 10) add('cgnat', rnd() * 10, '27.72.98.200', 'POST', '/login', APP, 'DC1', false, 'tb' + u);
+      for (let t = off; t < T; t += 5) add('cgnat', t, '27.72.98.200', 'GET', '/api/flash-sale/stock', APP, 'DC1', false, 'tb' + u);
+    }
+    return out.sort((a, b) => a.t - b.t);
+  })();
+
+  const EXPR = {
+    login: { t: 'http.request.uri.path eq "/login"', plan: 0, m: (r) => r.path === '/login' },
+    loginpost: { t: 'http.request.uri.path eq "/login" and http.request.method eq "POST"', plan: 2, m: (r) => r.path === '/login' && r.method === 'POST' },
+    api: { t: 'starts_with(http.request.uri.path, "/api/")', plan: 1, m: (r) => r.path.startsWith('/api/') }
+  };
+  const CHAR = {
+    ip: { t: 'IP', plan: 0, key: (r) => r.ip },
+    nat: { t: 'IP có hỗ trợ NAT (_cfuvid)', plan: 2, key: (r) => r.ip + (r.cookie ? '|' + r.person : '') },
+    ippath: { t: 'IP + path', plan: 3, key: (r) => r.ip + '|' + r.path },
+    ua: { t: 'Header User-Agent', plan: 3, key: (r) => r.ua }
+  };
+  const PERIODS = [[10, 0], [60, 1], [120, 2], [300, 2], [600, 2]];
+  const TIMEOUTS = [[10, 0], [60, 1], [600, 1], [3600, 1]];
+  const LIB = /python-requests|Go-http-client|curl\//;
+
+  function run(o) {
+    const st = {}, res = [];
+    const maxCnt = {};
+    for (const r of REQS) {
+      let s = 'pass';
+      if (o.r2 && !r.path.startsWith('/api/') && (r.ua === '' || LIB.test(r.ua))) s = 'custom';
+      else if (EXPR[o.expr].m(r)) {
+        const key = CHAR[o.ch].key(r) + '@' + r.colo;
+        const b = st[key] || (st[key] = { times: [], until: -1 });
+        if (o.action === 'block' && r.t < b.until) s = 'rl';
+        else {
+          b.times.push(r.t);
+          while (b.times.length && b.times[0] <= r.t - o.period) b.times.shift();
+          const c = b.times.length;
+          maxCnt[r.g] = Math.max(maxCnt[r.g] || 0, c);
+          if (c > o.thr) { if (o.action === 'block') { b.until = r.t + o.timeout; s = 'rl'; } else s = r.ua === CHROME ? 'chal' : 'chalfail'; }
+        }
+      }
+      res.push(s);
+    }
+    const G = {};
+    GROUPS.forEach((g) => { G[g.k] = { n: 0, stop: 0, chal: 0, custom: 0, people: new Set(), hurt: new Set(), sec: Array.from({ length: T }, () => [0, 0, 0]) }; });
+    REQS.forEach((r, i) => {
+      const g = G[r.g], s = res[i], sec = g.sec[Math.floor(r.t)];
+      g.n++; g.people.add(r.person);
+      if (s === 'rl' || s === 'chalfail' || s === 'custom') { g.stop++; sec[1]++; g.hurt.add(r.person); if (s === 'custom') g.custom++; }
+      else if (s === 'chal') { g.chal++; sec[2]++; g.hurt.add(r.person); }
+      else sec[0]++;
+    });
+    return { G, maxCnt };
+  }
+
+  const baseCache = new Map();
+  function baseline(exprK, chK, period) {
+    const k = exprK + '|' + chK + '|' + period;
+    if (!baseCache.has(k)) baseCache.set(k, run({ expr: exprK, ch: chK, period, thr: 1e9, action: 'block', timeout: 10, r2: false }).maxCnt);
+    return baseCache.get(k);
+  }
+  const debounce = (f, ms = 150) => { let id; return () => { clearTimeout(id); id = setTimeout(f, ms); }; };
+
+  function grid(G) {
+    const W = 720, LW = 200, H = 24, top = 18, cw = (W - LW) / T;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${top + GROUPS.length * H + 6}`, class: 'canvas', role: 'img', 'aria-label': 'Dòng thời gian request theo từng nhóm' });
+    for (let s = 0; s <= T; s += 10) svg.append(el('text', { x: LW + s * cw, y: 11, 'text-anchor': 'middle', class: 'mute', style: 'font-size:10px', text: s + 's' }));
+    GROUPS.forEach((g, i) => {
+      const y = top + i * H;
+      svg.append(el('text', { x: 2, y: y + 15, style: `font-size:11px;${g.attack ? 'fill:var(--bad)' : ''}`, text: g.t }));
+      const peak = Math.max(1, ...G[g.k].sec.map((c) => c[0] + c[1] + c[2]));
+      G[g.k].sec.forEach(([p, b, c], s) => {
+        const tot = p + b + c;
+        if (!tot) return;
+        const x = LW + s * cw, hh = H - 6, op = 0.35 + 0.65 * (tot / peak);
+        const segs = g.attack ? [[b, 'var(--ok)'], [p, 'var(--bad)']] : [[p, 'var(--ok)'], [c, 'var(--warn)'], [b, 'var(--bad)']];
+        const tip = `${g.t}, giây ${s}: ${tot} request, lọt ${p}, bị chặn ${b}${c ? ', challenge ' + c : ''}`;
+        let yy = y + 2;
+        segs.forEach(([v, col]) => { if (!v) return; const h = hh * v / tot; svg.append(el('rect', { x: x + 0.5, y: yy, width: Math.max(1, cw - 1), height: h, style: `fill:${col};opacity:${op.toFixed(2)}` }, [el('title', { text: tip })])); yy += h; });
+      });
+    });
+    return svg;
+  }
+
+  return {
+    id: 'rules', nav: '4. Rule và rate limit', ref: 'Phụ lục 1',
+    title: 'Rate limit 10 request / 10 giây theo IP: chặn được bot, hay chặn luôn cả văn phòng đang săn sale sau một IP?',
+    hook: 'Chọn expression, cách đếm (characteristic), ngưỡng, chu kỳ và action; lab chạy lại 60 giây request giả lập và đếm bot bị chặn so với khách thật bị chặn.',
+    terms: [
+      ['Expression', 'Điều kiện chọn request, viết bằng Rules language của Cloudflare. Ví dụ http.request.uri.path eq "/login" khớp POST /login nhưng không khớp /login-history.'],
+      ['User-Agent (UA)', 'Header client tự khai mình là phần mềm gì. Chrome gửi "Mozilla/5.0 ... Chrome/131.0"; script Python mặc định gửi "python-requests/2.31". Ai cũng sửa được, nhưng bot lười thường giữ nguyên.'],
+      ['Signature', 'Đặc điểm chỉ request tấn công có, dùng để viết rule chặn. Ví dụ: UA "python-requests" gọi vào trang HTML, hay mọi request đến từ một ASN hosting.'],
+      ['ASN, JA4', 'ASN: số hiệu mạng sở hữu IP (một nhà mạng, một công ty hosting), ví dụ cả dải IP của một nhà cung cấp VPS. JA4: "dấu vân tay" của cách client bắt tay TLS, giống nhau giữa các máy chạy cùng một bot.'],
+      ['Custom rule', 'Rule gồm expression + action, chạy cho từng request. Ví dụ UA chứa "python-requests" vào trang HTML thì Block.'],
+      ['Rate limiting rule', 'Rule đếm số request khớp expression trong một chu kỳ, vượt ngưỡng thì áp action. Ví dụ 10 request / 10 giây / IP vào /login thì Block 10 giây.'],
+      ['Characteristic', 'Đếm theo cái gì: mỗi giá trị có một bộ đếm riêng. Đếm theo IP thì 14.160.32.5 có một bộ đếm, 113.161.45.7 có bộ đếm khác.'],
+      ['Period, ngưỡng, mitigation timeout', 'Period là cửa sổ đếm (10 giây), ngưỡng là số request cho phép trong cửa sổ (10), timeout là thời gian chặn sau khi vượt (10 giây).'],
+      ['Cửa sổ trượt', 'Lúc nào cũng đếm "10 giây vừa qua" tính từ request hiện tại, không reset ở mốc cố định. Lúc 12,3 s thì đếm các request từ 2,3 s tới 12,3 s.'],
+      ['Baseline, quy tắc ×3–5', 'Baseline: mức traffic lúc bình thường. README chọn ngưỡng = số request cao nhất một khoá của người thật đạt trong một chu kỳ, nhân 3–5. Người thật cao nhất 43 request / 10 giây thì ngưỡng 129–215.'],
+      ['NAT, CGNAT', 'Nhiều máy dùng chung một IP công khai. Văn phòng 20 người ra internet bằng 14.160.32.5; nhà mạng di động gom hàng trăm thuê bao sau một IP (Carrier-grade NAT). Với Cloudflare, họ là một IP.'],
+      ['Managed Challenge', 'Cloudflare trả một trang kiểm tra thay vì nội dung; trình duyệt thật tự vượt qua (thường không cần bấm), script không chạy JavaScript thì kẹt. App mobile gọi API nhận HTML thay vì JSON và hỏng.'],
+      ['Data center (colo)', 'Điểm hiện diện của Cloudflare nơi request đi vào. Bộ đếm rate limit nằm riêng ở từng data center, có ID là cf.colo.id.'],
+      ['Bot Fight Mode, Super Bot Fight Mode', 'Tính năng bật/tắt của Cloudflare tự challenge hoặc chặn client nó cho là bot. Bản Free (Bot Fight Mode) không chừa path nào ra được bằng custom rule; bản Pro+ (Super) chỉnh được theo nhóm.'],
+      ['_cfuvid', 'Cookie Cloudflare đặt để tách từng người sau cùng một IP khi dùng characteristic "IP có hỗ trợ NAT" (Business+). Client không giữ cookie bị gộp chung.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> mở flash sale 20:00. Security Analytics cho thấy <code>POST /login</code> tăng vọt: một IP hosting gửi 6 request/giây bằng <code>python-requests</code>, kèm 40 IP khác mỗi IP vài request. Cùng lúc, văn phòng một công ty đối tác (20 người, một IP) và hàng chục khách dùng app trên mạng di động (CGNAT) đang vào săn sale.',
+      scenario: 'Lab dựng 60 giây request giả lập (synthetic, sinh bằng hàm ngẫu nhiên có seed cố định, không phải log thật) cho 6 nhóm: 3 nhóm tấn công, 3 nhóm khách thật. Bạn cấu hình một rate limiting rule (và tuỳ chọn custom rule R2 đứng trước), lab đếm đúng như mô tả: mỗi characteristic + data center một bộ đếm, cửa sổ trượt theo period.',
+      ask: 'Với từng cấu hình, bao nhiêu request tấn công bị chặn, bao nhiêu khách thật bị chặn nhầm? Cấu hình nào cần plan nào?',
+      solves: 'Rate limit theo IP chặn tốt bot ít IP gửi nhiều, nhưng không chạm được botnet trải rộng và dễ chặn nhầm người sau NAT. Ngưỡng phải lấy từ mức cao nhất của người thật nhân 3–5; nhưng trên Free (/login theo IP) văn phòng sau NAT gửi gần bằng bot, nên ngưỡng đó (POC: 129–215) cao hơn cả bot A (61 request / 10 giây) và chặn 0% tấn công. Bot có signature rõ (UA thư viện) nên chặn bằng custom rule. IP có hỗ trợ NAT (Business+) tách được người dùng trình duyệt nhưng không tách được app không giữ cookie.',
+      read: ['Mỗi hàng là một nhóm, mỗi cột là một giây. Hàng đỏ chữ là tấn công.', 'Màu theo kết quả: xanh là tốt (khách lọt qua, bot bị chặn), đỏ là xấu (bot lọt, khách bị chặn), cam là khách bị challenge. Ô đậm là giây có nhiều request.', 'Dòng số liệu: phần trăm request tấn công bị chặn, request khách thật bị chặn, số người thật bị ảnh hưởng, plan tối thiểu.', 'Bảng "đếm cao nhất" so số đếm lớn nhất mỗi nhóm đạt được với ngưỡng; dòng gợi ý ngưỡng tính từ khách thật theo quy tắc ×3–5 của README.', 'Thử: giữ mặc định (Free, /login, 10/10 giây), rồi đổi sang "IP có hỗ trợ NAT" và "POST /login".']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Thứ tự xử lý</h4>
+<p>HTTP DDoS ruleset (luôn bật) → Custom rules → Rate limiting rules → Managed rules (WAF) → Super Bot Fight Mode (Pro+). Chạy độc lập: IP Access Rules, Security Level / Under Attack, Browser Integrity Check, User Agent Blocking, Zone Lockdown, Bot Fight Mode (Free). Block / Challenge ở custom rule dừng các lớp sau và request đó không được rate limiting đếm. Skip bỏ qua được các custom rule còn lại, rate limiting, managed rules, Super Bot Fight Mode, Security Level, Browser Integrity Check; không skip được Bot Fight Mode (Free). IP Access Rule Allow bỏ qua custom rules, rate limiting, managed rules.</p>
+<h4>Action</h4>
+<div class="tbl"><table><tr><th>Action</th><th>Dùng khi</th><th>Ghi chú</th></tr>
+<tr><td>Block</td><td>Signature chắc chắn chỉ khớp tấn công</td><td>Rate limiting tuỳ chỉnh được response (mặc định 429)</td></tr>
+<tr><td>Managed Challenge</td><td>Signature có thể khớp người thật</td><td>Cloudflare khuyến nghị</td></tr>
+<tr><td>JS Challenge</td><td>Cần challenge không tương tác</td><td>Visitor chờ dưới 5 giây</td></tr>
+<tr><td>Interactive Challenge</td><td>Hầu như không</td><td>Người thật phải bấm, tỉ lệ bỏ trang cao</td></tr>
+<tr><td>Skip</td><td>Health check, IP văn phòng, webhook đối tác</td><td>Đặt trước các rule chặn</td></tr>
+<tr><td>Log</td><td>Thử rule trước khi chặn</td><td>Chỉ Enterprise</td></tr></table></div>
+<h4>Rate limiting theo plan</h4>
+<div class="tbl"><table><tr><th></th><th>Free</th><th>Pro</th><th>Business</th><th>Enterprise</th></tr>
+<tr><td>Số rule</td><td>1</td><td>2</td><td>5</td><td>100</td></tr>
+<tr><td>Chu kỳ đếm</td><td>10 giây</td><td>tới 1 phút</td><td>tới 10 phút</td><td>tới ~18 giờ</td></tr>
+<tr><td>Thời gian chặn</td><td>10 giây</td><td>tới 1 giờ</td><td>tới 1 ngày</td><td>tới 1 ngày</td></tr>
+<tr><td>Đếm theo</td><td>IP</td><td>IP</td><td>IP, IP có hỗ trợ NAT</td><td>Nhiều characteristic (header, cookie, ASN, JA4...)</td></tr>
+<tr><td>Field trong expression</td><td>Path, Verified Bot</td><td>+ Host, URI, Query</td><td>+ Method, Source IP, User-Agent</td><td>+ Header, body</td></tr></table></div>
+<p>Free / Pro / Business: action challenge chỉ chạy ở chế độ throttle. Ngưỡng: mức cao nhất một người thật tạo trong một chu kỳ, nhân 3–5. Counter đếm riêng từng data center. Counting expression (Business+) đếm theo điều kiện khác điều kiện áp dụng, ví dụ chỉ đếm response 401. Request rate analysis chỉ có ở Enterprise.</p>
+<h4>Lỗi expression hay gặp</h4>
+<ul><li><code>starts_with</code> là hàm: <code>starts_with(http.request.uri.path, "/api/")</code>.</li><li>Set cách nhau bằng dấu cách: <code>{"POST" "PUT"}</code>.</li><li>Field hiện hành: <code>ip.src.asnum</code>, <code>ip.src.country</code>.</li><li><code>cf.threat_score</code> luôn bằng 0 từ 03/2025.</li><li><code>contains "/login"</code> khớp cả <code>/api/login-history</code>; dùng <code>eq</code>.</li><li><code>matches</code> chỉ có ở Business+.</li><li>Path phân biệt hoa thường; thêm <code>lower(...)</code>. Thêm <code>and not cf.client.bot</code> vào rule chặn rộng.</li></ul>
+<div class="verdict"><b>Điều cần nhớ:</b> rate limiting đếm theo một khoá. Khoá đó gộp ai với ai quyết định bạn chặn bot hay chặn khách. Có signature rõ thì dùng custom rule; rate limit là lưới cho phần không có signature.</div>`,
+    why: {
+      c: 'Custom rule chặn signature rõ (R2: UA thư viện vào trang HTML) trước, vì request bị chặn ở đó không tốn bộ đếm. Rate limit theo IP cho path bị đánh, ngưỡng lấy từ người thật nhân 3–5, bắt đầu cao rồi hạ. Business+ dùng POST /login và IP có hỗ trợ NAT. Challenge cho phần web, Block cho API.',
+      s: 'Ngưỡng thấp "cho chắc": chặn cả văn phòng và CGNAT. Đếm theo header User-Agent: gộp mọi khách Chrome thành một bộ đếm. Managed Challenge trên API: app mobile hỏng. Dựa vào rate limit để chặn botnet trải rộng: mỗi IP dưới ngưỡng, không bao giờ bị chặn.',
+      p: 'Ngưỡng an toàn cho người thật để lọt phần lớn botnet trải rộng. Free chỉ có một rule, 10 giây, không có Method. Muốn tách người sau NAT, đếm theo method hay đếm 401 phải lên Business; đếm theo header, ASN, JA4 phải lên Enterprise.'
+    },
+    deep: [
+      {
+        q: 'Một request tới shopviet.vn đi qua những lớp nào, và ai quyết định trước?',
+        a: `<p>README liệt kê thứ tự: HTTP DDoS ruleset → Custom rules → Rate limiting rules → Managed rules (WAF) → Super Bot Fight Mode. Lớp nào ra action kết thúc (Block, Challenge) thì các lớp sau không chạy. Hệ quả đầu tiên: request đã bị custom rule chặn <b>không được rate limiting đếm</b>. Hệ quả thứ hai: rule Skip phải đặt <b>trước</b> rule chặn mới có tác dụng. Chọn một request và bật/tắt các rule để xem lớp nào quyết định:</p>`,
+        viz(box) {
+          const RQ = [['botA', 'Bot A: POST /login, UA python-requests'], ['office', 'Văn phòng 14.160.32.5: POST /login, Chrome'], ['webhook', 'Webhook đối tác: POST /api/payment-callback, UA Go-http-client'], ['google', 'Googlebot (bot đã xác minh): GET /products']];
+          let rq = 'botA', r0 = false, r2 = true, rl = true, allow = false, bfm = false;
+          const out = el('div');
+          function draw() {
+            const req = { botA: { ip: '45.83.12.9', path: '/login', ua: 'python-requests', lib: true, overRL: true }, office: { ip: '14.160.32.5', path: '/login', ua: 'Chrome', lib: false, overRL: true }, webhook: { ip: '198.51.100.20', path: '/api/payment-callback', ua: 'Go-http-client', lib: true, overRL: false, auto: true }, google: { ip: '66.249.66.1', path: '/products', ua: 'Googlebot', lib: false, overRL: false, vbot: true } }[rq];
+            const steps = [];
+            let done = false;
+            const step = (layer, txt, cls) => { if (done) { steps.push([layer, 'không chạy (đã có quyết định)', 'dim']); return; } steps.push([layer, txt, cls]); if (cls === 'bad' || cls === 'end') done = true; };
+            const ipAllow = allow && req.ip === '14.160.32.5';
+            steps.push(['IP Access Rule (độc lập)', ipAllow ? 'Allow cho 14.160.32.5: bỏ qua custom rules, rate limiting, managed rules' : 'không khớp', ipAllow ? 'ok' : '']);
+            steps.push(['Bot Fight Mode (Free, độc lập)', bfm ? (req.auto ? 'challenge client tự động: webhook hỏng, custom rule Skip không chừa được' : 'cho qua') : 'tắt', bfm && req.auto ? 'bad' : '']);
+            const bfmHit = bfm && req.auto;
+            if (bfmHit) done = true;
+            step('HTTP DDoS ruleset', 'cho qua (đợt này dưới ngưỡng của nó)', '');
+            let skipped = false;
+            if (ipAllow) { steps.push(['Custom rules', 'bỏ qua (IP Access Allow)', 'dim']); steps.push(['Rate limiting', 'bỏ qua (IP Access Allow)', 'dim']); }
+            else {
+              if (r0 && (req.ip === '14.160.32.5' || req.path === '/api/payment-callback')) { step('R0 Skip', 'khớp: bỏ qua các custom rule còn lại và rate limiting', 'ok'); skipped = true; }
+              else if (r0) step('R0 Skip', 'không khớp', '');
+              if (!skipped && r2) { if (!req.path.startsWith('/api/') && req.lib) step('R2 Block UA thư viện', 'khớp: Block', 'end'); else step('R2 Block UA thư viện', req.lib ? 'không khớp: path /api/ được chừa' : 'không khớp', ''); }
+              if (skipped) steps.push(['Rate limiting /login 10/10s/IP', 'bỏ qua (Skip)', 'dim']);
+              else if (rl) { if (req.path === '/login' && req.overRL) step('Rate limiting /login 10/10s/IP', 'đã vượt ngưỡng: Block', req.ip === '14.160.32.5' ? 'bad' : 'end'); else step('Rate limiting /login 10/10s/IP', req.path === '/login' ? 'dưới ngưỡng' : 'không khớp expression', ''); }
+            }
+            step('Managed rules (WAF)', 'cho qua', '');
+            const reached = !done;
+            out.replaceChildren(el('div', { style: 'overflow-x:auto' }, [el('div', { html: `<table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr>${th('Lớp')}${th('Kết quả')}</tr>` + steps.map(([l, t, c]) => `<tr>${td(l)}${td(t, c === 'dim' ? 'color:var(--dim)' : c === 'end' ? 'color:var(--ok)' : c ? `color:var(--${c})` : '')}</tr>`).join('') + '</table>' })]),
+              el('div', { class: 'stat', html: `<span>Tới origin <b class="${(reached && rq !== 'botA') || (!reached && rq === 'botA') ? 'ok' : 'bad'}">${reached ? 'có' : 'không'}</b></span>` }),
+              rq === 'botA' && r2 ? noteBox('ok', 'R2 chặn bot A ở custom rule, nên request này không được rate limiting đếm. Bộ đếm /login của IP 45.83.12.9 không tăng; điều đó không sao, vì bot đã bị chặn.') : null,
+              rq === 'office' && rl && !r0 && !allow ? noteBox('bad', 'Văn phòng bị rate limit chặn: 20 người cùng đăng nhập sau một IP. Thêm R0 Skip cho IP này (đặt đầu tiên), hoặc tăng ngưỡng.') : null,
+              rq === 'webhook' && bfm ? noteBox('bad', 'Bot Fight Mode (Free) không skip được bằng custom rule. README: cách duy nhất để chừa ra là IP Access Rule Allow cho IP đó, hoặc tắt Bot Fight Mode.') : null,
+              allow && rq === 'office' ? noteBox('warn', 'IP Access Allow bỏ qua custom rules, rate limiting và managed rules: nếu IP này bị chiếm, nó có đường đi thẳng. README: dùng cẩn thận.') : null);
+          }
+          box.append(el('div', { class: 'row' }, [select('Request', RQ, rq, (v) => { rq = v; draw(); }).node]),
+            el('div', { class: 'row' }, [chk('R0 Skip (IP văn phòng, webhook)', r0, (v) => { r0 = v; draw(); }), chk('R2 Block UA thư viện', r2, (v) => { r2 = v; draw(); }), chk('Rate limit /login', rl, (v) => { rl = v; draw(); }), chk('IP Access Allow 14.160.32.5', allow, (v) => { allow = v; draw(); }), chk('Bot Fight Mode', bfm, (v) => { bfm = v; draw(); })]), out);
+          draw();
+        },
+        take: 'Thứ tự lớp quyết định ai được đếm và ai được chừa. Skip phải đứng trước; Bot Fight Mode không chừa được bằng Skip.'
+      },
+      {
+        q: 'Expression lưu được, không báo lỗi, sao rule không khớp request nào (hoặc khớp quá nhiều)?',
+        a: `<p>Vì một số lỗi vẫn là expression hợp lệ về cú pháp nhưng sai ý. <code>contains "/login"</code> khớp cả <code>/api/login-history</code>. <code>eq "/login"</code> không khớp <code>/Login</code>, vì so sánh path phân biệt hoa thường, mà ứng dụng chấp nhận <code>/Login</code> thì kẻ tấn công cũng dùng được. Các lỗi khác (<code>starts_with</code> viết như toán tử, dấu phẩy trong set) bị editor từ chối hoặc không như bạn nghĩ. Lab đánh giá năm expression trên sáu path:</p>`,
+        viz(box) {
+          const PATHS = ['/login', '/Login', '/login/', '/api/login-history', '/api/login', '/account/login'];
+          const EX = [
+            ['contains', 'http.request.uri.path contains "/login"', (p) => p.includes('/login')],
+            ['eq', 'http.request.uri.path eq "/login"', (p) => p === '/login'],
+            ['lower', 'lower(http.request.uri.path) eq "/login"', (p) => p.toLowerCase() === '/login'],
+            ['in', 'lower(http.request.uri.path) in {"/login" "/login/"}', (p) => ['/login', '/login/'].includes(p.toLowerCase())],
+            ['sw', 'starts_with(http.request.uri.path, "/api/")', (p) => p.startsWith('/api/')]
+          ];
+          let want = { '/login': true, '/Login': true, '/login/': true, '/api/login-history': false, '/api/login': false, '/account/login': false };
+          const out = el('div');
+          function draw() {
+            const rows = EX.map(([k, t, f]) => {
+              let fp = 0, fn = 0;
+              const cells = PATHS.map((p) => { const m = f(p), w = want[p]; if (m && !w) fp++; if (!m && w) fn++; return td(m ? 'khớp' : '–', `color:var(--${m === w ? 'ok' : 'bad'});font-family:var(--mono)`); }).join('');
+              return { k, html: `<tr>${td('<code>' + esc(t) + '</code>')}${cells}${td(fp + ' thừa, ' + fn + ' sót', `color:var(--${fp + fn ? 'bad' : 'ok'})`)}</tr>`, fp, fn };
+            });
+            out.replaceChildren(el('div', { style: 'overflow-x:auto', html: `<table style="border-collapse:collapse;font-size:12px;width:100%;min-width:640px"><tr>${th('Expression')}${PATHS.map((p) => th('<span class="mono">' + esc(p) + '</span>')).join('')}${th('So với ý muốn')}</tr>` + rows.map((r) => r.html).join('') + '</table>' }),
+              noteBox('warn', 'Ý muốn mặc định: chặn trang đăng nhập web (mọi cách viết hoa thường, có hoặc không dấu / cuối), không chặn API login-history. Xanh là đúng ý, đỏ là sai ý. Bỏ chọn bên dưới để đổi ý muốn.'),
+              noteBox('mute', 'Viết sai cú pháp (editor không nhận hoặc lỗi khi lưu): <code>http.request.uri.path starts_with "/api/"</code> (starts_with là hàm), <code>{"POST", "PUT"}</code> (set không dùng dấu phẩy), <code>ip.geoip.asnum</code> (tên field cũ, nay là <code>ip.src.asnum</code>), <code>matches</code> trên Free / Pro (regex chỉ có ở Business+). Hợp lệ nhưng vô dụng: <code>cf.threat_score gt 10</code>, luôn bằng 0 từ 03/2025.'));
+          }
+          box.append(el('div', { class: 'row' }, PATHS.map((p) => chk('muốn chặn ' + p, want[p], (v) => { want[p] = v; draw(); }))), out);
+          draw();
+        },
+        take: 'Trước khi bật Block, liệt kê vài path nên khớp và không nên khớp, rồi thử expression trên dashboard. Sai ý nguy hiểm hơn sai cú pháp, vì không ai báo lỗi.'
+      },
+      {
+        q: 'Block, Managed Challenge, JS Challenge khác nhau thế nào? Sao challenge làm hỏng app?',
+        a: `<p>Block trả lỗi ngay (rate limiting mặc định 429). Challenge trả về <b>một trang HTML</b> chạy kiểm tra trong trình duyệt; qua rồi trình duyệt nhận cookie <code>cf_clearance</code> và gọi lại request gốc. Ba loại challenge khác nhau ở mức tương tác: JS Challenge không cần bấm, visitor chờ dưới 5 giây; Interactive bắt người bấm; Managed Challenge để Cloudflare tự chọn mức, là action được khuyến nghị.</p>
+<p>App ShopViet gọi <code>GET /api/flash-sale/stock</code> và chờ JSON. Bị challenge, nó nhận về:</p>
+<pre class="mono" style="font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:pre-wrap">HTTP/2 403
+cf-mitigated: challenge
+content-type: text/html; charset=UTF-8
+
+&lt;!DOCTYPE html&gt;&lt;html&gt;... Just a moment...</pre>
+<p>App không có trình duyệt để chạy trang đó, parse JSON lỗi, khách thấy "không tải được". Tương tự với webhook đối tác, health check. README: đừng đặt challenge lên path API mà app mobile hay đối tác gọi; với API dùng Block theo signature hoặc rate limiting. Header <code>cf-mitigated: challenge</code> giúp app nhận ra và báo đúng lỗi trong log.</p>`,
+        take: 'Challenge chỉ dành cho nơi người thật dùng trình duyệt. Với API, câu hỏi là Block hay cho qua, không có lựa chọn ở giữa.'
+      },
+      {
+        q: 'Văn phòng 20 người chỉ là 20 khách, sao rate limit 10 request / 10 giây lại chặn cả văn phòng?',
+        a: `<p>Vì Cloudflare thấy một IP, không thấy 20 người. NAT ở router văn phòng đổi địa chỉ nguồn của mọi máy thành <code>14.160.32.5</code>. Với characteristic "IP", cả văn phòng dùng chung một bộ đếm. Lúc 20:00, mỗi người mở trang đăng nhập (<code>GET /login</code>) rồi gửi form (<code>POST /login</code>): 40 request vào <code>/login</code> trong vài giây. Ở Free không có field Method, nên cả GET lẫn POST đều được đếm. CGNAT của nhà mạng còn nặng hơn: hàng chục, hàng trăm thuê bao sau một IP. Tính thử:</p>`,
+        viz(box) {
+          let n = 20, per = 2, thr = 10;
+          const out = el('div');
+          function draw() {
+            const c = n * per, ok = c <= thr;
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Bộ đếm của IP trong 10 giây <b class="${ok ? 'ok' : 'bad'}">${c}</b></span><span>Ngưỡng <b>${thr}</b></span><span>Người bị chặn <b class="${ok ? 'ok' : 'bad'}">${ok ? 0 : n}</b></span><span>Ngưỡng cần để không chặn <b>≥ ${c}</b></span>` }),
+              ok ? noteBox('ok', 'Dưới ngưỡng. Nhưng thêm vài người nữa là vượt; ngưỡng không có khoảng an toàn.') : noteBox('bad', `Vượt ngưỡng: chặn cả ${n} người trong timeout, kể cả người chỉ gửi ${per} request. Vì sao: bộ đếm gắn với IP, không với người. Không có nghĩa là bỏ rate limit: chỉ là ngưỡng phải tính cho cả nhóm sau NAT. Trong hệ thống thật: ngưỡng = mức cao nhất của người thật × 3–5; Business+ dùng IP có hỗ trợ NAT; IP đối tác quen thì R0 Skip.`));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Số người sau một IP', 1, 200, 1, n, (v) => { n = v; draw(); }).node, slider('Request vào /login mỗi người / 10 giây', 1, 5, 1, per, (v) => { per = v; draw(); }).node, slider('Ngưỡng', 5, 200, 5, thr, (v) => { thr = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Một IP không phải một người. Ngưỡng theo IP phải chịu được nhóm lớn nhất bạn có thể gặp sau một IP.'
+      },
+      {
+        q: 'IP có hỗ trợ NAT tách người sau một IP bằng cách nào, và ai vẫn bị gộp?',
+        a: `<p>Characteristic này (Business+) dùng cookie <code>_cfuvid</code> Cloudflare đặt cho từng client. Bộ đếm là "IP + giá trị cookie", nên 20 trình duyệt trong văn phòng có 20 bộ đếm. README: "Client không giữ cookie sẽ bị gộp chung một bucket."</p>
+<p>Ai không giữ cookie? Script tấn công (thường không), và có thể cả app của bạn nếu HTTP client trong app không lưu cookie (lab giả định app ShopViet không lưu). Trong hình chính, chọn "IP có hỗ trợ NAT": hàng văn phòng chuyển xanh, nhưng hàng app sau CGNAT vẫn đỏ nếu expression là <code>/api/</code> và ngưỡng thấp. Bot thì vẫn bị đếm theo IP như cũ, nên không thoát được bằng cách bỏ cookie.</p>
+<p>Business còn có <b>counting expression</b>: đếm theo điều kiện khác điều kiện áp dụng. Ví dụ áp cho <code>POST /login</code> nhưng chỉ đếm response <code>http.response.code eq 401</code>: người đăng nhập đúng không bị đếm, người đoán mật khẩu sai nhiều lần mới bị chặn.</p>`,
+        take: 'Tách theo cookie chỉ giúp client giữ cookie. Kiểm tra app và đối tác của bạn có giữ cookie không trước khi dựa vào nó.'
+      },
+      {
+        q: 'Vậy ngưỡng bao nhiêu là đúng? Có cách tính không, hay đoán?',
+        a: `<p>README: lấy mức cao nhất một người dùng thật có thể tạo trong một chu kỳ, nhân 3–5; không có số liệu thì bắt đầu cao rồi hạ dần. Request rate analysis (gợi ý ngưỡng) chỉ có ở Enterprise; plan khác tự ước lượng từ Security Analytics lúc bình thường. Lab tính "mức cao nhất của người thật" từ dữ liệu giả lập (không chặn gì, chỉ đếm) cho expression và characteristic bạn chọn, rồi so với bot:</p>`,
+        viz(box) {
+          let ex = 'login', ch = 'ip', per = 10;
+          const out = el('div');
+          function draw() {
+            const m = baseline(ex, ch, per);
+            const legit = Math.max(m.solo || 0, m.office || 0, m.cgnat || 0);
+            const lo = legit * 3, hi = legit * 5;
+            const rows = GROUPS.map((g) => [g.t, m[g.k] || 0, g.attack]);
+            const caught = GROUPS.filter((g) => g.attack && (m[g.k] || 0) > lo);
+            const missed = GROUPS.filter((g) => g.attack && (m[g.k] || 0) > 0 && (m[g.k] || 0) <= lo);
+            const atLo = legit ? run({ expr: ex, ch, period: per, thr: lo, action: 'block', timeout: 10, r2: false }).G : null;
+            const atkAt = atLo ? GROUPS.filter((g) => g.attack).reduce((a, g) => [a[0] + atLo[g.k].stop, a[1] + atLo[g.k].n], [0, 0]) : [0, 1];
+            const botMax = Math.max(...GROUPS.filter((g) => g.attack).map((g) => m[g.k] || 0));
+            const topLegit = GROUPS.filter((g) => !g.attack).reduce((a, g) => ((m[g.k] || 0) > (m[a.k] || 0) ? g : a));
+            out.replaceChildren(hbars(rows.map(([t, v, a]) => [t, v, a]), { fmt: (v) => fmt(v) + ' / ' + per + 's' }),
+              el('div', { class: 'stat', html: `<span>Cao nhất của người thật <b>${legit}</b></span><span>Ngưỡng gợi ý (×3–5) <b>${lo}–${hi}</b></span><span>Cao nhất của bot <b>${botMax}</b></span><span>Tấn công bị chặn ở ngưỡng ${lo} <b class="${atkAt[0] ? 'ok' : 'bad'}">${pct(atkAt[0] / atkAt[1])}</b></span>` }),
+              legit && botMax && botMax <= lo ? noteBox('bad', `Ngưỡng "an toàn" ${lo} chặn ${pct(atkAt[0] / atkAt[1])} tấn công. Chuyện gì xảy ra: người thật cao nhất là ${legit} (${esc(topLegit.t)}), nhân 3 ra ${lo}, cao hơn cả bot mạnh nhất (${botMax} / ${per}s). Vì sao: quy tắc ×3–5 chừa chỗ cho nhóm đông nhất sau một IP, và ở đây nhóm đó gửi gần bằng bot. Không có nghĩa là quy tắc ×3–5 sai: nó làm đúng việc là không chặn khách, chỉ là với khoá này không còn khoảng nào giữa người và bot. Trong hệ thống thật: chặn bot bằng signature (bật R2 trong hình chính), hoặc đổi khoá để người tách khỏi bot${ex === 'login' ? ' (Business: POST /login + IP có hỗ trợ NAT, người thật cao nhất tụt còn 10, ngưỡng 30–50 thấp hơn mức 61 của bot A)' : ''}.`) : null,
+              caught.length ? noteBox('ok', `Với ngưỡng ${lo}, vẫn chặn được: ${caught.map((g) => esc(g.t)).join('; ')}.`) : null,
+              missed.length ? noteBox('warn', `Không chặn được ở ngưỡng an toàn: ${missed.map((g) => esc(g.t)).join('; ')}. Vì sao: mỗi khoá của nhóm này đếm được ít hơn cả nhóm người thật đông nhất. Không có nghĩa là rate limit sai, mà là sai công cụ. Trong hệ thống thật: chặn bằng signature (UA, ASN, path) ở custom rule (A3).`) : null,
+              legit === 0 ? noteBox('warn', 'Không có người thật nào khớp expression này, nên không có baseline. Expression có đúng path đang bị đánh không?') : null);
+          }
+          box.append(el('div', { class: 'row' }, [select('Expression', Object.entries(EXPR).map(([k, v]) => [k, v.t]), ex, (v) => { ex = v; draw(); }).node,
+            select('Đếm theo', Object.entries(CHAR).map(([k, v]) => [k, v.t]), ch, (v) => { ch = v; draw(); }).node,
+            select('Chu kỳ', PERIODS.map(([p]) => [p, p + ' giây']), per, (v) => { per = +v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Thanh màu nhấn là nhóm tấn công. Số đếm là số request lớn nhất một khoá đạt được trong một cửa sổ, trên dữ liệu giả lập 60 giây. POC Python dùng bộ sinh ngẫu nhiên khác nên văn phòng ra 43 (ngưỡng 129–215) thay vì số trong hình; kết luận giống nhau: ngưỡng an toàn vẫn cao hơn bot A (61).' }));
+          draw();
+        },
+        take: 'Ngưỡng an toàn cho người thật là cận dưới không thể hạ thêm. Bot nào nằm dưới cận đó thì phải chặn bằng cách khác.'
+      },
+      {
+        q: 'Botnet gửi tổng cộng vượt ngưỡng rõ ràng, sao không bị chặn?',
+        a: `<p>Hai lý do. Thứ nhất, đếm theo IP mà mỗi IP chỉ gửi vài request: 40 IP × 4 request/phút, không IP nào chạm ngưỡng. Thứ hai, README: counter được đếm <b>riêng tại từng data center</b>, không gộp toàn mạng. Với rule theo IP, điều này ít ảnh hưởng vì traffic của một IP thường đi vào một data center. Nó quan trọng khi đếm theo characteristic mà nhiều client cùng có (header, ASN, JA4: Enterprise với Advanced Rate Limiting; JA4 cần thêm Bot Management). Đó cũng là lý do API bắt khai báo <code>cf.colo.id</code> trong <code>characteristics</code>. Ví dụ của README: rule 100 request / 10 giây theo JA4, botnet gửi 80, 70, 90 vào ba data center:</p>`,
+        viz(box) {
+          const v = [80, 70, 90];
+          let thr = 100;
+          const out = el('div');
+          function draw() {
+            const tot = v.reduce((a, b) => a + b, 0), over = v.filter((x) => x > thr).length;
+            out.replaceChildren(hbars(v.map((x, i) => ['Data center ' + (i + 1), x, x > thr]).concat([['Tổng (không ai đếm)', tot, false]]), { max: Math.max(tot, thr), fmt: (x) => x + ' req' }),
+              el('div', { class: 'stat', html: `<span>Ngưỡng mỗi counter <b>${thr}</b></span><span>Tổng <b>${tot}</b></span><span>Data center chặn <b class="${over ? 'ok' : 'bad'}">${over} / 3</b></span>` }),
+              tot > thr && !over ? noteBox('bad', `Tổng ${tot} đã vượt ${thr}, nhưng không counter nào vượt, nên không bị chặn ở đâu. Vì sao: mỗi data center chỉ thấy phần đi vào nó. Không có nghĩa là rule hỏng. Trong hệ thống thật: botnet trải rộng thì chặn theo signature (A3) thay vì trông vào rate limit.`) : over ? noteBox('ok', `${over} data center vượt ngưỡng và chặn; các data center còn lại vẫn cho qua.`) : noteBox('ok', 'Tổng chưa vượt ngưỡng.'));
+          }
+          box.append(el('div', { class: 'row' }, [0, 1, 2].map((i) => slider('DC ' + (i + 1), 0, 200, 5, v[i], (x) => { v[i] = x; draw(); }).node).concat([slider('Ngưỡng', 20, 300, 10, thr, (x) => { thr = x; draw(); }).node])), out,
+            el('div', { class: 'cap', text: 'Số 80 / 70 / 90 và ngưỡng 100 là ví dụ giả định trong README.' }));
+          draw();
+        },
+        take: 'Rate limit giỏi với ít nguồn gửi nhiều. Với nhiều nguồn gửi ít, nó gần như vô hình.'
+      },
+      {
+        q: 'Trên Free/Pro/Business, chọn challenge thì chỉ "throttle". Throttle khác chặn theo thời lượng chỗ nào?',
+        a: `<p>README: trên Free, Pro, Business, action challenge chỉ chạy ở chế độ throttle, nghĩa là chỉ áp lên <b>phần request vượt ngưỡng</b>; Block thì chặn mọi request của khoá đó trong suốt mitigation timeout. Một IP gửi đều đặn, ngưỡng 10 / 10 giây:</p>`,
+        viz(box) {
+          let rate = 2, to = 10;
+          const out = el('div');
+          function draw() {
+            const ts = []; for (let t = 0; t < 30; t += 1 / rate) ts.push(t);
+            const sim = (mode) => { const w = []; let until = -1, mit = 0; ts.forEach((t) => { if (mode === 'block' && t < until) { mit++; return; } w.push(t); while (w.length && w[0] <= t - 10) w.shift(); if (w.length > 10) { mit++; if (mode === 'block') until = t + to; } }); return mit; };
+            const b = sim('block'), th2 = sim('throttle');
+            out.replaceChildren(hbars([['Block, timeout ' + to + 's', b, false], ['Challenge (throttle)', th2, true]], { max: ts.length, fmt: (x) => x + ' / ' + ts.length }),
+              el('div', { class: 'cap', text: `30 giây, ${ts.length} request. Thanh là số request bị chặn hoặc challenge. Lab đếm trong cửa sổ trượt 10 giây, request bị chặn không được đếm thêm (giả định đơn giản hoá).` }),
+              b > th2 ? noteBox('warn', `Block chặn ${b} request, throttle chỉ challenge ${th2}: throttle để phần dưới ngưỡng đi qua. Với bot, phần đó vẫn tới origin. Với người thật, throttle nhẹ tay hơn.`) : noteBox('ok', 'Hai cách như nhau ở tốc độ này.'));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Request / giây của IP', 0.5, 6, 0.5, rate, (v) => { rate = v; draw(); }).node, select('Timeout (Block)', [[10, '10 giây (Free)'], [60, '60 giây (Pro+)'], [600, '10 phút (Pro+)']], to, (v) => { to = +v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Block theo thời lượng là chặn kẻ gửi; throttle là cắt phần vượt. Đợt tấn công cần cái đầu, flash sale đông người hợp cái sau.'
+      },
+      {
+        q: 'Dashboard đơ giữa sự cố. Thêm rule qua API thế nào cho khỏi xoá mất rule cũ?',
+        a: `<p>README chuẩn bị sẵn API token với quyền <b>Zone → WAF → Edit</b> (và <b>Zone Settings → Edit</b> cho Under Attack). Mỗi loại rule nằm trong ruleset entrypoint của một <b>phase</b>: custom rules ở <code>http_request_firewall_custom</code>, rate limiting ở <code>http_ratelimit</code>. Lấy ID entrypoint bằng GET, rồi <code>POST .../rulesets/$ID/rules</code> để <b>thêm</b> một rule. Không dùng <code>PUT .../phases/&lt;phase&gt;/entrypoint</code> khi đã có rule: lệnh đó thay toàn bộ rule của phase. Entrypoint chưa tồn tại thì GET trả 404. Dựng body từ lựa chọn của bạn:</p>`,
+        viz(box) {
+          let path = '/login', period = 10, req = 10, to = 10, action = 'block';
+          const out = el('div');
+          function draw() {
+            const plan = Math.max(PERIODS.find((p) => p[0] === period)[1], action === 'block' ? TIMEOUTS.find((p) => p[0] === to)[1] : 0);
+            const body = { description: 'incident: ' + path.replace(/^\//, '') + ' flood', expression: `http.request.uri.path eq "${path}"`, action, ratelimit: Object.assign({ characteristics: ['cf.colo.id', 'ip.src'], period, requests_per_period: req }, action === 'block' ? { mitigation_timeout: to } : {}) };
+            const json = JSON.stringify(body, null, 2);
+            out.replaceChildren(preBox(esc(`curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets/$RATELIMIT_RULESET_ID/rules" \\\n  -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \\\n  --data '${json}'`)),
+              el('div', { class: 'stat', html: `<span>Plan tối thiểu <b>${PLANS[plan]}</b></span><span>Characteristics <b class="mono">cf.colo.id, ip.src</b></span>` }),
+              action !== 'block' ? noteBox('warn', 'Challenge trên Free / Pro / Business chỉ chạy throttle, nên lab bỏ mitigation_timeout khỏi body. Và nhớ: challenge làm hỏng API.') : null,
+              noteBox('mute', 'README: tạo rate limiting rule qua API phải khai báo <code>cf.colo.id</code> trong characteristics (bộ đếm nằm theo data center). Rule Skip qua API: <code>"action": "skip", "action_parameters": { "phases": ["http_ratelimit"] }</code>; bỏ qua các custom rule còn lại thì <code>{ "ruleset": "current" }</code>.'));
+          }
+          box.append(el('div', { class: 'row' }, [select('Path', [['/login', '/login'], ['/search', '/search'], ['/api/cart', '/api/cart']], path, (v) => { path = v; draw(); }).node,
+            select('Period', PERIODS.map(([p, pl]) => [p, p + ' giây (' + PLANS[pl] + '+)']), period, (v) => { period = +v; draw(); }).node,
+            slider('requests_per_period', 5, 200, 5, req, (v) => { req = v; draw(); }).node,
+            select('mitigation_timeout', TIMEOUTS.map(([p, pl]) => [p, p + ' giây (' + PLANS[pl] + '+)']), to, (v) => { to = +v; draw(); }).node,
+            select('Action', [['block', 'block'], ['managed_challenge', 'managed_challenge']], action, (v) => { action = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Lưu sẵn token, Zone ID và ID các entrypoint ở nơi đội trực mở được khi dashboard không vào được. POST để thêm, không PUT.'
+      }
+    ],
+    poc: {
+      goal: "Mô phỏng rate limiting kiểu Cloudflare trên 2.062 request synthetic trong 60 giây (3 nhóm tấn công, 3 nhóm khách thật gồm văn phòng NAT và CGNAT): mỗi characteristic + data center một bộ đếm, cửa sổ trượt, Block có timeout hoặc challenge throttle. Thêm hai thí nghiệm: cửa sổ cố định so với trượt, và bộ đếm riêng từng data center với số 80 / 70 / 90 của README.",
+      file: "docs/under-attack/pocs/04_rules_rate_limiting.py",
+      run: "uv run docs/under-attack/pocs/04_rules_rate_limiting.py",
+      needs: "Python chuẩn, dưới 1 giây. Cách Cloudflare đếm thật là xấp xỉ, có thể lệch; POC không gọi Cloudflare. Dữ liệu là synthetic; POC không chạm firewall hay mạng thật.",
+      output: "=== 60 giây synthetic: 2062 request, 6 nhóm\nnhóm                           loại        request\n-----------------------------  ----------  -------\nBot A, 1 IP (python-requests)  tấn công    360\nBot B, 1 IP (Go-http-client)   tấn công    240\nBotnet 40 IP, UA giả Chrome    tấn công    160\nKhách lẻ, 4G riêng             khách thật  31\nVăn phòng 20 người, 1 IP NAT   khách thật  541\nApp, 60 thuê bao sau CGNAT     khách thật  730\n\n=== Đếm cao nhất của mỗi nhóm trong 1 cửa sổ 10 giây (không chặn gì) → ngưỡng gợi ý ×3–5 của README\npath eq \"/login\"                       theo IP               botA=61 botB=0 net=1 solo=3 office=43 cgnat=10 | người thật cao nhất 43 → ngưỡng 129–215\npath eq \"/login\" and method eq \"POST\"  theo IP có hỗ trợ NAT botA=61 botB=0 net=1 solo=2 office=2 cgnat=10 | người thật cao nhất 10 → ngưỡng 30–50\nstarts_with(path, \"/api/\")             theo IP               botA=0 botB=41 net=0 solo=6 office=87 cgnat=121 | người thật cao nhất 121 → ngưỡng 363–605\n\n=== Một rate limiting rule, nhiều cấu hình, cùng dòng request\ncấu hình                                       tấn công bị chặn  req khách bị chặn  khách bị challenge  người bị ảnh hưởng  botnet bị chặn  plan\n---------------------------------------------  ----------------  -----------------  ------------------  ------------------  --------------  ----------\nFree mặc định: /login, IP, 10/10s, Block 10s   39.7%             34                 0                   20/81               0               Free\nNhư trên + custom rule R2 (UA thư viện) trước  47.4%             34                 0                   20/81               0               Free\nFree, ngưỡng 129 (người thật cao nhất × 3)     0.0%              0                  0                   0/81                0               Free\nBusiness: POST /login, IP có hỗ trợ NAT        39.7%             0                  0                   0/81                0               Business\nPro: /api/, IP, 10/10s                         25.0%             982                0                   80/81               0               Pro\nEnterprise: /login, đếm theo User-Agent        45.9%             39                 0                   21/81               47              Enterprise\nFree, Managed Challenge (throttle)             46.1%             0                  34                  20/81               0               Free\nPro: /login, IP, Block 600s                    46.1%             34                 0                   20/81               0               Pro\n\n=== Cửa sổ trượt và cửa sổ cố định: 10 request lúc 9,5–9,9 s và 10 request lúc 10,0–10,4 s, ngưỡng 10 / 10 s\nfixed   : 20 / 20 request lọt trong chưa tới 1 giây\nsliding : 10 / 20 request lọt trong chưa tới 1 giây\n\n=== Bộ đếm riêng từng data center (ví dụ README: 80 / 70 / 90 request vào 3 DC, ngưỡng 100 / 10 s, đếm theo JA4)\nĐếm theo từng DC: chặn 0 / 240 (counter cao nhất 90). Nếu đếm gộp toàn mạng: chặn 140.\nRút ra: rate limit theo IP chặn bot ít IP gửi nhiều nhưng không chạm botnet trải rộng. Trên Free, ngưỡng an toàn ×3 (129) còn cao hơn cả bot A, nên không tách được bot A khỏi văn phòng sau NAT; R2 (signature) hoặc Business (POST + IP có hỗ trợ NAT) mới tách được. Mọi request là synthetic, không có gì gửi tới Cloudflare.",
+      measured: true,
+      read: ["Dòng baseline: với <code>/login</code> theo IP, văn phòng 20 người đạt 43 request / 10 s, nên ngưỡng ×3–5 của README là 129–215, cao hơn cả bot A (61). Hàng \"Free, ngưỡng 129\" chặn 0% tấn công: trên Free không có ngưỡng nào vừa chặn bot A vừa tha văn phòng.", "Free mặc định 10/10 s chặn 39,7% tấn công nhưng 20/81 người thật bị ảnh hưởng (cả văn phòng). Business POST /login + IP có hỗ trợ NAT: cùng 39,7% mà 0 người bị chạm.", "Botnet 40 IP chỉ bị chặn khi đếm theo User-Agent (Enterprise), và khi đó 21 người thật bị gộp chung bộ đếm Chrome. Rule <code>/api/</code> theo IP chặn nhầm 982 request, 80/81 người (CGNAT và văn phòng).", "Cửa sổ cố định để lọt 20/20 request trong chưa tới 1 giây quanh mốc 10 s; cửa sổ trượt chỉ 10. Ví dụ README 80 / 70 / 90 vào 3 data center, ngưỡng 100: chặn 0; nếu đếm gộp sẽ chặn 140."]
+    },
+    mount(stage) {
+      const o = { expr: 'login', ch: 'ip', period: 10, thr: 10, timeout: 10, action: 'block', r2: false };
+      const svgBox = el('div'), stat = el('div', { class: 'stat' }), notes = el('div'), table = el('div', { style: 'overflow-x:auto;margin-top:10px' });
+      const exprBox = el('div', { class: 'mono', style: 'font-size:12px;margin:4px 0 8px;color:var(--mute)' });
+      function draw() {
+        const { G, maxCnt } = run(o);
+        const base = baseline(o.expr, o.ch, o.period);
+        const legitMax = Math.max(base.solo || 0, base.office || 0, base.cgnat || 0);
+        const plan = Math.max(EXPR[o.expr].plan, CHAR[o.ch].plan, PERIODS.find((p) => p[0] === o.period)[1], o.action === 'block' ? TIMEOUTS.find((p) => p[0] === o.timeout)[1] : 0);
+        exprBox.textContent = 'Expression: ' + EXPR[o.expr].t + '  |  ' + o.thr + ' request / ' + o.period + ' giây / ' + CHAR[o.ch].t + ' → ' + (o.action === 'block' ? 'Block ' + o.timeout + ' giây' : 'Managed Challenge (throttle)');
+        svgBox.replaceChildren(grid(G));
+        const atk = GROUPS.filter((g) => g.attack), leg = GROUPS.filter((g) => !g.attack);
+        const sum = (gs, f) => gs.reduce((a, g) => a + f(G[g.k]), 0);
+        const atkN = sum(atk, (x) => x.n), atkStop = sum(atk, (x) => x.stop);
+        const legN = sum(leg, (x) => x.n), legStop = sum(leg, (x) => x.stop), legChal = sum(leg, (x) => x.chal);
+        const hurt = sum(leg, (x) => x.hurt.size), people = sum(leg, (x) => x.people.size);
+        stat.innerHTML = `<span>Request tấn công bị chặn <b class="${atkStop / atkN > 0.8 ? 'ok' : 'bad'}">${pct(atkStop / atkN)}</b></span><span>Request khách thật bị chặn <b class="${legStop ? 'bad' : 'ok'}">${fmt(legStop)} / ${fmt(legN)}</b></span>${legChal ? `<span>Khách bị challenge <b style="color:var(--warn)">${fmt(legChal)}</b></span>` : ''}<span>Người thật bị ảnh hưởng <b class="${hurt ? 'bad' : 'ok'}">${hurt} / ${people}</b></span><span>Plan tối thiểu <b>${PLANS[plan]}</b></span>`;
+        const ns = [];
+        const hurtG = leg.filter((g) => G[g.k].hurt.size);
+        if (hurtG.length) ns.push(['bad', `Ngưỡng đang chặn khách thật: ${hurtG.map((g) => esc(g.t) + ' (' + G[g.k].hurt.size + ' người)').join('; ')}. Vì sao: ${o.ch === 'ua' ? 'đếm theo User-Agent gộp mọi khách dùng cùng trình duyệt hoặc cùng app vào một bộ đếm.' : 'bộ đếm gắn với khoá ' + esc(CHAR[o.ch].t) + ', nhiều người sau một IP dùng chung bộ đếm, mức cao nhất của người thật là ' + legitMax + ' trong khi ngưỡng là ' + o.thr + '.'} Không có nghĩa là rate limit sai ý tưởng. Trong hệ thống thật: ngưỡng ≥ ${legitMax * 3}–${legitMax * 5} (×3–5 theo README), Business+ dùng IP có hỗ trợ NAT, IP đối tác quen thì R0 Skip.`]);
+        if (legitMax && o.thr >= legitMax * 3 && atkStop / atkN < 0.05) ns.push(['bad', `Ngưỡng ${o.thr} theo quy tắc ×3–5 (người thật cao nhất ${legitMax}) không chạm khách nào, nhưng cũng chỉ chặn ${pct(atkStop / atkN)} tấn công. Vì sao: bot mạnh nhất chỉ đạt ${Math.max(base.botA || 0, base.botB || 0, base.net || 0)} trong một chu kỳ, thấp hơn ngưỡng. Không có nghĩa là nên hạ ngưỡng: hạ xuống dưới ${legitMax} là chặn khách. Trong hệ thống thật: với khoá này không có ngưỡng nào tách được bot khỏi người; dùng custom rule theo signature (R2) hoặc khoá khác (Business+).`]);
+        if (o.ch === 'nat' && G.cgnat.hurt.size) ns.push(['warn', 'Đã dùng IP có hỗ trợ NAT mà app sau CGNAT vẫn bị gộp: lab giả định app không giữ cookie _cfuvid, nên mọi thuê bao rơi vào một bucket.']);
+        if (o.action !== 'block' && G.cgnat.stop) ns.push(['bad', `Managed Challenge chặn ${fmt(G.cgnat.stop)} request của app: app không chạy được trang challenge (nhận HTML thay vì JSON). Trình duyệt thì qua được (cam). README: không đặt challenge lên path API mà app gọi.`]);
+        if (G.net.n && !G.net.stop && (o.expr !== 'api')) ns.push(['warn', `Botnet 40 IP lọt hết ${fmt(G.net.n)} request: mỗi IP chỉ đạt tối đa ${maxCnt.net || 0} trong một chu kỳ${o.ch === 'ua' ? ', và đếm theo UA thì bộ đếm chia theo 3 data center' : ''}. Rate limit theo IP vô dụng với botnet trải rộng; chặn theo signature ở A3.`]);
+        if (o.ch === 'ua' && G.net.stop) ns.push(['warn', 'Đếm theo User-Agent bắt được botnet vì cả 40 IP cùng một UA giả Chrome, nhưng cũng gộp chung mọi khách Chrome thật vào cùng bộ đếm đó.']);
+        const aPass = G.botA.n - G.botA.stop;
+        if (o.action === 'block' && !o.r2 && G.botA.stop && aPass > 30) ns.push(['warn', `Bot A vẫn lọt ${fmt(aPass)} / ${fmt(G.botA.n)} request: hết timeout ${o.timeout} giây, bộ đếm bắt đầu lại và bot gửi tiếp tới khi vượt ngưỡng lần nữa. Không có nghĩa là rule không chạy. Trong hệ thống thật: timeout dài hơn (Pro+), hoặc bot có signature rõ thì chặn hẳn bằng custom rule (bật R2).`]);
+        if (o.expr !== 'api' && !G.botB.stop) ns.push(['warn', 'Bot B đánh /api/products không khớp expression của rule này nên lọt hết. Free chỉ có 1 rate limiting rule: chọn path đang bị đánh nặng nhất.']);
+        if (o.r2 && G.botA.custom) ns.push(['ok', `R2 chặn ${fmt(G.botA.custom)} request của bot A ở custom rule; chúng không được rate limiting đếm. Bot B gọi /api/ nên R2 (chừa API) không chạm tới.`]);
+        if (o.expr === 'login' && G.office.hurt.size) ns.push(['warn', 'Free không có field Method: GET /login (mở trang) cũng bị đếm như POST /login (gửi form). Business+ dùng expression có method eq "POST".']);
+        if (!hurtG.length && atkStop / atkN > 0.8) ns.push(['ok', `Chặn ${pct(atkStop / atkN)} request tấn công mà không chạm khách thật nào. Cần plan ${PLANS[plan]}.`]);
+        notes.replaceChildren(...ns.map(([k, h]) => noteBox(k, h)));
+        table.innerHTML = `<table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:560px"><tr>${th('Nhóm')}${th('Request')}${th('Bị chặn')}${th('Challenge')}${th('Đếm cao nhất / chu kỳ')}${th('So ngưỡng ' + o.thr)}</tr>` + GROUPS.map((g) => {
+          const x = G[g.k], m = base[g.k] || 0, good = g.attack ? x.stop > 0 : !x.hurt.size;
+          return `<tr>${td(esc(g.t), g.attack ? 'color:var(--bad)' : '')}${td(fmt(x.n), 'font-family:var(--mono)')}${td(fmt(x.stop), `font-family:var(--mono);color:var(--${good ? 'ok' : 'bad'})`)}${td(x.chal ? fmt(x.chal) : '–', 'font-family:var(--mono)')}${td(m ? fmt(m) : 'không khớp', 'font-family:var(--mono)')}${td(m > o.thr ? 'vượt' : m ? 'dưới' : '–', m > o.thr ? `color:var(--${g.attack ? 'ok' : 'bad'})` : '')}</tr>`;
+        }).join('') + `</table><p class="hint">Gợi ý ngưỡng theo README (mức cao nhất của người thật ${legitMax} × 3–5): <b>${legitMax * 3}–${legitMax * 5}</b>${o.thr < legitMax ? ' <span style="color:var(--bad)">· ngưỡng hiện tại thấp hơn cả một nhóm người thật</span>' : o.thr < legitMax * 3 ? ' <span style="color:var(--warn)">· ngưỡng hiện tại không có khoảng an toàn ×3</span>' : ''}</p>`;
+      }
+      const drawSoon = debounce(draw);
+      stage.append(el('h4', { text: '60 giây đầu flash sale, 6 nhóm client, một rate limiting rule', style: 'margin:0 0 8px' }),
+        el('div', { class: 'row' }, [
+          select('Expression', [['login', 'path eq "/login" (Free+)'], ['loginpost', '/login và method POST (Business+)'], ['api', 'starts_with path "/api/" (Pro+)']], o.expr, (v) => { o.expr = v; draw(); }).node,
+          select('Đếm theo', Object.entries(CHAR).map(([k, v]) => [k, v.t + ' (' + PLANS[v.plan] + '+)']), o.ch, (v) => { o.ch = v; draw(); }).node,
+          chk('Custom rule R2 trước (UA thư viện vào trang không phải /api/ → Block)', false, (v) => { o.r2 = v; draw(); })]),
+        el('div', { class: 'row' }, [
+          slider('Ngưỡng', 1, 300, 1, o.thr, (v) => { o.thr = v; drawSoon(); }, (v) => v + ' req').node,
+          select('Chu kỳ', PERIODS.map(([p, pl]) => [p, p + ' giây (' + PLANS[pl] + '+)']), o.period, (v) => { o.period = +v; draw(); }).node,
+          select('Action', [['block', 'Block'], ['challenge', 'Managed Challenge (throttle)']], o.action, (v) => { o.action = v; draw(); }).node,
+          select('Timeout', TIMEOUTS.map(([p, pl]) => [p, p + ' giây (' + PLANS[pl] + '+)']), o.timeout, (v) => { o.timeout = +v; draw(); }).node]),
+        exprBox, svgBox,
+        el('div', { class: 'legend', html: '<span><i style="background:var(--ok)"></i>tốt: khách lọt qua, bot bị chặn</span><span><i style="background:var(--bad)"></i>xấu: bot lọt qua, khách bị chặn</span><span><i style="background:var(--warn)"></i>khách bị challenge</span>' }),
+        stat, notes, table,
+        el('div', { class: 'cap', style: 'font-size:12.5px;color:var(--mute);margin-top:8px', text: `Dữ liệu synthetic, ${fmt(REQS.length)} request trong 60 giây, sinh bằng seed cố định. Giả định: bot A ${6} req/s, bot B 4 req/s, mỗi IP botnet 1 request / 15 giây trải 3 data center; mỗi lượt xem trang của người thật = 1 trang + 3 lời gọi /api/; 10 / 60 thuê bao app đăng nhập; app không giữ cookie; mọi khách thật vào data center DC1. Lab đếm trong cửa sổ trượt theo khoá + data center, request đang bị chặn không được đếm thêm; cách đếm thực của Cloudflare là xấp xỉ, có thể lệch.` }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

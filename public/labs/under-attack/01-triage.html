@@ -1,0 +1,757 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Under Attack Lab 01</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="00-workflow.html">← Lab trước</a><a href="02-branch-a-l7.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/under-attack/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const CF4 = ['173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22'];
+  const CF6 = ['2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'];
+  const ORIGIN = '192.0.2.10', ORIGIN6 = '[2001:db8::10]';
+  const fT = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const pct = (x) => (Math.round(x * 1000) / 10).toString().replace('.', ',') + '%';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const ip4n = (s) => s.split('.').reduce((a, x) => a * 256 + Number(x), 0);
+  const v6n = (s) => {
+    const parts = s.split('::');
+    if (parts.length > 2) return null;
+    const hp = parts[0] ? parts[0].split(':') : [], tp = parts.length === 2 && parts[1] ? parts[1].split(':') : [];
+    const fill = 8 - hp.length - tp.length;
+    if ((parts.length === 1 && fill !== 0) || fill < 0) return null;
+    const g = [...hp, ...Array(fill).fill('0'), ...tp];
+    if (!g.every((x) => /^[0-9a-f]{1,4}$/i.test(x))) return null;
+    return g.reduce((a, x) => a * 65536n + BigInt(parseInt(x, 16)), 0n);
+  };
+  const cfRange = (addr) => {
+    const a = String(addr).trim().replace(/^\[|\]$/g, '');
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(a)) {
+      if (a.split('.').some((x) => +x > 255)) return null;
+      const n = ip4n(a);
+      return CF4.find((c) => { const [b, l] = c.split('/'), size = 2 ** (32 - l); return Math.floor(n / size) === Math.floor(ip4n(b) / size); }) || null;
+    }
+    const n = v6n(a);
+    if (n === null) return null;
+    return CF6.find((c) => { const [b, l] = c.split('/'), sh = BigInt(128 - l); return (n >> sh) === (v6n(b) >> sh); }) || null;
+  };
+  const isLocal = (p) => p === '127.0.0.1' || p === '[::1]';
+
+  const SCEN = [
+    ['l7', 'A. HTTP flood đi qua Cloudflare'],
+    ['direct', 'B. Đánh thẳng vào IP origin (HTTP flood + SYN flood + UDP flood)'],
+    ['both', 'Cả hai cùng lúc'],
+    ['tunnel', 'A, nhưng origin dùng Cloudflare Tunnel'],
+    ['normal', 'Flash sale bình thường, không bị tấn công']
+  ];
+  const CF_SPIKE = { l7: true, both: true, tunnel: true, direct: false, normal: false };
+  const LIM = { other: 0.2, syn: 200, util: 0.9 };
+
+  function gen(sc, k) {
+    const rnd = seeded(1000 + k * 37 + SCEN.findIndex((s) => s[0] === sc) * 101);
+    const oct = () => 1 + Math.floor(rnd() * 254);
+    const port = () => 32768 + Math.floor(rnd() * 28000);
+    const hex = () => (1 + Math.floor(rnd() * 65000)).toString(16);
+    const edgeIp = (i) => i % 9 === 8 ? `[2a06:98c0:3600::${hex()}]` : [() => '162.158.' + oct(), () => '172.68.' + oct(), () => '172.70.' + oct(), () => '172.71.' + oct(), () => '141.101.' + (64 + Math.floor(rnd() * 64)), () => '108.162.' + (192 + Math.floor(rnd() * 64)), () => '104.23.' + oct()][Math.floor(rnd() * 7)]() + '.' + oct();
+    const nonCf = () => { for (;;) { const ip = [45, 185, 91, 5, 194, 37, 89, 176, 2, 31][Math.floor(rnd() * 10)] + '.' + oct() + '.' + oct() + '.' + oct(); if (!cfRange(ip)) return ip; } };
+    const weighted = (arr, pow) => { const w = arr.map((_, i) => 1 / Math.pow(i + 1, pow)), tot = w.reduce((a, b) => a + b, 0); return () => { let r = rnd() * tot; for (let i = 0; i < arr.length; i++) { r -= w[i]; if (r <= 0) return arr[i]; } return arr[arr.length - 1]; }; };
+    const edges = Array.from({ length: 36 }, (_, i) => edgeIp(i)), extra = Array.from({ length: 18 }, (_, i) => edgeIp(i + 3));
+    const pickEdge = weighted(edges, 0.9), pickAtkEdge = weighted([...extra.slice(0, 6), ...edges.slice(0, 12), ...extra.slice(6)], 0.7);
+    const bots = Array.from({ length: 150 }, nonCf), pickBot = weighted(bots, 0.6);
+    const conns = [], syn = [];
+    const tunnel = sc === 'tunnel';
+    const viaCf = (kind, picker) => { const loc = rnd() < 0.85 ? '127.0.0.1' : '[::1]'; conns.push({ peer: tunnel ? loc : picker(), port: port(), kind, via: tunnel ? 'local' : 'cf' }); };
+    for (let i = 0; i < 600; i++) viaCf('legit', pickEdge);
+    if (sc === 'l7' || sc === 'both' || sc === 'tunnel') for (let i = 0; i < 300 * k; i++) viaCf('atk', pickAtkEdge);
+    if (sc === 'direct' || sc === 'both') {
+      for (let i = 0; i < 200 * k; i++) conns.push({ peer: pickBot(), port: port(), kind: 'atk', via: 'direct' });
+      for (let i = 0; i < 800 * k; i++) syn.push({ peer: oct() + '.' + oct() + '.' + oct() + '.' + oct(), port: port(), kind: 'atk', via: 'direct' });
+    }
+    const baseSyn = sc === 'tunnel' ? 0 : 3 + Math.floor(rnd() * 6);
+    for (let i = 0; i < baseSyn; i++) syn.push({ peer: tunnel ? '127.0.0.1' : pickEdge(), port: port(), kind: 'legit', via: 'cf' });
+    for (let i = conns.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [conns[i], conns[j]] = [conns[j], conns[i]]; }
+    return { conns, syn };
+  }
+
+  function bandwidth(sc, k, link) {
+    const l7 = sc === 'l7' || sc === 'both' || sc === 'tunnel', dir = sc === 'direct' || sc === 'both';
+    const legitRx = 15, atkRx = (l7 ? 6 * k : 0) + (dir ? 10 * k + 160 * k : 0);
+    const demand = legitRx + atkRx, rx = Math.min(demand, link), tx = Math.min(link, 120 + (l7 ? 4 * k : 0));
+    const avgPkt = (legitRx * 700 + atkRx * 90) / demand;
+    return { demand, rx, tx, util: Math.max(rx, tx) / link, rxkB: rx * 1e6 / 8 / 1024, txkB: tx * 1e6 / 8 / 1024, rxpck: rx * 1e6 / 8 / avgPkt, txpck: tx * 1e6 / 8 / 900, saturated: demand > link };
+  }
+
+  const seenBy = (conns, p8080) => conns.filter((c) => c.via !== 'local' || p8080);
+  const localAddr = (c) => c.via === 'local' ? (c.peer === '[::1]' ? '[::1]:8080' : '127.0.0.1:8080') : (c.peer.startsWith('[') ? ORIGIN6 + ':443' : ORIGIN + ':443');
+
+  function topIPs(conns, syn, noState) {
+    const rows = noState ? [...conns.map((c) => Object.assign({ st: 'ESTAB' }, c)), ...syn.map((c) => Object.assign({ st: 'SYN-RECV' }, c))] : conns;
+    const counts = new Map();
+    rows.forEach((c) => {
+      const f4 = noState ? localAddr(c) : c.peer + ':' + c.port;
+      const ip = f4.replace(/:[0-9]*$/, '');
+      const r = counts.get(ip) || { ip, n: 0, legit: 0, atk: 0 };
+      r.n++; r[c.kind]++;
+      counts.set(ip, r);
+    });
+    return [...counts.values()].sort((a, b) => b.n - a.n).map((r) => Object.assign(r, { cf: cfRange(r.ip), local: isLocal(r.ip), self: r.ip === ORIGIN || r.ip === ORIGIN6 }));
+  }
+
+  function verdict(sc, conns, syn, bw) {
+    const tot = conns.length, cf = conns.filter((c) => cfRange(c.peer)).length, loc = conns.filter((c) => isLocal(c.peer)).length;
+    const other = tot - cf - loc, otherShare = tot ? other / tot : 0;
+    const sig = { cfSpike: CF_SPIKE[sc], other: otherShare > LIM.other, syn: syn.length > LIM.syn, bw: bw.util >= LIM.util };
+    const direct = sig.other || sig.syn || sig.bw;
+    let route, cls;
+    if (sig.cfSpike && direct) { route = 'Cả hai: làm B1 trước (mất 1 phút), rồi sang Nhánh A'; cls = 'bad'; }
+    else if (direct) { route = 'Nhánh B: origin IP đã lộ, bị đánh trực tiếp' + (sig.bw ? '. Băng thông đã gần trần: B1 rồi B2 (gọi nhà cung cấp)' : ''); cls = 'bad'; }
+    else if (sig.cfSpike) { route = 'Nhánh A: tấn công L7 qua Cloudflare'; cls = 'warn'; }
+    else { route = 'Không có dấu hiệu tấn công ở origin. Origin khoẻ thì theo dõi tiếp. Nếu origin vẫn sập mà không tín hiệu nào đỏ: bảng README không có hàng cho ca này, nghĩ tới lỗi app/DB trước (diễn giải của lab, xem Lab 00)'; cls = 'ok'; }
+    return { tot, cf, loc, other, otherShare, sig, route, cls };
+  }
+
+  const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+  const pre = (txt) => el('pre', { class: 'mono', style: 'white-space:pre;overflow-x:auto;font-size:12px;background:var(--bg);padding:8px;border-radius:6px;border:1px solid var(--line);margin:6px 0', text: txt });
+  const sarText = (bw) => {
+    const f = (n) => n.toFixed(2).padStart(10);
+    return 'IFACE     rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil\n' +
+      'eno1' + f(bw.rxpck) + f(bw.txpck) + f(bw.rxkB) + f(bw.txkB) + f(0) + f(0) + f(0) + f(bw.util * 100);
+  };
+
+  return {
+    id: 'triage', nav: '1. Triage', ref: 'Phút 0–2',
+    title: 'Top IP đang giữ kết nối toàn là IP Cloudflare: đó là dấu hiệu tấn công đi qua Cloudflare, không phải danh sách để chặn',
+    hook: 'Chọn một kịch bản. Trình duyệt chạy lại đúng logic ba lệnh của README trên bảng kết nối giả lập: gom theo IP, đối chiếu dải IP Cloudflare, đếm SYN-RECV, đọc băng thông. Thử bấm "Chặn 5 IP đầu bảng" để thấy cái giá của phản xạ sai.',
+    terms: [
+      ['Origin', 'Server thật chạy nginx và ứng dụng ShopViet, ở đây là một máy vật lý. Cloudflare đứng trước nó. Ví dụ: khách gõ shopviet.vn, DNS trả IP Cloudflare, Cloudflare mới mở kết nối tới origin 192.0.2.10 (IP giả lập).'],
+      ['Proxy (orange cloud)', 'Record DNS bật proxy thì khách nói chuyện với Cloudflare, Cloudflare nói chuyện với origin. Origin chỉ thấy IP của Cloudflare, ví dụ 162.158.86.21, không thấy IP của khách.'],
+      ['Kết nối TCP', 'Một đường nối giữa hai địa chỉ IP:port. Ví dụ 192.0.2.10:443 nối với 162.158.86.21:51234. Một IP có thể giữ hàng trăm kết nối cùng lúc.'],
+      ['ss', 'Lệnh Linux liệt kê socket (kết nối mạng) của máy, thay cho netstat cũ. ss -Htn: -H bỏ dòng tiêu đề, -t chỉ TCP, -n in số thay vì tên.'],
+      ['ESTAB (established)', 'Kết nối đã bắt tay xong, đang dùng được. Lệnh top IP của README chỉ đếm loại này.'],
+      ['SYN-RECV (half-open)', 'Kết nối mới đi được nửa đường: máy đã nhận gói SYN và trả SYN-ACK, đang chờ gói ACK cuối. Bình thường chỉ vài cái. Hàng nghìn cái là dấu hiệu SYN flood.'],
+      ['SYN flood', 'Kẻ tấn công gửi ồ ạt gói SYN (thường giả IP nguồn) rồi không bao giờ gửi ACK, để máy giữ đầy hàng đợi kết nối nửa vời.'],
+      ['L7 / HTTP flood', 'Tấn công ở tầng ứng dụng (layer 7): request HTTP trông hợp lệ, ví dụ hàng nghìn GET /search?q=... mỗi giây, làm nghẽn PHP/DB chứ không làm nghẽn đường mạng.'],
+      ['L3/L4', 'Tấn công ở tầng mạng/giao vận: SYN flood, UDP flood. Đánh vào khả năng nhận gói tin, không cần request hợp lệ.'],
+      ['CIDR', 'Cách viết một dải IP. 162.158.0.0/15 nghĩa là 15 bit đầu cố định, còn 17 bit tự do: 2^17 = 131.072 địa chỉ, từ 162.158.0.0 tới 162.159.255.255.'],
+      ['Dải IP Cloudflare', 'Danh sách CIDR Cloudflare công bố ở cloudflare.com/ips. Kết nối từ những dải này là kết nối đã đi qua mạng Cloudflare.'],
+      ['Cloudflare Tunnel (cloudflared)', 'Chương trình chạy trên origin, tự mở kết nối ra Cloudflare. Traffic web đi vào qua đường đó và tới nginx từ chính máy, theo Service URL (ví dụ của README: http://localhost:8080). Ss thấy peer là 127.0.0.1 và port phía máy là 8080, không phải 80/443.'],
+      ['sport', 'Viết tắt source port trong bộ lọc của ss: port phía máy mình. sport = :443 nghĩa là "kết nối mà nginx đang nghe ở 443". Kết nối vào port 8080 không khớp bộ lọc này.'],
+      ['sar -n DEV 1', 'Lệnh của gói sysstat in thống kê từng card mạng mỗi giây. rxkB/s là kilobyte nhận vào mỗi giây; %ifutil là phần trăm công suất card đang dùng.'],
+      ['Mã 52x', 'Trang lỗi 520–524 do Cloudflare sinh ra khi không nói chuyện được với origin. Ví dụ 522: hết thời gian chờ kết nối, thường do origin quá tải.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> mở flash sale lúc 20:00. Origin là một server vật lý (IP giả lập <code>192.0.2.10</code>) chạy nginx, mọi record web đã proxy qua Cloudflare. 20:03 khách báo trang trắng, Cloudflare trả lỗi 522, CPU origin 100%. Bạn là backend dev trực ca, SSH được vào máy.',
+      scenario: 'Trước khi bấm bất cứ thứ gì, README yêu cầu trả lời một câu: traffic tấn công có đi qua Cloudflare không? Ba lệnh trên origin cho dữ liệu: top IP đang giữ kết nối 80/443, số kết nối half-open, băng thông của card mạng. Bảng kết nối, IP và số liệu băng thông trong lab là <b>dữ liệu giả lập</b>, sinh trong trình duyệt theo kịch bản bạn chọn.',
+      ask: 'Đọc output của ba lệnh thế nào? Vì sao danh sách top IP toàn là IP Cloudflare dù rõ ràng đang bị đánh? SYN-RECV nhiều nói lên điều gì? Khi nào firewall trên máy không cứu được nữa?',
+      solves: 'Chạy lại đúng logic pipeline của README trong trình duyệt: <code>awk</code> lấy cột 4 (địa chỉ phía bên kia), <code>sed</code> bỏ port, <code>sort | uniq -c | sort -rn | head -20</code> gom và xếp hạng, rồi đối chiếu từng IP với dải CIDR Cloudflare (các dải README liệt kê). Kết hợp với số SYN-RECV, %ifutil và Analytics Cloudflare để đi tới đúng hàng của bảng quyết định README.',
+      read: [
+        'Khung đầu là vài dòng output thô của <code>ss</code> (giả lập). Bảng bên dưới là kết quả sau cả pipeline: số kết nối, IP, IP đó có thuộc dải Cloudflare không (trình duyệt tính thật bằng CIDR).',
+        'Ba ô tín hiệu: tỉ lệ kết nối không đến từ Cloudflare, số SYN-RECV, %ifutil. Ô chuyển màu khi vượt ngưỡng. Ngưỡng là <b>giả định của lab</b>, trong thực tế so với baseline lúc bình thường của bạn.',
+        'Khung kết luận đi theo bảng "Bạn thấy → Kết luận → Làm tiếp" của README. Khung màu cảnh báo tự hiện khi dữ liệu có bất thường: chuyện gì xảy ra, vì sao, không có nghĩa là gì, và việc nên làm trong hệ thống thật.',
+        'Nút "Bỏ state established" cho thấy một lỗi gõ lệnh hay gặp. Nút "Chặn 5 IP đầu bảng" mô phỏng phản xạ chặn IP bằng firewall và đếm ai bị ảnh hưởng. Nút "Thêm sport = :8080" dùng với kịch bản Tunnel: lệnh README lọc 80/443 nên không thấy cloudflared ở port 8080.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Mọi rule trên Cloudflare chỉ tác dụng với traffic đi qua Cloudflare. Vì vậy phút 0–2 chỉ làm một việc: xác định đường đi của traffic tấn công. Hai nguồn dữ liệu: <b>Security → Analytics</b> của zone (request có tăng vọt cùng lúc với sự cố không) và ba lệnh trên origin.</p>
+<h4>Ba lệnh trên origin (README)</h4>
+<pre class="mono" style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:6px;border:1px solid var(--line)"># Top IP đang giữ kết nối vào 80/443
+ss -Htn state established '( sport = :80 or sport = :443 )' \\
+  | awk '{print $4}' | sed 's/:[0-9]*$//' | sort | uniq -c | sort -rn | head -20
+
+# Số kết nối đang half-open (dấu hiệu SYN flood)
+ss -Htn state syn-recv | wc -l
+
+# Băng thông trên interface, cập nhật mỗi giây
+sar -n DEV 1        # gói sysstat; hoặc: nload, iftop</pre>
+<h4>Bảng quyết định (README)</h4>
+<div class="tbl"><table>
+<tr><th>Bạn thấy</th><th>Kết luận</th><th>Làm tiếp</th></tr>
+<tr><td>Analytics Cloudflare tăng vọt, các kết nối vào origin đều là IP Cloudflare</td><td>Tấn công L7 qua Cloudflare</td><td>Nhánh A</td></tr>
+<tr><td>Analytics Cloudflare bình thường, origin có nhiều kết nối từ IP lạ, nhiều <code>syn-recv</code>, hoặc băng thông đầy</td><td>Origin IP đã lộ, bị đánh trực tiếp</td><td>Nhánh B</td></tr>
+<tr><td>Cả hai</td><td>Làm <b>B1 trước</b> (mất 1 phút), rồi sang Nhánh A</td><td>B1 → A1</td></tr>
+<tr><td>Analytics Cloudflare tăng nhưng origin vẫn khoẻ</td><td>Cloudflare đang chặn tốt</td><td>Theo dõi; làm A2 để chắc chắn, không cần vội</td></tr>
+</table></div>
+<h4>Mã 52x không cho biết đường đi</h4>
+<div class="tbl"><table>
+<tr><th>Mã</th><th>Ý nghĩa</th></tr>
+<tr><td>520</td><td>Origin trả response rỗng hoặc lỗi định dạng</td></tr>
+<tr><td>521</td><td>Origin từ chối kết nối (web server chết, hoặc firewall chặn IP Cloudflare)</td></tr>
+<tr><td>522</td><td>Hết thời gian chờ kết nối tới origin — thường gặp nhất khi origin quá tải</td></tr>
+<tr><td>523</td><td>Không định tuyến được tới origin</td></tr>
+<tr><td>524</td><td>Đã kết nối nhưng origin không trả lời trong 125 giây</td></tr>
+</table></div>
+<ul>
+<li>Sau Cloudflare, origin chỉ thấy IP của Cloudflare. Top IP toàn Cloudflare là <b>bình thường</b> và là dấu hiệu Nhánh A, không phải danh sách để chặn.</li>
+<li>Dùng Tunnel thì kết nối web đến từ <code>cloudflared</code> trên chính máy (localhost); không có kết nối web nào từ ngoài vào. Với Service URL <code>http://localhost:8080</code> như ví dụ README, bộ lọc 80/443 của lệnh top IP trả về <b>rỗng</b>: thêm <code>or sport = :8080</code> nếu muốn thấy kết nối của cloudflared.</li>
+<li>nginx đã cấu hình realip thì log <code>$realip_remote_addr</code> cho biết request đến từ Cloudflare hay từ ngoài.</li>
+</ul>
+<div class="verdict"><b>Nguồn số liệu:</b> ba lệnh, bảng quyết định, bảng mã 52x và danh sách dải IP Cloudflare (bản trong cấu hình nginx realip) lấy từ README. Bảng kết nối, IP, số kết nối, băng thông, tốc độ card mạng và các ngưỡng 20% / 200 / 90% là giả lập của lab.</div>`,
+    why: {
+      c: 'Đọc tín hiệu trước, hành động sau: 2 phút với ba lệnh ss / sar và Analytics Cloudflare đủ để biết đi Nhánh A hay B. Đối chiếu IP với dải Cloudflare bằng CIDR thay vì nhìn bằng mắt.',
+      s: 'Bật Under Attack ngay phút 0: vô tác dụng nếu traffic đánh thẳng vào origin. Chặn top IP bằng firewall: khi top IP là Cloudflare, đó là chặn chính khách hàng của mình. Đọc mã 52x để đoán đường đi: 52x chỉ nói origin đang không trả lời được.',
+      p: 'Mất 1–2 phút trong lúc site đang chết, và cần SSH vào được origin đang quá tải. Ngưỡng "nhiều" chỉ có nghĩa khi bạn đã ghi baseline lúc bình thường (Phụ lục 2).'
+    },
+    deep: [
+      {
+        q: 'Pipeline ss | awk | sed | sort | uniq -c | sort -rn | head làm gì ở từng bước?',
+        a: `<p>Mỗi lệnh nhận output của lệnh trước qua dấu <code>|</code>:</p>
+<ol>
+<li><code>ss -Htn state established '( sport = :80 or sport = :443 )'</code>: liệt kê kết nối TCP đã thiết lập mà <b>port phía máy mình</b> (sport) là 80 hoặc 443. Một dòng: <code>0  0  192.0.2.10:443  162.158.86.21:51234</code> gồm Recv-Q, Send-Q, địa chỉ local, địa chỉ peer.</li>
+<li><code>awk '{print $4}'</code>: lấy cột thứ 4, tức địa chỉ peer <code>162.158.86.21:51234</code>.</li>
+<li><code>sed 's/:[0-9]*$//'</code>: xoá dấu hai chấm và port ở cuối, còn <code>162.158.86.21</code>.</li>
+<li><code>sort | uniq -c</code>: <code>uniq -c</code> chỉ gộp các dòng giống nhau <b>đứng liền nhau</b>, nên phải sort trước. Kết quả: <code>842 162.158.86.21</code>.</li>
+<li><code>sort -rn | head -20</code>: xếp theo số giảm dần, lấy 20 dòng đầu.</li>
+</ol>
+<p>Hình chính chạy đúng các bước này trong trình duyệt trên dữ liệu giả lập. Với IPv6, ss in peer dạng <code>[2a06:98c0:3600::1f]:51234</code>; sed bỏ port nhưng giữ dấu ngoặc vuông, nên khi đối chiếu dải IP phải bỏ ngoặc.</p>`,
+        take: 'Kết quả là "IP nào đang giữ nhiều kết nối nhất tới cổng web", chưa phải "IP nào đang tấn công".'
+      },
+      {
+        q: 'Đang bị đánh mà top 20 toàn là IP Cloudflare. Cloudflare đang tấn công mình à?',
+        a: `<p>Không. Với record đã proxy, khách (và botnet) mở kết nối tới Cloudflare. Cloudflare kết thúc kết nối đó ở data center gần khách, rồi mở <b>kết nối riêng</b> từ máy của nó tới origin. Origin chỉ thấy đầu bên kia là IP của Cloudflare, ví dụ <code>162.158.86.21</code>.</p>
+<p>Một IP Cloudflare gom traffic của hàng nghìn visitor đi qua cùng data center đó, cả khách thật lẫn bot. Vì vậy:</p>
+<ul>
+<li>Top IP toàn Cloudflare là trạng thái <b>bình thường</b> của một site sau Cloudflare.</li>
+<li>Khi kèm Analytics Cloudflare tăng vọt, đây chính là dấu hiệu Nhánh A: tấn công đi qua Cloudflare, phải chặn bằng rule trên Cloudflare, nơi còn thấy IP thật, path, User-Agent, ASN.</li>
+</ul>
+<p>IP thật của visitor nằm trong header <code>CF-Connecting-IP</code>. nginx chỉ dùng được nó sau khi cấu hình realip (Phụ lục 2).</p>`,
+        take: 'Ở origin, IP Cloudflare là "người đưa thư" chứ không phải người gửi. Ai gửi thì xem trên Cloudflare.'
+      },
+      {
+        q: 'Vậy chặn 5 IP Cloudflare đầu bảng bằng firewall cho nhẹ origin thì sao?',
+        a: `<p>Bạn chặn đúng những data center Cloudflare đang phục vụ khách của mình. Visitor đi qua các IP đó nhận lỗi 521/522 từ Cloudflare; bot đi qua data center khác vẫn vào. Bảng dưới lấy kịch bản A ở cường độ 5, chặn 5 IP đầu bảng, đếm kết nối bị cắt theo loại (dữ liệu giả lập có nhãn khách/tấn công, ngoài đời bạn không có nhãn này).</p>`,
+        viz(vb) {
+          const { conns, syn } = gen('l7', 5), top = topIPs(conns, syn, false).slice(0, 5), set = new Set(top.map((r) => r.ip));
+          const legitAll = conns.filter((c) => c.kind === 'legit').length, atkAll = conns.filter((c) => c.kind === 'atk').length;
+          const cutL = top.reduce((a, r) => a + r.legit, 0), cutA = top.reduce((a, r) => a + r.atk, 0);
+          vb.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>IP bị chặn</th><th>Dải Cloudflare</th><th>Kết nối khách</th><th>Kết nối tấn công</th></tr>' +
+            top.map((r) => `<tr><td class="mono">${esc(r.ip)}</td><td class="mono">${r.cf || '-'}</td><td class="mono">${r.legit}</td><td class="mono">${r.atk}</td></tr>`).join('') })]),
+          hbars([['Khách thật bị cắt', cutL / legitAll, true], ['Tấn công bị cắt', cutA / atkAll, false]], { max: 1, fmt: pct }),
+          el('div', { class: 'cap', html: `<span class="bad">${pct(cutL / legitAll)} kết nối của khách thật bị cắt</span>, trong khi ${pct(1 - cutA / atkAll)} kết nối tấn công vẫn còn (${set.size} IP chặn, ${fT(atkAll - cutA)} kết nối tấn công lọt). Không có nghĩa firewall vô dụng: ở Nhánh B, chặn IP lạ chính là việc đầu tiên. Trong hệ thống thật: khi top IP là Cloudflare, chặn ở Cloudflare theo signature (Nhánh A), không đụng firewall origin.` }));
+        },
+        take: 'Chặn IP Cloudflare ở origin là tự cắt đường của khách. Botnet đổi data center dễ hơn khách của bạn.'
+      },
+      {
+        q: 'Half-open là gì, vì sao hàng nghìn SYN-RECV lại nghĩa là bị đánh thẳng vào origin?',
+        a: `<p>Mở một kết nối TCP cần bắt tay ba bước: client gửi <b>SYN</b>, server trả <b>SYN-ACK</b> và ghi kết nối vào hàng đợi ở trạng thái SYN-RECV, client gửi <b>ACK</b> thì kết nối thành ESTAB. SYN flood gửi SYN (thường với IP nguồn giả) và không bao giờ gửi ACK. Mỗi SYN chiếm một chỗ trong hàng đợi cho tới khi hết thời gian chờ.</p>
+<p>Với zone đã proxy, SYN flood nhắm vào domain rơi vào Cloudflare và được Cloudflare tự hấp thụ trên mọi plan (README Nhánh A). Kết nối từ Cloudflare tới origin là kết nối thật, bắt tay xong ngay, lại được dùng lại nhiều lần. Nên số SYN-RECV ở origin chỉ lớn khi có ai đó gửi SYN <b>thẳng vào IP origin</b>.</p>
+<p>Số half-open xấp xỉ bằng tốc độ SYN giả nhân thời gian mỗi cái bị giữ. Kéo thử (cả hai thông số là giả định của lab, không phải mặc định của Linux):</p>`,
+        viz(vb) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { r: 2000, h: 5, q: 4096 };
+          function draw() {
+            const half = st.r * st.h, fill = Math.min(1, half / st.q);
+            out.replaceChildren(hbars([['SYN-RECV ước tính', half, true], ['Sức chứa hàng đợi (giả định)', st.q, false]], { max: Math.max(half, st.q), fmt: fT }));
+            cap.innerHTML = half > st.q ? `<span class="bad">Hàng đợi đầy (${fT(half)} &gt; ${fT(st.q)}).</span> SYN của khách thật và của chính Cloudflare cũng phải tranh chỗ, nên kết nối mới tới origin thất bại và Cloudflare trả 522. Không có nghĩa nginx hay ứng dụng chậm: request còn chưa tới được nginx. Trong hệ thống thật: B1 (chỉ cho Cloudflare vào 80/443); nếu cả đường truyền đã đầy thì B2.`
+              : `Hàng đợi dùng ${pct(fill)}. Vài SYN-RECV là bình thường; điều đáng chú ý là con số so với baseline lúc bình thường.`;
+          }
+          const s1 = slider('SYN giả mỗi giây', 0, 20000, 100, st.r, (v) => { st.r = v; draw(); }, fT);
+          const s2 = slider('Giây bị giữ mỗi half-open', 1, 60, 1, st.h, (v) => { st.h = v; draw(); });
+          vb.append(el('div', { class: 'row' }, [s1.node, s2.node]), out, cap);
+          draw();
+        },
+        take: 'SYN-RECV nhiều ở origin gần như chắc chắn là traffic không đi qua Cloudflare.'
+      },
+      {
+        q: 'Đang SYN flood mà lệnh top IP không thấy IP nào lạ. Lệnh sai à?',
+        a: `<p>Lệnh đúng, nó chỉ không nhìn chỗ đó. <code>state established</code> chỉ lấy kết nối đã bắt tay xong; kết nối SYN-RECV bị loại. Vì thế README tách riêng lệnh <code>ss -Htn state syn-recv | wc -l</code>.</p>
+<p>Còn một lý do nữa: IP nguồn của SYN flood thường là giả, mỗi IP chỉ xuất hiện một lần. Dù có liệt kê chúng ra, danh sách top cũng chỉ toàn số 1. Đếm tổng mới có ý nghĩa, không phải xếp hạng.</p>
+<p>Ngược lại cũng có một lỗi gõ hay gặp: bỏ <code>state established</code> để "lấy hết". Khi không lọc một trạng thái, ss in thêm cột State ở đầu dòng, các cột dịch sang phải, <code>$4</code> thành địa chỉ <b>local</b>. Bấm "Bỏ state established" trong hình chính: top 1 là chính IP của origin.</p>`,
+        take: 'Mỗi lệnh trả lời một câu hỏi. Top IP: ai giữ kết nối thật. syn-recv: có ai đang đánh vào bước bắt tay.'
+      },
+      {
+        q: 'sar in rxkB/s. Bao nhiêu thì là "băng thông đầy"?',
+        a: `<p><code>rxkB/s</code> là kilobyte nhận mỗi giây (sysstat dùng 1 kB = 1024 byte). Đổi ra Mbps: nhân 8 × 1024 rồi chia 1.000.000. So với tốc độ cổng mạng hoặc gói băng thông nhà cung cấp bán cho bạn, cái nào nhỏ hơn thì đó là trần. <code>%ifutil</code> làm sẵn phép chia đó theo tốc độ card (với card full-duplex, là chiều cao hơn giữa nhận và gửi).</p>
+<p>Điểm dễ hiểu nhầm: khi đường truyền đã đầy, sar chỉ thấy phần <b>lọt tới máy</b>. Phần còn lại bị rơi trước khi tới card mạng. rxkB/s dừng ở một đường thẳng sát trần, không cho biết đợt tấn công lớn cỡ nào.</p>`,
+        viz(vb) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { d: 1400, link: 1000 };
+          function draw() {
+            const rx = Math.min(st.d, st.link), rxkB = rx * 1e6 / 8 / 1024;
+            out.replaceChildren(pre('rxkB/s = ' + rxkB.toFixed(2) + '   →   ' + rx.toFixed(0) + ' Mbps   (%ifutil ' + (rx / st.link * 100).toFixed(2) + ')'),
+              hbars([['Traffic muốn vào (giả lập)', st.d, st.d > st.link], ['sar thấy được', rx, false], ['Trần đường truyền', st.link, false]], { max: Math.max(st.d, st.link), fmt: (v) => fT(v) + ' Mbps' }));
+            cap.innerHTML = st.d > st.link ? `<span class="bad">Đường truyền đã đầy: ${fT(st.d - st.link)} Mbps rơi trước khi tới máy.</span> Firewall trên máy (B1) không giúp được vì gói tin đã chiếm hết đường trước khi tới nftables. Không có nghĩa origin hỏng: máy vẫn chạy, chỉ là không có gì vào được. Trong hệ thống thật: B2, gọi nhà cung cấp lọc từ phía trên; chuẩn bị tinh thần bị null-route.`
+              : 'Còn dư đường truyền: firewall trên máy vẫn có tác dụng.';
+          }
+          const s1 = slider('Traffic muốn vào (Mbps)', 10, 5000, 10, st.d, (v) => { st.d = v; draw(); }, fT);
+          const s2 = select('Trần đường truyền (giả định)', [['100', '100 Mbps'], ['1000', '1 Gbps'], ['10000', '10 Gbps']], '1000', (v) => { st.link = +v; draw(); });
+          vb.append(el('div', { class: 'row' }, [s1.node, s2.node]), out, cap);
+          draw();
+        },
+        take: '%ifutil sát 100% thì vấn đề nằm trên đường truyền, ngoài tầm tay của máy. Đó là lúc gọi nhà cung cấp.'
+      },
+      {
+        q: 'Đối chiếu "IP Cloudflare" bằng cách nào cho chắc, nhìn đầu 162 hay 172 có đủ không?',
+        a: `<p>Không đủ. 172.64.0.0/13 là Cloudflare nhưng 172.16.0.0/12 là dải mạng nội bộ; 104.16.0.0/13 là Cloudflare nhưng 104.0.0.0 thì không. Phải so theo CIDR: lấy số bit đầu theo độ dài prefix của từng dải và so bằng nhau. Danh sách dưới đây là các dải README đặt trong cấu hình nginx realip, lấy từ cloudflare.com/ips. Gõ một IP để trình duyệt kiểm tra thật:</p>`,
+        viz(vb) {
+          const inp = el('input', { type: 'text', value: '172.70.12.9', style: 'font:13px var(--mono);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);width:240px' });
+          const out = el('div', { class: 'cap' });
+          const samples = ['172.70.12.9', '172.20.1.5', '104.23.9.1', '104.30.0.1', '[2a06:98c0:3600::1f]', '45.134.20.7', '127.0.0.1'];
+          function draw() {
+            const v = inp.value.trim(), r = cfRange(v), bare = v.replace(/^\[|\]$/g, '');
+            const valid = /^\d{1,3}(\.\d{1,3}){3}$/.test(bare) ? !bare.split('.').some((x) => +x > 255) : v6n(bare) !== null;
+            if (!valid) { out.innerHTML = '<span class="bad">Không phải địa chỉ IPv4/IPv6 hợp lệ.</span>'; return; }
+            const size = r ? 2 ** ((r.includes(':') ? 128 : 32) - +r.split('/')[1]) : 0;
+            out.innerHTML = r ? `<b class="ok">Thuộc Cloudflare</b>: dải <code>${r}</code> (${r.includes(':') ? '2^' + (128 - +r.split('/')[1]) : fT(size)} địa chỉ).`
+              : isLocal(v) || bare === '::1' ? '<b>localhost</b>: kết nối từ chính máy. Nếu dùng Tunnel, đây là cloudflared.' : '<b class="bad">Không thuộc dải Cloudflare nào</b> trong danh sách. Kết nối từ IP này vào 80/443 không đi qua Cloudflare.';
+          }
+          inp.addEventListener('input', draw);
+          vb.append(el('div', { class: 'row' }, [inp, ...samples.map((s) => el('button', { text: s, onclick: () => { inp.value = s; draw(); } }))]), out,
+            el('div', { class: 'cap', text: 'IPv4: ' + CF4.join(', ') + '. IPv6: ' + CF6.join(', ') + '.' }));
+          draw();
+        },
+        take: 'So CIDR bằng máy, không bằng mắt. Danh sách dải có thể đổi: README dặn kiểm tra lại cloudflare.com/ips trước khi dùng.'
+      },
+      {
+        q: 'Origin dùng Tunnel thì bảng top IP còn giúp được gì?',
+        a: `<p>Với Tunnel, <code>cloudflared</code> tự mở kết nối ra Cloudflare rồi chuyển request vào nginx từ chính máy, theo Service URL. Ví dụ của README là <code>http://localhost:8080</code>, nên mỗi kết nối có dạng <code>127.0.0.1:8080 ↔ 127.0.0.1:51234</code>.</p>
+<p>Lệnh top IP của README lọc <code>sport = :80 or sport = :443</code>. Port 8080 không khớp, nên lệnh trả về <b>rỗng</b>, kể cả khi đang có hàng nghìn request. Chọn kịch bản "A, nhưng origin dùng Tunnel": bảng trống. Bấm "Thêm sport = :8080": bảng chỉ còn một hai dòng localhost.</p>
+<p>Ba hệ quả:</p>
+<ul>
+<li>Bảng rỗng không có nghĩa là không ai truy cập. Đọc Analytics Cloudflare (Nhánh A).</li>
+<li>Thêm port 8080 thì thấy được kết nối, nhưng toàn <code>127.0.0.1</code>: bảng top IP vẫn không cho biết ai đang đánh.</li>
+<li>Bất kỳ kết nối nào từ IP <b>không phải localhost</b> vào 80/443 nghĩa là cổng web vẫn mở ra internet. README: với Tunnel, đóng hẳn 80/443 (lệnh nft ở B1).</li>
+</ul>
+<p>Cùng lý do, mọi rate limit hay log IP ở nginx đều thấy một IP duy nhất cho tới khi cấu hình realip với <code>set_real_ip_from 127.0.0.1</code>.</p>`,
+        take: 'Có Tunnel, lệnh top IP lọc 80/443 trả về rỗng là bình thường. Dòng nào hiện ra mới là chuyện đáng lo; còn kẻ tấn công thì đọc trên Cloudflare.'
+      },
+      {
+        q: 'Analytics Cloudflare tăng gấp 8 lúc 20:00. Flash sale thì đông là đúng rồi, sao biết là tấn công?',
+        a: `<p>Từ một con số thì không biết được. Đó là lý do README đặt "ghi lại baseline lúc bình thường: request/giây, top path, top ASN" vào danh sách chuẩn bị. Khách thật đổ về <code>/flash-sale</code>, <code>/products/...</code> từ ISP dân dụng trong nước; HTTP flood thường dồn vào một path, một User-Agent, vài ASN hosting (README A2).</p>
+<p>Bảng quyết định cũng có hàng "Analytics Cloudflare tăng nhưng origin vẫn khoẻ": theo dõi, làm A2 để chắc chắn, không cần vội. Chọn kịch bản "Flash sale bình thường": không ô tín hiệu nào đỏ ở origin. Lượng tăng thuần tuý không phải lý do để bật Under Attack, vì Under Attack bắt mọi khách đang mua hàng đi qua trang kiểm tra.</p>`,
+        take: 'Tăng vọt là câu hỏi, không phải kết luận. So với baseline và xem signature trước khi siết.'
+      }
+    ],
+    poc: {
+      goal: "Chạy <b>nguyên văn</b> pipeline <code>awk | sed | sort | uniq -c | sort -rn | head</code> của README (bằng bash thật trên máy) trên output <code>ss</code> synthetic, rồi đối chiếu từng IP với 22 dải Cloudflare của README bằng module <code>ipaddress</code>. Kèm hai bẫy: quên <code>state established</code> và địa chỉ IPv4-mapped.",
+      file: "docs/under-attack/pocs/01_triage.py",
+      run: "uv run docs/under-attack/pocs/01_triage.py",
+      needs: "Python chuẩn và bash, awk, sed, sort có sẵn trên macOS / Linux. Không gọi <code>ss</code> thật. Dữ liệu là synthetic; POC không chạm firewall hay mạng thật.",
+      output: "Pipeline lấy nguyên văn từ README: awk '{print $4}' | sed 's/:[0-9]*$//' | sort | uniq -c | sort -rn | head -20\n\n=== A. HTTP flood đi qua Cloudflare: 1500 kết nối synthetic, top 10 của pipeline\nkết nối  IP                      đối chiếu dải README (ipaddress)\n-------  ----------------------  --------------------------------\n268      172.70.243.39           Cloudflare 172.64.0.0/13\n178      172.71.167.13           Cloudflare 172.64.0.0/13\n95       162.158.211.138         Cloudflare 162.158.0.0/15\n81       162.158.94.150          Cloudflare 162.158.0.0/15\n66       162.158.233.130         Cloudflare 162.158.0.0/15\n59       172.68.10.23            Cloudflare 172.64.0.0/13\n57       172.71.108.18           Cloudflare 172.64.0.0/13\n46       162.158.243.58          Cloudflare 162.158.0.0/15\n40       104.23.243.16           Cloudflare 104.16.0.0/13\n38       [2a06:98c0:3600::6cae]  Cloudflare 2a06:98c0::/29\nKết nối từ IP Cloudflare: 100%. Nếu chặn 5 IP đầu bảng: mất 48% kết nối khách thật, cắt 45% kết nối tấn công.\n\n=== B. Đánh thẳng IP origin: 2000 kết nối synthetic, top 10 của pipeline\nkết nối  IP               đối chiếu dải README (ipaddress)\n-------  ---------------  --------------------------------\n99       172.68.95.247    Cloudflare 172.64.0.0/13\n82       185.207.232.220  KHÔNG phải Cloudflare\n54       31.234.180.140   KHÔNG phải Cloudflare\n51       172.71.33.50     Cloudflare 172.64.0.0/13\n45       45.76.88.57      KHÔNG phải Cloudflare\n45       162.158.22.36    Cloudflare 162.158.0.0/15\n44       5.89.63.233      KHÔNG phải Cloudflare\n41       172.68.103.165   Cloudflare 172.64.0.0/13\n37       194.9.109.66     KHÔNG phải Cloudflare\n30       89.77.214.181    KHÔNG phải Cloudflare\nKết nối từ IP Cloudflare: 30%. Nếu chặn 5 IP đầu bảng: mất 25% kết nối khách thật, cắt 13% kết nối tấn công.\n\n=== SYN-RECV: `ss -Htn state syn-recv | wc -l` trên output synthetic\nSYN-RECV: 4200. Nguồn khác nhau: 4200, IP đầu bảng chỉ có 1 kết nối: nguồn SYN flood thường giả mạo, top IP không có ý nghĩa, chỉ con số tổng mới có.\n\n=== Bẫy 1: quên `state established` thì ss in thêm cột State, $4 thành địa chỉ LOCAL\nkết nối  IP              là gì\n-------  --------------  ------------\n1405     192.0.2.10      chính origin\n95       [2001:db8::10]  chính origin\n\n=== Bẫy 2: địa chỉ IPv6 và IPv4-mapped sau khi sed bỏ cổng\n[2a06:98c0:3600::103]:443    → sed: [2a06:98c0:3600::103]    | so thẳng: 2a06:98c0::/29    | bỏ ::ffff: 2a06:98c0::/29\n[::ffff:162.158.3.4]:51000   → sed: [::ffff:162.158.3.4]     | so thẳng: None              | bỏ ::ffff: 162.158.0.0/15\n162.158.3.4:51000            → sed: 162.158.3.4              | so thẳng: 162.158.0.0/15    | bỏ ::ffff: 162.158.0.0/15\nIPv4-mapped chỉ xuất hiện khi server nghe dual-stack (nginx mặc định ipv6only=on nên không gặp; Node, Java hay gặp).\n\n=== Dải IP Cloudflare: README so với dữ liệu trong 3 lab (đọc thẳng file JS)\n01-triage.js                 22 dải | thiếu so với README: không | thừa: không\n03-branch-b-origin.js        22 dải | thiếu so với README: không | thừa: không\n05-prepare-cooldown.js       22 dải | thiếu so với README: không | thừa: không\nREADME: 15 dải IPv4 (1,524,736 địa chỉ), 7 dải IPv6, chồng lấn: 0.\nRút ra: top IP toàn là Cloudflare là dấu hiệu Nhánh A, không phải danh sách để chặn (chặn 5 IP đầu là chặn khách thật); đánh thẳng thì phần lớn kết nối đến từ IP lạ, nhưng top IP vẫn lẫn IP Cloudflare. Dữ liệu synthetic, POC không chạy ss, không gửi gói tin nào.",
+      measured: true,
+      read: ["Kịch bản A: 100% kết nối đến từ IP Cloudflare. Chặn 5 IP đầu bảng thì mất 48% kết nối khách thật và chỉ cắt 45% tấn công: đúng cái giá của phản xạ sai mà lab mô tả.", "Kịch bản B: 70% kết nối từ IP lạ nhưng top 10 vẫn lẫn IP Cloudflare (mỗi edge gom nhiều khách). Chặn 5 IP đầu: mất 25% khách, chỉ cắt 13% tấn công. Việc đúng là B1 (allowlist), không phải chặn từng IP.", "SYN-RECV: 4.200 kết nối từ 4.200 nguồn khác nhau, mỗi nguồn 1. Với SYN flood, nguồn thường giả mạo; chỉ con số tổng có ý nghĩa.", "Bẫy 1: bỏ <code>state established</code> thì <code>ss</code> in thêm cột State, <code>$4</code> thành địa chỉ local, top IP là chính origin. Bẫy 2: <code>[::ffff:162.158.3.4]</code> không khớp dải nào nếu so thẳng. Dòng cuối: dải IP trong 3 file lab khớp đúng README (15 IPv4, 7 IPv6)."]
+    },
+    mount(stage) {
+      const st = { sc: 'l7', k: 5, link: 1000, noState: false, block: false, p8080: false };
+      const sSc = select('Kịch bản', SCEN, st.sc, (v) => { st.sc = v; st.block = false; draw(); });
+      const sK = slider('Cường độ tấn công', 1, 10, 1, st.k, (v) => { st.k = v; draw(); });
+      const sL = select('Trần đường truyền (giả định)', [['100', '100 Mbps'], ['1000', '1 Gbps'], ['10000', '10 Gbps']], '1000', (v) => { st.link = +v; draw(); });
+      const bNo = el('button', { onclick: () => { st.noState = !st.noState; draw(); } });
+      const bBlk = el('button', { onclick: () => { st.block = !st.block; draw(); } });
+      const b8080 = el('button', { onclick: () => { st.p8080 = !st.p8080; draw(); } });
+      const cmd = el('div'), raw = el('div'), tbl = el('div'), sigs = el('div', { class: 'cols', style: 'margin-top:10px' }), sar = el('div'), ver = el('div'), flags = el('div', { style: 'font-size:13.5px' });
+
+      function sigCard(title, value, bad, cmdTxt, note) {
+        return el('div', { style: `border:1px solid ${bad ? 'var(--bad)' : 'var(--line)'};border-radius:8px;padding:8px 10px;background:var(--bg)` }, [
+          el('div', { class: 'mono', style: 'font-size:11px;color:var(--mute)', text: cmdTxt }),
+          el('div', { style: 'font-size:12.5px;color:var(--mute)', text: title }),
+          el('div', { class: 'mono ' + (bad ? 'bad' : 'ok'), style: 'font-size:20px;font-weight:500', text: value }),
+          el('div', { style: 'font-size:12px;color:var(--mute)', text: note })]);
+      }
+
+      function draw() {
+        bNo.className = st.noState ? 'on' : ''; bNo.textContent = 'Bỏ state established: ' + (st.noState ? 'bật' : 'tắt');
+        bBlk.className = st.block ? 'on' : ''; bBlk.textContent = 'Chặn 5 IP đầu bảng bằng firewall: ' + (st.block ? 'bật' : 'tắt');
+        b8080.className = st.p8080 ? 'on' : ''; b8080.textContent = 'Thêm sport = :8080 (Service URL của Tunnel): ' + (st.p8080 ? 'bật' : 'tắt');
+        const { conns, syn } = gen(st.sc, st.k), seen = seenBy(conns, st.p8080), bw = bandwidth(st.sc, st.k, st.link), v = verdict(st.sc, seen, syn, bw);
+        const top = topIPs(seen, syn, st.noState), top20 = top.slice(0, 20);
+        const filt = "'( sport = :80 or sport = :443" + (st.p8080 ? ' or sport = :8080' : '') + " )'";
+        const c1 = st.noState ? 'ss -Htn ' + filt : 'ss -Htn state established ' + filt;
+        cmd.replaceChildren(pre('$ ' + c1 + ' | head -8   # dữ liệu giả lập'));
+        const sample = st.noState ? [...seen.slice(0, 5).map((c) => Object.assign({ st: 'ESTAB' }, c)), ...syn.slice(0, 3).map((c) => Object.assign({ st: 'SYN-RECV' }, c))] : seen.slice(0, 8);
+        raw.replaceChildren(pre(sample.map((c) => {
+          return (st.noState ? c.st.padEnd(9) : '') + '0      0      ' + localAddr(c).padEnd(22) + c.peer + ':' + c.port;
+        }).join('\n') + (sample.length ? '\n... (' : '(') + fT(st.noState ? seen.length + syn.length : seen.length) + ' dòng)'));
+        const maxN = top20.length ? top20[0].n : 1;
+        tbl.replaceChildren(el('div', { class: 'mono', style: 'font-size:11.5px;color:var(--mute);margin-top:8px', text: "| awk '{print $4}' | sed 's/:[0-9]*$//' | sort | uniq -c | sort -rn | head -20   → cột phải do trình duyệt đối chiếu CIDR" }),
+          ...(top20.length ? [] : [el('p', { class: 'hint', text: 'Pipeline không in dòng nào: không có kết nối nào khớp bộ lọc port.' })]),
+          el('div', { style: 'max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-top:4px' }, [el('table', { style: 'border-collapse:collapse;width:100%;font-size:12.5px' }, top20.map((r, i) => {
+            const tag = r.self ? ['IP của chính origin', 'var(--warn)'] : r.local ? ['localhost (cloudflared)', 'var(--g1)'] : r.cf ? ['Cloudflare ' + r.cf, 'var(--ok)'] : ['không phải Cloudflare', 'var(--bad)'];
+            const blocked = st.block && i < 5;
+            return el('tr', { style: 'border-bottom:1px solid var(--line)' + (blocked ? ';background:var(--accent-soft)' : '') }, [
+              el('td', { class: 'mono', style: 'padding:3px 8px;text-align:right;width:64px', text: String(r.n).padStart(7) }),
+              el('td', { class: 'mono', style: 'padding:3px 8px', text: r.ip + (blocked ? '  ✕ bị chặn' : '') }),
+              el('td', { style: 'padding:3px 8px;width:34%' }, [el('div', { style: `height:8px;border-radius:3px;background:${tag[1]};width:${(r.n / maxN) * 100}%` })]),
+              el('td', { style: `padding:3px 8px;font-size:12px;color:${tag[1]}`, text: tag[0] })]);
+          }))]));
+        sigs.replaceChildren(
+          sigCard('Kết nối ESTAB không đến từ Cloudflare / localhost', pct(v.otherShare), v.sig.other, 'top IP + CIDR', `${fT(v.other)} / ${fT(v.tot)} kết nối; ngưỡng giả định ${pct(LIM.other)}`),
+          sigCard('Kết nối half-open', fT(syn.length), v.sig.syn, 'ss -Htn state syn-recv | wc -l', `ngưỡng giả định ${LIM.syn}; flash sale bình thường chỉ vài cái`),
+          sigCard('%ifutil (eno1)', (bw.util * 100).toFixed(1).replace('.', ',') + '%', v.sig.bw, 'sar -n DEV 1', `rx ${fT(bw.rx)} Mbps trên trần ${fT(st.link)} Mbps; ngưỡng giả định ${pct(LIM.util)}`),
+          sigCard('Analytics Cloudflare (giả lập)', v.sig.cfSpike ? 'tăng vọt' : st.sc === 'normal' ? 'tăng theo flash sale' : 'bình thường', v.sig.cfSpike, 'Security → Analytics', v.sig.cfSpike ? 'request tăng mạnh cùng lúc sự cố' : 'không có đợt tăng bất thường'));
+        sar.replaceChildren(pre('$ sar -n DEV 1   # một dòng giả lập\n' + sarText(bw)));
+        ver.innerHTML = box(`var(--${v.cls})`, `<b>Kết luận theo bảng README:</b> ${v.route}.`);
+        const f = [];
+        const topCF = top20.slice(0, 10).filter((r) => !r.self);
+        if (!st.noState && topCF.length && topCF.every((r) => r.cf) && v.sig.cfSpike && v.sig.other) f.push(box('var(--bad)', `<b>10 IP đầu bảng đều thuộc Cloudflare, nhưng ${pct(v.otherShare)} kết nối đến từ IP không phải Cloudflare.</b> Vì sao: mỗi IP Cloudflare gom hàng trăm kết nối nên đứng đầu, còn botnet đánh thẳng chia ra 150 IP, mỗi IP ít hơn. Không có nghĩa chỉ có Nhánh A: nhìn đầu bảng sẽ bỏ sót đường vòng. Trong hệ thống thật: đếm tỉ lệ kết nối ngoài dải Cloudflare trên toàn bảng; cả hai thì B1 trước.`));
+        else if (!st.noState && topCF.length && topCF.every((r) => r.cf) && v.sig.cfSpike) f.push(box('var(--warn)', `<b>10 IP đầu bảng đều thuộc dải Cloudflare.</b> Vì sao: origin chỉ thấy data center Cloudflare đã chuyển request tới, mỗi IP gom cả khách thật lẫn bot. Không có nghĩa Cloudflare tấn công bạn, cũng không có nghĩa nên chặn các IP này. Trong hệ thống thật: Nhánh A, tìm signature trên Security Analytics và chặn bằng rule Cloudflare.`));
+        if (st.sc === 'tunnel' && !st.p8080) f.push(box('var(--warn)', `<b>Lệnh top IP của README trả về rỗng, dù Analytics Cloudflare đang tăng vọt.</b> Vì sao: cloudflared gửi ${fT(conns.length)} kết nối vào nginx ở <code>localhost:8080</code> (Service URL ví dụ của README), còn bộ lọc chỉ lấy <code>sport = :80 or sport = :443</code>. Không có nghĩa không ai truy cập, cũng không có nghĩa tấn công đã dừng. Trong hệ thống thật: với Tunnel, bảng rỗng là trạng thái đúng (cổng web đã đóng); dòng nào hiện ra là kết nối từ ngoài vào cổng chưa đóng. Muốn thấy kết nối của cloudflared, thêm <code>or sport = :8080</code> (port Service URL của bạn); còn ai đang đánh thì đọc trên Cloudflare.`));
+        if (!st.noState && top20.length && top20.every((r) => r.local)) f.push(box('var(--g1)', `<b>Toàn bộ kết nối đến từ localhost.</b> Vì sao: cloudflared chuyển request vào nginx ở <code>localhost:8080</code> từ chính máy; bạn chỉ thấy chúng vì đã thêm port 8080 vào bộ lọc. Không có nghĩa không bị tấn công: Analytics Cloudflare đang tăng vọt, origin chỉ không nhìn thấy ai. Trong hệ thống thật: đọc signature trên Cloudflare; ở nginx, realip phải có <code>set_real_ip_from 127.0.0.1</code>.`));
+        if (st.noState && top20[0] && top20[0].self) f.push(box('var(--bad)', `<b>Top 1 là ${esc(top20[0].ip)}, chính IP của origin, với ${fT(top20[0].n)} "kết nối".</b> Vì sao: không lọc một trạng thái thì ss in thêm cột State ở đầu, <code>$4</code> thành địa chỉ local. Không có nghĩa server tự tấn công mình. Trong hệ thống thật: giữ đúng lệnh README, đếm SYN-RECV bằng lệnh riêng.`));
+        if (bw.saturated) f.push(box('var(--bad)', `<b>Đường truyền đã đầy.</b> Traffic muốn vào khoảng ${fT(bw.demand)} Mbps, sar chỉ thấy ${fT(bw.rx)} Mbps vì phần dư rơi trước khi tới máy. Không có nghĩa đợt tấn công chỉ lớn cỡ trần. Trong hệ thống thật: firewall trên máy không cứu được, B2 gọi nhà cung cấp.`));
+        if (v.sig.syn && !v.sig.cfSpike) f.push(box('var(--bad)', `<b>${fT(syn.length)} kết nối half-open trong khi Analytics Cloudflare bình thường.</b> Vì sao: Cloudflare hấp thụ SYN flood nhắm vào zone đã proxy, nên SYN dồn vào origin nghĩa là có ai gửi thẳng vào IP. Không có nghĩa Cloudflare để lọt: traffic này không hề đi qua Cloudflare. Trong hệ thống thật: B1 ngay, rồi B3 tìm chỗ lộ IP.`));
+        if (st.block) {
+          const t5 = top.slice(0, 5);
+          if (!t5.length) f.push(box('var(--g1)', '<b>Bảng trống, không có IP nào để chặn.</b> Lệnh top IP không in dòng nào nên phản xạ "chặn top IP" không có gì để làm. Trong hệ thống thật: với Tunnel, đọc Analytics Cloudflare và chặn ở đó.'));
+          else {
+          const legitAll = conns.filter((c) => c.kind === 'legit').length || 1, atkAll = conns.filter((c) => c.kind === 'atk').length;
+          const cutL = t5.reduce((a, r) => a + r.legit, 0), cutA = t5.reduce((a, r) => a + r.atk, 0), anyCF = t5.some((r) => r.cf), anyLocal = t5.some((r) => r.local || r.self);
+          f.push(box(anyCF || anyLocal ? 'var(--bad)' : 'var(--ok)', `<b>Chặn 5 IP: cắt ${pct(cutL / legitAll)} kết nối khách thật và ${atkAll ? pct(cutA / atkAll) : '0%'} kết nối tấn công.</b> ` +
+            (anyLocal ? 'Trong 5 IP có localhost hoặc IP của chính máy: chặn là tự làm chết cloudflared hoặc không có tác dụng gì. ' : anyCF ? 'Trong 5 IP có IP Cloudflare: khách đi qua các data center đó nhận 521/522, bot qua data center khác vẫn vào. ' : 'Cả 5 IP đều không thuộc Cloudflare, nên không khách nào bị ảnh hưởng. Nhưng chặn từng IP là chạy theo botnet; B1 chặn mọi IP không phải Cloudflare trong một lệnh. ') +
+            'Trong hệ thống thật: firewall origin chỉ dùng để chặn những gì không đến từ Cloudflare (B1).'));
+          }
+        }
+        flags.innerHTML = f.join('');
+      }
+
+      stage.append(
+        el('div', { class: 'row' }, [sSc.node, sK.node, sL.node]),
+        el('div', { class: 'row' }, [bNo, bBlk, b8080]),
+        cmd, raw, tbl,
+        el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--ok)' }), 'thuộc dải Cloudflare']), el('span', {}, [el('i', { style: 'background:var(--bad)' }), 'không phải Cloudflare']), el('span', {}, [el('i', { style: 'background:var(--g1)' }), 'localhost']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'IP của chính origin'])]),
+        sigs, sar, ver, flags,
+        el('p', { class: 'hint', text: 'Toàn bộ kết nối, IP (dải tài liệu 192.0.2.0/24 cho origin), băng thông và ngưỡng là giả lập. Phép gom theo IP, bỏ port và đối chiếu CIDR là tính thật trong trình duyệt. Dải IP Cloudflare lấy từ README.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

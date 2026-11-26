@@ -1,0 +1,786 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Under Attack Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-triage.html">← Lab trước</a><a href="03-branch-b-origin.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/under-attack/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const fT = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const pct = (x) => (Math.round(x * 1000) / 10).toString().replace('.', ',') + '%';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const UA = {
+    chrome: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Safari/537.36',
+    safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 19_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.1 Mobile Safari/604.1',
+    app: 'ShopVietApp/5.1 (Android 15)',
+    gbot: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    pyHook: 'python-requests/2.32.3', pyAtk: 'python-requests/2.31.0', go: 'Go-http-client/1.1', empty: ''
+  };
+  const VN_ASN = [7552, 45899, 18403], HOST_ASN = [14061, 16509, 24940];
+  const GROUPS = {
+    kh: { name: 'Khách trình duyệt', legit: true, cust: true },
+    ads: { name: 'Khách từ quảng cáo (link có utm)', legit: true, cust: true },
+    nat: { name: 'Khách sau cùng một IP (NAT)', legit: true, cust: true },
+    app: { name: 'App mobile ShopViet (/api/)', legit: true, nb: true },
+    hook: { name: 'Webhook thanh toán của đối tác', legit: true, nb: true },
+    health: { name: 'Health check giám sát', legit: true, nb: true },
+    gbot: { name: 'Googlebot (bot đã xác minh)', legit: true, bot: true },
+    a_search: { name: 'Tấn công: flood /search bằng python-requests', legit: false },
+    a_bust: { name: 'Tấn công: cache busting trang chủ, UA trình duyệt', legit: false },
+    a_login: { name: 'Tấn công: POST /login từ ít IP', legit: false }
+  };
+
+  const STREAM = (() => {
+    const rnd = seeded(2026), pick = (a) => a[Math.floor(rnd() * a.length)], oct = () => 1 + Math.floor(rnd() * 254);
+    const ipPool = (n) => Array.from({ length: n }, () => oct() + '.' + oct() + '.' + oct() + '.' + oct());
+    const rs = () => rnd().toString(36).slice(2, 8);
+    const out = [];
+    const add = (g, n, mk) => { for (let i = 0; i < n; i++) out.push(Object.assign({ g, t: rnd() * 60, method: 'GET', query: '', token: false, bot: false, headless: false }, mk(i))); };
+    const khIps = ipPool(300), botIps = ipPool(1000), searchIps = ipPool(60), loginIps = ipPool(15);
+    add('kh', 900, () => {
+      const r = rnd(), path = r < 0.3 ? '/flash-sale' : r < 0.6 ? '/products/' + (100 + Math.floor(rnd() * 80)) : r < 0.7 ? '/' : r < 0.85 ? '/search' : r < 0.95 ? '/cart' : '/login';
+      return { ip: pick(khIps), asn: pick(VN_ASN), country: 'VN', path, query: path === '/search' ? 'q=' + pick(['tai+nghe', 'sac+du+phong', 'loa+bluetooth']) : '', ua: rnd() < 0.5 ? UA.chrome : UA.safari, human: true, browser: true };
+    });
+    add('ads', 60, () => ({ ip: pick(khIps), asn: pick(VN_ASN), country: 'VN', path: '/', query: 'utm_source=' + pick(['zalo', 'facebook', 'tiktok']) + '&utm_campaign=flashsale', ua: UA.safari, human: true, browser: true }));
+    add('nat', 90, (i) => ({ ip: '203.0.113.77', asn: 7552, country: 'VN', t: rnd() * 12, path: i < 70 ? '/login' : '/flash-sale', method: i >= 40 && i < 70 ? 'POST' : 'GET', ua: UA.chrome, human: true, browser: true }));
+    add('app', 250, () => ({ ip: pick(khIps), asn: pick(VN_ASN), country: 'VN', path: pick(['/api/products', '/api/cart', '/api/flash-sale/stock']), ua: UA.app, human: true, browser: false }));
+    add('hook', 30, () => ({ ip: '198.18.20.5', asn: 16509, country: 'SG', path: '/api/webhooks/payment', method: 'POST', ua: UA.pyHook, human: false, browser: false }));
+    add('health', 12, () => ({ ip: pick(['198.18.40.11', '198.18.40.12']), asn: 14061, country: 'US', path: '/healthz', ua: UA.go, token: true, human: false, browser: false }));
+    add('gbot', 40, () => ({ ip: '66.249.66.' + oct(), asn: 15169, country: 'US', path: '/products/' + (100 + Math.floor(rnd() * 80)), ua: UA.gbot, bot: true, human: false, browser: false }));
+    add('a_search', 1200, () => ({ ip: pick(searchIps), asn: pick(HOST_ASN), country: pick(['US', 'DE', 'SG', 'NL']), path: '/search', query: 'q=' + rs(), ua: UA.pyAtk, human: false, browser: false }));
+    add('a_bust', 1500, () => ({ ip: pick(botIps), asn: rnd() < 0.3 ? pick(VN_ASN) : pick([4134, 4837, 9829, 28573, 8452]), country: rnd() < 0.3 ? 'VN' : pick(['CN', 'IN', 'BR', 'EG']), path: '/', query: rs() + '=' + rs(), ua: UA.chrome, human: false, browser: false, headless: rnd() < 0.1 }));
+    add('a_login', 900, () => ({ ip: pick(loginIps), asn: pick([24940, 14061]), country: pick(['DE', 'NL']), path: '/login', method: 'POST', ua: rnd() < 0.5 ? UA.go : UA.empty, human: false, browser: false }));
+    return out.sort((a, b) => a.t - b.t);
+  })();
+  const LEGIT_N = STREAM.filter((r) => GROUPS[r.g].legit).length, CAP = Math.round(LEGIT_N * 1.5);
+
+  const sw = (p, s) => p.startsWith(s);
+  const RULES = [
+    { id: 'R0', act: 'skip', name: 'R0 — Skip cho traffic tin cậy', expr: 'ip.src in {203.0.113.10 198.51.100.0/24}\nor (http.request.uri.path eq "/healthz" and http.request.headers["x-health-token"][0] eq "<bí-mật>")', m: (r) => r.path === '/healthz' && r.token },
+    { id: 'R1', act: 'challenge', name: 'R1 — Challenge phần web, chừa API', expr: 'not starts_with(http.request.uri.path, "/api/") and not cf.client.bot', m: (r) => !sw(r.path, '/api/') && !r.bot },
+    { id: 'R2', act: 'block', name: 'R2 — Chặn client tự động vào trang HTML', expr: 'not starts_with(http.request.uri.path, "/api/")\nand (http.user_agent eq "" or http.user_agent contains "python-requests"\n  or http.user_agent contains "Go-http-client" or http.user_agent contains "curl/")', m: (r) => !sw(r.path, '/api/') && (r.ua === '' || r.ua.includes('python-requests') || r.ua.includes('Go-http-client') || r.ua.includes('curl/')) },
+    { id: 'R3', act: 'block', name: 'R3 — Cache busting vào trang không dùng query (cùng ý ví dụ 3 của A3)', expr: 'http.request.uri.path in {"/" "/index.html"} and http.request.uri.query ne ""', m: (r) => (r.path === '/' || r.path === '/index.html') && r.query !== '' },
+    { id: 'R4', act: 'block', name: 'R4 — Method lạ vào path chỉ đọc', expr: 'http.request.uri.path eq "/search" and http.request.method ne "GET"', m: (r) => r.path === '/search' && r.method !== 'GET' },
+    { id: 'R5', act: 'challenge', name: 'R5 — Challenge theo ASN đang bắn (giống ví dụ 2 của A3)', expr: 'ip.src.asnum in {14061 16509 24940} and not cf.client.bot', m: (r) => HOST_ASN.includes(r.asn) && !r.bot },
+    { id: 'A3', act: 'block', name: 'A3 ví dụ 1 — Path bị flood + UA thư viện HTTP', expr: 'http.request.uri.path eq "/search" and http.user_agent contains "python-requests"', m: (r) => r.path === '/search' && r.ua.includes('python-requests') },
+    { id: 'G', act: 'block', name: 'G — Chặn mọi quốc gia ngoài VN (rule rộng, lab tự đặt)', expr: 'ip.src.country ne "VN"', m: (r, c) => r.country !== 'VN' && !(c.gBot && r.bot) }
+  ];
+  const ACT = { skip: ['Skip', 'var(--g1)'], challenge: ['Managed Challenge', 'var(--warn)'], block: ['Block', 'var(--bad)'] };
+  const PLANS = [['free', 'Free'], ['pro', 'Pro'], ['business', 'Business']];
+
+  function simulate(c) {
+    const rl = new Map(), res = new Map();
+    const tally = {}, perRule = {};
+    Object.keys(GROUPS).forEach((g) => { tally[g] = { n: 0, origin: 0, pass: 0, block: 0, fail: 0, rl: 0 }; });
+    RULES.forEach((r) => { perRule[r.id] = { atk: 0, legit: {}, pass: {} }; });
+    perRule.UAM = { atk: 0, legit: {}, pass: {} }; perRule.RL = { atk: 0, legit: {}, pass: {} };
+    const hit = (id, r, kind) => { const p = perRule[id], lg = GROUPS[r.g].legit; if (kind === 'pass') { if (lg) p.pass[r.g] = (p.pass[r.g] || 0) + 1; return; } if (lg) p.legit[r.g] = (p.legit[r.g] || 0) + 1; else p.atk++; };
+    const challenge = (r) => (r.human && r.browser) || r.headless;
+    for (const r of STREAM) {
+      const t = tally[r.g]; t.n++;
+      let out = null, passed = false, skipped = false;
+      for (const rule of RULES) {
+        if (!c.on[rule.id] || !rule.m(r, c)) continue;
+        const act = c.act[rule.id] || rule.act;
+        if (act === 'skip') { skipped = true; break; }
+        if (act === 'block') { out = 'block'; hit(rule.id, r, 'stop'); break; }
+        if (challenge(r)) { passed = true; hit(rule.id, r, 'pass'); } else { out = 'fail'; hit(rule.id, r, 'stop'); break; }
+      }
+      if (!out && !skipped && c.uam && !(c.apiExempt && sw(r.path, '/api/'))) {
+        if (challenge(r)) { passed = true; hit('UAM', r, 'pass'); } else { out = 'fail'; hit('UAM', r, 'stop'); }
+      }
+      if (!out && !skipped && c.rl && r.path === c.rlPath && (!c.rlPost || r.method === 'POST')) {
+        const s = rl.get(r.ip) || { win: -1, n: 0, until: -1 }, w = Math.floor(r.t / 10);
+        if (r.t < s.until) out = 'rl';
+        else { if (w !== s.win) { s.win = w; s.n = 0; } s.n++; if (s.n > c.rlThr) { out = 'rl'; s.until = r.t + 10; } }
+        rl.set(r.ip, s);
+        if (out === 'rl') hit('RL', r, 'stop');
+      }
+      if (!out) { t.origin++; if (passed) t.pass++; } else t[out]++;
+      res.set(r, out);
+    }
+    const sum = (f, k) => Object.keys(GROUPS).filter((g) => f(GROUPS[g])).reduce((a, g) => a + (k === 'stop' ? tally[g].block + tally[g].fail + tally[g].rl : tally[g][k]), 0);
+    const cnt = (f) => Object.keys(GROUPS).filter((g) => f(GROUPS[g])).reduce((a, g) => a + tally[g].n, 0);
+    const m = {
+      atkStop: sum((x) => !x.legit, 'stop') / cnt((x) => !x.legit),
+      custPass: sum((x) => x.cust, 'pass') / cnt((x) => x.cust),
+      custStop: sum((x) => x.cust, 'stop') / cnt((x) => x.cust),
+      nbStop: sum((x) => x.nb, 'stop') / cnt((x) => x.nb),
+      gbot: tally.gbot.block + tally.gbot.fail + tally.gbot.rl,
+      origin: Object.values(tally).reduce((a, x) => a + x.origin, 0)
+    };
+    return { tally, perRule, m };
+  }
+
+  const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+  const pre = (txt) => el('pre', { class: 'mono', style: 'white-space:pre-wrap;word-break:break-word;font-size:12px;background:var(--bg);padding:8px;border-radius:6px;border:1px solid var(--line);margin:6px 0', text: txt });
+  const SEG = [['origin', 'tới origin', 'var(--dim)'], ['pass', 'qua challenge rồi tới origin', 'var(--g4)'], ['block', 'bị Block', 'var(--bad)'], ['fail', 'kẹt ở challenge', 'var(--g2)'], ['rl', 'bị rate limit', 'var(--g1)']];
+
+  function groupBars(tally) {
+    return el('div', {}, Object.keys(GROUPS).map((g) => {
+      const t = tally[g], segs = SEG.map(([k, , col]) => { const v = k === 'origin' ? t.origin - t.pass : t[k]; return v ? el('div', { title: `${k}: ${v}`, style: `width:${(v / t.n) * 100}%;background:${col};height:100%` }) : null; });
+      const legit = GROUPS[g].legit, stop = t.block + t.fail + t.rl;
+      const flag = legit ? (stop ? `<span class="bad">${fT(stop)} hỏng</span>` : t.pass ? `<span style="color:var(--warn)">${fT(t.pass)} bị hỏi</span>` : '<span class="ok">bình thường</span>') : (t.origin ? `<span class="bad">${fT(t.origin)} lọt</span>` : '<span class="ok">chặn hết</span>');
+      return el('div', { style: 'display:grid;grid-template-columns:minmax(120px,240px) minmax(0,1fr) 92px;gap:8px;align-items:center;font-size:12.5px;margin-bottom:5px' }, [
+        el('span', { style: legit ? '' : 'color:var(--mute)', text: GROUPS[g].name + ' (' + t.n + ')' }),
+        el('div', { style: 'display:flex;height:14px;border-radius:3px;overflow:hidden;border:1px solid var(--line);background:var(--bg)' }, segs),
+        el('span', { class: 'mono', style: 'font-size:11.5px;text-align:right', html: flag })]);
+    }));
+  }
+
+  return {
+    id: 'branch-a', nav: '2. Nhánh A (L7)', ref: 'Nhánh A',
+    title: 'Under Attack chặn gần hết flood trong 2 phút, nhưng cũng làm hỏng app mobile và webhook: rule theo signature mới là thứ giữ lâu được',
+    hook: 'Bật tắt Under Attack, các rule R0–R5 của README, rule A3 và một rule rate limiting trên một dòng request giả lập 60 giây. Trình duyệt chạy từng request qua đúng thứ tự Cloudflare xử lý và đếm: bao nhiêu tấn công bị dừng, bao nhiêu khách thật bị hỏi hay bị chặn, client nào hỏng.',
+    terms: [
+      ['Under Attack Mode', 'Chế độ bắt mọi visitor qua một trang kiểm tra trình duyệt trước khi vào. Bật ở Overview → Quick Actions, hoặc gọi API đặt security_level = "under_attack".'],
+      ['Challenge / Managed Challenge', 'Cloudflare trả một trang HTML có JavaScript kiểm tra trình duyệt thay vì nội dung thật. Trình duyệt thật tự qua trong vài giây; script curl hay python-requests không chạy JavaScript nên kẹt lại.'],
+      ['cf_clearance', 'Cookie Cloudflare đặt khi trình duyệt qua challenge. Có cookie này thì một khoảng thời gian sau không bị hỏi lại.'],
+      ['cf-mitigated: challenge', 'Header có trong response bị challenge. App của bạn dùng nó để biết "mình vừa nhận trang challenge chứ không phải JSON".'],
+      ['Custom rule', 'Một dòng "nếu request khớp expression thì làm action". Ví dụ: http.request.uri.path eq "/search" and http.user_agent contains "python-requests" → Block.'],
+      ['Expression', 'Điều kiện viết bằng ngôn ngữ rule của Cloudflare, giống mệnh đề WHERE trong SQL. Ví dụ ip.src.asnum in {14061 16509 24940}.'],
+      ['Signature', 'Một đặc điểm chung traffic tấn công có mà khách thật không có: một path, một User-Agent, vài ASN, query ngẫu nhiên.'],
+      ['User-Agent (UA)', 'Header client tự khai tên mình. Chrome gửi "Mozilla/5.0 ... Chrome/142.0", thư viện Python gửi "python-requests/2.31.0". Tự khai nên giả được.'],
+      ['ASN', 'Số hiệu của một mạng trên internet: một ISP hay một nhà cung cấp cloud. Ví dụ khách ShopViet đi từ ASN của Viettel (7552), VNPT (45899), FPT (18403); botnet thuê thường nằm ở ASN hosting.'],
+      ['cf.client.bot', 'Field true khi request đến từ bot đã được Cloudflare xác minh như Googlebot, Bingbot. Thêm "and not cf.client.bot" để rule không chặn bot tìm kiếm.'],
+      ['Cache busting', 'Thêm query ngẫu nhiên (/?a8f3k2=x91) để mỗi request là một URL mới, cache không trúng, request nào cũng phải xuống origin.'],
+      ['Rate limiting', 'Đếm request theo một khoá (thường là IP) trong một chu kỳ. Quá ngưỡng thì chặn trong một khoảng. Ví dụ Free: 10 request / 10 giây / IP → Block 10 giây.'],
+      ['NAT', 'Nhiều thiết bị dùng chung một IP công khai: cả văn phòng, cả một trạm mạng di động. Với Cloudflare, cả nhóm trông như một visitor.'],
+      ['Configuration Rule', 'Rule đổi setting của zone cho một phần request, không chặn gì. Ví dụ: path bắt đầu bằng /api/ → I\'m Under Attack = Off, để app mobile không gặp challenge.'],
+      ['Headless browser', 'Trình duyệt thật (Chrome) chạy không có giao diện, điều khiển bằng script. Chạy được JavaScript nên có thể qua challenge, khác với python-requests.'],
+      ['Tham số utm_', 'Query gắn vào link quảng cáo để đo nguồn khách, ví dụ /?utm_source=zalo&utm_campaign=flashsale. Trang vẫn là trang chủ, chỉ URL có thêm query.'],
+      ['Security Events', 'Tab Events trong Security Analytics: danh sách request Cloudflare đã chặn hoặc challenge, kèm rule nào đã khớp. Dùng để xem rule có chặn nhầm ai không.'],
+      ['Skip', 'Action bỏ qua các lớp sau cho request khớp: các custom rule còn lại, rate limiting, Super Bot Fight Mode, Security Level. Dùng để chừa health check, IP văn phòng.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> 20:05, Phút 0–2 đã xác định: Analytics Cloudflare tăng vọt, kết nối vào origin toàn IP Cloudflare. Đây là Nhánh A. Ngoài khách mua hàng còn có app mobile gọi <code>/api/</code>, webhook thanh toán của đối tác (gọi bằng python-requests từ một ASN hosting), một dịch vụ health check và Googlebot.',
+      scenario: 'Dòng request là <b>dữ liệu giả lập</b>: mẫu 60 giây đã thu nhỏ, gồm 7 nhóm hợp lệ và 3 kiểu tấn công. Giả định của lab: script tấn công không chạy JavaScript nên kẹt ở challenge, trừ 10% bot cache busting dùng trình duyệt headless; origin chịu được khoảng 1,5 lần lượng request hợp lệ. Rule, expression, action, thứ tự xử lý và giới hạn plan lấy từ README.',
+      ask: 'Bật Under Attack thì chặn được bao nhiêu, ai trả giá? Rule nào nhắm trúng tấn công mà không chạm khách thật? Rule nào chặn nhầm khách, Googlebot, webhook? Khi nào rate limiting có tác dụng, khi nào không?',
+      solves: 'Đi theo README: A1 bật Under Attack để cầm máu (chừa <code>/api/</code> bằng Configuration Rule), A2 tìm signature, A3 chặn đúng signature bằng custom rule (Block khi chắc chắn, Managed Challenge khi có thể khớp người thật), A4 rate limiting cho path bị đánh từ ít IP, rồi tắt Under Attack toàn zone.',
+      read: [
+        'Hàng nút trên cùng là các mốc có sẵn. Bên dưới, mỗi rule một ô: tick để bật, expression nguyên văn README, ô chọn action (Block hoặc Managed Challenge; R0 luôn là Skip). Đổi action là cách README gợi ý để thử rule trước khi Block.',
+        'Bốn ô số: tấn công bị dừng, khách thật phải qua challenge, khách thật bị chặn, client không phải trình duyệt bị hỏng. Kèm số request còn tới origin so với sức chịu giả định.',
+        'Mỗi thanh là một nhóm request: xám tới origin, tím qua challenge rồi tới origin, đỏ bị Block, cam kẹt ở challenge, xanh bị rate limit. Với nhóm hợp lệ, đỏ và cam là thiệt hại; với nhóm tấn công, xám là phần lọt.',
+        'Bảng cuối: rule nào đã dừng bao nhiêu request, của ai. Khung cảnh báo tự hiện khi một rule chặn khách thật, Googlebot hay client hợp lệ, hoặc khi vượt giới hạn plan.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Dòng thời gian Nhánh A (README)</h4>
+<div class="tbl"><table>
+<tr><th>Mốc</th><th>Việc</th><th>Ghi chú</th></tr>
+<tr><td>Phút 2</td><td>A1. Bật Under Attack Mode</td><td>Hiệu quả cao nhất trong thời gian ngắn nhất; API, app mobile, webhook, health check sẽ hỏng</td></tr>
+<tr><td>Phút 3–8</td><td>A2. Tìm signature trên Security → Analytics</td><td>Path, query, method, User-Agent, ASN, country, host</td></tr>
+<tr><td>Phút 8–15</td><td>A3. Chặn signature bằng custom rule</td><td>Block khi chắc chắn; Managed Challenge khi có thể khớp người thật</td></tr>
+<tr><td>Phút 15–25</td><td>A4. Rate limiting</td><td>Hữu ích khi từng IP gửi nhiều; vô dụng với botnet trải rộng</td></tr>
+<tr><td>Phút 25+</td><td>A5. Giảm tải origin</td><td>Cache thêm, chặn cache busting, tắt tạm tính năng nặng, Waiting Room (Business+)</td></tr>
+<tr><td>Mỗi 5–10 phút</td><td>A6. Theo dõi và lặp lại</td><td>Pattern mới → quay lại A2–A3; sửa rule cũ thay vì tạo thêm</td></tr>
+</table></div>
+<h4>Thứ tự Cloudflare xử lý một request</h4>
+<pre class="mono" style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:6px;border:1px solid var(--line)">HTTP DDoS ruleset (luôn bật)
+  → Custom rules
+  → Rate limiting rules
+  → Managed rules (WAF)
+  → Super Bot Fight Mode (Pro+)</pre>
+<p>Under Attack / Security Level, IP Access Rules, Bot Fight Mode (Free) chạy độc lập. Request đã bị custom rule block hay challenge thì rate limiting không đếm.</p>
+<h4>Action nào cho tình huống nào</h4>
+<div class="tbl"><table>
+<tr><th>Action</th><th>Dùng khi</th><th>Ghi chú</th></tr>
+<tr><td>Block</td><td>Signature chắc chắn chỉ khớp tấn công</td><td>Rate limiting mặc định trả 429</td></tr>
+<tr class="cur"><td>Managed Challenge</td><td>Signature có thể khớp người thật</td><td>Cloudflare khuyến nghị</td></tr>
+<tr><td>JS Challenge</td><td>Cần challenge không tương tác</td><td>Visitor chờ dưới 5 giây</td></tr>
+<tr><td>Interactive Challenge</td><td>Hầu như không</td><td>Người thật phải bấm, tỉ lệ bỏ trang cao</td></tr>
+<tr><td>Skip</td><td>Chừa health check, IP văn phòng, webhook đối tác</td><td>Đặt trước các rule chặn</td></tr>
+<tr><td>Log</td><td>Thử rule trước khi chặn</td><td>Chỉ Enterprise</td></tr>
+</table></div>
+<h4>Rate limiting theo plan</h4>
+<div class="tbl"><table>
+<tr><th></th><th>Free</th><th>Pro</th><th>Business</th><th>Enterprise</th></tr>
+<tr><td>Số rule</td><td>1</td><td>2</td><td>5</td><td>100</td></tr>
+<tr><td>Chu kỳ đếm</td><td>10 giây</td><td>tới 1 phút</td><td>tới 10 phút</td><td>tới ~18 giờ</td></tr>
+<tr><td>Thời gian chặn</td><td>10 giây</td><td>tới 1 giờ</td><td>tới 1 ngày</td><td>tới 1 ngày</td></tr>
+<tr><td>Đếm theo</td><td>IP</td><td>IP</td><td>IP, IP có hỗ trợ NAT</td><td>Nhiều characteristic</td></tr>
+<tr><td>Field trong expression</td><td>Path, Verified Bot</td><td>+ Host, URI, Query</td><td>+ Method, Source IP, User-Agent</td><td>+ Header, body</td></tr>
+</table></div>
+<ul>
+<li>Free có 5 custom rule. Sửa rule cũ, gộp điều kiện bằng <code>or</code> thay vì tạo thêm.</li>
+<li>Security Level Low/Medium/High không còn tác dụng (bỏ từ 03/2025, <code>cf.threat_score</code> luôn bằng 0). "I'm Under Attack" là giá trị duy nhất còn ý nghĩa.</li>
+<li>Challenge (mọi loại) làm hỏng client không phải trình duyệt. Với API: Block theo signature hoặc rate limiting.</li>
+<li>Ngưỡng rate limit: mức cao nhất một người thật tạo trong một chu kỳ, nhân 3–5.</li>
+</ul>
+<div class="verdict"><b>Nguồn số liệu:</b> rule R0–R5, ví dụ A3, action, thứ tự xử lý, giới hạn plan, mốc thời gian lấy từ README. Rule G (chặn mọi quốc gia ngoài VN) là ví dụ rule chặn rộng do lab đặt. Dòng request, IP, User-Agent cụ thể, tỉ lệ 10% headless, sức chịu origin và cách đếm rate limit theo cửa sổ cố định 10 giây là giả lập.</div>`,
+    why: {
+      c: 'Under Attack (chừa /api/ bằng Configuration Rule) để cầm máu trong phút 2, rồi thay bằng rule nhắm đúng signature: A3 cho flood /search, R3 cho cache busting, R2 cho UA thư viện, rate limiting cho /login. R0 Skip đặt đầu tiên cho health check.',
+      s: 'Để Under Attack chạy cả buổi: mọi khách đều bị hỏi, app và webhook hỏng. Chặn theo quốc gia hoặc ASN bằng Block: trúng cả Googlebot, webhook đối tác. Chỉnh Security Level High: không còn tác dụng từ 03/2025. Chỉ dựa vào rate limiting: botnet trải rộng mỗi IP dưới ngưỡng.',
+      p: 'Cần 10–15 phút đọc Analytics để có signature, và phải quay lại khi kẻ tấn công đổi pattern. Mỗi rule có thể khớp nhầm thứ bạn không lường (link quảng cáo có utm, đối tác dùng python-requests), nên phải xem lại Security Events sau mỗi lần bật.'
+    },
+    deep: [
+      {
+        q: 'Under Attack làm gì mà chặn được flood chỉ bằng một nút bấm?',
+        a: `<p>Mọi request đi qua Cloudflare nhận một trang challenge thay vì nội dung thật. Trang đó chạy JavaScript trong trình duyệt để kiểm tra. Trình duyệt thật tự qua trong vài giây, nhận cookie <code>cf_clearance</code>, rồi đi tiếp bình thường một khoảng thời gian. Script flood viết bằng python-requests hay Go không chạy JavaScript, nên mãi nhận về trang challenge, request không bao giờ tới origin.</p>
+<p>Đó là lý do README xếp nó ở phút 2: không cần biết kẻ tấn công là ai, không cần viết expression. Kiểm tra: sau 1–2 phút CPU và số kết nối origin giảm, Security Analytics cho thấy phần lớn request chuyển sang challenged.</p>
+<p>Nó không phải phép màu: bot dùng trình duyệt headless có thể qua challenge. Trong hình chính, 10% bot cache busting (giả định) vẫn lọt dù bật Under Attack.</p>`,
+        take: 'Under Attack lọc theo khả năng chạy JavaScript, không theo signature. Nhanh, rộng, và trúng cả những client hợp lệ không chạy JavaScript.'
+      },
+      {
+        q: 'Vì sao bật Under Attack thì app mobile và webhook hỏng, trong khi khách dùng trình duyệt vẫn vào được?',
+        a: `<p>App mobile gọi <code>/api/products</code> và chờ JSON. Webhook đối tác POST vào <code>/api/webhooks/payment</code> và chờ mã 2xx. Khi bị challenge, cả hai nhận về một trang HTML, không có trình duyệt nào để chạy JavaScript trong đó. Minh hoạ rút gọn của lab:</p>
+<pre class="mono" style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:8px;border-radius:6px;border:1px solid var(--line)">GET /api/products
+→ cf-mitigated: challenge
+→ content-type: text/html
+→ &lt;!DOCTYPE html&gt;&lt;html&gt;... Just a moment ...
+
+app: JSON.parse(body) → SyntaxError: Unexpected token '&lt;'</pre>
+<p>README đưa hai cách chừa API ra: bật Under Attack toàn zone rồi tạo <b>Configuration Rule</b> với <code>starts_with(http.request.uri.path, "/api/")</code> và I'm Under Attack = Off; hoặc không bật toàn zone mà dùng R1 (Managed Challenge cho mọi thứ không phải <code>/api/</code>). Trong hình chính, bấm mốc "Phút 2: chỉ Under Attack" rồi "Phút 2: Under Attack, chừa /api/" để so ô "client không phải trình duyệt bị hỏng". Health check ở <code>/healthz</code> vẫn hỏng vì không nằm dưới <code>/api/</code>: cần R0.</p>`,
+        take: 'Challenge là một trang web. Thứ gì không phải trình duyệt mà gặp challenge thì coi như hỏng; chừa nó ra trước khi bật.'
+      },
+      {
+        q: 'Thay vì Under Attack, chỉnh Security Level lên High có nhẹ nhàng hơn không?',
+        a: `<p>Không còn tác dụng. README: Security Level Low/Medium/High bị Cloudflare bỏ từ 03/2025, <code>cf.threat_score</code> nay luôn bằng 0. Rule kiểu <code>cf.threat_score gt 10</code> không bao giờ khớp. Giá trị duy nhất của Security Level còn ý nghĩa là "I'm Under Attack".</p>
+<p>Nếu cần nhẹ hơn Under Attack toàn zone: R1 (Managed Challenge chừa <code>/api/</code> và bot đã xác minh), hoặc Configuration Rule bật I'm Under Attack cho riêng một phần site như <code>/admin</code>.</p>`,
+        take: 'Đừng mất phút quý giá vào một nút đã bị vô hiệu. Nhẹ hơn Under Attack là R1, không phải Security Level.'
+      },
+      {
+        q: 'Signature tìm ở đâu, và thế nào là một signature tốt?',
+        a: `<p>Zone → <b>Security → Analytics</b>, chọn khoảng thời gian bao trọn đợt tấn công, xem bảng top theo từng chiều (README A2). Signature tốt có hai tính chất cùng lúc: chiếm phần lớn traffic tấn công, và gần như không có ở khách thật. Bảng dưới tính từ chính dòng request giả lập của hình chính, chọn một chiều để xem top 5:</p>`,
+        viz(vb) {
+          const dims = [['path', 'Path'], ['ua', 'User-Agent'], ['asn', 'ASN'], ['q', 'Có query string'], ['country', 'Country']];
+          const key = (r, d) => d === 'q' ? (r.query ? 'có query' : 'không query') : d === 'ua' ? (r.ua === '' ? '(UA rỗng)' : r.ua.length > 40 ? r.ua.slice(0, 40) + '…' : r.ua) : String(r[d]);
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const atkN = STREAM.filter((r) => !GROUPS[r.g].legit).length;
+          function draw(d) {
+            const m = new Map();
+            STREAM.forEach((r) => { const k = key(r, d), x = m.get(k) || { k, atk: 0, legit: 0 }; GROUPS[r.g].legit ? x.legit++ : x.atk++; m.set(k, x); });
+            const rows = [...m.values()].sort((a, b) => b.atk + b.legit - a.atk - a.legit).slice(0, 5);
+            out.replaceChildren(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Giá trị</th><th>Request tấn công</th><th>% của tấn công</th><th>Request hợp lệ</th></tr>' +
+              rows.map((x) => `<tr><td class="mono">${esc(x.k)}</td><td class="mono">${fT(x.atk)}</td><td class="mono">${pct(x.atk / atkN)}</td><td class="mono ${x.legit && x.atk ? 'bad' : ''}">${fT(x.legit)}</td></tr>`).join('') })]));
+            const good = rows.filter((x) => x.atk / atkN > 0.2 && x.legit === 0);
+            cap.innerHTML = good.length ? `Signature sạch ở chiều này: ${good.map((x) => '<code>' + esc(x.k) + '</code>').join(', ')}: chiếm trên 20% tấn công, 0 request hợp lệ. Đủ chắc để Block.`
+              : 'Không giá trị nào ở chiều này vừa chiếm phần lớn tấn công vừa sạch khách thật. Dùng chiều này thì nên Managed Challenge, hoặc kết hợp với chiều khác bằng <code>and</code>.';
+          }
+          const s = select('Chiều', dims, 'path', draw);
+          vb.append(el('div', { class: 'row' }, [s.node]), out, cap);
+          draw('path');
+        },
+        take: 'Một chiều hiếm khi đủ. Path /search và UA python-requests đứng riêng đều chạm khách hoặc đối tác; ghép bằng and thì sạch.'
+      },
+      {
+        q: 'R3 chặn cache busting rất gọn. Sao khung cảnh báo lại báo nó chặn khách thật?',
+        a: `<p>R3 dựa trên một giả định của README: "trang chủ không dùng query". Ví dụ 3 của A3 (<code>http.request.uri.path eq "/" and http.request.uri.query ne ""</code> → Block) dựa trên cùng giả định, nên trúng cùng những khách đó. Bấm mốc "Phút 8–15: 3 ví dụ A3 của README" trong hình chính: 100% tấn công bị dừng nhưng 60 request của khách quảng cáo bị Block.</p>
+<p> ShopViet đang chạy quảng cáo flash sale với link <code>/?utm_source=zalo&amp;utm_campaign=flashsale</code>. Những khách bấm quảng cáo có query khác rỗng, khớp R3 và bị Block đúng lúc bạn trả tiền để kéo họ về.</p>
+<p>Cách README gợi ý khi signature có thể khớp người thật: dùng <b>Managed Challenge</b> trước. Log (thử rule không chặn) chỉ có ở Enterprise, nên ở plan thấp hơn: thử bằng Managed Challenge, xem Security Events, rồi mới chuyển sang Block. Với R3, có thể thêm điều kiện loại link quảng cáo, ví dụ <code>and not http.request.uri.query contains "utm_"</code> (biến thể của lab, không có trong README). POC 02 thử một biến thể tương tự: 0 khách bị chạm, vẫn chặn 100% tấn công trong dữ liệu synthetic. Cái giá: kẻ tấn công chỉ cần thêm <code>utm_x=...</code> vào query là lọt, nên đây là miếng vá tạm, không phải signature sạch.</p>`,
+        take: 'Mỗi rule đều mang một giả định về khách thật. "Trang chủ không dùng query" sai ngay khi có chiến dịch quảng cáo. Kiểm tra giả định đó trên traffic thật trước khi Block.'
+      },
+      {
+        q: 'Vì sao bật R5 (challenge ASN hosting) lại làm hỏng webhook thanh toán và health check?',
+        a: `<p>Botnet thuê thường nằm ở ASN hosting, nhưng đối tác và dịch vụ giám sát của bạn cũng vậy. Webhook đi từ ASN 16509 (Amazon AWS) bằng python-requests, health check đi từ ASN 14061 bằng Go-http-client. Cả hai khớp R5, nhận challenge, và không qua được vì không phải trình duyệt. Ví dụ 2 của A3 trong README là đúng expression này, nên bật "3 ví dụ A3" cũng gây ra cùng thiệt hại: 30 webhook và 12 health check hỏng (POC 02 ra cùng số).</p>
+<p>Với một shop, webhook thanh toán hỏng nghĩa là khách đã trả tiền nhưng đơn không được xác nhận, và dịch vụ giám sát báo site sập trong lúc bạn đang chữa cháy.</p>
+<p><code>and not cf.client.bot</code> trong R5 chỉ chừa bot đã được Cloudflare xác minh như Googlebot; nó không biết đối tác của bạn. Cách chừa đúng là R0 (Skip) đặt <b>đầu tiên</b>: IP của đối tác, hoặc <code>/healthz</code> kèm header bí mật. README: rule Skip phải đứng trước các rule chặn. Thử bật R0 cùng R5 trong hình chính: health check trở lại, webhook vẫn hỏng vì IP đối tác chưa có trong danh sách của R0.</p>`,
+        take: 'Rule theo ASN bắt cả bạn lẫn địch. Liệt kê client hợp lệ đến từ cloud trước khi bật, và chừa họ bằng Skip.'
+      },
+      {
+        q: 'Rate limiting đếm theo IP, vậy sao nó không chặn được đợt cache busting?',
+        a: `<p>Đợt cache busting trong lab đến từ 1.000 IP, mỗi IP chỉ một hai request mỗi phút. Không IP nào vượt ngưỡng. README A4: rate limiting hữu ích khi <b>từng IP gửi nhiều request</b>, vô dụng khi botnet trải rộng. Kéo thử: tổng request tấn công cố định trong một chu kỳ 10 giây, đổi số IP.</p>`,
+        viz(vb) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { total: 3000, ips: 1000, thr: 10 };
+          function draw() {
+            const per = st.total / st.ips, blocked = per > st.thr ? (per - st.thr) / per : 0;
+            out.replaceChildren(hbars([['Request mỗi IP / 10 giây', per, true], ['Ngưỡng', st.thr, false]], { max: Math.max(per, st.thr) * 1.1, fmt: (v) => v.toFixed(1).replace('.', ',') }),
+              hbars([['Phần tấn công bị chặn', blocked, blocked > 0]], { max: 1, fmt: pct }));
+            cap.innerHTML = blocked === 0 ? `<span class="bad">Không chặn được request nào:</span> mỗi IP chỉ gửi ${per.toFixed(1).replace('.', ',')} request, dưới ngưỡng ${st.thr}. Không có nghĩa rule sai: nó làm đúng việc của nó. Trong hệ thống thật: chặn theo signature (A3); hạ ngưỡng xuống dưới mức này sẽ chặn cả khách thật.`
+              : `Chặn được ${pct(blocked)}: mỗi IP vượt ngưỡng ${(per - st.thr).toFixed(1).replace('.', ',')} request. Rate limiting chỉ cắt phần vượt; ${st.thr} request đầu của mỗi IP vẫn lọt mỗi chu kỳ.`;
+          }
+          const s1 = slider('Số IP tấn công', 10, 5000, 10, st.ips, (v) => { st.ips = v; draw(); }, fT);
+          const s2 = slider('Ngưỡng / 10 giây / IP', 5, 60, 1, st.thr, (v) => { st.thr = v; draw(); });
+          vb.append(el('div', { class: 'row' }, [s1.node, s2.node]), out, cap);
+          draw();
+        },
+        take: 'Rate limiting chỉ thấy từng IP. Botnet càng rộng, mỗi IP càng "lịch sự", rate limiting càng vô dụng.'
+      },
+      {
+        q: 'Ngưỡng 10 request / 10 giây cho /login có vẻ hợp lý. Sao khách sau NAT bị chặn?',
+        a: `<p>Lúc 20:00, cả nhóm khách dùng chung IP <code>203.0.113.77</code> (cùng văn phòng hay cùng trạm mạng di động) mở trang đăng nhập rồi đăng nhập. Với Cloudflare đó là một IP gửi 70 request vào <code>/login</code> trong vài giây. Trên Free, rule chỉ có field Path, không lọc được Method, nên GET (mở trang) cũng bị đếm cùng POST (gửi mật khẩu).</p>
+<p>README: chọn ngưỡng bằng mức cao nhất một người thật tạo trong một chu kỳ, nhân 3–5; thiếu số liệu thì bắt đầu cao rồi hạ dần. Business+ có thêm field Method (đếm riêng POST) và IP có hỗ trợ NAT (dùng cookie <code>_cfuvid</code> để tách người dùng sau cùng IP). Đổi plan và ngưỡng trong hình chính để xem nhóm NAT thay đổi.</p>
+<p>Còn một tầng nữa ở counter: Cloudflare đếm riêng tại từng data center. Với rule đếm theo IP thì ít ảnh hưởng, vì traffic của một IP thường tới một data center. Với rule đếm theo characteristic nhiều client cùng có (chỉ Enterprise), botnet chia ra nhiều data center có thể vượt ngưỡng tổng mà không bị chặn ở đâu. Ví dụ README (số liệu giả định):</p>`,
+        viz(vb) {
+          const st = { a: 80, b: 70, c: 90 }, out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const tot = st.a + st.b + st.c;
+            out.replaceChildren(hbars([['Data center 1', st.a, st.a > 100], ['Data center 2', st.b, st.b > 100], ['Data center 3', st.c, st.c > 100], ['Tổng toàn mạng', tot, true]], { max: Math.max(tot, 100), fmt: fT }));
+            const any = st.a > 100 || st.b > 100 || st.c > 100;
+            cap.innerHTML = !any && tot > 100 ? `<span class="bad">Tổng ${tot} đã vượt ngưỡng 100 nhưng không counter nào vượt</span>, nên không bị chặn. Không có nghĩa rule hỏng: counter vốn không cộng gộp giữa các data center. Trong hệ thống thật: với botnet phân tán, dùng signature thay vì trông vào ngưỡng tổng.`
+              : any ? 'Ít nhất một data center vượt 100: chỉ request ở data center đó bị chặn.' : 'Chưa vượt ngưỡng ở đâu.';
+          }
+          const mk = (k, lbl) => slider(lbl, 0, 150, 5, st[k], (v) => { st[k] = v; draw(); });
+          vb.append(el('div', { class: 'row' }, [mk('a', 'DC 1').node, mk('b', 'DC 2').node, mk('c', 'DC 3').node]), out, cap);
+          draw();
+        },
+        take: 'Ngưỡng đặt theo người thật đông nhất có thể đứng sau một IP, không theo người dùng trung bình.'
+      },
+      {
+        q: 'Viết rule xong mà không khớp request nào, hoặc khớp cả thứ không ngờ. Thường sai ở đâu?',
+        a: `<p>README liệt kê các lỗi hay gặp: <code>starts_with</code> là <b>hàm</b>, viết <code>starts_with(http.request.uri.path, "/api/")</code>; phần tử trong set cách nhau bằng dấu cách, <code>{"POST" "PUT"}</code>, không phải dấu phẩy; field hiện hành là <code>ip.src.asnum</code>, không phải <code>ip.geoip.asnum</code>; <code>matches</code> (regex) chỉ có ở Business+. Thêm hai lỗi về độ rộng: <code>contains</code> khớp quá rộng, và so sánh path phân biệt hoa thường. Trình duyệt áp ba expression lên vài path:</p>`,
+        viz(vb) {
+          const paths = ['/login', '/Login', '/api/login-history', '/account/login', '/LOGIN'];
+          const exps = [['contains "/login"', (p) => p.includes('/login')], ['eq "/login"', (p) => p === '/login'], ['lower(...) eq "/login"', (p) => p.toLowerCase() === '/login']];
+          vb.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Path</th>' + exps.map((e) => `<th class="mono">${esc(e[0])}</th>`).join('') + '</tr>' +
+            paths.map((p) => `<tr><td class="mono">${p}</td>` + exps.map(([, f], i) => { const hit = f(p), want = p.toLowerCase() === '/login'; return `<td class="mono ${hit !== want ? 'bad' : 'ok'}">${hit ? 'khớp' : '-'}${hit && !want ? ' (nhầm)' : !hit && want ? ' (sót)' : ''}</td>`; }).join('') + '</tr>').join('') })]),
+          el('div', { class: 'cap', html: '<code>contains</code> khớp nhầm <code>/api/login-history</code> và <code>/account/login</code>; <code>eq</code> sót <code>/Login</code>, <code>/LOGIN</code>. Nếu ứng dụng chấp nhận <code>/Login</code>, kẻ tấn công cũng dùng được. Trong hệ thống thật: <code>lower(http.request.uri.path) eq "/login"</code>, rồi xem Security Events trong 1–2 phút để chắc rule đang ăn.' }));
+        },
+        take: 'Sau khi bật rule, nhìn Security Analytics 1–2 phút. Không thấy request chuyển sang blocked/challenged thì rule sai, không phải tấn công đã dừng.'
+      }
+    ],
+    poc: {
+      goal: "Đưa <b>chính văn bản</b> các expression R0–R5 và 3 ví dụ A3 trong README qua một bộ đánh giá Rules language thu gọn (<code>cf_expr.py</code>), chạy trên 4.982 request synthetic trong 60 giây theo thứ tự custom rule → Under Attack → rate limiting. Đếm tấn công bị chặn, khách bị hỏi hay bị chặn, client không phải trình duyệt bị hỏng.",
+      file: "docs/under-attack/pocs/02_branch_a_l7.py",
+      run: "uv run docs/under-attack/pocs/02_branch_a_l7.py",
+      needs: "Python chuẩn, dưới 1 giây. Bộ parser là tập con tự viết, không phải engine của Cloudflare; không gọi API Cloudflare, không gửi request. Dữ liệu là synthetic; POC không chạm firewall hay mạng thật.",
+      output: "=== 60 giây request synthetic: 4982 request, 10 nhóm (3 nhóm tấn công)\nnhóm                        loại  request\n--------------------------  ----  -------\nKhách trình duyệt           cust  900\nKhách từ quảng cáo (utm)    cust  60\nKhách sau một IP (NAT)      cust  90\nApp mobile (/api/)          nb    250\nWebhook thanh toán đối tác  nb    30\nHealth check                nb    12\nGooglebot                   bot   40\nTấn công: flood /search     atk   1200\nTấn công: cache busting /   atk   1500\nTấn công: POST /login       atk   900\n\n=== Mỗi cấu hình chạy qua cùng dòng request (thứ tự: custom rule → Under Attack → rate limiting)\ncấu hình                               tấn công bị chặn  khách bị hỏi  khách bị chặn  app/webhook/health hỏng  Googlebot chặn  tới origin\n-------------------------------------  ----------------  ------------  -------------  -----------------------  --------------  ----------\nKhông làm gì                           0.0%              0.0%          0              0/0/0                    0               4982\nA1: Under Attack toàn zone             95.1%             100.0%        0              250/30/12                40              1225\nA1 + Configuration Rule chừa /api/     95.1%             100.0%        0              0/0/12                   40              1505\nA3: 3 rule ví dụ của README            100.0%            0.0%          60             0/30/12                  0               1280\nR0 + R2 + R3 + R4 (chỉ Block)          100.0%            0.0%          60             0/0/0                    0               1322\nR0 + R2 + R4 + R5                      58.3%             0.0%          0              0/30/0                   0               2852\nR0 + R2 + R3u + R4                     100.0%            0.0%          0              0/0/0                    0               1382\nR0 + R2 + R3u + R4 + RL /login 10/10s  100.0%            0.0%          60             0/0/0                    0               1322\nGiả định của lab: chỉ trình duyệt thật và 10% bot cache busting (headless Chrome) qua được challenge; Googlebot thì không.\n\n=== Rule nào chạm nhóm hợp lệ nào (request bị Block hoặc kẹt challenge)\nA3: 3 rule ví dụ của README    A3.2  Các ASN hosting đang bắn               → {'Webhook thanh toán đối tác': 30, 'Health check': 12}\nA3: 3 rule ví dụ của README    A3.3  Cache busting vào trang chủ            → {'Khách từ quảng cáo (utm)': 60}\nR0 + R2 + R4 + R5              R5    Challenge theo ASN hoặc quốc gia đang bắn → {'Webhook thanh toán đối tác': 30}\n\n=== Bảng 'viết sai / viết đúng' của README qua bộ parser của POC\nsai  http.request.uri.path starts_with \"/api/\"        → LỖI: sau một giá trị cần toán tử so sánh, gặp 'starts_with'\nđúng starts_with(http.request.uri.path, \"/api/\")      → parse OK; khớp ['/api/login-history', '/api/cart']\nsai  http.request.method in {\"POST\", \"PUT\"}           → LỖI: phần tử trong set cách nhau bằng dấu cách, không dùng dấu phẩy\nđúng http.request.method in {\"POST\" \"PUT\"}            → parse OK\nsai  ip.geoip.asnum eq 16509                          → LỖI: field không có trong danh sách của POC: ip.geoip.asnum\nđúng ip.src.asnum eq 16509                            → parse OK\nsai  cf.threat_score gt 10                            → parse OK; khớp []\nsai  http.request.uri.path contains \"/login\"          → parse OK; khớp ['/login', '/api/login-history']\nđúng http.request.uri.path eq \"/login\"                → parse OK; khớp ['/login']\nsai  http.request.uri.path matches \"^/api/\"           → parse OK (regex: chỉ Business+); khớp ['/api/login-history', '/api/cart']\nđúng starts_with(http.request.uri.path, \"/api/\")      → parse OK; khớp ['/api/login-history', '/api/cart']\nRút ra: Under Attack chặn gần hết flood nhưng làm hỏng app, webhook và health check; rule theo signature chặn được nhiều mà ít hại hơn, nhưng R3/A3 'trang chủ có query → Block' chặn luôn khách vào từ link quảng cáo có utm, và R5 (challenge ASN hosting) làm hỏng webhook đối tác chạy trên AWS. Dữ liệu synthetic; không có request thật nào được gửi.",
+      measured: true,
+      read: ["Under Attack toàn zone: dừng 95,1% tấn công (phần lọt là bot headless chạy được JavaScript) nhưng hỏi 100% khách và làm hỏng 250 request app, 30 webhook, 12 health check. Configuration Rule chừa <code>/api/</code> cứu app và webhook, nhưng health check ở <code>/healthz</code> vẫn hỏng.", "Ba rule A3 của README chặn 100% tấn công, nhưng rule \"trang chủ có query → Block\" chặn 60 request của khách vào từ link quảng cáo có <code>utm_</code>, và rule ASN hosting (Managed Challenge) làm hỏng webhook đối tác chạy trên AWS (ASN 16509) cùng health check (ASN 14061).", "R0 + R2 + R3 + R4 vẫn chặn 60 khách utm (R3 cùng logic). Biến thể R3u do POC tự đặt (chừa query bắt đầu bằng <code>utm_</code>): 100% tấn công bị chặn, 0 khách bị chạm; đổi lại kẻ tấn công có thể thêm <code>utm_</code> để né.", "Thêm rate limit /login 10/10 s theo IP: không chặn thêm tấn công nào (đã bị custom rule chặn trước nên không được đếm) nhưng chặn 60 request của nhóm khách sau một IP NAT. Bảng cuối: các cách viết sai của README bị parser từ chối; <code>contains \"/login\"</code> khớp cả <code>/api/login-history</code>."]
+    },
+    mount(stage) {
+      const st = { plan: 'free', uam: false, apiExempt: false, on: {}, act: {}, gBot: false, rl: false, rlPath: '/login', rlThr: 10, rlPost: false };
+      RULES.forEach((r) => { st.on[r.id] = false; st.act[r.id] = r.act; });
+      const actSel = {};
+      const ruleBoxes = {};
+      const PRESETS = [
+        ['none', 'Chưa làm gì', () => {}],
+        ['uam', 'Phút 2: chỉ Under Attack', () => { st.uam = true; }],
+        ['uamapi', 'Phút 2: Under Attack, chừa /api/', () => { st.uam = true; st.apiExempt = true; }],
+        ['a3', 'Phút 8–15: 3 ví dụ A3 của README', () => { ['A3', 'R5', 'R3'].forEach((k) => { st.on[k] = true; }); }],
+        ['sig', 'Phút 15: rule theo signature', () => { ['R0', 'R2', 'R3', 'A3'].forEach((k) => { st.on[k] = true; }); st.act.R3 = 'challenge'; }],
+        ['broad', 'Cách sai: chặn rộng', () => { st.on.G = true; st.on.R5 = true; st.uam = true; }]
+      ];
+      const presetBtns = PRESETS.map(([k, t, f]) => el('button', { text: t, onclick: () => {
+        st.uam = false; st.apiExempt = false; st.rl = false; st.rlPost = false; st.gBot = false; st.rlPath = '/login'; st.rlThr = 10;
+        RULES.forEach((r) => { st.on[r.id] = false; st.act[r.id] = r.act; }); f(); sync(); draw();
+      } }));
+      const sPlan = select('Plan', PLANS, st.plan, (v) => { st.plan = v; if (v !== 'business') st.rlPost = false; sync(); draw(); });
+      const cb = (checked, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = checked; i.addEventListener('change', () => onChange(i.checked)); return i; };
+      const badge = (act) => el('span', { style: `font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid ${ACT[act][1]};color:${ACT[act][1]}`, text: ACT[act][0] });
+      const actPicker = (r) => {
+        if (r.act === 'skip') return badge('skip');
+        const s = el('select', { style: 'font-size:11.5px;padding:1px 4px', 'aria-label': 'Action của ' + r.id });
+        [['block', 'Block'], ['challenge', 'Managed Challenge']].forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+        s.value = st.act[r.id];
+        s.addEventListener('change', () => { st.act[r.id] = s.value; draw(); });
+        actSel[r.id] = s;
+        return s;
+      };
+      const card = (inputEl, title, act, expr, extra) => el('div', { style: 'border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg);min-width:0' }, [
+        el('label', { class: 'ctl', style: 'color:var(--ink);font-weight:500;flex-wrap:wrap' }, [inputEl, title, act ? (typeof act === 'string' ? badge(act) : act) : null]),
+        expr ? el('div', { class: 'mono', style: 'font-size:11px;color:var(--mute);white-space:pre-wrap;word-break:break-word;margin-top:2px', text: expr }) : null, extra || null]);
+      const uamIn = cb(false, (v) => { st.uam = v; draw(); }), apiIn = cb(false, (v) => { st.apiExempt = v; draw(); });
+      const gBotIn = cb(false, (v) => { st.gBot = v; draw(); });
+      RULES.forEach((r) => { ruleBoxes[r.id] = cb(false, (v) => { st.on[r.id] = v; draw(); }); });
+      const rlIn = cb(false, (v) => { st.rl = v; draw(); });
+      const rlPathSel = select('Path', [['/login', '/login'], ['/search', '/search'], ['/', '/']], '/login', (v) => { st.rlPath = v; draw(); });
+      const rlThr = slider('Ngưỡng / 10 giây / IP', 5, 60, 1, 10, (v) => { st.rlThr = v; draw(); });
+      const rlPostIn = cb(false, (v) => { if (st.plan !== 'business') { rlPostIn.checked = false; st.rlPost = false; } else st.rlPost = v; draw(); });
+      function sync() {
+        sPlan.sel.value = st.plan; uamIn.checked = st.uam; apiIn.checked = st.apiExempt; gBotIn.checked = st.gBot; rlIn.checked = st.rl; rlPostIn.checked = st.rlPost;
+        RULES.forEach((r) => { ruleBoxes[r.id].checked = st.on[r.id]; if (actSel[r.id]) actSel[r.id].value = st.act[r.id]; });
+        rlPathSel.sel.value = st.rlPath; rlThr.input.value = st.rlThr; rlThr.node.querySelector('output').textContent = st.rlThr;
+      }
+      const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-bottom:12px' }, [
+        card(uamIn, 'A1 — Under Attack Mode (toàn zone)', 'challenge', 'security_level = "under_attack"'),
+        card(apiIn, 'Configuration Rule: tắt Under Attack cho /api/', null, 'starts_with(http.request.uri.path, "/api/") → I\'m Under Attack = Off'),
+        ...RULES.map((r) => card(ruleBoxes[r.id], r.name, actPicker(r), r.expr, r.id === 'G' ? el('label', { class: 'ctl', style: 'font-size:12px' }, [gBotIn, 'thêm and not cf.client.bot']) : null)),
+        card(rlIn, 'A4 — Rate limiting rule (đếm theo IP, Block 10 giây)', 'block', null, el('div', {}, [rlPathSel.node, rlThr.node, el('label', { class: 'ctl', style: 'font-size:12px' }, [rlPostIn, 'chỉ đếm POST (field Method, Business+)'])]))
+      ]);
+      const tiles = el('div', { class: 'cols', style: 'margin-bottom:10px' }), bars = el('div'), tbl = el('div'), flags = el('div', { style: 'font-size:13.5px' }), originBar = el('div');
+      const tile = (label, v, cls, note) => el('div', { style: 'border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)' }, [
+        el('div', { style: 'font-size:12.5px;color:var(--mute)', text: label }), el('div', { class: 'mono ' + cls, style: 'font-size:22px;font-weight:500', text: v }), el('div', { style: 'font-size:12px;color:var(--mute)', text: note })]);
+
+      function draw() {
+        const { tally, perRule, m } = simulate(st);
+        tiles.replaceChildren(
+          tile('Tấn công bị dừng', pct(m.atkStop), m.atkStop > 0.9 ? 'ok' : 'bad', 'Block + kẹt challenge + rate limit'),
+          tile('Khách thật phải qua challenge', pct(m.custPass), m.custPass > 0.2 ? 'bad' : 'ok', 'vẫn vào được, chậm vài giây'),
+          tile('Khách thật bị chặn', pct(m.custStop), m.custStop > 0 ? 'bad' : 'ok', 'Block hoặc rate limit'),
+          tile('App / webhook / health check hỏng', pct(m.nbStop), m.nbStop > 0 ? 'bad' : 'ok', 'client không phải trình duyệt'));
+        const over = m.origin > CAP;
+        originBar.replaceChildren(hbars([['Request tới origin (mẫu 60 giây)', m.origin, over], ['Sức chịu của origin (giả định)', CAP, false]], { max: Math.max(STREAM.length, CAP), fmt: fT }));
+        bars.replaceChildren(groupBars(tally));
+        const rowsIds = [...(st.uam ? ['UAM'] : []), ...RULES.filter((r) => st.on[r.id] && r.act !== 'skip').map((r) => r.id), ...(st.rl ? ['RL'] : [])];
+        const nm = (id) => id === 'UAM' ? 'Under Attack' : id === 'RL' ? 'Rate limit ' + st.rlPath : id;
+        const legitTxt = (o) => Object.entries(o).map(([g, n]) => `${GROUPS[g].name}: ${n}`).join('; ') || '-';
+        tbl.replaceChildren(rowsIds.length ? el('div', { class: 'tbl', style: 'overflow-x:auto' }, [el('table', { style: 'border-collapse:collapse;font-size:12.5px;width:100%', html:
+          '<tr><th style="text-align:left;padding:4px 6px;border:1px solid var(--line)">Rule</th><th style="text-align:left;padding:4px 6px;border:1px solid var(--line)">Tấn công bị dừng</th><th style="text-align:left;padding:4px 6px;border:1px solid var(--line)">Hợp lệ bị dừng</th><th style="text-align:left;padding:4px 6px;border:1px solid var(--line)">Hợp lệ phải qua challenge</th></tr>' +
+          rowsIds.map((id) => { const p = perRule[id], bad = Object.keys(p.legit).length; return `<tr><td class="mono" style="padding:4px 6px;border:1px solid var(--line)">${esc(nm(id))}</td><td class="mono" style="padding:4px 6px;border:1px solid var(--line)">${fT(p.atk)}</td><td style="padding:4px 6px;border:1px solid var(--line)" class="${bad ? 'bad' : ''}">${esc(legitTxt(p.legit))}</td><td style="padding:4px 6px;border:1px solid var(--line)">${esc(legitTxt(p.pass))}</td></tr>`; }).join('') })])
+          : el('p', { class: 'hint', text: 'Chưa bật rule nào: mọi request đi thẳng tới origin.' }));
+        const f = [];
+        const customOn = RULES.filter((r) => st.on[r.id]).length;
+        if (st.plan === 'free' && customOn > 5) f.push(box('var(--bad)', `<b>Đang bật ${customOn} custom rule, Free chỉ có 5.</b> Dashboard sẽ không cho tạo rule thứ 6. Không có nghĩa phải nâng plan ngay: README khuyên sửa rule cũ và gộp điều kiện bằng <code>or</code>. Trong hệ thống thật: tạo sẵn những rule quan trọng nhất ở trạng thái tắt.`));
+        const rp = perRule;
+        if (st.on.R3 && rp.R3.legit.ads) f.push(box('var(--bad)', `<b>R3 chặn ${rp.R3.legit.ads} request của khách bấm link quảng cáo.</b> Vì sao: link <code>/?utm_source=zalo&amp;utm_campaign=flashsale</code> có query, mà R3 (và ví dụ 3 của A3, <code>path eq "/" and query ne ""</code>) giả định trang chủ không dùng query. Đúng lúc flash sale, đây là khách bạn trả tiền quảng cáo để kéo về. Không có nghĩa R3 sai cú pháp: nó chặn đúng những gì nó viết. Trong hệ thống thật: hỏi team marketing trang chủ có nhận link utm không; nếu có, dùng Managed Challenge (khách trình duyệt qua được) thay vì Block. Loại trừ query bắt đầu bằng <code>utm_</code> cũng cứu được khách, nhưng kẻ tấn công thêm <code>utm_</code> vào query là né được (POC 02).`));
+        if (st.on.R2 && rp.R2.legit.health) f.push(box('var(--bad)', `<b>R2 chặn health check.</b> Vì sao: dịch vụ giám sát gọi <code>/healthz</code> bằng Go-http-client, không nằm dưới <code>/api/</code>. Hệ quả: hệ thống giám sát báo site sập trong lúc bạn đang chữa cháy. Trong hệ thống thật: bật R0 (Skip) và đặt nó trước.`));
+        if (st.on.G && (rp.G.legit.gbot || rp.G.legit.hook || rp.G.legit.health)) f.push(box('var(--bad)', `<b>Rule G chặn ${rp.G.legit.gbot ? 'Googlebot, ' : ''}${rp.G.legit.hook ? 'webhook thanh toán, ' : ''}${rp.G.legit.health ? 'health check, ' : ''}trong khi dừng ${pct(rp.G.atk / STREAM.filter((r) => !GROUPS[r.g].legit).length)} tấn công.</b> Vì sao: client hợp lệ ở nước ngoài cũng khớp "ngoài VN", còn 30% bot cache busting đặt ở VN vẫn lọt. ${rp.G.legit.gbot ? 'Thiếu <code>and not cf.client.bot</code> nên Googlebot bị chặn, traffic SEO giảm (README Phụ lục 3). ' : ''}Trong hệ thống thật: rule rộng dùng Managed Challenge, luôn kèm <code>not cf.client.bot</code>, và chuyển về challenge rồi tắt ngay khi hạ nhiệt.`));
+        if (st.on.R5 && (rp.R5.legit.hook || rp.R5.legit.health)) f.push(box('var(--bad)', `<b>R5 làm kẹt ${[rp.R5.legit.hook ? rp.R5.legit.hook + ' request webhook thanh toán' : '', rp.R5.legit.health ? rp.R5.legit.health + ' request health check' : ''].filter(Boolean).join(' và ')} ở challenge.</b> Vì sao: webhook của đối tác chạy trên AWS (ASN 16509), health check chạy ở ASN 14061; cả hai nằm đúng trong danh sách "ASN hosting đang bắn" của R5 và ví dụ 2 của A3. Challenge là trang HTML, client không phải trình duyệt không qua được. <code>and not cf.client.bot</code> chỉ chừa bot Cloudflare đã xác minh như Googlebot, không biết đối tác của bạn. Không có nghĩa đối tác là kẻ tấn công, cũng không có nghĩa Managed Challenge "nhẹ" hơn Block với họ: với client không phải trình duyệt, kết quả như nhau. Trong hệ thống thật: trước khi bật rule theo ASN, liệt kê client hợp lệ chạy trên cloud (webhook, giám sát, đối tác), chừa họ bằng R0 (Skip) đặt đầu tiên. R0 mẫu của README chỉ chừa <code>/healthz</code> có token, nên webhook vẫn hỏng cho tới khi thêm IP đối tác vào R0.`));
+        if (st.uam && (tally.hook.fail || tally.app.fail || tally.health.fail)) f.push(box('var(--bad)', `<b>Client không phải trình duyệt đang kẹt ở challenge:</b> ${['app', 'hook', 'health'].filter((g) => tally[g].fail).map((g) => GROUPS[g].name + ' ' + tally[g].fail).join(', ')}. Vì sao: challenge là trang HTML cần JavaScript. Không có nghĩa họ bị Block: Security Events ghi là challenged, dễ bị bỏ qua. Trong hệ thống thật: Configuration Rule chừa <code>/api/</code>, R0 cho health check và IP đối tác; với API thì Block theo signature hoặc rate limiting thay vì challenge.`));
+        if (st.uam && m.custPass > 0.5) f.push(box('var(--warn)', `<b>${pct(m.custPass)} khách đang mua hàng phải qua trang kiểm tra.</b> Đúng giữa flash sale. Không có nghĩa Under Attack là sai ở phút 2: nó cầm máu nhanh nhất. Trong hệ thống thật: README dặn tìm signature (A2–A3) rồi tắt Under Attack toàn zone, để lâu làm khó chịu người dùng thật.`));
+        if (st.rl && (tally.nat.rl || tally.kh.rl)) f.push(box('var(--bad)', `<b>Rate limit chặn ${tally.nat.rl + tally.kh.rl} request của khách thật</b>, chủ yếu nhóm dùng chung IP 203.0.113.77. Vì sao: ngưỡng ${st.rlThr} / 10 giây đếm cả nhóm như một người${st.rlPost ? '' : ', và đếm cả GET mở trang /login'}. Trong hệ thống thật: ngưỡng = mức cao nhất của người thật × 3–5; Business+ có field Method và IP hỗ trợ NAT.`));
+        if (st.rl && st.rlPath !== '/login' && rp.RL.atk / ((tally.a_search.n + tally.a_bust.n) || 1) < 0.2 && (st.rlPath === '/' ? tally.a_bust.origin : tally.a_search.origin)) f.push(box('var(--warn)', `<b>Rate limit trên ${st.rlPath} chỉ dừng ${fT(rp.RL.atk)} request tấn công.</b> Vì sao: ${st.rlPath === '/' ? '1.000 IP, mỗi IP một hai request: không IP nào vượt ngưỡng' : 'request /search đã bị custom rule dừng trước, hoặc mỗi IP gửi dưới ngưỡng trong 10 giây'}. Không có nghĩa rate limiting hỏng. Trong hệ thống thật: botnet trải rộng thì chặn theo signature (A3).`));
+        if (st.rlPost && st.plan !== 'business') f.push(box('var(--warn)', 'Field Method trong rate limiting chỉ có từ Business.'));
+        if (!rowsIds.length && !customOn) f.push(box('var(--warn)', `<b>Chưa làm gì: ${fT(m.origin)} request tới origin, gấp ${(m.origin / CAP).toFixed(1).replace('.', ',')} lần sức chịu giả định.</b> HTTP DDoS ruleset của Cloudflare luôn bật, nhưng phần trông hợp lệ như thế này vẫn được chuyển tiếp. Bắt đầu từ A1.`));
+        if (over && rowsIds.length) f.push(box('var(--bad)', `<b>Origin vẫn quá tải: ${fT(m.origin)} request, sức chịu giả định ${fT(CAP)}.</b> Xem nhóm tấn công nào còn màu xám trong biểu đồ để biết signature còn thiếu.`));
+        if (!over && m.atkStop > 0.9 && m.custStop === 0 && m.nbStop === 0 && m.gbot === 0 && m.custPass < 0.1) f.push(box('var(--ok)', `<b>Dừng ${pct(m.atkStop)} tấn công, không khách nào bị chặn, app và đối tác chạy bình thường${m.custPass ? '; chỉ ' + pct(m.custPass) + ' khách phải qua challenge' : ''}.</b> Đây là đích của A3: thay Under Attack toàn zone bằng rule nhắm đúng signature. Tiếp theo: theo dõi Security Analytics mỗi 5–10 phút (A6).`));
+        flags.innerHTML = f.join('');
+      }
+
+      stage.append(
+        el('div', { class: 'row' }, [...presetBtns]),
+        el('div', { class: 'row' }, [sPlan.node, el('span', { class: 'hint', style: 'margin:0', text: 'Plan đổi quota custom rule (Free: 5) và field Method của rate limiting (Business+).' })]),
+        grid, tiles, originBar,
+        el('h4', { style: 'margin:14px 0 6px;font-size:13px', text: 'Số phận từng nhóm request (mẫu 60 giây, giả lập)' }), bars,
+        el('div', { class: 'legend' }, SEG.map(([, t, c]) => el('span', {}, [el('i', { style: 'background:' + c }), t]))),
+        el('h4', { style: 'margin:14px 0 6px;font-size:13px', text: 'Rule nào đã dừng ai' }), tbl, flags,
+        el('p', { class: 'hint', text: 'Dòng request giả lập. Rule chạy theo thứ tự README: R0 Skip trước, rồi custom rules, Under Attack, rate limiting. Rate limiting đếm theo cửa sổ cố định 10 giây (đơn giản hoá của lab). Bot không chạy JavaScript kẹt ở challenge; Googlebot gặp challenge cũng tính là kẹt (giả định của lab).' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

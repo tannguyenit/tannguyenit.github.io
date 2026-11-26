@@ -36,6 +36,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Prompt là một phần của chương trình: viết cụ thể, few-shot, cấu trúc, tài liệu dài, chaining, tối ưu tự động, versioning, regression test, đổi model và đa ngôn ngữ.',
     parts: ['Workflow tổng hợp', 'Vai trò và viết cụ thể', 'Few-shot', 'Model, context và tool contract', 'Cấu trúc và tài liệu dài', 'Độ dài, giọng văn và chaining', 'Tối ưu tự động và quản lý prompt', 'Versioning, regression và đổi model', 'Đa ngôn ngữ và failure modes']
   },
+  'under-attack': {
+    title: 'LLM - 07 - Under Attack',
+    description: 'Runbook xử lý DDoS cho server vật lý đứng sau Cloudflare: hai phút đầu phân loại, tấn công qua Cloudflare, tấn công thẳng vào origin, rule và rate limit, chuẩn bị và hạ nhiệt.',
+    parts: ['Workflow tổng hợp', 'Phút 0–2: phân loại', 'Nhánh A: tấn công L7 qua Cloudflare', 'Nhánh B: tấn công thẳng origin', 'Security rules và rate limiting', 'Chuẩn bị, hạ nhiệt và lỗi hay gặp']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
