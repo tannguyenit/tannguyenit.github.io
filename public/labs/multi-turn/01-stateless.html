@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="00-workflow.html">← Lab trước</a><a href="02-kv-cache-prefix.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -327,7 +336,7 @@ lesson((() => {
       ['messages', 'Mảng các tin nhắn gửi lên API, mỗi phần tử có role (user hoặc assistant) và content. Ví dụ [{"role":"user","content":"Có trả góp không?"}].'],
       ['Lượt (turn)', 'Một lần khách nhắn và trợ lý trả lời. Khách nhắn "Pin dùng được bao lâu?" và nhận câu trả lời là một lượt.'],
       ['Request', 'Một lần gọi API. Chatbot đơn giản: một lượt một request. Agent gọi tool: một lượt có thể nhiều request.'],
-      ['Token', 'Mẩu chữ model đọc và tính tiền. Lab đếm thô 1 token ≈ 3 ký tự, đây là giả định của lab; tokenizer thật cho số khác, nhất là với tiếng Việt.'],
+      ['Token', 'Mẩu chữ model đọc và tính tiền. Lab đếm thô 1 token ≈ 3 ký tự: "Có trả góp không?" có 17 ký tự, lab tính ≈ 6 token. Đây là giả định của lab; tokenizer thật cho số khác, nhất là với tiếng Việt.'],
       ['Input tokens', 'Số token model phải đọc trong một request: tools + system + toàn bộ messages. Provider tính tiền theo số này.'],
       ['Server-state API', 'API giữ lịch sử hộ bạn, ví dụ OpenAI Responses với previous_response_id. Bạn chỉ gửi câu mới kèm ID, server tự nối lịch sử.'],
       ['Bậc hai (quadratic)', 'Tăng theo bình phương. Số lượt gấp đôi thì phần lịch sử gửi lại gần gấp bốn, vì mỗi lượt gửi lại mọi lượt trước nó.']
@@ -396,9 +405,9 @@ Request 3:  [tools][system][user1][assistant1][user2][assistant2][user3] → ass
       },
       {
         q: 'Nhưng nghe nói có "KV cache", "prompt caching". Vậy là provider có nhớ chứ?',
-        a: `<p>Đó là cache <b>tính toán</b>, không phải trí nhớ hội thoại. Khi đọc input, model tính ra key và value (KV) cho từng token. Prompt caching giữ lại KV của phần đầu prompt để request sau có <b>cùng phần đầu</b> khỏi tính lại.</p>
+        a: `<p>Đó là cache <b>tính toán</b>, không phải trí nhớ hội thoại. Khi đọc input, model tính ra một loạt con số trung gian cho từng token, gọi là key và value (KV; lab 02 giải thích chúng là gì). Prompt caching giữ lại KV của phần đầu prompt để request sau có <b>cùng phần đầu</b> khỏi tính lại.</p>
 <p>Điểm quan trọng: bạn vẫn phải gửi lại toàn bộ chữ. Provider dùng chính chữ bạn gửi để so khớp với cache. Không gửi thì không có gì để khớp, và model cũng không thấy. Cache chỉ làm phần lặp lại rẻ hơn và nhanh hơn, không làm nó biến mất khỏi request.</p>
-<p>Giống cache HTTP: trình duyệt vẫn gửi đúng URL, cache chỉ giúp server khỏi tính lại response.</p>`,
+<p>Đừng hình dung nó như cache HTTP lưu sẵn response: câu trả lời <b>không</b> được cache, model vẫn viết câu trả lời mới ở mỗi request. Gần hơn là cache kết quả trung gian theo khoá: khoá là chính chuỗi token bạn gửi (tính từ đầu), nên không gửi chuỗi đó thì không tra được cache.</p>`,
         take: 'Cache giảm giá phần lặp lại, nhưng không thay được việc gửi lại lịch sử.'
       },
       {
@@ -407,7 +416,7 @@ Request 3:  [tools][system][user1][assistant1][user2][assistant2][user3] → ass
 <pre class="mono" style="white-space:pre-wrap;font-size:12px">user: "Tháng trước mình mua đơn SV-4821, kiểm tra giúp."
   request 1 → assistant: tool_use(tra_don_hang {"ma_don": "SV-4821"})
   request 2 → (tool_result: đơn gồm sạc dự phòng...) → assistant: trả lời khách</pre>
-<p>Mỗi request sau mang theo cả lịch sử lẫn kết quả tool vừa nhận. README dẫn số liệu của Manus: tỉ lệ input:output trung bình khoảng 100:1, khoảng 50 tool call mỗi task. Kéo số tool call bên dưới (lịch sử trước lượt 11 theo giả định README; mỗi tool_use 60 token, mỗi tool_result 400 token là giả định của lab).</p>`,
+<p>Mỗi request sau mang theo cả lịch sử lẫn kết quả tool vừa nhận. README dẫn số liệu Manus báo cáo về agent của họ: tỉ lệ input:output trung bình khoảng 100:1, khoảng 50 tool call mỗi task. Kéo số tool call bên dưới (lịch sử trước lượt 11 theo giả định README; mỗi tool_use 60 token, mỗi tool_result 400 token là giả định của lab).</p>`,
         viz(box) {
           const out = el('div'), stat = el('div', { class: 'stat' });
           function draw(k) {
@@ -487,6 +496,15 @@ Request 3:  [tools][system][user1][assistant1][user2][assistant2][user3] → ass
         take: 'Lịch sử dài tốn cả tiền lẫn thời gian chờ. Cache giảm được cả hai, nhưng phải đo.'
       }
     ],
+    poc: {
+      goal: "Xem chuỗi thật sự đưa vào model ở lượt 2 khi có và không có lịch sử. Rồi đếm token của 30 request ShopViet bằng tokenizer thật <code>o200k_base</code> (bộ tách token của OpenAI, dùng ở đây để đếm sát hơn cách ước lượng 3 ký tự/token của lab) để thấy tổng input cộng dồn tăng theo bậc hai.",
+      file: "docs/multi-turn-conversation/pocs/01_stateless.py",
+      run: "uv run docs/multi-turn-conversation/pocs/01_stateless.py",
+      needs: "Không cần Docker hay model: chỉ <code>numpy</code> và <code>tiktoken</code>, chạy dưới 1 giây.",
+      output: "=== Lượt 1 khách nói mã đơn, lượt 2 hỏi lại. Model thấy gì ở lượt 2?\nKhông gửi lịch sử  | 2 message |  51 token | chuỗi đưa vào model KHÔNG có 'SV-4821'\nGửi lại lịch sử    | 4 message | 106 token | chuỗi đưa vào model có 'SV-4821'\n\n=== Kích thước request khi gửi lại lịch sử ShopViet (tokenizer o200k_base)\nrequest | message | token gửi |  cộng dồn | phần lặp lại\n      1 |       2 |       694 |       694 |          0%\n      2 |       4 |       750 |      1444 |         48%\n      5 |      10 |       914 |      4016 |         77%\n     10 |      20 |      1209 |      9452 |         87%\n     15 |      30 |      1507 |     16415 |         91%\n     20 |      40 |      1784 |     24820 |         93%\n     25 |      50 |      2055 |     34536 |         94%\n     30 |      60 |      2321 |     45650 |         95%\n\n15 lượt: 16415 token cộng dồn. 30 lượt: 45650 token (gấp 2.8 lần khi số lượt gấp 2).\nBỏ phần cố định N·S (S = 694): lịch sử gửi lại 6005 → 24830 token, gấp 4.1 lần, đúng số hạng t·N²/2.\nRút ra: thông tin không có trong request thì model không thể biết. Gửi lại lịch sử giải quyết việc đó, nhưng tổng input cộng dồn tăng nhanh hơn số lượt, và phần lớn là nội dung đã gửi.",
+      measured: true,
+      read: ["Phần đầu: \"2 message\" là system + câu hỏi mới, \"4 message\" thêm câu khách nói mã đơn và câu trợ lý xác nhận. Không gửi lịch sử thì chuỗi đưa vào model không chứa <code>SV-4821</code>: không model nào trả lời đúng được, vì thông tin không nằm trong request.", "Request 1 chỉ 694 token (không phải 8.300 như README) vì POC không có tools và system prompt ngắn. Độ lớn khác, quy luật giống.", "Cột <b>phần lặp lại</b> = 1 − token request này / cộng dồn. Vì sao đúng: request cuối chứa mỗi nội dung đúng một lần, phần còn lại của tổng cộng dồn là chữ gửi lại. Từ request 10 trở đi, gần 90% input cộng dồn là nội dung đã gửi ở request trước.", "Dòng cuối: tổng cộng dồn chỉ gấp 2,8 lần khi số lượt gấp đôi vì phần cố định N·S tăng tuyến tính; bỏ phần đó đi thì lịch sử gửi lại gấp 4,1 lần, đúng số hạng t·N²/2."]
+    },
     mount(stage) {
       const st = { n: 7, mode: 'text', api: 'messages' };
       const sN = slider('Request thứ', 1, NMAX, 1, 7, (v) => { st.n = v; draw(); });
@@ -626,6 +644,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -639,7 +669,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

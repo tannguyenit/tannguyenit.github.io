@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-cache-economics.html">← Lab trước</a><a href="06-stable-prefix.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -363,7 +372,7 @@ lesson((() => {
       {
         q: 'Prefix giống hệt mà vẫn miss. Cache nằm ở đâu mà lại "lạc"?',
         a: `<p>Cache là bảng KV nằm trong bộ nhớ của <b>một máy cụ thể</b>. Provider có rất nhiều máy. Request của lượt 7 đến máy A, KV của nó nằm ở A. Nếu lượt 8 bị đưa sang máy B, B không có KV đó nên phải tính lại từ đầu, dù prefix giống hệt.</p>
-<p>Provider thường route theo hash phần đầu prompt. Nhưng mọi cuộc chat của ShopViet đều bắt đầu bằng cùng tools + system, nên hash giống nhau và dồn vào cùng một máy. README ghi với OpenAI: trên khoảng 15 request/phút cho cùng prefix + key, traffic có thể tràn sang máy khác. <code>prompt_cache_key</code> theo conversation ID tách mỗi cuộc chat thành một luồng riêng.</p>
+<p>Provider thường route theo hash phần đầu prompt (hash là một mã ngắn tính từ nội dung: cùng nội dung luôn ra cùng mã, nên luôn về cùng máy). Nhưng mọi cuộc chat của ShopViet đều bắt đầu bằng cùng tools + system, nên hash giống nhau và dồn vào cùng một máy. README ghi với OpenAI: trên khoảng 15 request/phút cho cùng prefix + key, traffic có thể tràn sang máy khác. <code>prompt_cache_key</code> theo conversation ID tách mỗi cuộc chat thành một luồng riêng.</p>
 <p>Mô phỏng bên dưới là mô hình đơn giản hoá: 8 máy, mỗi cuộc chat 30 lượt, hit khi lượt n đến đúng máy đã xử lý lượt n−1. Ngưỡng 15 request/phút lấy từ README; cách provider thực sự phân tải không được công bố.</p>`,
         viz(box) {
           let conv = 6, rpm = 4, mode = 'shared';
@@ -398,7 +407,7 @@ lesson((() => {
       },
       {
         q: 'Claude không cần routing key. Vậy gửi 10 request song song cùng prefix thì cả 10 đều hit?',
-        a: `<p>Không. README §2.2: cache entry của Claude chỉ dùng được <b>sau khi response đầu tiên bắt đầu</b>. Gửi N request cùng lúc thì chưa request nào kịp ghi, cả N đều trả giá đầy đủ (và đều ghi). Cách README khuyên: gửi 1 request, chờ response đầu tiên bắt đầu, rồi mới gửi N−1 request còn lại.</p>
+        a: `<p>Không. README §2.2: cache entry của Claude chỉ dùng được <b>sau khi response đầu tiên bắt đầu</b> trả về, dù có stream hay không. Gửi N request cùng lúc thì chưa request nào kịp ghi, cả N đều trả giá đầy đủ (và đều ghi). Cách README khuyên: gửi 1 request, chờ response đầu tiên bắt đầu, rồi mới gửi N−1 request còn lại.</p>
 <p>ShopViet gặp chuyện này khi cho trợ lý chia việc: một lúc gọi nhiều sub-agent kiểm kho, tính trả góp, tra đơn SV-4821, tất cả dùng chung một prefix dài. Giá Claude Opus 5.5 theo README: ghi 5 phút $5, đọc $0,20 / MTok.</p>`,
         viz(box) {
           let N = 6, Pk = 40;
@@ -412,7 +421,7 @@ lesson((() => {
           box.append(el('div', { class: 'row' }, [slider('Số request', 2, 20, 1, N, (v) => { N = v; draw(); }).node, slider('Prefix chung', 5, 150, 5, Pk, (v) => { Pk = v; draw(); }, (v) => v + 'K token').node]), out);
           draw();
         },
-        take: 'Cache cần thời gian để tồn tại. Fan-out phải "mồi" một request trước rồi mới tỏa ra.'
+        take: 'Cache cần thời gian để tồn tại. Fan-out (tách một việc thành nhiều request gửi cùng lúc) phải "mồi" một request trước rồi mới tỏa ra.'
       },
       {
         q: 'System prompt 3.000 token của ShopViet có cache được không?',
@@ -467,7 +476,7 @@ lesson((() => {
         q: 'Gemini có explicit cache cachedContents với phí lưu theo giờ. Khi nào đáng dùng?',
         a: `<p>Explicit cache trên Gemini tạo một đối tượng cache riêng, có <code>ttl</code>, và tính <b>phí lưu trữ theo giờ</b> trên số token được cache. Chỉ có trên generateContent và không hỗ trợ Gemini 4 Argon trở đi.</p>
 <p>README tính ví dụ: tài liệu 100K token trên Gemini 3.8 Flash. Lưu trữ 100K × $0,50/MTok/giờ = $0,05 mỗi giờ. Mỗi request đọc cache tiết kiệm 100K × ($0,75 − $0,075)/MTok ≈ $0,068. Khoảng một request mỗi giờ là đủ bù phí lưu. Ít hơn thì implicit (không phí lưu) có lợi hơn.</p>
-<p>Ví dụ ShopViet: nạp bộ chính sách bảo hành và đổi trả vào cache để mọi phiên chat dùng chung. Đơn giá dưới đây là giá hiện tại trong README (sẽ tăng gấp đôi từ 01/01/2027).</p>`,
+<p>Ví dụ ShopViet: nạp bộ chính sách bảo hành và đổi trả vào cache để mọi phiên chat dùng chung. Đơn giá dưới đây là giá hiện tại mà ví dụ README dùng. Từ 01/01/2027 cả ba đơn giá (input, cached, lưu trữ) cùng gấp đôi, và README khuyên dự toán theo giá sau mốc (bài 4 dùng $1,50). Vì cả ba cùng gấp đôi, điểm hoà vốn tính theo request / giờ không đổi, chỉ số tiền lời / lỗ gấp đôi.</p>`,
         viz(box) {
           let K = 100, rph = 1;
           const out = el('div'), stat = el('div', { class: 'stat' });
@@ -518,6 +527,15 @@ lesson((() => {
         take: 'Mỗi provider một cách cộng. Chuẩn hoá usage trước khi vẽ dashboard, nếu không hai provider sẽ không so được với nhau.'
       }
     ],
+    poc: {
+      goal: "Phần A chạy offline: hàm <code>normalize_usage</code> theo README §3.11 đưa sáu kiểu usage về cùng (cached, written, total). Phần B gửi ba request Claude Haiku 5.5 có <code>cache_control</code> để đọc <code>cache_creation_input_tokens</code> và <code>cache_read_input_tokens</code> thật.",
+      file: "docs/multi-turn-conversation/pocs/05_providers.py",
+      run: "uv run docs/multi-turn-conversation/pocs/05_providers.py",
+      needs: "Phần B cần <code>ANTHROPIC_API_KEY</code> trong <code>docs/multi-turn-conversation/pocs/.env</code> (xem <code>.env.example</code>), chi phí dưới $0,001 mỗi lần chạy. Thiếu key thì script chạy phần A rồi dừng với một dòng hướng dẫn.",
+      output: "[Phần A: chạy thật]\n=== A. Offline: cùng một lượt chat 9.350 token, sáu kiểu usage (payload mẫu, không gọi API)\nprovider                 | field gốc                              | cached | written | total |  hit\nClaude Messages          | input + cache_creation + cache_read    |   8300 |    1000 |  9350 |  89%\nDeepSeek                 | prompt_cache_hit + prompt_cache_miss   |   8256 |       0 |  9350 |  88%\nGemini generateContent   | cachedContentTokenCount                |   8192 |       0 |  9350 |  88%\nGemini Interactions      | total_cached_tokens                    |   8192 |       0 |  9350 |  88%\nOpenAI Responses         | input_tokens_details.cached_tokens     |   8192 |       0 |  9350 |  88%\nOpenAI-compatible Chat   | prompt_tokens_details.cached_tokens    |   8192 |       0 |  9350 |  88%\nBẫy: chỉ đọc input_tokens của Claude thấy 50 token, tổng thật là 9350.\n\n\n=== B. API thật: 3 request claude-haiku-5-5, system có cache_control\n[chưa chạy: chưa có ANTHROPIC_API_KEY. Dạng kết quả mong đợi, không phải số đo]\nrequest                    | input_tokens | cache_creation | cache_read |  hit\n1. lần đầu                 |            … |              … |          0 |   0%\n2. y hệt                   |            … |              0 |          … |    …\n3. system thêm 1 dấu '!'   |            … |              … |          0 |   0%\nChi phí ước tính lần chạy này: $…",
+      measured: false,
+      read: ["Phần A là payload mẫu, không phải số đo: cùng một lượt 9.350 token, mỗi provider đặt số cache ở field khác nhau, sau chuẩn hoá thì so được hit rate. Số cached lệch nhau (8.300, 8.256, 8.192) là do payload mẫu, ví dụ 8.192 = 64 × 128 theo kiểu làm tròn xuống bội số 128 của OpenAI; điều cần nhìn là field nào chứa số đó.", "Dòng \"Bẫy\": chỉ đọc <code>input_tokens</code> của Claude thấy 50 token, trong khi tổng input là 9.350.", "Phần B (khi có key): request 2 phải có <code>cache_read_input_tokens</code> > 0; request 3 sửa một ký tự ở system nên quay lại ghi cache."]
+    },
     mount(stage) {
       let cur = 'claude', si = 0, picked = null;
       const pills = el('div', { class: 'row' }), card = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0;overflow-x:auto' }), bars = el('div');
@@ -612,6 +630,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -625,7 +655,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

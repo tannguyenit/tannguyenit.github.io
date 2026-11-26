@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="05-providers.html">← Lab trước</a><a href="07-long-context.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -372,8 +381,8 @@ lesson((() => {
     terms: [
       ['Prefix', 'Phần đầu của prompt. Request 2 có prefix trùng request 1 nếu nó bắt đầu bằng đúng chuỗi token của request 1. Ví dụ [tools][system][user₁] là prefix của [tools][system][user₁][assistant₁][user₂].'],
       ['Append-only', 'Chỉ nối thêm vào cuối, không sửa, không xoá cái đã có. Như sổ nhật ký viết bằng bút mực: muốn đính chính thì viết dòng mới.'],
-      ['Cache read / cache write', 'Đọc cache: token lấy lại KV đã tính, giá Claude Opus 5.5 $0,20/MTok. Ghi cache: token tính mới và lưu lại, $5/MTok (TTL 5 phút). Input thường không cache: $4/MTok. Số từ README.'],
-      ['Breakpoint', 'Điểm đánh dấu cache_control của Claude: "cache từ đầu prompt tới đây". Automatic caching đặt breakpoint ở block cuối và dời theo lịch sử.'],
+      ['Cache read / cache write', 'Đọc cache: token lấy lại KV đã tính sẵn (KV là phần model tính cho từng token, bài 2), giá Claude Opus 5.5 $0,20/MTok. Ghi cache: token tính mới và lưu lại, $5/MTok (TTL 5 phút). Input thường không cache: $4/MTok. Số từ README.'],
+      ['Breakpoint', 'Điểm đánh dấu cache_control của Claude: "cache từ đầu prompt tới đây". Ví dụ đặt breakpoint sau system thì tools + system được ghi thành một entry. Automatic caching tự đặt breakpoint ở block (mẩu nội dung) cuối cùng của request; lượt sau request dài thêm nên breakpoint cũng dời xuống cuối mới.'],
       ['Hit ratio', 'Tỉ lệ input đọc từ cache trên tổng input của request. Request 10.000 token có 9.000 token đọc cache thì hit 90%.'],
       ['Serialize', 'Biến object thành chuỗi để gửi đi. {"a":1,"b":2} và {"b": 2, "a": 1} cùng nghĩa nhưng là hai chuỗi khác nhau, nên là hai chuỗi token khác nhau.'],
       ['Transcript', 'Bản ghi đầy đủ cuộc hội thoại, đủ để dựng lại request y hệt: gồm cả thinking blocks, tool call arguments gốc, không chỉ text hiển thị.']
@@ -414,8 +423,8 @@ lesson((() => {
     deep: [
       {
         q: 'Vì sao đổi đúng một ký tự trong system prompt mà lượt 30 phải trả đủ giá cho 40.000 token lịch sử?',
-        a: `<p>Vì cache không lưu "câu", nó lưu <b>KV của từng token</b>, và KV của token thứ i được tính từ token i và <b>mọi token đứng trước</b> nó (attention causal, §1.2). Đổi một ký tự ở vị trí 200 thì mọi token từ 200 trở đi có ngữ cảnh khác, KV khác, dù chữ của chúng y hệt.</p>
-<p>Nên câu hỏi cache đặt ra không phải "đoạn này đã gặp chưa" mà là "chuỗi từ đầu tới đây đã gặp chưa". Thử sửa dòng system của request B bên dưới. Trình duyệt so hai chuỗi từng ký tự và tìm chỗ lệch đầu tiên.</p>`,
+        a: `<p>Vì cache không lưu "câu", nó lưu <b>KV của từng token</b> (bài 2), và KV của token thứ i được tính từ token i và <b>mọi token đứng trước</b> nó (causal attention, §1.2). Ví dụ nhỏ: trong <code>Giờ: 14:02. Bảo hành bao lâu?</code>, KV của chữ <code>Bảo</code> được tính khi model đã đọc <code>14:02</code>. Đổi thành <code>14:05</code> thì KV của <code>Bảo</code> khác, dù chữ <code>Bảo</code> y hệt. Đổi một ký tự ở vị trí 200 thì mọi token từ 200 trở đi đều như vậy.</p>
+<p>Nên câu hỏi cache đặt ra không phải "đoạn này đã gặp chưa" mà là "chuỗi từ đầu tới đây đã gặp chưa". Con số 40.000 token là giả định tròn: theo §1.4, request lượt 30 mang khoảng 37.300 token. Thử sửa dòng system của request B bên dưới. Trình duyệt so hai chuỗi từng ký tự và tìm chỗ lệch đầu tiên.</p>`,
         viz(box) {
           const base = (sys, extra) => '[tools] tra_don_hang | kiem_kho | tinh_tra_gop\n[system] ' + sys + '\n[user] Tai nghe Pro X còn màu đen không?\n[assistant] Dạ còn ạ, kho Đà Nẵng còn hàng.\n[user] Bảo hành bao lâu?' + extra;
           const A = base('Bạn là trợ lý ShopViet. Giờ: 14:02', '');
@@ -479,7 +488,7 @@ lesson((() => {
           };
           const rows = MODES.map(([k, t]) => [t, run(k)]);
           box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Cách đặt giờ</th><th>Đọc cache / tổng input (10 lượt)</th><th>Chi phí input</th><th>So với không cache</th></tr>' + rows.map(([t, r]) => '<tr><td>' + t + '</td><td class="mono">' + Math.round((r.read / r.tot) * 100) + '%</td><td class="mono">' + usd(r.cost) + '</td><td class="' + (r.cost > r.nc ? 'bad' : 'ok') + '">' + (r.cost > r.nc ? 'đắt hơn ' : 'rẻ hơn ') + Math.abs(Math.round((r.cost / r.nc - 1) * 100)) + '%</td></tr>').join('') })]),
-            el('div', { class: 'cap', text: 'Hai cách đầu đều "sửa chỗ cũ" nên mỗi lượt ghi lại gần hết. Cách 2 giữ được 8.000 token tools + system nhưng mất toàn bộ lịch sử. Nối vào đuôi tốn thêm khoảng 12 token mỗi lượt (ước lượng) nhưng giữ được cache.' }));
+            el('div', { class: 'cap', text: 'Hai cách đầu đều "sửa chỗ cũ" nên mỗi lượt ghi lại gần hết. Cách 2 giữ được 8.000 token tools + system nhưng mất toàn bộ lịch sử. Nối vào đuôi tốn thêm khoảng 12 token mỗi lượt (ước lượng) nhưng giữ được cache. Cách 4 rẻ nhất vì trong 10 lượt ngày không đổi nên không có gì phải nối; khi qua ngày mới thì nối một message, chỉ tốn thêm vài token.' }));
         },
         take: 'Dữ liệu động không bị cấm, chỉ cần được nối vào cuối thay vì sửa chỗ cũ.'
       },
@@ -507,19 +516,19 @@ lesson((() => {
       },
       {
         q: 'Khách chưa đăng nhập thì không được tra đơn. Bỏ tra_don_hang khỏi mảng tools với khách đó được không?',
-        a: `<p>Được về mặt chức năng, nhưng tools nằm ở <b>vị trí 0</b> của prefix. Thêm, bớt hay đổi thứ tự tools thì mất toàn bộ cache, kể cả system và lịch sử (bảng invalidation của Claude, §2.2). Tệ hơn: nếu khách đăng nhập giữa phiên rồi bạn thêm tool lại, cả lịch sử phải ghi lại.</p>
+        a: `<p>Được về mặt chức năng, nhưng tools nằm ở <b>vị trí 0</b> của prefix: Claude render tools trước system, system trước messages. Thêm, bớt hay đổi thứ tự tools thì mất toàn bộ cache, kể cả system và lịch sử (bảng invalidation của Claude, §2.2). Tệ hơn: nếu khách đăng nhập giữa phiên rồi bạn thêm tool lại, cả lịch sử phải ghi lại.</p>
 <div class="tbl"><table><tr><th>Thay đổi</th><th>Cache tools</th><th>Cache system</th><th>Cache messages</th></tr>
 <tr><td>Định nghĩa tools (thêm / bớt / đổi thứ tự)</td><td class="bad">mất</td><td class="bad">mất</td><td class="bad">mất</td></tr>
 <tr><td>Đổi model</td><td class="bad">mất</td><td class="bad">mất</td><td class="bad">mất</td></tr>
 <tr><td>Nội dung system prompt</td><td class="ok">còn</td><td class="bad">mất</td><td class="bad">mất</td></tr>
 <tr><td><code>tool_choice</code>, ảnh</td><td class="ok">còn</td><td class="ok">còn</td><td class="bad">mất</td></tr>
 <tr><td>Nội dung message</td><td class="ok">còn</td><td class="ok">còn</td><td class="bad">mất từ vị trí đổi</td></tr></table></div>
-<p>Cách README đề xuất: khai báo đủ tool từ đầu phiên, sort theo tên, và <b>chặn quyền ở tầng thực thi tool</b>. Gọi <code>tra_don_hang</code> khi chưa đăng nhập thì tool trả lỗi rõ ràng "cần đăng nhập". Claude còn có cơ chế thêm tool kiểu nối thêm (<code>tool_addition</code>, <code>defer_loading</code>, tool search) để không sửa mảng tools.</p>`,
+<p>Cách README đề xuất: khai báo đủ tool từ đầu phiên, sort theo tên, và <b>chặn quyền ở tầng thực thi tool</b>. Gọi <code>tra_don_hang</code> khi chưa đăng nhập thì tool trả lỗi rõ ràng "cần đăng nhập". Nếu thật sự cần đổi tool giữa phiên, Claude có cách khai báo tool ẩn từ đầu (<code>defer_loading: true</code>) rồi gửi block <code>tool_addition</code> ở cuối như một message mới (beta, §2.2), nên mảng tools ở đầu không đổi.</p>`,
         take: 'Quyền là chuyện của code thực thi, không phải của danh sách tools. Danh sách tools nên cố định theo phiên.'
       },
       {
         q: 'Đưa tên và hạng thành viên của khách vào system prompt thì cache trong phiên vẫn hit mà, sai ở đâu?',
-        a: `<p>Đúng, trong một phiên nó vẫn hit, vì hồ sơ không đổi giữa các lượt. Cái mất là <b>chia sẻ giữa các khách</b>. Nếu system tĩnh đứng trước hồ sơ, 8.000 token tools + system của mọi khách giống hệt nhau: khách đầu tiên ghi, các khách sau đọc (trong phạm vi workspace và TTL). Nếu tên khách nằm trong system, mỗi khách có một prefix riêng và ai cũng phải tự ghi 8.000 token.</p>
+        a: `<p>Đúng, trong một phiên nó vẫn hit, vì hồ sơ không đổi giữa các lượt. Cái mất là <b>chia sẻ giữa các khách</b>. Nếu system tĩnh đứng trước hồ sơ, 8.000 token tools + system của mọi khách giống hệt nhau: khách đầu tiên ghi, các khách sau đọc (nếu cùng workspace và trong TTL; workspace là nhóm API key trong tài khoản Claude, cache không dùng chung giữa các workspace). Nếu tên khách nằm trong system, mỗi khách có một prefix riêng và ai cũng phải tự ghi 8.000 token.</p>
 <p>Kéo thanh trượt số khách mở phiên trong 5 phút để thấy chênh lệch ở request đầu tiên của các phiên.</p>`,
         viz(box) {
           const stat = el('div'), S = 8000, P = 400;
@@ -536,7 +545,7 @@ lesson((() => {
       },
       {
         q: 'Lưu bảng messages(role, text) để hiển thị chat rồi dựng request từ đó, thiếu gì?',
-        a: `<p>Thiếu những thứ không hiển thị: thinking blocks kèm <code>signature</code>, cấu trúc nhiều block trong một message, chuỗi arguments gốc của tool call, compaction blocks, và từng byte của text. Request dựng lại từ bảng text khác request lượt trước, nên cache vỡ ở chính lượt assistant đó. Với Claude Opus 5.5 (preserved thinking), thinking bị bỏ hoặc sửa còn có thể gây 400, hoặc không báo lỗi mà model làm tiếp từ suy luận đã mất hiệu lực (§2.2).</p>
+        a: `<p>Thiếu những thứ không hiển thị: thinking blocks (phần suy luận model trả kèm câu trả lời) kèm <code>signature</code> (chuỗi ký để API kiểm tra block không bị sửa), cấu trúc nhiều block trong một message, chuỗi arguments gốc của tool call, compaction blocks, và từng byte của text. Request dựng lại từ bảng text khác request lượt trước, nên cache vỡ ở chính lượt assistant đó. Với Claude Opus 5.5 (preserved thinking: thinking cũ được giữ và gửi lại ở các lượt sau), thinking bị bỏ hoặc sửa còn có thể gây 400, hoặc không báo lỗi mà model làm tiếp từ suy luận đã mất hiệu lực (§2.2).</p>
 <p>Chọn cách lưu. Trình duyệt dựng lại assistant message từ bản lưu rồi so từng ký tự với bản gốc provider trả về.</p>`,
         viz(box) {
           const ORIG = { role: 'assistant', content: [{ type: 'thinking', thinking: 'Khách hỏi đơn SV-4821, cần tra trạng thái.', signature: 'EqQBCkgIAR...' }, { type: 'text', text: 'Để em kiểm tra đơn giúp anh. ' }, { type: 'tool_use', id: 'toolu_01', name: 'tra_don_hang', input_raw: '{"ma_don": "SV-4821", "kem_lich_su": true}' }] };
@@ -556,14 +565,14 @@ lesson((() => {
               '<div class="stat"><span>' + (same ? '<b class="ok">Giống hệt bản gốc</b>' : '<b class="bad">Lệch ở ký tự ' + i + '</b> / ' + a.length) + '</span>' + (lost ? '<span class="bad">Mất thinking + tool_use: request sau thiếu cặp tool_use/tool_result, có thể 400</span>' : '') + '</div>';
           }
           const s = select('Cách lưu', MODES, 'raw', draw);
-          box.append(el('div', { class: 'row' }, [s.node]), out, el('div', { class: 'cap', text: 'Arguments gốc model sinh ra có dấu cách sau dấu hai chấm. JSON.parse rồi JSON.stringify cho ra chuỗi gọn hơn, cùng nghĩa nhưng khác byte. Signature ở đây là chuỗi ví dụ rút gọn.' }));
+          box.append(el('div', { class: 'row' }, [s.node]), out, el('div', { class: 'cap', text: 'Arguments gốc model sinh ra có dấu cách sau dấu hai chấm. JSON.parse rồi JSON.stringify cho ra chuỗi gọn hơn, cùng nghĩa nhưng khác byte. Text gốc kết thúc bằng một dấu cách; .strip() bỏ dấu cách đó nên cũng lệch. Signature ở đây là chuỗi ví dụ rút gọn.' }));
           draw('raw');
         },
         take: 'Lưu transcript như log (payload_raw theo seq, append-only), dựng UI từ log. Đừng dựng request từ thứ dành cho UI.'
       },
       {
         q: 'Khách đọc câu trả lời rồi 20 phút sau mới hỏi tiếp. Bố cục đúng rồi mà vẫn miss?',
-        a: `<p>Đúng, vì bố cục chỉ là điều kiện cần. Cache Claude mặc định sống 5 phút, mỗi lần đọc làm mới miễn phí; TTL 1 giờ có phí ghi 2× input thay vì 1.25×. TTL tính từ lúc <b>bắt đầu</b> request. Ngoài TTL còn: prefix dưới ngưỡng tối thiểu (512 token với Opus 5.5), routing tới máy khác, provider evict sớm khi tải cao (cache là best effort).</p>
+        a: `<p>Đúng, vì bố cục chỉ là điều kiện cần. Cache Claude mặc định sống 5 phút, mỗi lần đọc làm mới miễn phí; TTL 1 giờ có phí ghi 2× input thay vì 1.25×. TTL tính từ lúc <b>bắt đầu</b> request. Ngoài TTL còn: prefix dưới ngưỡng tối thiểu (512 token với Opus 5.5), request đi tới máy không giữ cache đó (routing), provider xoá entry sớm khi tải cao (evict; cache là best effort, không cam kết hit).</p>
 <p>Chọn khoảng nghỉ trước lượt 5. Mô phỏng tính chi phí input của 5 lượt (prefix tăng 8.300 → 12.300 token) với hai TTL.</p>`,
         viz(box) {
           const out = el('div');
@@ -579,7 +588,7 @@ lesson((() => {
               el('div', { class: 'cap', html: gap > 60 ? '<span class="bad">Nghỉ ' + gap + ' phút: cả hai TTL đều hết, lượt 5 ghi lại toàn bộ.</span> Chấp nhận miss cho request đầu khi khách quay lại.' : gap > 5 ? '<span class="ok">TTL 1 giờ giữ được cache qua khoảng nghỉ ' + gap + ' phút.</span> Đổi lại mọi lần ghi đắt hơn; với nhiều phiên khách không quay lại, khoản đó là tiền mất.' : 'Nghỉ dưới 5 phút: TTL mặc định là đủ, TTL 1 giờ chỉ làm phí ghi đắt hơn.' }));
           }
           const sl = slider('Khoảng nghỉ trước lượt 5', 1, 90, 1, 20, draw, (v) => v + ' phút');
-          box.append(el('div', { class: 'row' }, [sl.node]), out, el('div', { class: 'cap', text: 'Giá Claude Opus 5.5 (README). Bốn lượt đầu cách nhau dưới 5 phút. Không mô phỏng keep-alive max_tokens: 0 và eviction.' }));
+          box.append(el('div', { class: 'row' }, [sl.node]), out, el('div', { class: 'cap', text: 'Giá Claude Opus 5.5 (README). Bốn lượt đầu cách nhau dưới 5 phút. Không mô phỏng keep-alive (gửi lại request với max_tokens: 0 để làm mới TTL, bài 8) và eviction.' }));
           draw(20);
         },
         take: 'Prefix ổn định là điều kiện cần. Hit thật còn phụ thuộc TTL, ngưỡng tối thiểu, routing, và luôn phải xác nhận bằng usage.'
@@ -590,11 +599,20 @@ lesson((() => {
 <ol><li>Ghi <code>cache_read_input_tokens</code> / <code>cached_tokens</code> ở mọi request.</li>
 <li>Lấy hai request liên tiếp ở tầng HTTP, so tools, system và các message cũ. Bỏ qua marker <code>cache_control</code> vì nó dịch chuyển.</li>
 <li>Điểm khác biệt đầu tiên trong phần lịch sử chung là nơi bắt đầu điều tra.</li>
-<li>Self-hosted: so chuỗi token sau chat template, không so JSON.</li>
+<li>Self-hosted: so chuỗi token sau chat template (bài 5), không so JSON. Hai JSON giống nhau vẫn có thể ra chuỗi token khác.</li>
 <li>Claude có beta cache diagnostics: truyền <code>diagnostics.previous_message_id</code> để API chỉ ra hai request khác nhau ở đâu.</li></ol>`,
         take: 'Cột "Khác biệt đầu tiên" trong hình chính chính là việc bạn nên làm với log thật: diff hai request liên tiếp.'
       }
     ],
+    poc: {
+      goal: "Cùng 5 lượt chat, hai bố cục: dòng \"Thời điểm hiện tại\" ở đầu system prompt, hoặc giờ gắn vào message mới của lượt đó. Một server giả lập prefix cache viết bằng numpy (không phải model thật) cho biết mỗi lượt dùng lại được bao nhiêu token.",
+      file: "docs/multi-turn-conversation/pocs/06_stable_prefix.py",
+      run: "uv run docs/multi-turn-conversation/pocs/06_stable_prefix.py",
+      needs: "Không cần Docker hay model: chỉ <code>numpy</code> và <code>tiktoken</code>, chạy dưới 1 giây.",
+      output: "=== Sai: 'Thời điểm hiện tại: ...' ở dòng đầu system prompt\nlượt |   gửi | dùng lại | prefill | ms (toy) |  hit | $ Opus 5.5\n   1 |   714 |        0 |     714 |     28.1 |   0% |   0.003570\n   2 |   770 |       24 |     746 |     30.6 |   3% |   0.003735\n   3 |   823 |       24 |     799 |     33.5 |   3% |   0.004000\n   4 |   875 |       24 |     851 |     36.0 |   3% |   0.004260\n   5 |   934 |       24 |     910 |     39.5 |   3% |   0.004555\nTổng prefill: 4020 token, 168 ms, $0.020119\n\n=== Đúng: system tĩnh, giờ hiện tại gắn vào message mới của lượt đó\nlượt |   gửi | dùng lại | prefill | ms (toy) |  hit | $ Opus 5.5\n   1 |   710 |        0 |     710 |     26.6 |   0% |   0.003550\n   2 |   782 |      710 |      72 |      3.2 |  91% |   0.000502\n   3 |   851 |      782 |      69 |      3.5 |  92% |   0.000501\n   4 |   919 |      851 |      68 |      3.2 |  93% |   0.000510\n   5 |   994 |      919 |      75 |      3.7 |  92% |   0.000559\nTổng prefill: 994 token, 40 ms, $0.005622\n\nCùng nội dung, cùng số lượt: bố cục sai prefill 4.0 lần số token, tiền Opus 5.5 gấp 3.6 lần.\nRút ra: cache dừng ở token khác đầu tiên. Dòng giờ ở đầu system đổi mỗi giây nên lượt nào cũng chỉ dùng lại vài token; đưa nó xuống message mới thì system và lịch sử cũ là prefix ổn định.",
+      measured: true,
+      read: ["Cột: <b>gửi</b> là token của cả request, <b>dùng lại</b> là token lấy từ cache, <b>prefill</b> là token phải tính lại (gửi − dùng lại). <b>ms (toy)</b> là thời gian trên decoder đồ chơi, chỉ để so tương đối giữa hai bố cục.", "Bố cục sai: từ lượt 2, mỗi lượt chỉ dùng lại 24 token, đúng phần đứng trước chỗ giờ bắt đầu khác. Hit 3%.", "Bố cục đúng: hit 91–93%, mỗi lượt chỉ prefill khoảng 70 token mới (câu hỏi mới + câu trả lời lượt trước).", "Dòng tổng: bố cục sai prefill gấp 4 lần số token nhưng tiền chỉ gấp 3,6 lần, vì phần dùng lại ở bố cục đúng vẫn trả giá đọc cache $0,20/MTok, không miễn phí.", "Vì sao script không dùng giờ thật: 5 lượt chạy xong trong chưa tới 1 giây, nên dòng giờ (tới giây) giống hệt nhau và cache không vỡ. Script giả lập mỗi lượt cách 97 giây như chat thật. Bài học phụ: giờ làm tròn càng thô thì càng ít vỡ, nhưng vẫn vỡ mỗi khi sang mốc mới."]
+    },
     mount(stage) {
       let order = RECOMMENDED.slice();
       const br = { ts: false, tools: false, json: false, win: false };
@@ -715,6 +733,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -728,7 +758,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

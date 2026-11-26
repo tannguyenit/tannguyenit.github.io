@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a class="off" href="#">← Lab trước</a><a href="01-stateless.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -356,10 +365,11 @@ lesson((() => {
       ['Tools', 'Mô tả các hàm model được phép gọi, gửi kèm mỗi request. Ví dụ tra_don_hang(ma_don), kiem_kho(san_pham), tinh_tra_gop(so_tien, ky_han).'],
       ['System prompt', 'Đoạn chỉ dẫn đứng đầu, ví dụ "Bạn là trợ lý bán hàng của ShopViet, trả lời ngắn gọn...". Gửi lại ở mọi request.'],
       ['Prefix', 'Phần đầu của request. Request lượt 5 có prefix là tools + system + 4 lượt trước, giống hệt phần đầu của request lượt 4 cộng thêm câu trả lời lượt 4.'],
-      ['Prompt caching', 'Provider giữ lại kết quả tính toán của prefix. Request sau có cùng prefix thì phần đó được tính giá đọc cache, rẻ hơn nhiều so với input thường.'],
-      ['Cache write / cache read', 'Write: lần đầu xử lý một prefix và lưu nó lại, Claude tính đắt hơn input thường (1.25× với TTL 5 phút). Read: dùng lại prefix đã lưu, Claude Opus 5.5 tính 0.05× giá input.'],
+      ['Prompt caching', 'Provider giữ lại phần tính toán model đã làm trên prefix (các con số trung gian cho từng token, lab 02 gọi là KV). Request sau có cùng prefix thì khỏi tính lại phần đó và chỉ trả giá đọc cache. Nó không lưu câu trả lời: model vẫn viết câu trả lời mới ở mỗi request.'],
+      ['Prefill', 'Bước model đọc và tính toán cả input trước khi viết chữ trả lời đầu tiên. Token lấy được từ cache thì khỏi prefill. Ví dụ request 914 token, 855 token có trong cache, chỉ prefill 59.'],
+      ['Cache write / cache read', 'Write: lần đầu xử lý một prefix và lưu nó lại, Claude tính đắt hơn input thường (1.25× với TTL 5 phút). Read: dùng lại prefix đã lưu, Claude Opus 5.5 tính 0.05× giá input. Ví dụ 10.000 token: input thường $0,04, ghi $0,05, đọc $0,002.'],
       ['TTL', 'Time to live: cache sống được bao lâu nếu không ai dùng. Claude mặc định 5 phút, có tuỳ chọn 1 giờ. Mỗi lần đọc làm mới TTL.'],
-      ['Breakpoint (cache_control)', 'Dấu đặt trên một block của Claude để nói "cache từ đầu đến hết block này". Lab giả định một dấu ở cuối system và một dấu tự động ở cuối request.'],
+      ['Breakpoint (cache_control)', 'Dấu đặt trên một block của Claude để nói "cache từ đầu đến hết block này". Lab giả định hai dấu: một dấu bạn tự đặt ở cuối system, và một dấu ở block cuối của request do API tự đặt khi bật automatic caching (dấu này dịch về cuối theo mỗi lượt).'],
       ['usage', 'Phần trong response cho biết token đã tính thế nào. Với Claude: input_tokens, cache_creation_input_tokens (ghi), cache_read_input_tokens (đọc).']
     ],
     problem: {
@@ -425,12 +435,12 @@ lesson((() => {
       {
         q: 'Vì sao lượt 30 lại phải gửi lại cả 29 lượt trước? Model không nhớ à?',
         a: `<p>Không. Messages API của Claude, Chat Completions của OpenAI và phần lớn endpoint tương thích OpenAI là <b>stateless</b>, giống một HTTP handler không có session: mỗi request được xử lý độc lập. Nếu lượt 7 khách nói "Thôi mình đổi ý, lấy màu đen" mà không có lịch sử, model không biết "màu đen" của sản phẩm nào.</p>
-<p>Hệ quả: request lượt n có input = 8.300 + 1.000·(n−1) token theo giả định README. Lượt 1 là 8.300, lượt 30 là 37.300. Cộng 30 lượt được 684.000 token, trong khi nội dung mới chỉ khoảng 38.000. Lab 01 đi sâu vào phần này.</p>`,
+<p>Hệ quả, theo giả định README: lượt 1 gửi 8.000 token tools + system cộng 300 token câu hỏi, tức 8.300. Mỗi lượt sau gửi thêm 1.000 token (300 câu hỏi + 700 câu trả lời của lượt trước). Vậy request lượt n có input = 8.300 + 1.000·(n−1): lượt 30 là 37.300. Cộng 30 lượt được 684.000 token, trong khi nội dung mới (tools + system một lần, 30 câu hỏi, 29 câu trả lời) chỉ khoảng 38.000. Lab 01 đi sâu vào phần này.</p>`,
         take: 'Ứng dụng tạo ra "trí nhớ" bằng cách gửi lại lịch sử. Vì vậy hơn 90% input là chữ cũ, và đó là chỗ cache có đất dùng.'
       },
       {
         q: 'Cache "khớp prefix" là khớp cái gì? Đổi một ký tự giữa system prompt thì mất bao nhiêu?',
-        a: `<p>Provider so request mới với request cũ <b>từ token đầu tiên</b>, dừng ở chỗ khác nhau đầu tiên. Lý do là attention trong decoder là causal: kết quả tính cho token thứ i phụ thuộc mọi token đứng trước nó. Đổi một ký tự ở vị trí i thì mọi thứ từ i trở đi phải tính lại, kể cả 29 lượt hội thoại không hề thay đổi chữ nào.</p>
+        a: `<p>Provider so request mới với request cũ <b>từ token đầu tiên</b>, dừng ở chỗ khác nhau đầu tiên. Lý do: con số model tính cho token thứ i phụ thuộc chữ của token đó <b>và mọi token đứng trước nó</b> (lab 02 giải thích cơ chế này, gọi là causal attention). Giống như số dư tài khoản ở dòng i của sao kê: sửa một giao dịch ở dòng 3 thì số dư từ dòng 3 trở xuống đều sai, dù các giao dịch sau không đổi. Đổi một ký tự ở vị trí i thì mọi thứ từ i trở đi phải tính lại, kể cả 29 lượt hội thoại không hề thay đổi chữ nào.</p>
 <p>Với Claude còn thêm một điều kiện: cache chỉ được ghi và tìm ở <b>breakpoint</b>. Breakpoint đầu nằm ở cuối system, tức là sau chỗ bị đổi. Nên với Claude, đổi một ký tự trong system mất toàn bộ cache, kể cả tools đứng trước, trừ khi bạn đặt thêm breakpoint ngay sau tools.</p>
 <p>Kéo vị trí bên dưới. Trình duyệt so hai bản system prompt từng ký tự và tính ở lượt 30 còn dùng lại được bao nhiêu.</p>`,
         viz(box) {
@@ -441,8 +451,8 @@ lesson((() => {
             strip.replaceChildren(...[...s2].map((c, j) => el('span', { text: c, style: j < m ? 'background:var(--accent-soft)' : j === m ? 'background:var(--bad);color:var(--panel)' : 'color:var(--bad)' })));
             const tail30 = totalOf(30) - TOOLS - SYS, sysKept = Math.round(SYS * m / s1.length);
             const kvKeep = TOOLS + sysKept;
-            stat.innerHTML = `<span>khớp <b>${m}/${s1.length}</b> ký tự</span><span>lý thuyết KV giữ được ở lượt 30: <b>${fT(kvKeep)}</b> / ${fT(totalOf(30))} token</span><span>Claude với breakpoint ở cuối system: <b class="bad">0</b> token, phải ghi lại <b class="bad">${fT(totalOf(30))}</b></span>`;
-            cap.textContent = `Phần sau chỗ đổi gồm phần còn lại của system và ${fT(tail30)} token lịch sử 29 lượt. Chữ của chúng không đổi, nhưng ngữ cảnh đứng trước chúng đã đổi nên kết quả tính cũ không dùng được. Tỉ lệ ký tự quy ra token ở đây là ước lượng của lab.`;
+            stat.innerHTML = `<span>khớp <b>${m}/${s1.length}</b> ký tự</span><span>engine tự host cache từng token (như vLLM) giữ được ở lượt 30: <b>${fT(kvKeep)}</b> / ${fT(totalOf(30))} token</span><span>Claude với breakpoint ở cuối system: <b class="bad">0</b> token, phải ghi lại <b class="bad">${fT(totalOf(30))}</b></span>`;
+            cap.textContent = `Phần sau chỗ đổi gồm phần còn lại của system và ${fT(tail30)} token lịch sử 29 lượt. Chữ của chúng không đổi, nhưng ngữ cảnh đứng trước chúng đã đổi nên kết quả tính cũ không dùng được. Hai con số khác nhau vì Claude chỉ tìm cache ở breakpoint: entry gần nhất kết thúc ở cuối system, mà chỗ đó đã nằm sau chỗ đổi. Tỉ lệ ký tự quy ra token ở đây là ước lượng của lab.`;
           }
           const sl = slider('Vị trí đổi', 0, s1.length - 1, 1, 120, draw);
           box.append(el('div', { class: 'row' }, [sl.node,
@@ -516,7 +526,7 @@ lesson((() => {
             out.replaceChildren(hbars([['TTL 5 phút', a, a <= b], ['TTL 1 giờ', b, b < a], ['Không cache', base, false]], { max: base, fmt: (v) => fM(v, 3) }));
             cap.innerHTML = `Nghỉ trước lượt ${pauses.join(', ') || 'không có'}. ` + (a <= b ? '<b>TTL 5 phút rẻ hơn.</b> ' : '<b>TTL 1 giờ rẻ hơn.</b> ') +
               (st.m > 60 ? '<span class="bad">Nghỉ quá 60 phút thì cả hai TTL đều miss.</span> ' : '') +
-              'Trong hệ thống thật: đo khoảng nghỉ thực tế và tỉ lệ khách quay lại trước khi chọn. README còn nêu keep-alive (gửi lại request với max_tokens: 0 trước khi TTL hết) cho model có giá đọc rất thấp như Fable 5.1.';
+              'Trong hệ thống thật: đo khoảng nghỉ thực tế và tỉ lệ khách quay lại trước khi chọn. README còn nêu keep-alive: ngay trước khi TTL 5 phút hết, gửi lại request trước với max_tokens: 0 (không sinh chữ nào, chỉ đọc cache để làm mới TTL). Cách này rẻ khi giá đọc rất thấp, như Fable 5.1.';
           }
           const s1 = slider('Số lần nghỉ', 0, 5, 1, 1, (v) => { st.k = v; draw(); });
           const s2 = slider('Mỗi lần (phút)', 1, 90, 1, 12, (v) => { st.m = v; draw(); });
@@ -548,11 +558,20 @@ lesson((() => {
       {
         q: 'Giữ "y nguyên" lịch sử nghĩa là phải lưu những gì?',
         a: `<p>Y nguyên ở mức token sau khi render, không phải "cùng nghĩa". Nếu database chỉ lưu text để hiển thị cho khách, request sau sẽ thiếu những thứ provider đã trả về:</p>
-<ul><li>Content blocks đầy đủ, không chỉ phần text.</li><li>Arguments gốc của tool call, ví dụ <code>{"ma_don": "SV-4821"}</code> đúng như model sinh ra.</li><li>Thinking blocks kèm <code>signature</code>: với các model có preserved thinking như Opus 5.5, sửa prefix có thể làm block mất hiệu lực, thậm chí lỗi 400.</li></ul>
+<ul><li>Content blocks đầy đủ, không chỉ phần text.</li><li>Arguments gốc của tool call, ví dụ <code>{"ma_don": "SV-4821"}</code> đúng như model sinh ra.</li><li>Thinking blocks kèm <code>signature</code>. Thinking block là phần suy luận model trả về trước câu trả lời; signature là chữ ký provider gắn vào để kiểm tra block đó. Với các model có preserved thinking như Opus 5.5, signature ghi lại prefix đã sinh ra block. Gửi lại mà prefix đã bị sửa thì block mất hiệu lực, có thể bị lỗi 400 hoặc không báo lỗi gì (README §2.2).</li></ul>
 <p>Phần ứng dụng tự tạo thì phải serialize tất định: sort tools theo tên, <code>sort_keys=True</code>, khoảng trắng cố định. Một lần đổi thứ tự key JSON trong tools là đổi token ở vị trí đầu tiên của prompt.</p>`,
         take: 'Lưu response như dữ liệu gốc để gửi lại, không như văn bản để hiển thị. Đó là điểm 4 và 5.'
       }
     ],
+    poc: {
+      goal: "Chạy 10 lượt chat ShopViet qua một server đồ chơi có prompt caching (một model nhỏ viết bằng numpy, giữ lại phần tính toán của prefix như engine thật). Mỗi lượt in ra: gửi bao nhiêu token, bao nhiêu token lấy lại từ cache (<b>dùng lại</b>), bao nhiêu token phải tính mới (<b>prefill</b>). Rồi chạy lại, thêm đúng một dấu <code>!</code> vào system prompt từ lượt 5.",
+      file: "docs/multi-turn-conversation/pocs/00_workflow.py",
+      run: "uv run docs/multi-turn-conversation/pocs/00_workflow.py",
+      needs: "Không cần Docker hay model: chỉ <code>numpy</code> và <code>tiktoken</code>, chạy dưới 1 giây.",
+      output: "=== A. 10 lượt ShopViet, lịch sử chỉ nối thêm (append-only)\nlượt |   gửi | dùng lại | prefill | ms (toy) | $ Opus 5.5\n   1 |   694 |        0 |     694 |     23.9 |   0.003470\n   2 |   750 |      694 |      56 |      2.8 |   0.000419\n   3 |   803 |      750 |      53 |      2.8 |   0.000415\n   4 |   855 |      803 |      52 |      2.7 |   0.000421\n   5 |   914 |      855 |      59 |      3.1 |   0.000466\n   6 |   976 |      914 |      62 |      3.2 |   0.000493\n   7 |  1029 |      976 |      53 |      3.0 |   0.000460\n   8 |  1081 |     1029 |      52 |      2.8 |   0.000466\n   9 |  1141 |     1081 |      60 |      3.5 |   0.000516\n  10 |  1209 |     1141 |      68 |      4.3 |   0.000568\nTổng: gửi 9452 token, prefill 1209 token, 52 ms, $0.007694\n\n=== B. Cùng 10 lượt, từ lượt 5 system prompt thêm đúng 1 dấu '!'\nlượt |   gửi | dùng lại | prefill | ms (toy) | $ Opus 5.5\n   1 |   694 |        0 |     694 |     27.2 |   0.003470\n   2 |   750 |      694 |      56 |      2.5 |   0.000419\n   3 |   803 |      750 |      53 |      2.8 |   0.000415\n   4 |   855 |      803 |      52 |      2.7 |   0.000421\n   5 |   914 |       32 |     882 |     38.1 |   0.004416  <- system đã đổi 1 ký tự\n   6 |   976 |      914 |      62 |      3.7 |   0.000493\n   7 |  1029 |      976 |      53 |      3.3 |   0.000460\n   8 |  1081 |     1029 |      52 |      3.5 |   0.000466\n   9 |  1141 |     1081 |      60 |      3.9 |   0.000516\n  10 |  1209 |     1141 |      68 |      4.1 |   0.000568\nTổng: gửi 9452 token, prefill 2032 token, 92 ms, $0.011644\n\nPrefill thêm do 1 ký tự: 823 token; tiền Opus 5.5 gấp 1.5 lần.\nRút ra: cùng lượng token gửi lên, chỉ phần sau chỗ khác đầu tiên phải prefill lại. Một ký tự gần đầu prompt làm lượt đó tính lại gần như toàn bộ; các lượt sau dùng lại prefix mới.",
+      measured: true,
+      read: ["Số token nhỏ hơn hình chính (694 thay vì 8.300 ở lượt 1) vì POC đếm chữ thật bằng tokenizer: system prompt ngắn và không có tools. Quy luật giống nhau, chỉ khác độ lớn.", "Lượt 2–10 của phiên A: cột <b>dùng lại</b> bằng gần đúng số token của request trước, cột <b>prefill</b> chỉ còn 50–70 token của lượt mới.", "Lượt 5 của phiên B: cùng 914 token gửi lên nhưng chỉ dùng lại 32, prefill 882. 32 token đó là phần đầu system đứng trước chỗ thêm dấu <code>!</code>; mọi thứ sau dấu đó, kể cả 4 lượt lịch sử không đổi chữ nào, phải tính lại. Server đồ chơi cache từng token nên còn giữ được 32 token này; Claude chỉ tìm ở breakpoint nên sẽ mất cả 32.", "Lượt 6 trở đi của phiên B hồi phục ngay: prefix mới (có dấu <code>!</code>) lại được dùng lại. Mất cache một lần, không phải mãi mãi.", "Cột <b>$ Opus 5.5</b> quy đổi theo giá đọc/ghi cache: lượt vỡ đắt gần bằng lượt đầu tiên. Cả phiên B chỉ đắt gấp 1,5 lần vì chỉ một lượt vỡ, khi prefix mới dài 914 token. Lượt vỡ càng muộn thì prefix càng dài và lượt đó càng đắt (xem bảng ở câu hỏi \"Có ai lại đi sửa system prompt giữa phiên?\")."]
+    },
     mount(stage) {
       const st = { N: 30, sel: 30, sys: 'none', k: 12, pause: false, p: 15, pmin: 12, ttl: 5 };
       const setS = (s, v) => { s.input.value = v; s.node.querySelector('output').textContent = v; };
@@ -641,7 +660,7 @@ lesson((() => {
         const parts = [];
         if (r.kind === 'first') parts.push(box('var(--warn)', `<b>Lượt 1 đắt hơn không cache ${Math.round((r.cost / r.base - 1) * 100)}%.</b> Chưa có gì để đọc, cả ${fT(r.total)} token đều là cache write giá ${fM(r.wPrice, 0)}/MTok thay vì $4. Không có nghĩa cache là lỗ: khoản này được thu lại từ lượt 2. Trong hệ thống thật: request một lần, không có lượt sau, thì không nên đặt breakpoint.`));
         else if (r.kind === 'hit') parts.push(box('var(--ok)', `<b>Lượt ${r.n} hit.</b> Đọc ${fT(r.read)} token với giá $0,20/MTok, chỉ ghi ${fT(r.write)} token mới (câu trả lời lượt ${r.n - 1} và câu hỏi lượt ${r.n}). Lượt này rẻ hơn không cache ${Math.round((1 - r.cost / r.base) * 100)}%.`));
-        else if (r.kind === 'sys') parts.push(box('var(--bad)', `<b>Lượt ${r.n} trả giá ghi cho cả ${fT(r.total)} token</b>, gấp ${(r.cost / ((totalOf(r.n - 1) * PRICE.rd + (U + A) * r.wPrice) / 1e6)).toFixed(0)} lần nếu lượt này hit bình thường. Vì sao: một ký tự trong system đổi, mà system đứng trước toàn bộ lịch sử; breakpoint đầu tiên lại ở cuối system nên không còn entry nào khớp. Không có nghĩa lịch sử bị hỏng: chữ của ${r.n - 1} lượt trước vẫn y nguyên, các lượt sau hit lại trên prefix mới. Trong hệ thống thật: ghim system theo phiên, chỉ deploy bản mới cho phiên mới, và sort tools, sort_keys khi serialize.`));
+        else if (r.kind === 'sys') parts.push(box('var(--bad)', `<b>Lượt ${r.n} trả giá ghi cho cả ${fT(r.total)} token</b>, đắt gấp ${(r.cost / ((totalOf(r.n - 1) * PRICE.rd + (U + A) * r.wPrice) / 1e6)).toFixed(0)} lần so với khi lượt này hit bình thường. Vì sao: một ký tự trong system đổi, mà system đứng trước toàn bộ lịch sử; breakpoint đầu tiên lại ở cuối system nên không còn entry nào khớp. Không có nghĩa lịch sử bị hỏng: chữ của ${r.n - 1} lượt trước vẫn y nguyên, các lượt sau hit lại trên prefix mới. Trong hệ thống thật: ghim system theo phiên, chỉ deploy bản mới cho phiên mới, và sort tools, sort_keys khi serialize.`));
         else if (r.kind === 'ts') parts.push(box('var(--bad)', `<b>Không lượt nào đọc được cache.</b> Timestamp làm system khác nhau ở mọi request, nên mỗi lượt ghi lại toàn bộ input với giá 1.25×. Cả phiên đắt hơn không cache ${Math.round((last.cumC / last.cumB - 1) * 100)}%, đúng như README §1.4 ($3,42 so với $2,74). Không có nghĩa caching vô dụng: nó vô dụng khi prefix không ổn định. Trong hệ thống thật: bỏ giờ khỏi system, đưa vào cuối user message mới.`));
         else if (r.kind === 'ttl') parts.push(box('var(--bad)', `<b>Lượt ${r.n} miss vì TTL.</b> Khách nghỉ ${st.pmin} phút, lâu hơn TTL ${st.ttl === 60 ? '1 giờ' : '5 phút'}, entry hết hạn nên ${fT(r.total)} token phải ghi lại. Không có nghĩa prefix sai: request hoàn toàn đúng, chỉ là cache đã bị xoá. Trong hệ thống thật: với khoảng nghỉ 5 đến 60 phút, cân nhắc TTL 1 giờ hoặc keep-alive; trên 1 giờ thì chấp nhận một lần miss.`));
         if (st.pause && st.pmin <= st.ttl && st.sel === st.p) parts.push(box('var(--ok)', `Khách nghỉ ${st.pmin} phút nhưng vẫn trong TTL ${st.ttl === 60 ? '1 giờ' : '5 phút'}, cache còn sống.`));
@@ -723,6 +742,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -736,7 +767,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

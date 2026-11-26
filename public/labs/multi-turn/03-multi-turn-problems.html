@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-kv-cache-prefix.html">← Lab trước</a><a href="04-cache-economics.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -312,6 +321,8 @@ lesson((() => {
     title: 'Dọn context cho model đỡ rối, hay giữ nguyên để giữ cache: cái nào đắt hơn?',
     hook: 'Chỉnh độ dài mỗi lượt, giới hạn lịch sử và số request. Ba biểu đồ tính token đọc và ghi cache của ba cách quản lý lịch sử.',
     terms: [
+      ['Prefix', 'Phần đầu của request, tính từ token đầu tiên. Cache chỉ dùng lại được phần đầu giống hệt request trước. Ví dụ request trước là [tools][system][lượt 1][lượt 2], request sau là [tools][system][lượt 2][lượt 3] vì đã bỏ lượt 1: chỉ [tools][system] còn khớp, phần sau phải tính lại.'],
+      ['Vỡ cache', 'Request sau không còn bắt đầu bằng đúng prefix đã cache, nên từ chỗ khác nhau đầu tiên trở đi phải xử lý và ghi lại với giá ghi.'],
       ['Context window', 'Số token tối đa model nhận trong một request, ví dụ 200K. Đây là sức chứa, không phải mức model dùng tốt.'],
       ['Lost in the middle', 'Model trả lời đúng nhất khi thông tin ở đầu hoặc cuối context, kém nhất khi nằm ở giữa. Mã đơn SV-4821 nói ở lượt 4 sẽ dần trôi vào giữa.'],
       ['Context rot', 'Hiệu năng giảm khi input dài ra, kể cả với việc đơn giản. Chroma thử 18 model năm 2025.'],
@@ -319,9 +330,10 @@ lesson((() => {
       ['Shard', 'Một mảnh của yêu cầu. "Tai nghe chống ồn", "dưới 3 triệu", "màu trắng", "trả góp 0%" là bốn shard của một yêu cầu đầy đủ.'],
       ['Transcript', 'Danh sách message gửi lên API: user, assistant, tool_use, tool_result, thinking. Phải đúng cấu trúc, không chỉ đúng chữ.'],
       ['tool_use / tool_result', 'Cặp gọi tool và kết quả. Assistant phát tool_use có id "toolu_01", user message kế tiếp phải chứa tool_result cùng id đó.'],
-      ['Cache write / read', 'Ghi là lần đầu tính và lưu prefix (Claude Opus 5.5: $5/MTok). Đọc là dùng lại ($0,20/MTok). Input thường là $4/MTok (README §1.4).'],
+      ['Cache write / read', 'Ghi là lần đầu tính và lưu prefix (Claude Opus 5.5: $5 cho 1 triệu token, tức 1,25× giá input thường $4). Đọc là dùng lại phần đã lưu ($0,20, tức 0,05×). Một token phải ghi lại đắt gấp 25 lần một token đọc được (README §1.4).'],
       ['Cửa sổ trượt', 'Mỗi lượt bỏ message cũ nhất để giữ lịch sử dưới một giới hạn. Gọn context nhưng đổi đầu lịch sử ở mọi request.'],
-      ['Compact theo ngưỡng', 'Chỉ khi lịch sử chạm ngưỡng mới tóm tắt một lần thành bản ngắn, rồi lại nối thêm như thường.']
+      ['Compact theo ngưỡng', 'Chỉ khi lịch sử chạm ngưỡng mới tóm tắt một lần thành bản ngắn, rồi lại nối thêm như thường. Ví dụ lịch sử chạm 24K token thì thay bằng bản tóm tắt 2K token.'],
+      ['Summary drift', 'Tóm tắt của tóm tắt qua nhiều lần compact, mỗi lần mất một ít chi tiết, dần lệch khỏi ý ban đầu.']
     ],
     problem: {
       example: '<b>ShopViet</b> có trợ lý chat. Một khách chat hàng chục lượt: hỏi Pro X, bảo hành, trả góp, đơn SV-4821, đổi màu, thêm ốp. Mỗi request gửi lại tools + system (8.000 token) cùng toàn bộ lịch sử.',
@@ -442,6 +454,7 @@ lesson((() => {
         a: `<p>Không hẳn. Bài báo tách hai thứ:</p>
 <ul><li><b>Aptitude</b>: mức tốt nhất model làm được (lấy ở nhóm lần chạy tốt, khoảng percentile 90). Chỉ giảm khoảng 15%.</li>
 <li><b>Unreliability</b>: khoảng cách giữa lần chạy tốt và lần chạy tệ (percentile 90 trừ percentile 10). Tăng khoảng 112%, tức hơn gấp đôi.</li></ul>
+<p>Percentile hiểu nhanh: chạy cùng một hội thoại 10 lần, xếp điểm từ thấp lên cao. P90 xấp xỉ lần thứ 9 (gần tốt nhất), P10 xấp xỉ lần thứ 1 (gần tệ nhất). Ví dụ FULL cho P90 = 90, P10 = 70 thì unreliability = 20; tăng 112% nghĩa là thành khoảng 42.</p>
 <p>Nghĩa là model <b>vẫn làm được</b>, nhưng cùng một hội thoại chạy lại có thể ra kết quả rất khác. Hình dưới lấy một mốc FULL giả định rồi áp đúng hai tỉ lệ của README để thấy hình dạng.</p>`,
         viz(box) {
           const out = el('div'), W = 560;
@@ -530,7 +543,8 @@ lesson((() => {
       {
         q: 'Một tool result 20K token đã hết dùng. Xoá đi cho gọn có lợi không?',
         a: `<p>Về context thì có: model bớt 20K token phải đọc. Về tiền thì phải tính. Xoá nó làm prefix của <b>mọi message phía sau</b> thay đổi. Ở request ngay sau khi xoá, phần đuôi đó phải ghi lại với giá ghi thay vì đọc. Từ đó trở đi, mỗi request tiết kiệm được 20K token đọc cache.</p>
-<p>Điểm hoà vốn = phần ghi thêm một lần ÷ phần tiết kiệm mỗi request. Với giá Opus 5.5 (ghi $5, đọc $0,20), mỗi token phải ghi lại tốn thêm $4,80/M, còn mỗi token bớt đọc chỉ tiết kiệm $0,20/M. Chênh nhau 24 lần.</p>`,
+<p>Điểm hoà vốn = phần ghi thêm một lần ÷ phần tiết kiệm mỗi request. Với giá Opus 5.5 (ghi $5, đọc $0,20), mỗi token phải ghi lại tốn thêm $4,80/M, còn mỗi token bớt đọc chỉ tiết kiệm $0,20/M. Chênh nhau 24 lần.</p>
+<p>Gộp lại: số request cần để hoà vốn ≈ 24 × (token đứng sau ÷ token bị xoá). Xoá 20K mà phía sau có 20K thì cần 24 request. Xoá sớm, khi phía sau mới có vài trăm token, thì hoà vốn gần như ngay. Đó là lý do POC bên dưới thấy xoá ở lượt 6 có lời còn xoá ở lượt 29 lại lỗ: cùng một khối, chỉ khác phần đứng sau nó.</p>`,
         viz(box) {
           const out = el('div');
           const rS = slider('Tool result', 2000, 40000, 1000, 20000, draw, (v) => vi(v) + ' token');
@@ -577,12 +591,21 @@ lesson((() => {
         q: 'Compact vào lúc nào thì an toàn?',
         a: `<p>Ở <b>ranh giới lượt</b>. Nếu assistant vừa phát <code>tool_use</code> và đang chờ <code>tool_result</code>, hoàn tất cặp đó trước. Compact giữa chừng sẽ mang một tool call dở dang sang lịch sử mới, và transcript vi phạm đúng quy tắc ở câu 6.</p>
 <p>Hai chi tiết README §3.8 nhắc:</p>
-<ul><li><b>Giữ vài lượt cuối (keep-tail)</b> với Claude cần xử lý thinking: các thinking block được sinh với prefix cũ, đặt sau bản tóm tắt sẽ không qua được prefix check. Phải bỏ thinking tương ứng hoặc đặt <code>drop_block</code>.</li>
-<li><b>Compact ở background</b>: xác định chính xác đoạn lịch sử mà bản tóm tắt thay thế. Các lượt phát sinh trong lúc chờ vẫn dùng prefix cũ, khi ghép sau bản tóm tắt cũng phải xử lý thinking như trên.</li></ul>
+<ul><li><b>Giữ vài lượt cuối (keep-tail)</b>: tóm tắt phần cũ nhưng giữ nguyên vài lượt gần nhất. Với Claude cần xử lý thinking block (phần suy luận model trả về kèm câu trả lời). Mỗi thinking block mang một chữ ký ghi lại prefix đã sinh ra nó, và API kiểm tra prefix đó không đổi (<i>prefix check</i>). Đặt lượt cũ sau bản tóm tắt thì phía trước nó đã khác, nên thinking của lượt đó không qua được kiểm tra. Phải bỏ thinking tương ứng, hoặc đặt <code>drop_block</code> để API tự bỏ block mất hiệu lực.</li>
+<li><b>Compact ở background</b> (tóm tắt chạy song song trong khi hội thoại vẫn tiếp diễn): xác định chính xác đoạn lịch sử mà bản tóm tắt thay thế. Các lượt phát sinh trong lúc chờ vẫn dùng prefix cũ, khi ghép sau bản tóm tắt cũng phải xử lý thinking như trên.</li></ul>
 <p>Chỉ dẫn cho summarizer nên nêu rõ phải giữ: mục tiêu hiện tại, ràng buộc của người dùng, quyết định đã chốt, việc còn dở và lỗi đã gặp. Với ShopViet: "Khách lấy Pro X màu trắng, đơn SV-4821 đang giao, muốn mua thêm ốp ở đơn mới, trả góp 6 tháng 440.000đ".</p>`,
         take: 'Compact là một lần sửa lịch sử có chủ đích: làm ở ranh giới lượt, giữ cấu trúc hợp lệ, và viết bản tóm tắt dạng đặc tả hiện tại.'
       }
     ],
+    poc: {
+      goal: "Phần A: lượt 3 kéo về 5.400 token danh mục kho rồi hết dùng; so sánh giữ nguyên với xoá nó ở lượt 6, 20, 29 trong phiên 30 lượt, tính bằng token thật và giá Opus 5.5. Phần B: một validator kiểm tra cặp <code>tool_use</code>/<code>tool_result</code> và thứ tự role sau các cách cắt lịch sử.",
+      file: "docs/multi-turn-conversation/pocs/03_multi_turn_problems.py",
+      run: "uv run docs/multi-turn-conversation/pocs/03_multi_turn_problems.py",
+      needs: "Không cần Docker hay model: chỉ <code>numpy</code> và <code>tiktoken</code>, chạy dưới 1 giây.",
+      output: "\n=== A. Lượt 3 kéo về 5419 token danh mục kho, rồi hết dùng. Phiên 30 lượt: giữ, hay xoá?\nGiá Claude Opus 5.5 (đọc 0,05×, ghi 1,25×), cache tự động ở cuối mỗi request, các lượt cách nhau < 5 phút.\ncách               | ghi lại lúc xoá | context lượt cuối | token đọc | token ghi |  chi phí\ngiữ nguyên         |               0 |              7748 |    189858 |      7748 | $ 0.0767\nxoá ở lượt 6       |             198 |              2340 |     54522 |      7884 | $ 0.0503\nxoá ở lượt 20      |            1006 |              2340 |    129413 |      8705 | $ 0.0694\nxoá ở lượt 29      |            1495 |              2340 |    177591 |      9199 | $ 0.0815\n\n=== B. Kiểm tra cấu trúc transcript (kiểu Claude Messages) trước khi gửi\nTranscript gốc (9 message)         | hợp lệ\nCửa sổ trượt: giữ 3 message cuối   | message 0: tool_result tu_2 mồ côi (không có tool_use ngay trước)\n                                   | message 0: tool_result tu_3 mồ côi (không có tool_use ngay trước)\nXoá tool_result cũ cho gọn         | message 1: tool_use tu_1 không có tool_result\n                                   | message 2: hai message assistant liền nhau\nCắt đúng ranh giới lượt user       | hợp lệ\n\nRút ra: xoá một khối cũ làm mất cache một lần, đúng bằng phần lịch sử đứng sau nó (cột 'ghi lại lúc xoá'), rồi mỗi lượt sau nhẹ hơn. Với giá đọc rẻ như Opus 5.5, xoá khối lớn hết dùng hoàn vốn nhanh; xoá càng muộn thì lần ghi lại càng lớn, xoá sát cuối phiên (lượt 29) còn đắt hơn giữ nguyên. Phần B: cắt lịch sử theo số message dễ để lại tool_result mồ côi hoặc tool_use thiếu kết quả; API như Claude có thể trả lỗi 400.",
+      measured: true,
+      read: ["Cột <b>ghi lại lúc xoá</b>: xoá một khối làm mất cache đúng phần lịch sử đứng sau nó, nên xoá ở lượt 29 ghi lại nhiều hơn xoá ở lượt 6.", "Cột <b>chi phí</b>: xoá ở lượt 6 rẻ hơn giữ nguyên khoảng 1/3. Giữ nguyên thì mọi lượt còn lại đều trả tiền đọc 5.400 token đó; xoá ở lượt 6 chỉ phải ghi lại 198 token đứng sau nó (24 × 198 ÷ 5.419 ≈ 0,9 request là hoà vốn). Xoá ở lượt 29 thì ghi lại 1.495 token mà chỉ còn một hai lượt để tiết kiệm, nên đắt hơn giữ nguyên (công thức hoà vốn ở câu 7).", "Phần B: cửa sổ trượt \"giữ 3 message cuối\" để lại <code>tool_result</code> mồ côi; xoá tool result cũ để lại <code>tool_use</code> không có kết quả. Cắt đúng ranh giới lượt user thì hợp lệ.", "Thí nghiệm \"yêu cầu đến từng mảnh\" (Laban et al.) cần một model thật nên không có trong POC này."]
+    },
     mount(stage) {
       const p = { N: 30, t: 1000, H: 24000, sum: 2000 };
       const KINDS = [['keep', 'Giữ hết (append-only)'], ['slide', 'Cửa sổ trượt mỗi lượt'], ['compact', 'Compact theo ngưỡng']];
@@ -681,6 +704,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -694,7 +729,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

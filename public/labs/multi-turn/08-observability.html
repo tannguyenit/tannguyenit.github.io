@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="07-long-context.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -463,7 +472,7 @@ lesson((() => {
       solves: 'Chuẩn hoá usage về cached / written / total, theo dõi hit rate và "written so với phần mới thêm" ở mỗi request, rồi diff request vỡ với request ngay trước nó. Diff phân biệt được lỗi dựng prefix với miss do TTL hay request song song.',
       read: [
         'Chọn <b>phiên</b>. Mỗi dòng là một request thật của phiên; số token theo giả định của README §1.4 (tools + system 8.000, user 300, assistant 700), riêng lượt 5 khách dán chi tiết đơn (giả định 6.300 token). Giá Claude Opus 5.5 từ README: input $4, ghi cache 5 phút $5, đọc $0,20 / MTok.',
-        'Biểu đồ cột là hit rate từng request. Cột đỏ là request bị phát hiện <b>ghi lại phần cũ</b>: written lớn hơn phần mới thêm so với request trước. Phát hiện này tính từ dữ liệu, không vẽ sẵn.',
+        'Biểu đồ cột là hit rate từng request. Cột đỏ là request bị phát hiện <b>ghi lại phần cũ</b>: written lớn hơn phần mới thêm so với request trước (cho dư 200 token, giả định). Ví dụ request mới thêm 1.000 token mà written 12.000 là ghi lại 11.000 token cũ. Phát hiện này tính từ dữ liệu, không vẽ sẵn.',
         'Bấm vào một dòng hoặc một cột. Khung dưới so request đó với request ngay trước: block khác đầu tiên, ký tự khác đầu tiên, và giải thích.',
         'Nút <b>Fan-out lượt 5</b> đổi giữa gửi 2 worker tuần tự (chờ token đầu) và gửi song song cùng request chính.'
       ]
@@ -642,7 +651,7 @@ lesson((() => {
       {
         q: 'Diff hai request: sao phải bỏ marker cache trước khi so, và vì sao so theo thứ tự model → tools → system → messages?',
         a: `<p>Thứ tự so chính là thứ tự prefix: Claude render <code>tools</code> → <code>system</code> → <code>messages</code>, và đổi model thì mất toàn bộ. Khác biệt <b>đầu tiên</b> quyết định cache vỡ từ đâu; mọi khác biệt phía sau không còn quan trọng.</p>
-<p>Còn marker: với automatic caching hay breakpoint ở block cuối, <code>cache_control</code> <b>dịch theo lượt</b>. Lượt trước marker nằm ở user message cũ, lượt này nằm ở user message mới. So chuỗi thô thì message cũ "khác" vì mất marker, dù đó là thay đổi hợp lệ và không làm vỡ cache. Vì vậy hàm <code>find_cache_break</code> trong README chạy <code>strip_cache_markers</code> và <code>canonical_render</code> trước. Bật tắt bên dưới để thấy kết quả đổi.</p>`,
+<p>Còn marker: với automatic caching hay breakpoint ở block cuối (bài 6), <code>cache_control</code> <b>dịch theo lượt</b>. Lượt trước marker nằm ở user message cũ, lượt này nằm ở user message mới. So chuỗi thô thì message cũ "khác" vì mất marker, dù đó là thay đổi hợp lệ và không làm vỡ cache. Vì vậy hàm <code>find_cache_break</code> trong README chạy <code>strip_cache_markers</code> (bỏ marker) và <code>canonical_render</code> (render hai request theo cùng một cách) trước. Bật tắt bên dưới để thấy kết quả đổi.</p>`,
         viz(box) {
           const mk = { type: 'ephemeral' };
           const A = { model: 'claude-opus-5-5', system: SYS, messages: [{ role: 'user', content: [{ type: 'text', text: TURNS[3][0], cache_control: mk }] }] };
@@ -744,6 +753,15 @@ lesson((() => {
         take: 'Một conversation manager tốt không có dòng nào "thông minh". Nó chỉ giữ ba bất biến: cấu hình ghim theo phiên, lịch sử chỉ nối thêm, và usage luôn được ghi.'
       }
     ],
+    poc: {
+      goal: "Đọc log request mà lab 00 ghi ra (<code>pocs/logs/00_requests.jsonl</code>), tính hit rate từng request, đánh dấu request có cached dưới 90% số token gửi của request trước, rồi diff với request trước ở hai mức: JSON và chuỗi token sau chat template (bài 5).",
+      file: "docs/multi-turn-conversation/pocs/08_observability.py",
+      run: "uv run docs/multi-turn-conversation/pocs/08_observability.py",
+      needs: "Chạy <code>00_workflow.py</code> trước để có log. Có thể truyền file log khác, ví dụ <code>pocs/logs/06_requests.jsonl</code>.",
+      output: "=== Đọc 20 request từ 00_requests.jsonl\nphiên        | lượt |   gửi | cached |  hit | cảnh báo\non-dinh      |    1 |   694 |      0 |   0% | \non-dinh      |    2 |   750 |    694 |  93% | \non-dinh      |    3 |   803 |    750 |  93% | \non-dinh      |    4 |   855 |    803 |  94% | \non-dinh      |    5 |   914 |    855 |  94% | \non-dinh      |    6 |   976 |    914 |  94% | \non-dinh      |    7 |  1029 |    976 |  95% | \non-dinh      |    8 |  1081 |   1029 |  95% | \non-dinh      |    9 |  1141 |   1081 |  95% | \non-dinh      |   10 |  1209 |   1141 |  94% | \ndoi-1-ky-tu  |    1 |   694 |      0 |   0% | \ndoi-1-ky-tu  |    2 |   750 |    694 |  93% | \ndoi-1-ky-tu  |    3 |   803 |    750 |  93% | \ndoi-1-ky-tu  |    4 |   855 |    803 |  94% | \ndoi-1-ky-tu  |    5 |   914 |     32 |   4% | VỠ CACHE\ndoi-1-ky-tu  |    6 |   976 |    914 |  94% | \ndoi-1-ky-tu  |    7 |  1029 |    976 |  95% | \ndoi-1-ky-tu  |    8 |  1081 |   1029 |  95% | \ndoi-1-ky-tu  |    9 |  1141 |   1081 |  95% | \ndoi-1-ky-tu  |   10 |  1209 |   1141 |  94% | \n\n=== Phiên 'doi-1-ky-tu', lượt 5: cached 32 < 90% của 855 token request trước\nJSON : system đã đổi ở ký tự 78: …' online. Trả lời ngắn gọn, lịch sự, xưng'… → …' online. Trả lời ngắn gọn!, lịch sự, xưn'…\nToken: khác từ token 32 / 914 sau chat template; trước: 'ắn gọn, lịch sự', sau: 'ắn gọn!, lịch sự'\n\nRút ra: 1 request vỡ cache, tìm ra chỉ từ usage đã log; diff với request trước chỉ ngay block và vị trí làm vỡ prefix, không cần chờ hoá đơn.",
+      measured: true,
+      read: ["Bảng hit rate: phiên ổn định giữ 93–95%; phiên đổi 1 ký tự tụt còn 4% ở lượt 5 rồi hồi phục.", "Dòng JSON chỉ ra block đổi (system) và vị trí ký tự, kèm đoạn trước/sau: <code>ngắn gọn</code> → <code>ngắn gọn!</code>.", "Dòng Token: chỗ khác đầu tiên ở token 32, đúng bằng số token cached trong usage của request đó.", "Quy tắc đánh dấu ở POC (cached &lt; 90% request trước, giống test §3.11) khác quy tắc của lab (written so với phần mới thêm), vì server toy chỉ báo token dùng lại. Ở log này hai quy tắc bắt cùng một chỗ vỡ.", "Chạy với log của lab 06: ở phiên giờ-trong-system, cả 4 lượt sau lượt đầu đều bị đánh dấu và diff chỉ ra dòng giờ; phiên giờ-trong-message không bị đánh dấu."]
+    },
     mount(stage) {
       const S = { sc: 'deploy', par: false, sel: null };
       const chart = el('div'), tbl = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), metrics = el('div', { class: 'stat' }), fb = el('div'), diff = el('div');
@@ -848,6 +866,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -861,7 +891,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

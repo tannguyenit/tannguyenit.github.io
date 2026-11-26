@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-stateless.html">← Lab trước</a><a href="03-multi-turn-problems.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -303,7 +312,9 @@ lesson((() => {
       ['Token', 'Mẩu chữ nhỏ mà model đọc, thường là một từ hoặc một phần của từ. "Tai nghe Pro X" có thể là 4 đến 6 token tuỳ tokenizer.'],
       ['Prefill', 'Pha model đọc cả prompt một lượt và tính KV cho từng token. Prompt 8.000 token thì tính KV cho 8.000 token.'],
       ['Decode', 'Pha model sinh từng token trả lời, mỗi token mới nhìn lại KV của mọi token trước nó. Câu trả lời 700 token là 700 bước nối tiếp.'],
-      ['KV (key, value)', 'Hai vector mà mỗi layer attention tính cho mỗi token. Token sau dùng chúng để "nhìn lại" token trước. Đây là thứ được cache.'],
+      ['Layer', 'Model là nhiều tầng tính toán xếp chồng, ví dụ 32 tầng. Mỗi token đi qua lần lượt từng tầng; đầu ra của tầng này là đầu vào của tầng sau.'],
+      ['Attention', 'Bước trong mỗi layer cho phép một token lấy thông tin từ các token khác. Ví dụ trong "lấy màu đen", token "đen" lấy thông tin từ "Pro X" ở lượt trước để biết đen là màu của sản phẩm nào.'],
+      ['KV (key, value)', 'Hai dãy số mà mỗi layer tính cho mỗi token. Hiểu thô: key là "nhãn" để token sau tìm tới, value là "nội dung" token sau lấy về. Ví dụ 1.000 token qua 32 layer là 32.000 cặp key/value. Đây là thứ được cache.'],
       ['KV cache', 'Bộ nhớ GPU giữ KV của các token đã tính, để khỏi tính lại. Prompt caching là giữ KV của phần đầu prompt cho request sau.'],
       ['Prefix', 'Phần đầu của chuỗi token. Request B có chung prefix 500 token với A nghĩa là 500 token đầu của hai bên giống hệt nhau.'],
       ['Causal attention', 'Token thứ i chỉ được nhìn token 0 đến i, không nhìn token sau. Vì vậy KV của token i phụ thuộc mọi token đứng trước.'],
@@ -315,7 +326,7 @@ lesson((() => {
       scenario: 'Một kỹ sư thêm dòng "Bây giờ là 14:05:37" vào đầu system prompt cho model biết giờ. Câu trả lời vẫn đúng, nhưng hoá đơn input tăng vọt và thời gian chờ token đầu dài ra ở mọi lượt.',
       ask: 'Lịch sử phía sau không đổi một chữ nào. Vì sao chỉ một dòng ở đầu lại làm cả phần sau phải tính lại?',
       solves: 'Lab so hai request liên tiếp theo đúng cách engine làm: tách token, chia block, hash từng block kèm prefix trước nó, rồi đếm block nào dùng lại được. Bạn sẽ thấy cache chỉ khớp phần đầu chung, và chỉ khớp theo block nguyên.',
-      read: ['Request A là request trước, đã nằm trong cache. Request B là request tiếp theo. Bấm một nút để tạo B, hoặc tự sửa ô B.', 'Hàng ô vuông: mỗi ô là một block. Xanh là dùng lại, cam là prefill lại, xám nhạt là token khớp nhưng nằm trong block chưa trọn nên vẫn tính lại.', 'Đoạn chữ bên dưới tô màu từng token của B. Token gạch chân là token giống hệt A nhưng vẫn phải tính lại.', 'Token ở đây là ước lượng: tách theo từ và dấu câu, khoảng trắng dính vào token sau. Tokenizer thật (BPE) cho số khác, nhưng quy tắc prefix không đổi.']
+      read: ['Request A là request trước, đã nằm trong cache. Request B là request tiếp theo. Bấm một nút để tạo B, hoặc tự sửa ô B.', 'Hàng ô vuông: mỗi ô là một block. Xanh là dùng lại, cam là prefill lại, ô viền đứt là block cuối chưa đủ token nên chưa được cache. Rê chuột lên ô để xem hash.', 'Đoạn chữ bên dưới tô màu từng token của B. Token gạch chân là token giống hệt A nhưng vẫn phải tính lại.', 'Token ở đây là ước lượng: tách theo từ và dấu câu, khoảng trắng dính vào token sau. Tokenizer thật (BPE) cho số khác, nhưng quy tắc prefix không đổi.']
     },
     summary: `<h3>Tóm tắt bài</h3>
 <p>Inference có hai pha. <b>Prefill</b> đọc cả input một lượt, tính key và value (KV) cho từng token ở từng layer, chạy song song được và tốn compute. <b>Decode</b> sinh từng token, mỗi token attend vào KV của tất cả token trước nó. Prompt caching giữ KV của prefix để request sau có cùng prefix dùng tiếp, giảm phần phải prefill.</p>
@@ -369,7 +380,7 @@ lesson((() => {
       {
         q: 'KV cụ thể là gì, và tốn bao nhiêu bộ nhớ mà provider phải xoá dần?',
         a: `<p>Mỗi layer attention tính cho mỗi token một vector <b>key</b> và một vector <b>value</b>. Key giống "nhãn để tìm", value giống "nội dung mang theo". Khi sinh token mới, model so query của nó với key của các token trước để quyết định lấy bao nhiêu value của từng token.</p>
-<p>KV được tính cho <b>mọi token ở mọi layer</b>. Kích thước mỗi token = 2 (K và V) × số layer × số KV head × kích thước head × số byte mỗi số. Với một cấu hình giả định cỡ model 8B, đó là khoảng 128 KB cho mỗi token. Một hội thoại 40.000 token cần vài GB chỉ để giữ KV. Vì vậy cache nằm trên GPU có hạn, bị evict khi đầy, và chỉ sống một thời gian ngắn (TTL).</p>`,
+<p>KV được tính cho <b>mọi token ở mọi layer</b>. Kích thước mỗi token = 2 (K và V) × số layer × số KV head × kích thước head × số byte mỗi số. Head là một nhánh attention chạy song song; mỗi layer có vài nhánh, mỗi nhánh giữ key và value riêng dài vài trăm số. Mỗi số lưu ở dạng fp16 tốn 2 byte. Với một cấu hình giả định cỡ model 8B, đó là khoảng 128 KB cho mỗi token. Một hội thoại 40.000 token cần vài GB chỉ để giữ KV. Vì vậy cache nằm trên GPU có hạn, bị evict khi đầy, và chỉ sống một thời gian ngắn (TTL).</p>`,
         viz(box) {
           const C = { layers: 32, kvh: 8, hd: 128, bytes: 2 };
           const per = 2 * C.layers * C.kvh * C.hd * C.bytes, st = el('div', { class: 'stat' });
@@ -385,7 +396,7 @@ lesson((() => {
       },
       {
         q: 'Vì sao đổi token ở vị trí 3 lại làm KV của token 4 đến 7 thay đổi?',
-        a: `<p>Ở <b>layer 1</b>, KV của một token chỉ tính từ chính token đó (embedding cộng vị trí). Đổi <code>t3</code> thành <code>X</code> thì chỉ KV ở cột 3 đổi.</p>
+        a: `<p>Ở <b>layer 1</b>, KV của một token chỉ tính từ chính chữ của token đó và vị trí của nó, chưa trộn gì từ token khác. Đổi <code>t3</code> thành <code>X</code> thì chỉ KV ở cột 3 đổi.</p>
 <p>Nhưng đầu ra của layer 1 cho token <code>t5</code> là một hỗn hợp: attention trộn value của <code>t0</code> đến <code>t5</code>, trong đó có <code>X</code>. Đầu ra đó là <b>đầu vào</b> của layer 2. Vì vậy ở layer 2, KV của <code>t5</code> đã khác, dù chữ <code>t5</code> vẫn y nguyên. Thay đổi lan sang phải từng layer một và không bao giờ lan sang trái, vì token chỉ nhìn được token đứng trước.</p>
 <p>Chọn vị trí bị đổi bên dưới. Lưới được tính theo đúng quy tắc trên: ô ở layer l, vị trí i bị đổi nếu i là vị trí sửa, hoặc ở layer trước có ô bị đổi tại vị trí j ≤ i.</p>`,
         viz(box) {
@@ -405,7 +416,7 @@ lesson((() => {
       },
       {
         q: 'Nghe vẫn trừu tượng. Có tính ra số để thấy KV của t5 thật sự khác không?',
-        a: `<p>Có. Bên dưới là một transformer đồ chơi: vector 4 chiều, 2 layer attention causal, trọng số ngẫu nhiên cố định. Trình duyệt chạy nó hai lần, với A = <code>t0 … t7</code> và B giống A nhưng một vị trí đổi thành <code>X</code>, rồi đo khoảng cách giữa key của từng vị trí ở hai lần chạy.</p>
+        a: `<p>Có. Bên dưới là một model đồ chơi: mỗi token là 4 con số, 2 layer, mỗi token chỉ nhìn được token đứng trước (causal), tham số là số ngẫu nhiên cố định. Trình duyệt chạy nó hai lần, với A = <code>t0 … t7</code> và B giống A nhưng một vị trí đổi thành <code>X</code>, rồi đo khoảng cách giữa key của từng vị trí ở hai lần chạy.</p>
 <p>Khoảng cách bằng 0 nghĩa là KV giống hệt, có thể dùng lại. Khác 0 nghĩa là phải tính lại.</p>`,
         viz(box) {
           const d = 4, rnd = seeded(7), vec = () => Array.from({ length: d }, () => randn(rnd) * 0.8), mat = () => Array.from({ length: d }, vec);
@@ -529,6 +540,15 @@ lesson((() => {
         take: 'Prefix ổn định là điều kiện cần. Routing, TTL và eviction quyết định cache có thật sự hit hay không.'
       }
     ],
+    poc: {
+      goal: "Một model nhỏ 4 layer viết bằng numpy (cùng kiểu decoder như LLM thật, chỉ bé hơn nhiều) tính KV thật. Phần A cho thấy KV của từng layer sau chỗ sửa có còn giống không, và dùng lại KV sai chỗ thì kết quả lệch bao nhiêu. Phần B sửa một ký tự ở cuối, giữa và đầu một request ShopViet 1.395 token.",
+      file: "docs/multi-turn-conversation/pocs/02_kv_cache_prefix.py",
+      run: "uv run docs/multi-turn-conversation/pocs/02_kv_cache_prefix.py",
+      needs: "Không cần Docker hay model: chỉ <code>numpy</code> và <code>tiktoken</code>, chạy dưới 1 giây.",
+      output: "=== A. Vì sao chỉ dùng lại prefix: 8 token, B khác A ở vị trí 3 (decoder numpy 4 layer)\nvị trí | token A/B | layer 0 KV giống A? | layer 1 KV giống A? | layer 2 KV giống A? | layer 3 KV giống A?\n     0 |  101/101  |             giống |             giống |             giống |             giống\n     1 |  102/102  |             giống |             giống |             giống |             giống\n     2 |  103/103  |             giống |             giống |             giống |             giống\n     3 |  104/999  |              KHÁC |              KHÁC |              KHÁC |              KHÁC\n     4 |  105/105  |             giống |              KHÁC |              KHÁC |              KHÁC\n     5 |  106/106  |             giống |              KHÁC |              KHÁC |              KHÁC\n     6 |  107/107  |             giống |              KHÁC |              KHÁC |              KHÁC\n     7 |  108/108  |             giống |              KHÁC |              KHÁC |              KHÁC\n\nDùng lại KV A[0..2], tính lại từ vị trí 3:        sai lệch so với tính lại toàn bộ = 4.96e-07\nDùng lại cả KV A[4..6] (token giống, ngữ cảnh khác): sai lệch = 2.35e-01\n\n=== B. Request ShopViet 13 lượt. Mỗi thí nghiệm: xoá cache, gửi A, rồi gửi B\nA lần đầu (cache trống): 1395 token, prefill 1395 token, 100.5 ms (toy)\n\nB = A, rồi...                      |   gửi | khác từ token | dùng lại | prefill |    ms\nNối thêm 1 lượt ở cuối             |  1455 |          1395 |     1395 |      60 |   5.1\nSửa 1 ký tự ở cuối (câu hỏi mới)   |  1396 |          1379 |     1379 |      17 |   2.6\nSửa 1 ký tự ở giữa (lượt 6)        |  1395 |           959 |      959 |     436 |  28.7\nSửa 1 ký tự ở đầu (system)         |  1395 |            18 |       18 |    1377 |  88.5\n\nRút ra: ở layer 0 KV chỉ phụ thuộc token và vị trí, từ layer 1 trở đi KV sau chỗ sửa đều khác, nên dùng lại KV 'token giống' sau chỗ sửa cho kết quả sai. Vì vậy cache dừng đúng ở token khác đầu tiên: sửa ở cuối gần như miễn phí, sửa ở đầu thì prefill lại cả request.",
+      measured: true,
+      read: ["Cách đọc bảng phần A: token được ghi bằng ID số (101, 102, …), vị trí 3 đổi từ 104 thành 999. POC đánh số layer từ 0, nên layer 0 ở đây là layer 1 trong lab. Ở layer 0, KV của vị trí 4–7 vẫn giống vì chỉ phụ thuộc token và vị trí. Từ layer 1 trở đi, mọi vị trí sau chỗ sửa đều <b>KHÁC</b>.", "Hai dòng sai lệch: dùng lại đúng prefix rồi tính tiếp cho kết quả trùng tính lại toàn bộ (sai lệch ~1e-7, sai số float). Dùng lại cả KV \"token giống\" sau chỗ sửa thì lệch ~0,2: kết quả sai.", "Phần B: cột <b>khác từ token</b> là vị trí token khác nhau đầu tiên giữa A và B; cột <b>dùng lại</b> luôn bằng đúng số đó. Sửa ở cuối chỉ prefill 17 token, sửa ở đầu prefill 1.377 token dù 99% nội dung y hệt. Sửa ở đầu vẫn dùng lại 18 token vì chúng là phần mở đầu system đứng trước dấu phẩy bị đổi thành dấu chấm."]
+    },
     mount(stage) {
       const S = { n: 6, bs: 16, preset: 'append' };
       const PRESETS = {
@@ -662,6 +682,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -675,7 +707,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });

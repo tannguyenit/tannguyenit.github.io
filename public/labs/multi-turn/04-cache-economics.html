@@ -184,6 +184,15 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
 .qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
 .qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-multi-turn-problems.html">← Lab trước</a><a href="05-providers.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -318,10 +327,10 @@ lesson((() => {
     ],
     problem: {
       example: '<b>ShopViet</b> có trợ lý chat chạy Claude Opus 5.5. Mỗi request mang theo tools (<code>tra_don_hang</code>, <code>kiem_kho</code>, <code>tinh_tra_gop</code>) + system prompt khoảng 8.000 token, rồi toàn bộ lịch sử. Một khách hỏi tai nghe Pro X, bảo hành, đổi trả, trả góp, đưa mã đơn SV-4821... tổng cộng 30 lượt. Mỗi câu của khách khoảng 300 token, mỗi câu trả lời khoảng 700 token.',
-      scenario: 'Request thứ n gửi 8.300 + 1.000·(n−1) token. Sau 30 lượt, tổng input là 684.000 token, dù nội dung mới chỉ khoảng 38.000. Phần lớn là lịch sử gửi lại.',
+      scenario: 'Request thứ n gửi 8.300 + 1.000·(n−1) token. Sau 30 lượt, tổng input là 684.000 token, dù nội dung thật sự mới chỉ 37.300 token. Phần lớn là lịch sử gửi lại.',
       ask: 'Bật prompt caching thì tiền input còn bao nhiêu? Có khi nào bật cache lại tốn hơn không bật?',
       solves: 'Tách input thành ba giá: chưa cache, ghi cache, đọc cache. Append-only với breakpoint ở cuối thì mỗi lượt đọc gần hết và chỉ ghi ~1.000 token mới. Nếu prefix đổi mỗi lượt (timestamp) hoặc khách nghỉ lâu hơn TTL, mỗi lượt lại ghi toàn bộ với giá cao hơn input thường.',
-      read: ['Chọn <b>provider</b> và <b>TTL</b>. Giá lấy từ bảng trong README, số suy ra hoặc giả định được ghi chú bên dưới.', 'Cột là tiền input của từng request khi có cache. Đường kẻ là tiền của cùng request khi không cache.', 'Cột xanh: cache có lợi. Cột đỏ: cache làm request đó đắt hơn không cache.', 'Bật <b>Timestamp trong system prompt</b> hoặc kéo <b>Khoảng nghỉ</b> vượt TTL để thấy cache "phản tác dụng".', 'Cấu hình mặc định là đúng ví dụ README: kết quả phải là $2,74 / $0,32 / $3,42.']
+      read: ['Chọn <b>provider</b> và <b>TTL</b>. Giá lấy từ bảng trong README, số suy ra hoặc giả định được ghi chú bên dưới.', 'Cột là tiền input của từng request khi có cache. Đường kẻ là tiền của cùng request khi không cache.', 'Cột xanh: cache có lợi. Cột đỏ: cache làm request đó đắt hơn không cache. Với provider có phí ghi (Claude, GPT-5.6+), request 1 luôn đỏ: chưa có gì để đọc, cả prefix phải ghi với giá 1.25×. Đó là tiền cọc, các request sau mới thu lại.', 'Bật <b>Timestamp trong system prompt</b> hoặc kéo <b>Khoảng nghỉ</b> vượt TTL để thấy cache "phản tác dụng".', 'Cấu hình mặc định là đúng ví dụ README: kết quả phải là $2,74 / $0,32 / $3,42.']
     },
     summary: `<h3>Tóm tắt bài</h3>
 <p>Hầu hết provider tách input thành ba loại giá. Nếu không có phụ phí ghi hoặc lưu trữ, hit giảm giá còn miss tính như input thường. Khi có phí ghi, kết quả phụ thuộc số lần đọc lại: liên tục ghi entry mới rồi bỏ đi có thể tốn hơn không dùng cache.</p>
@@ -366,7 +375,7 @@ lesson((() => {
         a: `<p>API của Claude là stateless: model không nhớ gì giữa hai request. Muốn model "nhớ" lượt trước, ứng dụng phải gửi lại toàn bộ lịch sử. Request thứ n của ShopViet là:</p>
 <p><code>[tools + system 8.000][user₁ 300][assistant₁ 700]...[user_n 300]</code> = 8.300 + 1.000·(n−1) token.</p>
 <p>Request 1 gửi 8.300, request 2 gửi 9.300, request 30 gửi 37.300. Cộng 30 số này được 684.000. Nội dung thật sự mới chỉ là 8.000 + 30 × 300 + 29 × 700 = 37.300 token. Hơn 90% là gửi lại.</p>
-<p>Tổng này tăng theo <b>bình phương</b> số lượt. Kéo thanh trượt để thấy: gấp đôi số lượt thì lịch sử gửi lại tăng gần gấp bốn.</p>`,
+<p>Tổng này tăng theo <b>bình phương</b> số lượt: lượt thứ n gửi lại n−1 lượt cũ, nên cộng dồn là 0 + 1 + 2 + ... + (N−1). Phần lịch sử gửi lại ở 30 lượt là 435.000 token, ở 60 lượt là 1.770.000, gần gấp bốn. Tổng input chỉ tăng 3,3 lần (684.000 lên 2.268.000) vì phần tools + system 8.000 token chỉ tăng theo số request, không theo bình phương. Kéo thanh trượt để thấy.</p>`,
         viz(box) {
           const out = el('div'), stat = el('div', { class: 'stat' });
           function draw(N) {
@@ -415,6 +424,7 @@ lesson((() => {
       {
         q: 'Cần bao nhiêu request dùng chung prefix thì mới hoà vốn?',
         a: `<p>Gọi giá ghi là w, giá đọc là r (đều tính theo bội số của giá input). Một prefix được dùng m lần: lần đầu ghi, m−1 lần sau đọc. Có cache tốn w + r·(m−1), không cache tốn m. Hoà vốn khi w + r·(m−1) &lt; m.</p>
+<p>README dùng 0.1× là giá đọc chung của Claude. Opus 5.5 đọc còn rẻ hơn (0.05×), nên kết quả không đổi: vẫn hoà vốn ở 2 request.</p>
 <p>Claude TTL 5 phút: m = 2 cho 1,25 + 0,1 = 1,35 &lt; 2. TTL 1 giờ: m = 2 cho 2,1, chưa đủ; m = 3 cho 2,2 &lt; 3. Provider không có phí ghi (w = 1) thì m = 2 luôn có lợi, và m = 1 hoà, không bao giờ lỗ.</p>
 <p>Chọn cấu hình rồi kéo số lần dùng. Trình duyệt tính và đánh dấu điểm hoà vốn.</p>`,
         viz(box) {
@@ -465,7 +475,10 @@ lesson((() => {
 <ul><li><b>Chịu miss</b>: giữ TTL 5 phút, khi khách quay lại thì ghi lại toàn bộ prefix (1.25×).</li>
 <li><b>TTL 1 giờ</b>: ghi 2× thay vì 1.25×, khách quay lại trong 1 giờ thì đọc 0.1×.</li>
 <li><b>Keep-alive</b>: trước khi TTL 5 phút hết, gửi lại request trước với <code>max_tokens: 0</code>. Mỗi lần như vậy là một lần đọc cache, làm mới TTL mà không sinh output. README ghi cách này thường rẻ hơn TTL 1 giờ với Fable 5.1 vì đọc chỉ 0.025×.</li></ul>
-<p>Mô hình bên dưới đơn giản hoá: coi cả prefix P đã được ghi theo một TTL, keep-alive gửi mỗi 5 phút. Nó chỉ tính chi phí cho một khoảng nghỉ.</p>`,
+<p>Mô hình bên dưới chỉ tính tiền phát sinh vì <b>một</b> khoảng nghỉ, với prefix P đã nằm trong cache trước đó:</p>
+<ul><li>Chịu miss: nghỉ quá 5 phút thì khi khách quay lại, ghi lại P với giá 1.25×.</li>
+<li>Keep-alive: cứ 5 phút một lần ping (mỗi ping là một lần đọc P), cộng lần đọc khi khách quay lại. Nghỉ 20 phút là 3 ping + 1 lần đọc.</li>
+<li>TTL 1 giờ: lúc ghi P ban đầu phải trả 2× thay vì 1.25×, tức thêm 0,75× cho P. Khách quay lại trong 1 giờ thì chỉ trả một lần đọc.</li></ul>`,
         viz(box) {
           let rid = 'fable51', P = 40000, g = 20;
           const out = el('div'), note = el('div', { class: 'cap' });
@@ -505,6 +518,7 @@ lesson((() => {
       {
         q: 'App vẫn trả lời đúng ở cả ba kịch bản. Làm sao biết mình đang trả $0,32 hay $3,42?',
         a: `<p>Đọc <code>usage</code> trong mỗi response. Với Claude có ba field: <code>input_tokens</code> (phần không cache), <code>cache_creation_input_tokens</code> (phần ghi) và <code>cache_read_input_tokens</code> (phần đọc). Tổng input là tổng của cả ba.</p>
+<p>Trong mô phỏng này <code>input_tokens</code> luôn bằng 0 vì breakpoint nằm ở block cuối: mọi token đứng trước breakpoint hoặc được đọc, hoặc được ghi, không còn token nào nằm ngoài cache. Ví dụ request 12 cache đúng: đọc 18.300, ghi 1.000, không cache 0, tổng 19.300.</p>
 <p>Dấu hiệu cache đang phản tác dụng theo README §3.11: <code>written</code> gần bằng <code>total</code> ở nhiều request liên tiếp. Chọn kịch bản và lượt, JSON bên dưới được dựng từ cùng mô hình tính ở trên.</p>`,
         viz(box) {
           let sc = 'ok', n = 12;
@@ -532,6 +546,15 @@ lesson((() => {
         take: 'Đặt breakpoint ở chỗ sẽ được đọc lại. Trong hội thoại đó là cuối request; với câu hỏi một lần đó là cuối phần dùng chung.'
       }
     ],
+    poc: {
+      goal: "Một máy tính thuần Python tái tạo ví dụ 30 lượt ở README §1.4, rồi lập bảng hoà vốn theo số request và bảng chi phí theo khoảng nghỉ giữa các lượt so với TTL.",
+      file: "docs/multi-turn-conversation/pocs/04_cache_economics.py",
+      run: "uv run docs/multi-turn-conversation/pocs/04_cache_economics.py",
+      needs: "Không cần Docker hay model: chỉ <code>numpy</code> và <code>tiktoken</code>, chạy dưới 1 giây.",
+      output: "=== 30 lượt, tools+system 8.000, mỗi lượt 300+700 token, giá Claude Opus 5.5\nTổng input 30 request: 684.000 token (nội dung mới gửi lên chỉ 37.300)\nkịch bản                                   | token đọc | token ghi | chi phí\nKhông dùng cache                           |         0 |         0 |   $2,74\nCache đúng (append-only, nghỉ < 5 phút)    |   646.700 |    37.300 |   $0,32\ncache_control + timestamp trong system     |         0 |   684.000 |   $3,42\nCache đúng rẻ hơn 8.66 lần (chưa làm tròn tiền); vỡ prefix mà vẫn ghi thì đắt hơn 25%.\n\n=== Hoà vốn: k request dùng chung một prefix, chi phí so với không cache (đọc 0.1×)\n k | TTL 5 phút (ghi 1.25×) | TTL 1 giờ (ghi 2×)\n 1 |                  1.25× |              2.00×\n 2 |                  0.68× |              1.05×\n 3 |                  0.48× |              0.73×\n 4 |                  0.39× |              0.57×\n 5 |                  0.33× |              0.48×\n\n=== Khoảng nghỉ giữa các lượt so với TTL (30 lượt)\n    nghỉ | không cache | TTL 5 phút | TTL 1 giờ\n   2 phút |       $2,74 |      $0,32 |     $0,43\n  10 phút |       $2,74 |      $3,42 |     $0,43\n  30 phút |       $2,74 |      $3,42 |     $0,43\n  90 phút |       $2,74 |      $3,42 |     $5,47\n\nRút ra: con số $2,74 / $0,32 / $3,42 của README tái tạo đúng. TTL 5 phút hoà vốn từ request thứ 2, TTL 1 giờ từ request thứ 3; khách nghỉ lâu hơn TTL thì mỗi lượt ghi lại cả prefix và cache thành khoản phụ phí.",
+      measured: true,
+      read: ["Ba dòng đầu khớp README: 684.000 token, $2,74 không cache, $0,32 cache đúng (646.700 đọc, 37.300 ghi), $3,42 khi prefix vỡ mà vẫn ghi.", "Tỉ lệ chưa làm tròn là 8,66 lần; con số \"khoảng 8,5 lần\" của README đến từ hai số đã làm tròn $2,74 / $0,32.", "Bảng hoà vốn: TTL 5 phút dưới 1× từ k = 2, TTL 1 giờ từ k = 3 (k = 2 vẫn 1,05×).", "Bảng khoảng nghỉ: nghỉ 10–30 phút thì TTL 5 phút thành $3,42, còn TTL 1 giờ giữ $0,43; nghỉ 90 phút thì cả TTL 1 giờ cũng thành $5,47."]
+    },
     mount(stage) {
       const S = { row: 'opus55', mode: 0, turns: 30, sys: 8000, u: 300, a: 700, gi: 2, ts: false };
       const GAPS = [1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 30, 45, 60, 90, 180, 240];
@@ -650,6 +673,18 @@ function deepDive(list) {
     })]);
 }
 
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Kết quả chạy thật' : 'Kết quả mẫu (chưa chạy thật)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -663,7 +698,8 @@ function deepDive(list) {
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
         el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), l.why.s]),
         el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), l.why.p])
-      ])
+      ]),
+      pocBlock(l.poc)
     ]));
     try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
   });
