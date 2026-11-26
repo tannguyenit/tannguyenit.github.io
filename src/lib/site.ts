@@ -41,6 +41,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Runbook xử lý DDoS cho server vật lý đứng sau Cloudflare: hai phút đầu phân loại, tấn công qua Cloudflare, tấn công thẳng vào origin, rule và rate limit, chuẩn bị và hạ nhiệt.',
     parts: ['Workflow tổng hợp', 'Phút 0–2: phân loại', 'Nhánh A: tấn công L7 qua Cloudflare', 'Nhánh B: tấn công thẳng origin', 'Security rules và rate limiting', 'Chuẩn bị, hạ nhiệt và lỗi hay gặp']
   },
+  'streaming': {
+    title: 'LLM - 08 - Streaming',
+    description: 'Trả từng phần response qua SSE: TTFT, cách SSE hoạt động, event của từng provider, relay qua proxy và CDN, tool call và JSON khi stream, lỗi giữa chừng, huỷ, UI và đo đạc.',
+    parts: ['Workflow tổng hợp', 'Vì sao stream và SSE', 'Giao thức, event và usage', 'Streaming theo provider', 'Relay qua proxy và CDN', 'Tool call, JSON và reasoning khi stream', 'Lỗi giữa chừng và huỷ', 'UI và moderation', 'Observability và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

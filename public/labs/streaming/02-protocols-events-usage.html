@@ -1,0 +1,673 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-why-stream-sse.html">← Lab trước</a><a href="03-providers.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const ANSWER = 'Dạ có bạn nhé. Tai nghe Pro X chống ồn chủ động, pin khoảng 30 giờ khi tắt chống ồn. Bạn muốn mình kiểm tra tồn kho không?';
+  const words = ANSWER.split(' ');
+  const DELTAS = [];
+  for (let i = 0; i < words.length; i += 3) DELTAS.push((i ? ' ' : '') + words.slice(i, i + 3).join(' '));
+  const IN = 1200;
+  const est = (s) => { let t = 0; for (const ch of s) t += ch.charCodeAt(0) < 128 ? 0.27 : 0.7; return Math.max(1, Math.round(t)); };
+  const OUT = est(ANSWER);
+  const J = (o) => JSON.stringify(o);
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fT = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const enc = new TextEncoder();
+  const sse = (name, obj) => (name ? 'event: ' + name + '\n' : '') + 'data: ' + (typeof obj === 'string' ? obj : J(obj)) + '\n\n';
+
+  const PROVIDERS = [
+    ['claude', 'Claude'], ['responses', 'OpenAI Responses'], ['chat', 'OpenAI Chat Completions'], ['vllm', 'vLLM, continuous_usage_stats'], ['gemini', 'Gemini streamGenerateContent (alt=sse)'], ['ollama', 'Ollama /api/chat (NDJSON)']
+  ];
+
+  function build(p, includeUsage) {
+    const ev = [];
+    const add = (raw, o) => ev.push(Object.assign({ raw, norm: [] }, o));
+    let cum = 0, sofar = '';
+    if (p === 'claude') {
+      add(sse('message_start', { type: 'message_start', message: { id: 'msg_01', role: 'assistant', content: [], usage: { input_tokens: IN } } }), { u: { in: IN } });
+      add(sse('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }), { norm: [['block_start', 'text #0']] });
+      DELTAS.forEach((d, i) => {
+        add(sse('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: d } }), { norm: [['block_delta', d]], text: d });
+        if (i === 2) add(sse('ping', { type: 'ping' }), {});
+      });
+      add(sse('content_block_stop', { type: 'content_block_stop', index: 0 }), { norm: [['block_stop', 'text #0']] });
+      add(sse('message_delta', { type: 'message_delta', delta: { stop_reason: null }, usage: { output_tokens: OUT } }), { u: { out: OUT } });
+      add(sse('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: OUT } }), { u: { out: OUT } });
+      add(sse('message_stop', { type: 'message_stop' }), { norm: [['response_end', 'end_turn']], end: true });
+    } else if (p === 'responses') {
+      let sq = 0;
+      const r = (type, o) => add(sse(type, Object.assign({ type, sequence_number: sq++ }, o.body)), o);
+      r('response.created', { body: { response: { id: 'resp_1', status: 'in_progress' } } });
+      r('response.output_item.added', { body: { output_index: 0, item: { id: 'msg_1', type: 'message' } }, norm: [['block_start', 'message msg_1']] });
+      r('response.content_part.added', { body: { item_id: 'msg_1', output_index: 0, content_index: 0 } });
+      DELTAS.forEach((d) => r('response.output_text.delta', { body: { item_id: 'msg_1', output_index: 0, content_index: 0, delta: d }, norm: [['block_delta', d]], text: d }));
+      r('response.output_text.done', { body: { item_id: 'msg_1', text: ANSWER } });
+      r('response.content_part.done', { body: { item_id: 'msg_1', content_index: 0 } });
+      r('response.output_item.done', { body: { output_index: 0, item: { id: 'msg_1', type: 'message', status: 'completed' } }, norm: [['block_stop', 'message msg_1']] });
+      r('response.completed', { body: { response: { id: 'resp_1', status: 'completed', usage: { input_tokens: IN, output_tokens: OUT, total_tokens: IN + OUT } } }, u: { in: IN, out: OUT }, norm: [['response_end', 'completed']], end: true });
+    } else if (p === 'chat' || p === 'vllm') {
+      const cont = p === 'vllm', iu = includeUsage || cont;
+      const ch = (delta, fin, extra) => {
+        const o = { object: 'chat.completion.chunk', choices: [{ index: 0, delta, finish_reason: fin }] };
+        if (cont) o.usage = { prompt_tokens: IN, completion_tokens: cum, total_tokens: IN + cum };
+        else if (iu) o.usage = null;
+        return add(sse(null, o), Object.assign(cont ? { u: { in: IN, out: cum } } : {}, extra));
+      };
+      ch({ role: 'assistant', content: '' }, null, { norm: [['block_start', 'choice 0']] });
+      DELTAS.forEach((d) => { sofar += d; cum = est(sofar); ch({ content: d }, null, { norm: [['block_delta', d]], text: d }); });
+      ch({}, 'stop', { norm: [['block_stop', 'choice 0 (finish_reason stop)']] });
+      if (iu) add(sse(null, { object: 'chat.completion.chunk', choices: [], usage: { prompt_tokens: IN, completion_tokens: OUT, total_tokens: IN + OUT } }), { u: { in: IN, out: OUT } });
+      add('data: [DONE]\n\n', { norm: [['response_end', 'stop']], end: true });
+    } else if (p === 'gemini') {
+      DELTAS.forEach((d, i) => {
+        const last = i === DELTAS.length - 1, c = { content: { role: 'model', parts: [{ text: d }] } };
+        if (last) c.finishReason = 'STOP';
+        const o = { candidates: [c] };
+        if (last) o.usageMetadata = { promptTokenCount: IN, candidatesTokenCount: OUT, totalTokenCount: IN + OUT };
+        add(sse(null, o), { norm: (i ? [] : [['block_start', 'part 0 (adapter tự sinh)']]).concat([['block_delta', d]]).concat(last ? [['block_stop', 'part 0 (adapter tự sinh)'], ['response_end', 'STOP']] : []), text: d, u: last ? { in: IN, out: OUT } : null, end: last });
+      });
+    } else {
+      DELTAS.forEach((d, i) => add(J({ message: { role: 'assistant', content: d }, done: false }) + '\n', { norm: (i ? [] : [['block_start', 'message (adapter tự sinh)']]).concat([['block_delta', d]]), text: d }));
+      add(J({ message: { role: 'assistant', content: '' }, done: true, prompt_eval_count: IN, eval_count: OUT }) + '\n', { norm: [['block_stop', 'message (adapter tự sinh)'], ['response_end', 'done: true']], u: { in: IN, out: OUT }, end: true });
+    }
+    return ev;
+  }
+
+  function accumulate(ev, k) {
+    const got = ev.slice(0, k);
+    let inT = null, outT = null, sumIn = 0, sumOut = 0, text = '', ended = false, nUsage = 0;
+    const norm = [];
+    got.forEach((e) => {
+      if (e.u) {
+        nUsage++;
+        if (e.u.in != null) { inT = e.u.in; sumIn += e.u.in; }
+        if (e.u.out != null) { outT = e.u.out; sumOut += e.u.out; }
+      }
+      if (e.text) text += e.text;
+      if (e.end) ended = true;
+      e.norm.forEach((n) => norm.push(n));
+    });
+    const status = ended && outT != null ? 'ok' : outT != null ? 'partial' : 'missing';
+    return { got, inT, outT, sumIn, sumOut, text, ended, status, norm, nUsage, estOut: text ? est(text) : 0 };
+  }
+
+  const lastTextIdx = (ev) => { let j = -1; ev.forEach((e, i) => { if (e.text) j = i; }); return j + 1; };
+
+  return {
+    id: 'protocols-events-usage', nav: '2. Event và usage', ref: '§1.3–1.5',
+    title: 'Cùng một câu trả lời, sáu kiểu event: cắt stream ở đâu thì mất usage, và vì sao cộng usage lại cho ra số gấp đôi',
+    hook: 'Chọn provider, rồi kéo "Kết nối đóng sau event thứ" (hoặc bấm vào một event) để cắt stream. Xem văn bản, event chuẩn hoá và bộ đếm usage thay đổi thế nào. Đổi bộ đếm sang "cộng mọi giá trị" để thấy lỗi đếm gấp.',
+    terms: [
+      ['SSE', 'Server-Sent Events: server đẩy event dạng text qua một response HTTP. Mỗi event là các dòng event: / data: rồi một dòng trống. OpenAI, Claude, Gemini, Grok, vLLM đều dùng.'],
+      ['WebSocket', 'Kết nối hai chiều, nâng cấp từ HTTP bằng 101 Switching Protocols. Dùng cho voice, realtime: ví dụ OpenAI Realtime, Gemini Live.'],
+      ['HTTP chunked / NDJSON', 'Response HTTP gửi dần từng mảnh; NDJSON là mỗi dòng một object JSON. Ollama dùng: {"message":{"content":"Dạ"},"done":false}.'],
+      ['gRPC streaming', 'Stream các message nhị phân trên HTTP/2. Trình duyệt cần gRPC-Web. Hiếm gặp ở API LLM công khai.'],
+      ['Delta', 'Phần mới thêm vào so với event trước. Ví dụ delta "Dạ có bạn" rồi delta " nhé. Tai". Nối các delta theo thứ tự thì ra văn bản.'],
+      ['Tool call', 'Khi model muốn gọi một hàm của bạn (ví dụ kiem_kho), nó không trả chữ mà trả tên hàm và arguments dạng JSON, như {"sku":"PROX-DEN"}. Khi stream, JSON này cũng đến từng mảnh.'],
+      ['Choice / finish_reason', 'Chat Completions có thể sinh nhiều phương án trả lời cùng lúc; mỗi phương án là một choice, đánh số bằng index (thường chỉ có choice 0). finish_reason là lý do choice đó dừng, ví dụ "stop" là viết xong.'],
+      ['Content block / output item', 'Đơn vị cấp cao trong một response: một khối text, một tool call, một khối thinking. Claude gọi là content block (khoá: index), OpenAI Responses gọi là output item (khoá: item_id).'],
+      ['Adapter', 'Code chuyển event của một provider về khuôn nội bộ: block_start → nhiều block_delta → block_stop, rồi response_end. Provider không có event mở / đóng khối thì adapter tự sinh.'],
+      ['Event kết thúc', 'Event xác nhận stream xong hợp lệ: message_stop (Claude), response.completed (Responses), data: [DONE] (Chat Completions), finishReason khác rỗng (Gemini), "done": true (Ollama). Hết stream mà không gặp nó thì code tự ném lỗi; README §1.4 đặt tên exception đó là StreamTruncated.'],
+      ['Usage', 'Số token provider báo để tính tiền. Ví dụ Claude: input_tokens 1.200 trong message_start, output_tokens trong message_delta.'],
+      ['Cộng dồn (cumulative)', 'Mỗi event mang tổng tính tới thời điểm đó, không phải phần tăng thêm. Ví dụ hai message_delta cùng ghi output_tokens 45 nghĩa là tổng là 45, không phải 90. vLLM khi bật continuous_usage_stats cũng vậy: chunk thứ 3 mang "tổng tới chunk 3".'],
+      ['include_usage', 'Tham số stream_options: {"include_usage": true} của Chat Completions. Không bật thì stream không có usage. Bật thì có một chunk cuối với choices rỗng mang usage tổng.'],
+      ['usage_status', 'Cờ bạn tự ghi vào log: "ok" khi có usage cuối, "missing" khi stream đứt trước đó. README khuyên ghi cờ thay vì ghi 0.']
+    ],
+    problem: {
+      example: `<b>ShopViet</b> có fallback giữa nhiều provider. Trợ lý trả lời: <i>"${esc(ANSWER)}"</i> (${DELTAS.length} delta, ước lượng ${OUT} token output, giả định ${fT(IN)} token input). Backend có một adapter cho mỗi provider và một bộ đếm usage để tính chi phí mỗi cuộc chat.`,
+      scenario: 'Cuối tháng, chi phí theo log nội bộ lệch với hoá đơn provider: có ngày log thấp hơn (những request bị cắt không có usage), có ngày cao gấp đôi (bộ đếm cộng usage của mọi event). Đội cũng tranh luận có nên chuyển sang WebSocket cho "xịn" hơn không.',
+      ask: 'Mỗi provider chia câu trả lời thành event thế nào, usage nằm ở event nào, và khi stream bị cắt giữa chừng thì code còn biết được gì?',
+      solves: 'Dựng cùng một câu trả lời thành chuỗi event của sáu kiểu provider (theo bảng event model trong README), chạy adapter về khuôn nội bộ và bộ đếm usage trên từng event nhận được. Cắt stream ở bất kỳ event nào để thấy văn bản, trạng thái kết thúc và usage còn lại.',
+      read: [
+        'Cột trái là dữ liệu thô trên dây (đã lược bớt field id, model). Event sau điểm cắt bị gạch, có đường đỏ "kết nối đóng". Bấm vào một event để cắt ngay sau nó.',
+        'Cột phải trên: event đã chuẩn hoá (block_start / block_delta / block_stop / response_end) và văn bản khách thấy.',
+        'Khung "Bộ đếm usage": input, output, usage_status, có event kết thúc không. Khi thiếu usage, khung đưa ra ước lượng theo cách README khuyên.',
+        'Bảng cuối so sáu provider ở cùng một tình huống: kết nối đóng ngay sau delta văn bản cuối cùng, tức khách đã thấy đủ chữ nhưng stream chưa kết thúc.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Giao thức (README §1.3)</h4>
+<div class="tbl"><table>
+<tr><th></th><th>SSE</th><th>WebSocket</th><th>HTTP chunked / NDJSON</th><th>gRPC streaming</th></tr>
+<tr><td>Chiều dữ liệu</td><td>Server → client</td><td>Hai chiều</td><td>Server → client</td><td>Một hoặc hai chiều</td></tr>
+<tr><td>Nền tảng</td><td>HTTP thường</td><td>Nâng cấp từ HTTP (101)</td><td>HTTP thường</td><td>HTTP/2</td></tr>
+<tr><td>Reconnect và ID</td><td>Có trong đặc tả</td><td>Tự làm</td><td>Tự làm</td><td>Tự làm</td></tr>
+<tr><td>Qua proxy/CDN</td><td>Dễ bị buffer nếu cấu hình sai</td><td>Proxy phải hỗ trợ Upgrade</td><td>Dễ bị buffer</td><td>Cần HTTP/2 xuyên suốt</td></tr>
+<tr><td>Dùng ở đâu</td><td>OpenAI, Claude, Gemini, Grok, vLLM</td><td>Realtime/voice</td><td>Ollama native</td><td>Hiếm ở API công khai</td></tr>
+</table></div>
+<h4>Khuôn nội bộ (README §1.4)</h4>
+<p><b>block_start → nhiều block_delta → block_stop</b>, lặp cho từng khối, rồi <b>response_end</b> mang lý do dừng và usage. Ba quy tắc: gom theo khoá (index / item_id), không theo thứ tự nhận; không xử lý nghiệp vụ trên khối chưa đóng; hết stream mà không có response_end là lỗi.</p>
+<h4>Usage khi stream (README §1.5)</h4>
+<div class="tbl"><table>
+<tr><th>Provider</th><th>Usage nằm ở</th></tr>
+<tr><td>OpenAI Responses</td><td><code>response.completed</code> → <code>response.usage</code></td></tr>
+<tr><td>OpenAI Chat Completions</td><td>Chỉ khi <code>stream_options: {"include_usage": true}</code>: chunk bổ sung trước <code>[DONE]</code>, <code>choices</code> rỗng; chunk khác <code>usage: null</code></td></tr>
+<tr><td>Claude</td><td><code>message_start</code> có <code>input_tokens</code>; <code>message_delta</code> có <code>output_tokens</code> <b>cộng dồn</b></td></tr>
+<tr><td>Gemini</td><td><code>usageMetadata</code> trong <code>GenerateContentResponse</code></td></tr>
+<tr><td>vLLM</td><td>Như Chat Completions; <code>continuous_usage_stats</code> cho usage ở mọi chunk</td></tr>
+<tr><td>Ollama</td><td>Object cuối <code>done: true</code> với <code>prompt_eval_count</code>, <code>eval_count</code></td></tr>
+</table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> giá token khi stream và không stream là như nhau. Stream chỉ đổi <b>chỗ</b> usage xuất hiện: ở cuối, hoặc rải qua nhiều event cộng dồn. Stream bị cắt thì có thể mất usage, nhưng hoá đơn thì không mất.</div>`,
+    why: {
+      c: 'SSE cho chat; một adapter cho mỗi provider về khuôn block_start / delta / stop / response_end; bộ đếm usage lấy <b>giá trị mới nhất</b> (không cộng); bật <code>include_usage</code> với Chat Completions; khi thiếu usage thì ghi <code>usage_status = "missing"</code>, input đã biết và ước lượng output, rồi đối soát với billing.',
+      s: 'WebSocket cho chat một chiều: thêm hạ tầng Upgrade, tự làm reconnect, không thêm được gì vì huỷ chỉ cần đóng kết nối. Để frontend đọc thẳng event của provider: đổi provider là sửa frontend. Cộng usage của mọi event: Claude và vLLM gửi số cộng dồn nên bị đếm gấp. Ghi 0 khi thiếu usage: chi phí bị đếm thiếu đúng ở những request có vấn đề.',
+      p: 'Mỗi provider một adapter phải bảo trì (tên event đổi, ví dụ Gemini Interactions từ 05/2026). Usage của request bị cắt chỉ là ước lượng, cần đối soát định kỳ. Input token chỉ biết sớm với vài provider (Claude gửi trong message_start); còn lại phải tự đếm phía bạn.'
+    },
+    deep: [
+      {
+        q: 'Sao chat không dùng WebSocket cho "xịn", hai chiều luôn?',
+        a: `<p>Vì chat với LLM chỉ cần dữ liệu đi <b>một chiều</b>: client gửi một request, server trả một dòng token. README §1.3: SSE hợp kiểu này vì nó là HTTP thường, đi qua được hầu hết hạ tầng, debug được bằng <code>curl -N</code>, và mọi provider đều dùng.</p>
+<p>WebSocket đáng chọn khi cần trao đổi hai chiều liên tục: voice, người dùng chen ngang khi model đang nói, hoặc nhiều luồng trên một kết nối. Còn để huỷ một câu trả lời đang stream thì không cần WebSocket: <b>đóng kết nối là đủ</b> (Lab 00, bốn mắt xích huỷ).</p>`,
+        take: 'Chọn giao thức theo chiều dữ liệu. Một chiều thì SSE; hai chiều liên tục mới cần WebSocket.'
+      },
+      {
+        q: 'Ollama trả NDJSON thay vì SSE. Khác nhau thật sự ở đâu?',
+        a: `<p>NDJSON là mỗi dòng một object JSON, ngăn bằng <code>\\n</code>. Đơn giản hơn và ít byte hơn, nhưng README §1.3 chỉ ra ba thứ bị mất: không có <b>tên event</b>, không có <b>comment</b> để giữ kết nối, và parser phải tự tách dòng. Bảng dưới đếm byte thật của cùng câu trả lời ở hình chính.</p>`,
+        viz(box) {
+          const rows = PROVIDERS.map(([id, n]) => { const ev = build(id, true), b = ev.reduce((s, e) => s + enc.encode(e.raw).length, 0); return [n, ev.length, b]; });
+          const max = Math.max(...rows.map((r) => r[2]));
+          box.append(hbars(rows.map(([n, , b]) => [n, b, n.startsWith('Ollama')]), { max, fmt: (v) => v + ' B' }),
+            el('div', { class: 'cap', text: `Cùng ${DELTAS.length} delta, ${enc.encode(ANSWER).length} byte văn bản. Phần chênh là khung: tên event, field JSON lặp lại, usage ở mọi chunk (vLLM continuous). Đã lược field id, model nên số thật của provider lớn hơn. Byte ít không phải lý do chọn định dạng: với chat, phần lớn thời gian là chờ model sinh.` }));
+        },
+        take: 'NDJSON gọn nhưng không có keep-alive chuẩn. Nếu backend chuyển tiếp Ollama qua proxy, hãy tự đổi sang SSE và tự gửi heartbeat.'
+      },
+      {
+        q: 'Sao provider không gửi thẳng từng token, mà bọc trong event có tên, có index?',
+        a: `<p>Vì một response không chỉ có chữ. README §1.4: nó có thể gồm phần suy luận, nhiều đoạn văn bản, nhiều tool call song song, trích dẫn và usage. Mỗi phần cần biết nó thuộc khối nào.</p>
+<div class="tbl"><table><tr><th>Provider</th><th>Đơn vị cấp cao</th><th>Khoá để gom</th></tr>
+<tr><td>OpenAI Responses</td><td>Output item (message, function_call, reasoning...)</td><td><code>item_id</code>, <code>output_index</code>, <code>content_index</code></td></tr>
+<tr><td>OpenAI Chat Completions</td><td>Choice</td><td><code>choices[].index</code>, <code>tool_calls[].index</code></td></tr>
+<tr><td>Claude</td><td>Content block (text, tool_use, thinking...)</td><td><code>index</code> của block</td></tr>
+<tr><td>Gemini <code>streamGenerateContent</code></td><td>Mỗi event là một GenerateContentResponse chứa phần mới</td><td>Thứ tự event</td></tr></table></div>
+<p>Chỉ Claude, OpenAI Responses và Gemini Interactions có event riêng cho mở và đóng khối. Ở hình chính, chọn Gemini hoặc Ollama: event chuẩn hoá có ghi "adapter tự sinh".</p>`,
+        take: 'Viết adapter cho mỗi provider về một khuôn nội bộ. Phần còn lại của code chỉ biết khuôn đó.'
+      },
+      {
+        q: '"Gom theo khoá, không theo thứ tự nhận" nghĩa là sao, ví dụ cụ thể?',
+        a: `<p>Khi model gọi hai tool song song, mảnh arguments của hai tool có thể đến <b>xen kẽ</b>. Với Chat Completions, <code>id</code> của tool call thường chỉ có ở delta đầu, nên khoá đúng là <code>index</code> (README §1.4). Bên dưới: trợ lý ShopViet gọi cùng lúc <code>kiem_kho</code> (index 0) và <code>tra_don_hang</code> (index 1).</p>`,
+        viz(box) {
+          const parts = [[0, '{"sku":"PRO'], [1, '{"order_'], [0, 'X-DEN","st'], [1, 'id":"SV-4821"}'], [0, 'ore":"Q7"}']];
+          const byArrival = parts.map((p) => p[1]).join('');
+          const keyed = [0, 1].map((k) => parts.filter((p) => p[0] === k).map((p) => p[1]).join(''));
+          const tryP = (s) => { try { return '<span class="ok">' + esc(J(JSON.parse(s))) + '</span>'; } catch (e) { return '<b class="bad">' + esc(e.message) + '</b>'; } };
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Thứ tự nhận</th><th>index</th><th>mảnh arguments</th></tr>' + parts.map((p, i) => `<tr><td class="mono">${i + 1}</td><td class="mono">${p[0]}</td><td class="mono">${esc(p[1])}</td></tr>`).join('') })]),
+            el('div', { class: 'tbl' }, [el('table', { html: `<tr><th>Cách gom</th><th>Chuỗi</th><th>JSON.parse</th></tr><tr><td>Nối theo thứ tự nhận</td><td class="mono" style="word-break:break-all">${esc(byArrival)}</td><td>${tryP(byArrival)}</td></tr>` + keyed.map((s, k) => `<tr><td>Theo index ${k}</td><td class="mono">${esc(s)}</td><td>${tryP(s)}</td></tr>`).join('') })]),
+            el('div', { class: 'cap', text: 'JSON.parse chạy thật. Thứ tự xen kẽ là dữ liệu dựng tay; README không cam kết thứ tự event giữa các item (§2.2), nên code không được giả định thứ tự.' }));
+        },
+        take: 'Map theo khoá của provider, không phải một biến chuỗi chung. Lỗi này không lộ ra khi model chỉ gọi một tool.'
+      },
+      {
+        q: 'Khối chưa đóng mà JSON đã parse được, dùng luôn có sao không?',
+        a: `<p>Có. README §1.4: JSON dở dang có thể <b>vô tình hợp lệ</b>. Kéo slider: bộ "tự đóng ngoặc" thử thêm <code>}</code> hoặc <code>"}</code> vào phần đã nhận, giống nhiều thư viện parse JSON dở dang.</p>`,
+        viz(box) {
+          const FULL = '{"order_id": "SV-4821"}', out = el('div');
+          const draw = (n) => {
+            const p = FULL.slice(0, n);
+            let fixed = null, val = null;
+            for (const tail of ['', '}', '"}']) { try { val = JSON.parse(p + tail); fixed = p + tail; break; } catch (e) { } }
+            const wrong = val && val.order_id !== 'SV-4821';
+            out.innerHTML = `<div class="stat"><span>Đã nhận: <b class="mono">${esc(p)}</b></span><span>Sau khi tự đóng: <b class="mono">${fixed ? esc(fixed) : 'chưa parse được'}</b></span></div>` +
+              `<div class="cap">${wrong ? `<b style="color:var(--bad)">${val.order_id === undefined ? 'JSON hợp lệ nhưng chưa có order_id' : 'JSON hợp lệ, mã đơn sai: ' + esc(J(val.order_id))}.</b> Vì sao: tool tra đơn sẽ chạy với một mã đơn có thật hoặc không có thật, chỉ vì chưa chờ block_stop. Trong hệ thống thật: chỉ thực thi tool sau content_block_stop / .done.` : val ? 'Đã đủ: giá trị đúng. Nhưng code không biết được điều đó nếu chưa nhận block_stop.' : 'Chưa parse được: an toàn, vì code buộc phải chờ.'}</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Số ký tự đã nhận', 1, FULL.length, 1, 18, draw).node]), out);
+          draw(18);
+        },
+        take: 'Parse dở dang chỉ để xem trước trên UI. Quyết định nghiệp vụ (chạy tool, ghi đơn) chỉ sau khi khối đóng.'
+      },
+      {
+        q: 'Kết nối đóng rồi, văn bản trông đủ câu. Sao vẫn phải coi là lỗi?',
+        a: `<p>Vì "trông đủ câu" không phải bằng chứng. README §1.4: <b>hết stream mà không có event kết thúc là lỗi</b>, không phải thành công. Nhiều bug "câu trả lời dừng giữa câu" mà không ai biết đều từ việc bỏ qua quy tắc này. README §3.6 thêm: lỗi giữa stream mang HTTP 200, nên code chỉ nhìn status sẽ coi một câu trả lời cụt là hoàn chỉnh.</p>
+<p>Ở hình chính, chọn Claude và cắt ngay sau delta cuối ("kho không?"): văn bản đầy đủ, nhưng không có <code>message_stop</code>, không có <code>output_tokens</code>. Code đúng phải raise <code>StreamTruncated</code>.</p>`,
+        take: 'Chỉ event kết thúc của provider mới chứng nhận stream xong. Kết nối đóng chỉ chứng nhận kết nối đã đóng.'
+      },
+      {
+        q: 'Stream có rẻ hơn hay đắt hơn không stream?',
+        a: `<p>Không khác. README §1.5: giá token khi stream và khi không stream là như nhau. Điểm khác là usage chỉ đến <b>ở cuối stream</b>, hoặc rải rác qua nhiều event.</p>
+<p>Hệ quả: stream bị cắt thì có thể mất usage, nhưng hoá đơn thì không mất. OpenAI ghi: "If the stream is interrupted, you may not receive the final usage chunk". Trung tâm hỗ trợ của Claude ghi rằng request bị client ngắt giữa chừng vẫn bị tính tiền.</p>`,
+        take: 'Stream không phải đòn bẩy chi phí. Nó là đòn bẩy trải nghiệm, kèm một rủi ro đo lường.'
+      },
+      {
+        q: 'Claude gửi output_tokens ở mọi message_delta. Cộng lại cho chắc, sao lại sai?',
+        a: `<p>Vì số đó là <b>cộng dồn</b>, không phải phần tăng thêm (README §1.5). Lấy giá trị của <code>message_delta</code> cuối cùng nhận được. Với vLLM bật <code>continuous_usage_stats</code>, mỗi chunk cũng mang usage tính tới thời điểm đó.</p>
+<p>Ở hình chính, đổi bộ đếm sang "Cộng mọi giá trị usage". Với Claude (lab dựng hai <code>message_delta</code>; README: "một hoặc nhiều"), output bị đếm gấp đôi. Với vLLM continuous, tổng bị phóng lên nhiều lần vì cộng 1 + 2 + ... thay vì lấy số cuối. README §3.11 liệt kê đúng triệu chứng: "Usage Claude bị đếm gấp nhiều lần".</p>`,
+        take: 'Mặc định coi usage trong stream là "tổng tới hiện tại": ghi đè, không cộng.'
+      },
+      {
+        q: 'Thiếu usage thì ghi gì vào log, ghi 0 cho đơn giản được không?',
+        a: `<p>Không. Ghi 0 nghĩa là đếm thiếu đúng những request có vấn đề. README §1.5 khuyên ghi lại cờ thay vì đoán im lặng:</p>
+<ul><li><code>usage_status = "missing"</code></li>
+<li>Input token đã biết: Claude gửi ngay trong <code>message_start</code>; provider khác thì tự đếm phía bạn.</li>
+<li>Ước lượng output từ số ký tự đã nhận.</li>
+<li>Đối chiếu định kỳ với số liệu billing của provider (README §3.10: theo dõi "số stream có usage_status = missing").</li></ul>
+<p>Khung "Bộ đếm usage" ở hình chính làm đúng việc này khi bạn cắt stream trước event usage. Bảng cuối cho thấy provider nào còn biết input khi bị cắt.</p>`,
+        take: 'Thiếu usage là một trạng thái cần ghi lại và đối soát, không phải một con số 0.'
+      }
+    ],
+    poc: {
+      goal: "Cùng câu trả lời về đơn SV-4821 ở năm định dạng (Claude, OpenAI Responses, Chat Completions, Gemini, Ollama NDJSON), qua một adapter cho mỗi provider về khuôn <code>block_start → block_delta → block_stop → response_end</code>. Sau đó cắt stream ở nhiều chỗ và thử hai cách đếm usage.",
+      file: "docs/streaming/pocs/02_protocols_events_usage.py",
+      run: "uv run docs/streaming/pocs/02_protocols_events_usage.py",
+      needs: "Không cần key hay server: thuần Python, dưới 1 giây.<br><b>Kịch bản (không đo):</b> toàn bộ payload event dựng tay theo README §1.4, §2.x, không phải bản ghi API thật; 1.380 token input và 19 token output là số script tự đặt (khác 1.200 ở hình chính); vị trí cắt k và thứ tự xen kẽ của hai tool call cũng do script chọn. POC không có mạng, nên không có thời gian nào để đo.<br><b>Chạy thật:</b> parser SSE, năm adapter, bộ đếm usage và <code>json.loads</code>. Output là kết quả của code thật trên dữ liệu dựng sẵn: chứng minh logic xử lý đúng hay sai, không chứng minh provider thật gửi đúng như vậy.",
+      output: "=== 1. Cùng một câu trả lời, năm định dạng (dựng theo README §1.4, §2.x; không phải bản ghi API thật)\nprovider   | event gốc | event nội bộ | kết thúc   | in   | out | văn bản\nclaude     |         9 |            7 | end_turn   | 1380 |  19 | Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.\nresponses  |         8 |            7 | completed  | 1380 |  19 | Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.\nchat       |         8 |            7 | stop       | 1380 |  19 | Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.\ngemini     |         4 |            7 | STOP       | 1380 |  19 | Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.\nollama     |         5 |            7 | stop       | 1380 |  19 | Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.\n\n=== 2. Kết nối đóng sau event thứ k: còn biết gì?\nprovider   |  k/tổng | có response_end | input token | output token | văn bản nhận\nclaude     |     2/9 | KHÔNG → lỗi     |        1380 |        thiếu | ''\nclaude     |     8/9 | KHÔNG → lỗi     |        1380 |           19 | 'Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.'\nresponses  |     2/8 | KHÔNG → lỗi     |       thiếu |        thiếu | ''\nresponses  |     7/8 | KHÔNG → lỗi     |       thiếu |        thiếu | 'Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.'\nchat       |     2/8 | KHÔNG → lỗi     |       thiếu |        thiếu | 'Đơn SV-4821'\nchat       |     7/8 | KHÔNG → lỗi     |        1380 |           19 | 'Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.'\ngemini     |     2/4 | KHÔNG → lỗi     |       thiếu |        thiếu | 'Đơn SV-4821 đang được GHN'\ngemini     |     3/4 | KHÔNG → lỗi     |       thiếu |        thiếu | 'Đơn SV-4821 đang được GHN giao, dự kiến'\nollama     |     2/5 | KHÔNG → lỗi     |       thiếu |        thiếu | 'Đơn SV-4821 đang được GHN'\nollama     |     4/5 | KHÔNG → lỗi     |       thiếu |        thiếu | 'Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.'\n\n=== 3. Usage cộng dồn: lấy giá trị cuối hay cộng lại?\nClaude, 3 message_delta cộng dồn 7/13/19   | lấy cuối =  19 | cộng mọi giá trị =  39 (gấp 2.1 lần)\nvLLM continuous_usage_stats (mọi chunk)    | lấy cuối =  19 | cộng mọi giá trị =  87 (gấp 4.6 lần)\n\n=== 4. Hai tool call song song, delta đến xen kẽ (Chat Completions, khoá là index)\ngom theo index 0: {\"sku\":\"PROX-DEN\",\"store\":\"Q7\"}  → parse OK\ngom theo index 1: {\"order_id\":\"SV-4821\"}           → parse OK\nnối theo thứ tự nhận: {\"sku\":\"PRO{\"order_X-DEN\",\"stid\":\"SV-482…  → parse lỗi\ngom theo id (id chỉ có ở delta đầu): {'call_a': '{\"sku\":\"PRO', 'call_b': '{\"order_'} → mất 3/5 mảnh\n\nRút ra: năm định dạng cho cùng văn bản sau adapter. Cắt trước event kết thúc thì adapter phát hiện thiếu response_end dù văn bản trông đủ; cắt sớm thì chỉ Claude còn input token (từ message_start). Cộng usage cộng dồn ra số gấp 2–5 lần; tool call song song chỉ ghép đúng khi gom theo index.",
+      measured: true,
+      read: ["Bảng 1: số event gốc khác nhau (4 đến 9) nhưng event nội bộ luôn là 7 và văn bản giống hệt. POC có năm định dạng; hình chính có thêm vLLM continuous.", "Bảng 2: cắt ngay trước event kết thúc thì văn bản trông đủ nhưng adapter vẫn báo thiếu <code>response_end</code>. Cắt sớm thì chỉ Claude còn input token, vì nó có từ <code>message_start</code>.", "Bảng 2, dòng chat 7/8: đã có đủ input và output (chunk usage tới trước) mà vẫn \"KHÔNG → lỗi\". Vì sao: thiếu <code>data: [DONE]</code>. Có usage không có nghĩa stream đã xong; chỉ event kết thúc mới chứng nhận điều đó. Ngược lại, dòng responses 7/8 đủ chữ mà không biết input lẫn output, vì Responses chỉ gửi usage trong <code>response.completed</code>.", "Bảng 3: cộng các giá trị cộng dồn ra 39 thay vì 19 (Claude, 3 <code>message_delta</code>) và 87 thay vì 19 (vLLM <code>continuous_usage_stats</code>).", "Bảng 4: hai tool call xen kẽ chỉ parse được khi gom theo <code>index</code>; gom theo <code>id</code> mất 3/5 mảnh vì id chỉ có ở delta đầu."]
+    },
+    mount(stage) {
+      const st = { p: 'claude', iu: false, k: 0, naive: false };
+      let ev = build(st.p, st.iu);
+      st.k = ev.length;
+      const wire = el('div', { style: 'max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--bg)' });
+      const normBox = el('div', { class: 'mono', style: 'font-size:11.5px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--bg)' });
+      const textBox = el('div', { style: 'font-size:13.5px;background:var(--accent-soft);border-radius:6px;padding:8px 12px;margin:8px 0;min-height:44px' });
+      const acc = el('div', { style: 'font-size:13px' }), flags = el('div', { style: 'margin-top:10px;font-size:13.5px' }), cmp = el('div');
+      const pSel = select('Provider', PROVIDERS, st.p, (v) => { st.p = v; reset(); });
+      const iuCb = el('input', { type: 'checkbox' });
+      iuCb.addEventListener('change', () => { st.iu = iuCb.checked; reset(); });
+      const iuLab = el('label', { class: 'ctl' }, [iuCb, 'stream_options.include_usage']);
+      const kSl = slider('Kết nối đóng sau event thứ', 0, ev.length, 1, st.k, (v) => { st.k = v; draw(); }, (v) => String(v));
+      const mSel = select('Bộ đếm usage', [['0', 'Lấy giá trị mới nhất (đúng)'], ['1', 'Cộng mọi giá trị usage (sai)']], '0', (v) => { st.naive = v === '1'; draw(); });
+
+      function setK(v) { st.k = v; kSl.input.value = v; kSl.node.querySelector('output').textContent = String(v); draw(); }
+      function reset() {
+        ev = build(st.p, st.iu);
+        kSl.input.max = ev.length;
+        iuLab.style.display = st.p === 'chat' ? '' : 'none';
+        setK(ev.length);
+      }
+
+      function draw() {
+        const a = accumulate(ev, st.k);
+        wire.replaceChildren(...ev.flatMap((e, i) => {
+          const after = i >= st.k;
+          const row = el('div', { class: 'mono', title: 'Bấm để cắt kết nối ngay sau event này', style: `font-size:11px;white-space:pre-wrap;word-break:break-all;padding:4px 8px;border-bottom:1px solid var(--line);cursor:pointer;${after ? 'opacity:.35;text-decoration:line-through' : ''}${e.u ? ';box-shadow:inset 3px 0 0 var(--g4)' : ''}${e.end ? ';box-shadow:inset 3px 0 0 var(--ok)' : ''}`,
+            html: `<span style="color:var(--accent)">${i + 1}</span> ${esc(e.raw.replace(/\n+$/, ''))}`, onclick: () => setK(i + 1) });
+          return i === st.k - 1 && st.k < ev.length ? [row, el('div', { style: 'border-top:2px dashed var(--bad);font-size:11px;color:var(--bad);padding:2px 8px', text: 'kết nối đóng ở đây' })] : [row];
+        }));
+        normBox.innerHTML = a.norm.length ? a.norm.map(([k, v]) => `<div><span style="color:${k === 'response_end' ? 'var(--ok)' : k === 'block_delta' ? 'var(--ink)' : 'var(--g4)'}">${k}</span> ${esc(k === 'block_delta' ? J(v) : v)}</div>`).join('') : '<span class="hint">(chưa có event chuẩn hoá)</span>';
+        textBox.innerHTML = a.text ? esc(a.text) + (a.ended ? '' : ' <b class="bad">[không có event kết thúc]</b>') : '<span class="hint">(khách chưa thấy chữ nào)</span>';
+
+        const inV = st.naive ? (a.nUsage ? a.sumIn : null) : a.inT, outV = st.naive ? (a.nUsage && a.outT != null ? a.sumOut : null) : a.outT;
+        const sCls = a.status === 'ok' ? 'ok' : 'bad';
+        acc.innerHTML = `<div class="stat" style="margin-top:0"><span>Input: <b>${inV == null ? 'chưa biết' : fT(inV)}</b></span><span>Output: <b class="${st.naive && outV > OUT ? 'bad' : ''}">${outV == null ? 'chưa biết' : fT(outV)}</b></span><span>usage_status: <b class="${sCls}">${a.status}</b></span><span>Event kết thúc: <b class="${a.ended ? 'ok' : 'bad'}">${a.ended ? 'có' : 'không → StreamTruncated'}</b></span></div>` +
+          (a.status !== 'ok' && a.text ? `<div class="hint">Ghi log theo README §1.5: input ${a.inT != null ? '<b>' + fT(a.inT) + '</b> (đã biết từ stream)' : 'tự đếm phía backend (stream chưa cho biết)'}, output ước lượng <b>~${a.estOut}</b> token từ ${a.text.length} ký tự đã nhận. Provider có thể tính tới <b>${fT(OUT)}</b> token output nếu đã sinh hết.</div>` : '');
+
+        const P = [], box = (c, h) => `<div style="border-left:3px solid ${c};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${h}</div>`;
+        const name = PROVIDERS.find((p) => p[0] === st.p)[1];
+        if (st.naive && a.outT != null && a.sumOut > a.outT) P.push(box('var(--bad)', `<b>Output bị đếm ${fT(a.sumOut)} token, thật ra là ${fT(a.outT)} (gấp ${(a.sumOut / a.outT).toFixed(1).replace('.', ',')} lần).</b> Vì sao: ${st.p === 'claude' ? 'hai message_delta cùng mang output_tokens cộng dồn' : st.p === 'vllm' ? 'continuous_usage_stats gửi usage tính tới thời điểm đó ở mọi chunk, cộng lại thành 1 + 2 + ... + n' : 'nhiều event cùng mang tổng'}. Không có nghĩa provider tính gấp: hoá đơn vẫn là ${fT(a.outT)}. Trong hệ thống thật: ghi đè giá trị usage mới nhất, không cộng (README §3.11).`));
+        if (st.naive && a.inT != null && a.sumIn > a.inT) P.push(box('var(--bad)', `<b>Input bị đếm ${fT(a.sumIn)} thay vì ${fT(a.inT)}.</b> Vì sao: prompt_tokens / input_tokens xuất hiện ở nhiều event, cùng một giá trị. Trong hệ thống thật: một request chỉ có một số input.`));
+        if (a.text === ANSWER && !a.ended) P.push(box('var(--bad)', `<b>Khách đã thấy đủ câu trả lời, nhưng stream không có event kết thúc${a.status === 'missing' ? ' và không có usage' : ''}.</b> Vì sao: ${name} gửi ${st.p === 'claude' ? 'output_tokens trong message_delta và message_stop' : st.p === 'chat' ? (st.iu ? 'chunk usage và [DONE]' : '[DONE]') : 'event kết thúc'} sau delta văn bản cuối; kết nối đóng trước đó. Không có nghĩa request rẻ hơn: provider đã sinh xong ${fT(OUT)} token. Trong hệ thống thật: raise StreamTruncated, ghi usage_status = "missing", đừng lưu như câu trả lời hoàn chỉnh.`));
+        if (st.p === 'chat' && !st.iu && a.ended) P.push(box('var(--warn)', '<b>Stream kết thúc hợp lệ bằng [DONE] mà không có usage nào.</b> Vì sao: Chat Completions chỉ gửi usage khi đặt <code>stream_options: {"include_usage": true}</code>. Không có nghĩa request miễn phí. Trong hệ thống thật: bật include_usage cho mọi request stream; tích ô phía trên để thấy chunk usage có choices rỗng xuất hiện trước [DONE].'));
+        if (st.p === 'gemini' && a.ended) P.push(box('var(--warn)', 'Gemini <code>streamGenerateContent</code> không có event riêng cho mở / đóng khối; adapter tự sinh block_stop và response_end khi gặp finishReason khác rỗng. README: đừng dựa vào <code>data: [DONE]</code> với Gemini. Lab đặt usageMetadata ở chunk cuối; README chỉ ghi nó nằm trong GenerateContentResponse.'));
+        if (!P.length && a.status === 'ok') P.push(box('var(--ok)', `Stream đủ: có event kết thúc, usage ${fT(a.inT ?? 0)} input + ${fT(a.outT)} output. Kéo slider sang trái để cắt stream, hoặc đổi bộ đếm sang "cộng mọi giá trị".`));
+        flags.innerHTML = P.join('');
+
+        const rows = PROVIDERS.map(([id, n]) => {
+          const e2 = build(id, st.iu), b = accumulate(e2, lastTextIdx(e2));
+          return `<tr class="${id === st.p ? 'cur' : ''}"><td>${n}${id === 'chat' ? (st.iu ? ' (include_usage)' : ' (không include_usage)') : ''}</td><td class="${b.text === ANSWER ? 'ok' : 'bad'}">${b.text === ANSWER ? 'đủ' : 'thiếu'}</td><td class="${b.ended ? 'ok' : 'bad'}">${b.ended ? 'có (nằm cùng chunk cuối)' : 'không'}</td><td class="${b.inT != null ? 'ok' : 'bad'}">${b.inT != null ? fT(b.inT) : 'không biết'}</td><td class="${b.outT != null ? 'ok' : 'bad'}">${b.outT != null ? fT(b.outT) + (id === 'vllm' ? ' (tới chunk đó)' : '') : 'không biết'}</td><td class="mono">~${b.estOut}</td></tr>`;
+        }).join('');
+        cmp.innerHTML = '<div class="tbl" style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr><th>Provider</th><th>Văn bản</th><th>Event kết thúc</th><th>Input biết được</th><th>Output biết được</th><th>Ước lượng output từ ký tự</th></tr>' + rows + '</table></div>';
+      }
+
+      stage.append(
+        el('div', { class: 'row' }, [pSel.node, iuLab, mSel.node]),
+        el('div', { class: 'row' }, [kSl.node, el('button', { text: 'Cắt ngay sau delta cuối', onclick: () => setK(lastTextIdx(ev)) }), el('button', { text: 'Stream đủ', onclick: () => setK(ev.length) })]),
+        el('div', { class: 'cols' }, [
+          el('div', {}, [el('h4', { html: 'Trên dây <small>viền tím: có usage, viền xanh: event kết thúc</small>' }), wire]),
+          el('div', {}, [el('h4', { text: 'Sau adapter (khuôn nội bộ)' }), normBox, el('h4', { style: 'margin-top:10px', text: 'Khách thấy' }), textBox, el('h4', { text: 'Bộ đếm usage' }), acc])
+        ]),
+        flags,
+        el('h4', { style: 'margin:16px 0 4px;font-size:13px', text: 'Cùng tình huống ở mọi provider: kết nối đóng ngay sau delta văn bản cuối' }), cmp,
+        el('div', { class: 'cap', html: 'Vì sao chỉ Gemini vẫn có event kết thúc: Gemini nhét <code>finishReason</code> và <code>usageMetadata</code> vào <b>cùng chunk</b> với mảnh chữ cuối, các provider khác gửi chúng ở event riêng phía sau. Không có nghĩa Gemini an toàn hơn: cắt sớm hơn một chunk là cũng mất cả hai. vLLM "biết" output vì mỗi chunk mang tổng tới lúc đó, nhưng đó là số tới chunk cuối nhận được, chưa chắc là số cuối cùng. Trong hệ thống thật: vẫn chỉ tin event kết thúc, không tin "văn bản trông đủ".' }),
+        el('p', { class: 'hint', text: `Event dựng tay theo bảng event model và usage trong README (Tra cứu nhanh, §1.5, §2.2–2.4), lược field id, model, created. Token ước lượng thô theo ký tự (ASCII 0,27, ký tự khác 0,7 token/ký tự), không phải tokenizer thật; ${fT(IN)} token input là giả định. Claude được dựng với hai message_delta (README: một hoặc nhiều).` }));
+      reset();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

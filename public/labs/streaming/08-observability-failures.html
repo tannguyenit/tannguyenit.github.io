@@ -1,0 +1,665 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 08</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="07-ui-moderation.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const fx = (v, d = 1) => (v === null || v === undefined || !isFinite(v) ? '–' : v.toFixed(d).replace('.', ','));
+  const CAPS = 'font-size:13.5px;line-height:1.55;padding:8px 12px;border:1px solid var(--line);border-radius:6px;margin-top:10px;background:var(--bg)';
+  const TD = 'padding:4px 8px;border:1px solid var(--line);text-align:left;white-space:nowrap';
+  const pctl = (arr, p) => { if (!arr.length) return null; const s = arr.slice().sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.max(0, Math.ceil(p * s.length) - 1))]; };
+  const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+  const IDLE = 60, MAXTOK = 800;
+
+  function genLog(S) {
+    const rnd = seeded(S.seed), rows = [];
+    for (let i = 0; i < S.n; i++) {
+      const reasoning = rnd() < S.reason;
+      const prov = reasoning ? 20 + rnd() * 70 : 0.4 + rnd() * 1.1 + (rnd() < 0.1 ? rnd() * 2 : 0);
+      const want = 80 + Math.floor(rnd() * 760), out = Math.min(MAXTOK, want), itl = 0.015 + rnd() * 0.015;
+      const up = 0.03 + rnd() * 0.12, down = 0.03 + rnd() * 0.12, over = 0.05 + rnd() * 0.1, buffered = rnd() < S.buf;
+      const tCall = up + over, tFirst = tCall + prov, r = rnd(), f = 0.1 + rnd() * 0.8;
+      let fate = 'ok';
+      if (!S.hb && prov > IDLE) fate = 'idle';
+      else if (r < 0.02) fate = 'error';
+      else if (r < 0.03) fate = 'drop';
+      else if (r < 0.08) fate = 'abort';
+      const k = fate === 'ok' ? out : fate === 'idle' ? 0 : Math.max(2, Math.floor(f * out)), tLast = tFirst + (k - 1) * itl;
+      const row = { i: i + 1, reasoning, buffered, fate, out: k, tCall, end: fate === 'ok', err: fate === 'error' ? 'overloaded_error' : '', usage: fate === 'ok' ? 'ok' : 'missing' };
+      row.stop = fate === 'ok' ? (want >= MAXTOK ? 'max_tokens' : rnd() < 0.01 ? 'refusal' : 'end') : '';
+      if (fate === 'idle') { row.ttftB = null; row.ttftC = null; row.e2eB = null; row.cutAt = tCall + IDLE; }
+      else {
+        row.ttftB = tFirst - tCall; row.e2eB = tLast - tCall;
+        row.ttftC = (buffered ? tLast : tFirst) + down; row.lastC = tLast + down;
+        row.tpsOk = (k - 1) / (tLast - tFirst); row.tpsBad = k / (tLast - tCall);
+        row.tpsClient = row.lastC - row.ttftC > 1e-6 ? (k - 1) / (row.lastC - row.ttftC) : Infinity;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+  function metrics(rows) {
+    const live = rows.filter((r) => r.ttftC !== null);
+    const M = {
+      n: rows.length, tB: live.filter((r) => !r.reasoning).map((r) => r.ttftB), tC: live.filter((r) => !r.reasoning).map((r) => r.ttftC), tCr: live.filter((r) => r.reasoning).map((r) => r.ttftC),
+      tpsOk: live.map((r) => r.tpsOk), tpsBad: live.map((r) => r.tpsBad),
+      burst: live.filter((r) => r.tpsClient > 1000).length,
+      idle: rows.filter((r) => r.fate === 'idle').length, err: rows.filter((r) => r.fate === 'error').length,
+      drop: rows.filter((r) => r.fate === 'drop').length, abort: rows.filter((r) => r.fate === 'abort').length,
+      missing: rows.filter((r) => r.usage === 'missing').length,
+      stop: ['end', 'max_tokens', 'refusal'].map((s) => [s, rows.filter((r) => r.stop === s).length])
+    };
+    M.tCrWithCut = M.tCr.concat(rows.filter((r) => r.fate === 'idle').map(() => IDLE));
+    return M;
+  }
+
+  const FAIL = [
+    ['Chữ hiện ra cùng lúc ở cuối', 'nginx proxy_buffering mặc định bật; middleware nén; proxy doanh nghiệp', 'curl -N qua từng tầng; X-Accel-Buffering: no; tắt nén cho route stream'],
+    ['Local chạy tốt, production thì không', 'Proxy, CDN, gzip chỉ có ở production', 'So origin với domain production bằng curl -N'],
+    ['Stream dừng sau đúng khoảng 60 giây', 'nginx proxy_read_timeout hoặc ALB idle timeout mặc định 60 giây', 'Heartbeat 15–30 giây; tăng timeout'],
+    ['Lỗi 524 sau khoảng 2 phút', 'Cloudflare Proxy Read Timeout 125 giây', 'Heartbeat; gửi header sớm; tách generation'],
+    ['Stream dừng ở phút thứ 15', 'Giới hạn stream của API Gateway REST', 'Đổi kiến trúc, hoặc chia nhỏ tác vụ'],
+    ['Chỉ mở được khoảng 6 tab chat', 'Giới hạn kết nối của HTTP/1.1', 'HTTP/2; gộp kết nối'],
+    ['Câu trả lời dừng giữa câu, không có lỗi', 'Không xử lý event error; coi đóng kết nối là xong', 'Bắt buộc có event kết thúc; xử lý error, response.failed'],
+    ['Fallback không kích hoạt khi provider quá tải', 'Lỗi giữa stream mang status 200 hoặc không có status', 'Phân loại theo error.type trong body'],
+    ['Không có usage cho một số request', 'Stream bị cắt trước chunk usage; quên include_usage', 'Ghi usage_status = missing; bật include_usage'],
+    ['Usage Claude bị đếm gấp nhiều lần', 'Cộng output_tokens của mọi message_delta', 'Lấy giá trị cuối cùng; số liệu là cộng dồn'],
+    ['Chi phí vẫn tăng khi người dùng đóng tab', 'Không truyền abort signal tới upstream; middleware chặn tín hiệu ngắt kết nối', 'Nối đủ bốn mắt xích; test ngắt kết nối'],
+    ['Code block chưa đóng làm cả đoạn sau thành code', 'Render markdown chưa hoàn chỉnh', 'Renderer cho streaming; tạm đóng fence'],
+    ['Nội dung vi phạm lọt ra trước khi bị chặn', 'Lọc output trễ hơn stream', 'Không stream, hoặc buffer theo đoạn'],
+    ['streamGenerateContent trả JSON lạ, không có data:', 'Thiếu ?alt=sse', 'Thêm alt=sse']
+  ];
+  const CHECK = [
+    ['Giao thức và client', ['Parser SSE xử lý đúng CRLF, comment, event nhiều dòng data:, bỏ event chưa có dòng trống kết thúc', 'Client web dùng fetch + ReadableStream + AbortController, không dùng EventSource cho chat', 'Stream chỉ xong khi có event kết thúc hợp lệ; thiếu thì hiện "bị gián đoạn"', 'Có nhánh cho mọi event lỗi (Claude error; OpenAI error, response.failed, response.incomplete; Gemini finishReason khác STOP; Ollama error)']],
+    ['Backend', ['Event chuẩn hoá về schema riêng, có event done do backend phát', 'Không middleware nào đọc hết body để log hoặc nén', 'Heartbeat : ping mỗi 15–30 giây, kể cả lúc chạy tool hoặc chờ reasoning', 'Abort signal của client được truyền tới request gọi provider; có test ngắt kết nối', 'Lỗi phân loại theo error.type; chỉ retry im lặng khi chưa gửi gì', 'Mọi request đều có max_tokens']],
+    ['Hạ tầng', ['Header: text/event-stream, Cache-Control: no-cache, no-transform, X-Accel-Buffering: no', 'Timeout mọi tầng lớn hơn khoảng heartbeat và đủ cho stream dài nhất', 'Đã kiểm tra bằng curl -N qua domain production, có và không có Accept-Encoding: gzip']],
+    ['Đo lường', ['TTFT ở client và backend; ITL; tỉ lệ stream bị cắt; lỗi giữa stream theo loại; tỉ lệ huỷ', 'Span tracing kết thúc khi stream kết thúc, có trạng thái lỗi khi stream lỗi', 'Đối soát định kỳ usage ghi nhận với billing, nhất là request bị huỷ']]
+  ];
+
+  return {
+    id: 'observability', nav: '8. Đo lường & failure modes', ref: '§3.10–3.12',
+    title: 'TTFT đo ở backend đẹp hơn khách thấy bao nhiêu, và tokens/giây bị tính sai thế nào',
+    hook: 'Trình duyệt sinh một log request stream của ShopViet rồi tính TTFT p50/p95, tokens/giây, tỉ lệ cắt. Đổi cách đo và cấu hình hạ tầng, xem con số trên dashboard đổi ra sao.',
+    terms: [
+      ['TTFT', 'Time to first token: từ lúc gửi request đến lúc có chữ đầu tiên. Ví dụ khách bấm gửi lúc 0 s, chữ đầu hiện lúc 0,9 s thì TTFT = 0,9 s.'],
+      ['TTFT phía client / backend', 'Cùng tên nhưng khác điểm đo. Client đo ở trình duyệt, gồm cả mạng và proxy. Backend đo từ lúc gọi provider tới delta đầu, chỉ thấy phần provider.'],
+      ['ITL', 'Inter-token latency: thời gian trung bình giữa hai token, = (e2e − TTFT) / (output_tokens − 1). Ví dụ 20 ms.'],
+      ['Tokens/giây', 'Tốc độ sinh của một request, xấp xỉ 1 / ITL. ITL 20 ms thì khoảng 50 token/giây.'],
+      ['e2e', 'End-to-end: từ lúc gửi request đến token cuối. Ví dụ TTFT 0,8 s và 1.500 token, ITL 20 ms thì e2e ≈ 30,8 s.'],
+      ['p50 / p95', 'Percentile. p95 = 2,1 s nghĩa là 95% request có giá trị không quá 2,1 s; 5% chậm nhất nằm trên mức đó.'],
+      ['Tỉ lệ stream bị cắt', 'Số stream không có event kết thúc chia cho tổng số stream. README gọi đây là chỉ số sức khoẻ quan trọng nhất của streaming.'],
+      ['Heartbeat', 'Dòng comment SSE ": ping" server gửi định kỳ (15–30 giây) khi chưa có chữ để gửi. Trình duyệt bỏ qua nó, nhưng proxy thấy có dữ liệu đi qua nên không cắt kết nối vì im lặng.'],
+      ['usage_status', 'Cờ tự đặt khi stream bị cắt trước chunk chứa usage, ví dụ usage_status = "missing", để biết số token của request đó là ước lượng.'],
+      ['Span', 'Một đoạn trong trace (tracing), có lúc bắt đầu, lúc kết thúc và trạng thái. Ví dụ span "gọi model" phải dài đúng bằng thời gian stream.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> chạy trợ lý chat stream qua SSE: trình duyệt → nginx/ALB → backend → provider. Đội vận hành có dashboard Grafana lấy số từ log backend. Một phần request dùng reasoning model (model sinh phần suy luận trước rồi mới viết câu trả lời) cho câu hỏi khó như đối chiếu bảo hành, nên chữ đầu có thể đến sau vài chục giây.',
+      scenario: 'Dashboard báo TTFT p95 khoảng 2 giây và tokens/giây ổn định. Khách lại phàn nàn "chờ mãi không thấy chữ", và có câu trả lời dừng giữa chừng mà không thấy lỗi nào trong log.',
+      ask: 'Đo ở đâu, bằng công thức nào thì con số trên dashboard khớp với thứ khách chịu? Những request bị cắt có đang biến mất khỏi số liệu không?',
+      solves: 'README §3.10: đo TTFT ở cả client lẫn backend; ITL = (e2e − TTFT) / (output_tokens − 1); tỉ lệ stream bị cắt tính theo event kết thúc; đếm lỗi theo loại, huỷ riêng, usage thiếu riêng. §3.11 và §3.12 là bảng tra triệu chứng và checklist.',
+      read: ['Chỉnh cấu hình: tỉ lệ request đi qua route bị buffer, heartbeat bật hay tắt, tỉ lệ request reasoning. Log được sinh lại và mọi metric tính lại trong trình duyệt.', 'Chọn cách đo của dashboard: TTFT lấy ở đâu, công thức tokens/giây, cách đếm tỉ lệ cắt. Khung cảnh báo bật lên khi cách đo đang che vấn đề.', 'Biểu đồ chấm: trục ngang là TTFT backend, trục dọc là TTFT client (thang log). Chấm nằm xa phía trên đường chéo là request khách chờ lâu hơn hẳn số backend ghi.', 'Mọi phân phối (thời gian provider, mạng, tỉ lệ lỗi 2%, đứt 1%, huỷ 5%) là giả định để minh hoạ. Ngưỡng 60 giây lấy từ README (nginx proxy_read_timeout, ALB idle timeout mặc định).']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<div class="tbl"><table><tr><th>Metric</th><th>Cách đo</th><th>Vì sao cần</th></tr>
+<tr><td>TTFT phía client</td><td>Từ lúc gửi request đến event nội dung đầu tiên, đo ở trình duyệt/app</td><td>Log server không thấy buffer của proxy: "Server-side logs will lie to you"</td></tr>
+<tr><td>TTFT phía backend</td><td>Từ lúc gọi provider đến delta đầu tiên</td><td>Tách độ trễ provider khỏi độ trễ hạ tầng</td></tr>
+<tr><td>ITL / tokens mỗi giây</td><td>(e2e − TTFT) / (output_tokens − 1)</td><td>Phát hiện provider chậm đi, hoặc tầng mạng gom buffer</td></tr>
+<tr class="cur"><td>Tỉ lệ stream bị cắt</td><td>Số stream không có event kết thúc / tổng số stream</td><td>Chỉ số sức khoẻ quan trọng nhất; tăng đột ngột thường do proxy, deploy, provider quá tải</td></tr>
+<tr><td>Lỗi giữa stream theo loại</td><td>Đếm theo error.type</td><td>Phân biệt với lỗi trước stream</td></tr>
+<tr><td>Tỉ lệ huỷ bởi người dùng</td><td>Số lần client abort / tổng số stream</td><td>Câu trả lời quá dài hoặc sai hướng; chi phí bỏ phí</td></tr>
+<tr><td>Usage thiếu</td><td>Số stream có usage_status = missing</td><td>Sai số khi đối soát chi phí</td></tr>
+<tr><td>stop_reason</td><td>Phân phối end, max_tokens, refusal, content_filter</td><td>max_tokens tăng nghĩa là câu trả lời bị cắt</td></tr></table></div>
+<p><b>Tracing:</b> span của lần gọi model phải kết thúc khi stream kết thúc, không phải khi hàm trả về iterator, và phải có trạng thái lỗi khi stream lỗi giữa chừng.</p>
+<h4>Failure modes hay gặp nhất (README §3.11)</h4>
+<ul><li>Chữ hiện cùng lúc ở cuối: proxy buffer, middleware nén.</li><li>Dừng đúng khoảng 60 giây: nginx proxy_read_timeout hoặc ALB idle timeout; lỗi 524 sau khoảng 2 phút: Cloudflare.</li><li>Dừng giữa câu không lỗi: không xử lý event error, coi đóng kết nối là xong.</li><li>Fallback không chạy: lỗi giữa stream mang status 200.</li><li>Usage thiếu hoặc bị đếm gấp nhiều lần (cộng các message_delta của Claude).</li><li>Chi phí vẫn tăng khi đóng tab: thiếu abort tới upstream.</li></ul>
+<div class="verdict"><b>Checklist (README §3.12)</b> chia năm nhóm: giao thức và client, backend, hạ tầng, provider, đo lường. Câu hỏi cuối của bài có bản tương tác.</div>`,
+    why: {
+      c: 'Đo TTFT ở cả hai đầu: client cho trải nghiệm thật, backend để tách phần của provider. Tính tokens/giây sau khi trừ TTFT. Đếm tỉ lệ cắt theo việc thiếu event kết thúc, tách riêng huỷ và lỗi theo loại. Gắn usage_status cho request bị cắt. Lý do: mỗi metric trả lời một câu hỏi khác nhau, và các request có vấn đề chính là các request dễ biến mất khỏi số liệu nhất.',
+      s: 'Chỉ đo ở backend: không thấy proxy buffer, TTFT trông đẹp. Tokens/giây = output / e2e: request reasoning kéo tốc độ xuống, báo động giả "provider chậm". Đếm lỗi bằng event error: bỏ sót đứt kết nối và cắt do timeout. Chỉ lấy percentile trên request có TTFT: request bị cắt trước chữ đầu biến mất, p95 trông tốt hơn.',
+      p: 'Phải gửi metric từ client (trình duyệt tự đo rồi gửi về server, ví dụ bằng navigator.sendBeacon), xử lý đồng hồ hai phía, và lưu thêm vài trường cho mỗi request. Percentile cần đủ mẫu; vài chục request thì p95 nhảy lung tung. Usage ước lượng vẫn phải đối soát với billing.'
+    },
+    deep: [
+      {
+        q: 'TTFT đo từ đâu đến đâu? Một request có mấy mốc thời gian?',
+        a: `<p>Ít nhất bốn mốc, theo đúng đường đi của request ShopViet:</p>
+<ol><li><b>t0</b>: trình duyệt gửi request.</li><li><b>t1</b>: backend xác thực, tìm đơn hàng, rồi gọi provider.</li><li><b>t2</b>: delta đầu tiên từ provider về tới backend.</li><li><b>t3</b>: chữ đầu tiên hiện trên màn hình khách.</li></ol>
+<p>TTFT backend = t2 − t1. TTFT client = t3 − t0. Bình thường chênh nhau vài trăm mili giây (mạng, xác thực). Nhưng nếu một proxy ở giữa <b>gom buffer</b>, t3 không còn là lúc delta đầu đi qua, mà là lúc proxy xả buffer, có khi là cuối stream.</p>`,
+        viz(box) {
+          const out = el('div'), S = { buf: false };
+          function draw() {
+            const t1 = 0.12, t2 = t1 + 0.8, last = t2 + 599 * 0.02, t3 = (S.buf ? last : t2) + 0.08, W = 560, x = (t) => 10 + (t / 14) * (W - 20);
+            const mk = (t, lab, y, c) => [el('line', { x1: x(t), x2: x(t), y1: 20, y2: 60, stroke: c, 'stroke-width': 2 }), el('text', { x: Math.min(W - 70, x(t) + 3), y, fill: c, text: lab })];
+            out.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} 96`, role: 'img', 'aria-label': 'Bốn mốc thời gian của một request' }, [
+              el('rect', { x: x(t2), y: 34, width: x(last) - x(t2), height: 12, rx: 2, fill: 'var(--accent)', opacity: 0.6 }),
+              ...mk(0, 't0', 16, 'var(--mute)'), ...mk(t1, 't1', 76, 'var(--mute)'), ...mk(t2, 't2', 16, 'var(--g1)'), ...mk(t3, 't3', 90, S.buf ? 'var(--bad)' : 'var(--ok)')]),
+              el('div', { class: 'stat', html: `<span>TTFT backend (t2 − t1): <b>${fx(t2 - t1, 2)} s</b></span><span>TTFT client (t3 − t0): <b class="${S.buf ? 'bad' : ''}">${fx(t3, 2)} s</b></span>` }),
+              el('div', { class: 'cap', html: S.buf ? '<b class="bad">Backend vẫn ghi 0,80 s.</b> Log của nó đúng, vì delta đầu thật sự đã tới backend lúc đó. Chỉ có điều khách không thấy gì cho tới khi proxy xả buffer ở cuối. Trong hệ thống thật: chỉ TTFT đo ở client mới bắt được lỗi này.' : 'Không có buffer: hai con số chỉ chênh phần mạng và xử lý của backend.' }));
+          }
+          box.append(el('div', { class: 'row' }, [select('Proxy', [['0', 'Không buffer'], ['1', 'nginx proxy_buffering bật']], '0', (v) => { S.buf = v === '1'; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'TTFT 0,8 s, ITL 20 ms, 600 token theo các con số dùng ở Lab 6 (ví dụ README). Mạng và xử lý backend là giả định.' }));
+          draw();
+        },
+        take: 'Hai TTFT trả lời hai câu hỏi: "provider có chậm không" (backend) và "khách có chờ lâu không" (client). Cần cả hai.'
+      },
+      {
+        q: 'Vì sao "log phía server nói dối"? Server ghi sai à?',
+        a: `<p>Server ghi đúng những gì <b>nó</b> thấy. Vấn đề là nó không thấy những gì xảy ra sau nó. README trích một bài viết thực tế: "Server-side logs will lie to you". Backend gửi delta đầu lúc 0,9 s và ghi lại. Sau đó delta đi qua nginx (proxy_buffering mặc định bật), middleware nén gzip, CDN, hoặc proxy công ty của khách. Bất kỳ tầng nào gom lại cũng làm khách thấy chữ muộn, có khi cùng lúc ở cuối, y như chưa bật stream.</p>
+<p>Trong log của hình chính, hãy tăng "Route bị buffer" và nhìn TTFT p95 phía backend: <b>không đổi</b>. TTFT phía client thì vọt lên. Một dấu hiệu khác: tokens/giây đo ở client của request bị buffer cao vô lý (hàng nghìn), vì mọi token đến trong cùng một khoảnh khắc.</p>`,
+        take: 'Metric đo ở một tầng chỉ nói về tầng đó và các tầng phía sau nó. Trải nghiệm khách phải đo ở chỗ khách.'
+      },
+      {
+        q: 'Tokens/giây: sao không lấy output_tokens chia tổng thời gian cho gọn?',
+        a: `<p>Vì tổng thời gian gồm cả <b>TTFT</b>, mà TTFT không phải thời gian sinh token. Nó là thời gian xếp hàng, xử lý prompt, và với reasoning model là thời gian suy luận. README dùng định nghĩa của NVIDIA: <code>ITL = (e2e − TTFT) / (output_tokens − 1)</code>, và tokens/giây ≈ 1 / ITL. Trừ 1 vì N token có N − 1 khoảng cách giữa chúng: token đầu tiên đã được tính trong TTFT.</p>
+<p>Kéo TTFT lên như một request reasoning và xem công thức sai báo "provider chậm đi" trong khi tốc độ sinh không đổi chút nào.</p>`,
+        viz(box) {
+          const S = { ttft: 0.8, n: 600, itl: 20 }, out = el('div');
+          function draw() {
+            const gen = (S.n - 1) * (S.itl / 1000), e2e = S.ttft + gen, ok = (S.n - 1) / gen, bad = S.n / e2e;
+            out.replaceChildren(hbars([['(e2e − TTFT)/(N − 1)', ok, true], ['N / e2e (sai)', bad, false]], { max: ok * 1.05, fmt: (v) => fx(v, 1) + ' tok/s' }),
+              el('div', { class: 'cap', html: `e2e = ${fx(S.ttft, 1)} + ${S.n - 1} × ${S.itl} ms = <b>${fx(e2e, 1)} s</b>. Công thức sai thấp hơn <b>${Math.round((1 - bad / ok) * 100)}%</b>${bad / ok < 0.5 ? ' <b class="bad">: dashboard sẽ báo provider chậm một nửa, dù tốc độ sinh vẫn là ' + fx(ok, 0) + ' token/giây.</b>' : '.'}` }));
+          }
+          box.append(el('div', { class: 'row' }, [slider('TTFT', 0.2, 60, 0.2, S.ttft, (v) => { S.ttft = v; draw(); }, (v) => fx(v) + ' s').node, slider('Output', 20, 2000, 20, S.n, (v) => { S.n = v; draw(); }, (v) => v + ' tok').node, slider('ITL', 10, 60, 1, S.itl, (v) => { S.itl = v; draw(); }, (v) => v + ' ms').node]), out);
+          draw();
+        },
+        take: 'Tốc độ sinh và thời gian chờ chữ đầu là hai đại lượng khác nhau. Trộn chúng vào một con số thì không đọc được cái nào.'
+      },
+      {
+        q: 'Sao dashboard dùng p95 mà không dùng trung bình?',
+        a: `<p>Vì phân phối TTFT rất lệch. Phần lớn request có chữ đầu sau khoảng một giây, nhưng vài phần trăm request reasoning mất 20–90 giây. Trung bình bị vài request đó kéo lên thành một con số không mô tả ai cả: không ai thật sự chờ đúng "trung bình".</p>
+<p>p50 cho biết request điển hình. p95 cho biết 5% khách tệ nhất chịu bao lâu. Kéo tỉ lệ request reasoning để thấy ba con số tách nhau.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (p) => {
+            const rows = genLog({ n: 1000, seed: 3, buf: 0, hb: true, reason: p / 100 }), t = rows.map((r) => r.ttftC);
+            const a = mean(t), b = pctl(t, 0.5), c = pctl(t, 0.95);
+            out.replaceChildren(hbars([['Trung bình', a, false], ['p50', b, true], ['p95', c, false]], { max: Math.max(a, c, 1), fmt: (v) => fx(v, 2) + ' s' }),
+              el('div', { class: 'cap', html: p >= 5 && a > 2 * b ? `<b class="bad">Trung bình ${fx(a, 1)} s gấp ${fx(a / b, 1)} lần p50.</b> Không request nào thực sự có TTFT gần ${fx(a, 1)} s: hoặc khoảng 1 s, hoặc vài chục giây.` : 'Khi gần như không có request reasoning, ba con số gần nhau.' }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Request reasoning', 0, 30, 1, 10, draw, (v) => v + '%').node]), out,
+            el('div', { class: 'cap', text: '1.000 request sinh trong trình duyệt với cùng giả định như hình chính. TTFT tính ở client, heartbeat bật.' }));
+          draw(10);
+        },
+        take: 'Báo TTFT bằng p50 và p95 (có thể tách theo model), không bằng trung bình.'
+      },
+      {
+        q: 'Tỉ lệ stream bị cắt: tử số đếm cái gì? Sao không đếm số event error cho nhanh?',
+        a: `<p>README định nghĩa: <b>số stream không có event kết thúc / tổng số stream</b>. Đếm event error chỉ bắt được một trong các kiểu cắt:</p>
+<ul><li><b>Lỗi trong stream</b>: có event error. Đếm được.</li><li><b>Đứt kết nối</b>: không có event gì. Đếm event error bỏ sót.</li><li><b>Proxy cắt vì im lặng quá 60 giây</b> (reasoning, không có heartbeat): không có event gì, và nếu cắt trước chữ đầu thì request còn không có TTFT. Đếm event error bỏ sót.</li></ul>
+<p>Ngược lại, <b>khách tự bấm Dừng</b> cũng không có event kết thúc, nhưng đó không phải hệ thống hỏng. README tách nó thành metric riêng: tỉ lệ huỷ bởi người dùng. Gộp vào thì tỉ lệ cắt bị thổi phồng và báo động giả.</p>
+<p>Thử ở hình chính: tắt heartbeat, rồi đổi "Đếm tỉ lệ cắt" giữa ba cách.</p>`,
+        take: 'Thiếu event kết thúc là định nghĩa của "bị cắt". Lỗi theo loại và huỷ bởi người dùng là hai metric riêng đi kèm.'
+      },
+      {
+        q: 'Stream bị cắt thì usage đi đâu? Còn chuyện Claude bị đếm token gấp nhiều lần là sao?',
+        a: `<p>Usage thường đến <b>ở cuối stream</b>. OpenAI ghi: "If the stream is interrupted, you may not receive the final usage chunk". Nhưng hoá đơn thì không mất: Claude tính tiền cả request bị ngắt giữa chừng. Code chỉ đọc usage từ event cuối sẽ đếm thiếu đúng những request có vấn đề. README khuyên: ghi <code>usage_status = "missing"</code>, input token đã biết (Claude gửi ngay trong <code>message_start</code>), và một ước lượng output từ số ký tự đã nhận.</p>
+<p>Bẫy thứ hai: với Claude, <code>output_tokens</code> trong <code>message_delta</code> là số <b>cộng dồn</b>, không phải phần tăng thêm. Có thể có nhiều <code>message_delta</code>. Cộng chúng lại là đếm trùng.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (k) => {
+            const vals = Array.from({ length: k }, (_, i) => Math.round((600 * (i + 1)) / k)), sum = vals.reduce((a, b) => a + b, 0);
+            out.innerHTML = `<pre class="mono" style="font-size:12px;white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;margin:0">${vals.map((v) => `event: message_delta  usage.output_tokens: ${v}`).join('\n')}</pre><div class="stat"><span>Lấy giá trị cuối: <b class="ok">${vals[k - 1]}</b></span><span>Cộng tất cả: <b class="${k > 1 ? 'bad' : ''}">${sum}</b></span><span>Sai lệch: <b>${k > 1 ? '+' + Math.round((sum / vals[k - 1] - 1) * 100) + '%' : '0%'}</b></span></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Số message_delta', 1, 5, 1, 3, draw).node]), out,
+            el('div', { class: 'cap', text: 'Câu trả lời 600 token output. Số event message_delta và các giá trị trung gian là giả định; quy tắc "cộng dồn, lấy cái cuối" lấy từ README.' }));
+          draw(3);
+        },
+        take: 'Usage là dữ liệu tài chính: gắn cờ khi thiếu, đọc kỹ cộng dồn hay phần tăng, và đối soát với billing định kỳ.'
+      },
+      {
+        q: 'Trace của request stream trông vẫn bình thường. Có gì cần kiểm tra?',
+        a: `<p>Kiểm tra <b>lúc span kết thúc</b>. Với stream, hàm gọi model trả về một iterator gần như ngay lập tức; việc đọc stream diễn ra sau đó. Nếu span đóng khi hàm trả về, trace ghi lần gọi model mất vài mili giây, trong khi thực tế mất hơn mười giây. README ghi các thư viện instrument tự động từng có lỗi ở đúng chỗ này: span không được đóng khi stream ném lỗi giữa chừng.</p>
+<p>Cách kiểm tra: cố tình làm một request lỗi giữa stream, mở trace và xem span có trạng thái lỗi và thời gian đúng không.</p>`,
+        viz(box) {
+          box.append(hbars([['Span đóng khi trả iterator', 0.004, false], ['Span đóng khi stream kết thúc', 0.8 + 599 * 0.02, true]], { max: 13, fmt: (v) => (v < 1 ? Math.round(v * 1000) + ' ms' : fx(v, 1) + ' s') }),
+            el('div', { class: 'cap', text: 'Request 600 token, TTFT 0,8 s, ITL 20 ms. 4 ms cho việc tạo iterator là giả định.' }));
+        },
+        take: 'Span của một lần gọi stream phải bao trọn stream, kể cả khi stream kết thúc bằng lỗi.'
+      },
+      {
+        q: 'Gặp một triệu chứng lạ trên production thì tra ở đâu?',
+        a: '<p>README §3.11 có bảng triệu chứng → nguyên nhân → cách kiểm tra. Chọn triệu chứng bên dưới. Nhiều dòng liên quan tới các lab trước: buffer và timeout (hạ tầng), event error (Lab 6), markdown và kiểm duyệt (Lab 7).</p>',
+        viz(box) {
+          const out = el('div');
+          const draw = (i) => { const [s, c, f] = FAIL[+i]; out.innerHTML = `<div class="tbl"><table><tr><th>Triệu chứng</th><td><b>${s}</b></td></tr><tr><th>Nguyên nhân khả dĩ</th><td>${c}</td></tr><tr><th>Kiểm tra / xử lý</th><td>${f}</td></tr></table></div>`; };
+          box.append(el('div', { class: 'row' }, [select('Triệu chứng', FAIL.map((r, i) => [i, r[0]]), 0, draw).node]), out);
+          draw(0);
+        },
+        take: 'Phần lớn lỗi streaming lặp lại theo vài mẫu: buffer, timeout, nuốt lỗi, thiếu abort. Tra bảng trước khi debug từ đầu.'
+      },
+      {
+        q: 'Trước khi đưa trợ lý stream của ShopViet lên production, kiểm tra những gì?',
+        a: '<p>Bản rút gọn checklist README §3.12 (bỏ phần riêng của từng provider). Tích những mục bạn đã làm. Mục chưa tích được ghép với triệu chứng sẽ gặp trong bảng §3.11.</p>',
+        viz(box) {
+          const MAP = { 0: 6, 1: 10, 2: 6, 3: 7, 4: 6, 5: 0, 6: 2, 7: 10, 8: 7, 10: 0, 11: 2, 12: 1, 15: 8 };
+          const items = [], out = el('div');
+          const groups = CHECK.map(([g, list]) => el('div', { style: 'margin-bottom:8px' }, [el('b', { text: g, style: 'font-size:13px' }), ...list.map((t) => {
+            const idx = items.length, cb = el('input', { type: 'checkbox' });
+            items.push(cb); cb.addEventListener('change', draw);
+            return el('label', { style: 'display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:3px 0' }, [cb, el('span', { text: t })]);
+          })]));
+          function draw() {
+            const done = items.filter((c) => c.checked).length, miss = items.map((c, i) => (!c.checked && MAP[i] !== undefined ? FAIL[MAP[i]][0] : null)).filter(Boolean);
+            out.innerHTML = `<div class="stat"><span>Đã làm: <b>${done}/${items.length}</b></span></div>` + (miss.length ? '<div class="cap">Triệu chứng còn có thể gặp: ' + [...new Set(miss)].map((m) => `<b class="bad">${m}</b>`).join('; ') + '.</div>' : '<div class="cap ok">Đã phủ các triệu chứng phổ biến trong bảng §3.11.</div>');
+          }
+          box.append(...groups, out);
+          draw();
+        },
+        take: 'Checklist chỉ có giá trị khi mỗi mục có một test đi kèm: ngắt kết nối, curl -N qua production, request lỗi giữa stream.'
+      }
+    ],
+    poc: {
+      goal: "Chạy thật 60 request stream đồng thời qua provider giả lập → backend → proxy (pass hoặc buffer) → client. Backend và client mỗi bên ghi log riêng, rồi script tính dashboard: TTFT p50/p95, tokens/giây theo hai công thức, tỉ lệ stream bị cắt theo hai cách đếm.",
+      file: "docs/streaming/pocs/08_observability_failures.py",
+      run: "uv run docs/streaming/pocs/08_observability_failures.py",
+      needs: "Không cần key, Docker hay model: server <code>asyncio</code> nhỏ trên <code>127.0.0.1</code> (cổng ngẫu nhiên), tự tắt khi script xong. Khoảng 4 giây. Thông số từng request (TTFT, độ dài, có đi qua proxy buffer, provider có cắt không) sinh ngẫu nhiên với seed cố định. <b>Đo thật:</b> mọi mốc thời gian trong log backend và log client, đi qua socket và proxy thật. <b>Kịch bản:</b> provider giả lập, TTFT reasoning chỉ 1,5–2,5 s (không phải 20–90 s như hình chính) để script chạy nhanh, ITL 15 ms, và việc provider cắt 8 request. Cột \"tỉ lệ lỗi theo HTTP status\" luôn là 0% vì backend ghi cứng status 200 vào log, đúng với thực tế là header 200 đã đi trước khi stream bắt đầu, nhưng con số đó không được đo.",
+      output: "=== 60 request đồng thời, 3.8 s: 14 reasoning (TTFT 1,5–2,5 s), 11 qua proxy buffer, 8 bị provider cắt giữa chừng\nmetric                                         |  log backend |   log client\nTTFT p50                                       |       400 ms |       485 ms\nTTFT p95                                       |      2319 ms |      2540 ms\nTTFT lệch client − backend (qua proxy buffer)  |              |       944 ms  (median, 8 request)\ntok/s = (n−1)/(e2e−TTFT), median               |         60.4 | (kịch bản ITL 15 ms → 66.7)\ntok/s = n/e2e (lẫn TTFT), median               |         43.5 |\n  riêng request reasoning, n/e2e               |         20.0 | (13 request)\ntỉ lệ lỗi theo HTTP status                     |           0% |\ntỉ lệ stream bị cắt (thiếu done)               |          13% |          13%\nusage_status = missing                         |            8 |\n\nRút ra: log backend thấy TTFT của provider nhưng không thấy proxy buffer; client chịu thêm cả thời gian sinh. tok/s tính bằng n/e2e thấp hơn thật vì lẫn TTFT, nhất là với reasoning. Mọi request đều HTTP 200 nên chỉ đếm theo event kết thúc mới thấy stream bị cắt, và đó cũng là các request thiếu usage.",
+      measured: true,
+      read: ["TTFT: log backend p50 ~400 ms, client ~480 ms. Với request qua proxy buffer, client thấy chữ đầu muộn hơn backend ~940 ms (median), và log backend không thấy khoảng này.", "tok/s: <code>(n−1)/(e2e−TTFT)</code> ra ~60, gần ITL kịch bản 15 ms (66,7). <code>n/e2e</code> ra ~43, và chỉ ~20 với request reasoning, vì lẫn TTFT.", "Tỉ lệ lỗi theo HTTP status là 0% vì stream nào cũng đã trả 200; đếm theo event kết thúc thì 13% bị cắt, đúng bằng 8 request <code>usage_status = missing</code>. Hai số trùng nhau không phải ngẫu nhiên: usage chỉ đến trong event cuối, nên stream nào bị cắt cũng thiếu usage.", "tok/s đúng ra ~60 chứ không đúng 66,7 vì <code>asyncio.sleep(0,015)</code> thật thường ngủ lâu hơn 15 ms một chút, cộng thời gian event loop phục vụ 60 stream cùng lúc. Lệch client − backend ~940 ms ở request qua proxy buffer gần bằng thời gian sinh cả câu (40–90 token × 15 ms), vì proxy giả lập gom tới 8 KB hoặc tới khi stream xong mới xả, và câu trả lời ở đây ngắn hơn 8 KB."]
+    },
+    mount(stage) {
+      const S = { n: 300, buf: 0.2, hb: false, reason: 0.1, seed: 11, src: 'backend', tps: 'bad', cut: 'error' };
+      const cfgOut = el('div'), flags = el('div'), logBox = el('div'), plot = el('div'), stopBox = el('div');
+      let rows = [], M = null;
+      function regen() { rows = genLog(S); M = metrics(rows); render(); }
+      function render() {
+        const tSrc = S.src === 'client' ? M.tC : M.tB, tps = S.tps === 'ok' ? M.tpsOk : M.tpsBad;
+        const cutN = S.cut === 'end' ? M.idle + M.err + M.drop : S.cut === 'error' ? M.err : M.idle + M.err + M.drop + M.abort;
+        const cell = (lab, v, sub, cls) => el('div', { style: 'border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);min-width:0' }, [el('div', { class: 'hint', style: 'margin:0', text: lab }), el('div', { class: 'mono ' + (cls || ''), style: 'font-size:20px', text: v }), el('div', { class: 'hint', style: 'margin:0;font-size:12px', html: sub })]);
+        cfgOut.replaceChildren(el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px' }, [
+          cell(`TTFT p50 chat thường (${S.src})`, fx(pctl(tSrc, 0.5), 2) + ' s', `trên ${tSrc.length} request không reasoning`),
+          cell(`TTFT p95 chat thường (${S.src})`, fx(pctl(tSrc, 0.95), 2) + ' s', `client thật: ${fx(pctl(M.tC, 0.95), 2)} s`, S.src === 'backend' && pctl(M.tC, 0.95) > 1.5 * pctl(M.tB, 0.95) ? 'bad' : ''),
+          cell('TTFT p95 reasoning (client)', fx(pctl(M.tCr, 0.95), 1) + ' s', `${M.tCr.length} request có chữ đầu, ${M.idle} bị cắt trước đó`, M.idle ? 'bad' : ''),
+          cell('Tokens/giây p50', fx(pctl(tps, 0.5), 1), S.tps === 'ok' ? '(e2e − TTFT)/(N − 1), đo ở backend' : 'N / e2e, gồm cả TTFT', S.tps === 'bad' ? 'bad' : ''),
+          cell('Tỉ lệ stream bị cắt', fx((100 * cutN) / M.n, 1) + '%', `${cutN}/${M.n}; đúng: ${fx((100 * (M.idle + M.err + M.drop)) / M.n, 1)}%`, S.cut !== 'end' ? 'bad' : ''),
+          cell('Huỷ bởi khách', fx((100 * M.abort) / M.n, 1) + '%', `${M.abort} request`),
+          cell('Usage thiếu', String(M.missing), 'usage_status = missing')]));
+        const F = [];
+        if (S.src === 'backend' && M.burst) F.push(['bad', `TTFT đo ở backend (chat thường): p95 ${fx(pctl(M.tB, 0.95), 2)} s, khách thật chịu ${fx(pctl(M.tC, 0.95), 2)} s.`, `Vì sao: ${M.burst} request đi qua route bị buffer; backend ghi lúc delta đầu rời nó, khách chỉ thấy chữ khi proxy xả buffer ở cuối. Không có nghĩa provider nhanh hơn khách nghĩ: cả hai số đều đúng ở chỗ đo của chúng. Trong hệ thống thật: đo TTFT ở client (beacon từ trình duyệt) bên cạnh số backend.`]);
+        if (S.src === 'client' && M.burst) F.push(['warn', `${M.burst} request có tokens/giây phía client trên 1.000.`, 'Vì sao: mọi token đến cùng một lúc khi proxy xả buffer, nên (e2e − TTFT) gần bằng 0. Không có nghĩa model nhanh hơn: đây là dấu hiệu buffer. Trong hệ thống thật: curl -N qua từng tầng, X-Accel-Buffering: no, tắt nén cho route stream.']);
+        if (S.tps === 'bad') F.push(['bad', `Tokens/giây tính gồm TTFT: p50 ${fx(pctl(M.tpsBad, 0.5), 1)} so với ${fx(pctl(M.tpsOk, 0.5), 1)} nếu tính đúng; p5 chỉ ${fx(pctl(M.tpsBad, 0.05), 1)}.`, 'Vì sao: request reasoning có TTFT vài chục giây, chia output cho cả thời gian đó làm tốc độ "tụt". Không có nghĩa provider sinh chậm đi. Trong hệ thống thật: ITL = (e2e − TTFT) / (output_tokens − 1), theo dõi TTFT riêng.']);
+        if (M.idle) F.push(['bad', `${M.idle} request reasoning bị cắt ở giây ${IDLE} trước khi có chữ đầu, và biến mất khỏi TTFT p95 reasoning.`, `Vì sao: không có heartbeat, kết nối im lặng quá ${IDLE} giây (nginx proxy_read_timeout, ALB idle timeout mặc định). Không có TTFT nên percentile bỏ qua chúng: tính chúng như ${IDLE} s thì p95 reasoning là ${fx(pctl(M.tCrWithCut, 0.95), 1)} s thay vì ${fx(pctl(M.tCr, 0.95), 1)} s. Bật heartbeat thì chúng sống sót, có TTFT thật, và p95 còn cao hơn nữa: con số xấu đi vì phép đo trung thực hơn. Trong hệ thống thật: heartbeat : ping mỗi 15–30 giây; theo dõi tỉ lệ cắt cạnh TTFT.`]);
+        if (S.cut === 'error') F.push(['bad', `Đếm tỉ lệ cắt bằng event error: ${M.err} thay vì ${M.idle + M.err + M.drop}.`, 'Vì sao: đứt kết nối và cắt do timeout không gửi event error nào. Trong hệ thống thật: định nghĩa "bị cắt" là thiếu event kết thúc.']);
+        if (S.cut === 'all') F.push(['warn', `Gộp ${M.abort} lần khách tự bấm Dừng vào tỉ lệ cắt.`, 'Vì sao: huỷ cũng không có event kết thúc, nhưng hệ thống không hỏng. Không có nghĩa huỷ không quan trọng: nó là metric riêng (câu trả lời quá dài, sai hướng, tiền bỏ phí).']);
+        flags.replaceChildren(...(F.length ? F : [['ok', 'Cách đo hiện tại không che vấn đề nào trong log này.', 'Thử tăng route bị buffer, tắt heartbeat, hoặc đổi cách tính để thấy cảnh báo.']]).map(([c, h, b]) => {
+          const col = c === 'ok' ? 'var(--ok)' : c === 'bad' ? 'var(--bad)' : 'var(--warn)';
+          return el('div', { style: CAPS + ';border-left:3px solid ' + col, html: `<b style="color:${col}">${h}</b><br>${b}` });
+        }));
+        const W = 560, H = 230, P = 40, lx = (v) => P + ((Math.log10(Math.max(0.1, v)) + 1) / 3) * (W - P - 10), ly = (v) => H - 24 - ((Math.log10(Math.max(0.1, v)) + 1) / 3) * (H - 34);
+        const pts = rows.filter((r) => r.ttftC !== null).map((r) => el('circle', { cx: lx(r.ttftB), cy: ly(r.ttftC), r: 2.6, fill: r.buffered ? 'var(--warn)' : 'var(--accent)', opacity: 0.75 }));
+        const cut = rows.filter((r) => r.fate === 'idle').map((r, i) => el('text', { x: lx(IDLE) - 3 + (i % 5) * 3, y: 18 + Math.floor(i / 5) * 8, fill: 'var(--bad)', text: '×' }));
+        plot.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'TTFT backend so với TTFT client từng request' }, [
+          el('line', { x1: lx(0.1), y1: ly(0.1), x2: lx(100), y2: ly(100), stroke: 'var(--line)', 'stroke-dasharray': '4 3' }),
+          ...[0.1, 1, 10, 100].flatMap((v) => [el('text', { x: lx(v) - 8, y: H - 6, class: 'mute', text: v + 's' }), el('text', { x: 2, y: ly(v) + 4, class: 'mute', text: v + 's' })]),
+          el('text', { x: W - 150, y: H - 30, class: 'mute', text: 'TTFT backend →' }), el('text', { x: P + 4, y: 14, class: 'mute', text: '↑ TTFT client' }),
+          ...pts, ...cut]),
+          el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--accent)' }), 'request thường']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'đi qua route bị buffer']), el('span', {}, [el('b', { class: 'bad', text: '× ' }), `bị cắt ở ${IDLE}s, không có TTFT (${M.idle})`])]));
+        const show = rows.slice(0, 10);
+        logBox.innerHTML = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%"><tr>' + ['#', 'TTFT backend', 'TTFT client', 'tok/s đúng', 'output', 'event kết thúc', 'error.type', 'usage', 'stop'].map((h) => `<th style="${TD};background:var(--bg)">${h}</th>`).join('') + '</tr>' +
+          show.map((r) => `<tr${r.buffered ? ' style="background:color-mix(in srgb,var(--warn) 12%,transparent)"' : ''}><td style="${TD}">${r.i}</td><td style="${TD}">${fx(r.ttftB, 2)}</td><td style="${TD}">${fx(r.ttftC, 2)}</td><td style="${TD}">${fx(r.tpsOk, 0)}</td><td style="${TD}">${r.out}</td><td style="${TD}" class="${r.end ? 'ok' : 'bad'}">${r.end ? 'có' : r.fate === 'abort' ? 'không (khách huỷ)' : r.fate === 'idle' ? 'không (cắt 60s)' : 'không'}</td><td style="${TD}">${r.err || '–'}</td><td style="${TD}">${r.usage}</td><td style="${TD}">${r.stop || '–'}</td></tr>`).join('') + '</table></div>';
+        stopBox.replaceChildren(hbars(M.stop.concat([['không có (bị cắt/huỷ)', M.n - M.stop.reduce((a, b) => a + b[1], 0)]]).map(([k, v]) => [k, v, k === 'max_tokens']), { max: M.n, fmt: (v) => v + ' (' + fx((100 * v) / M.n, 1) + '%)' }),
+          el('div', { class: 'cap hint', text: `max_tokens giả định ${MAXTOK}. Dòng max_tokens tăng nghĩa là câu trả lời bị cắt vì trần, không phải vì xong.` }));
+      }
+      stage.append(
+        el('div', { class: 'row' }, [slider('Số request', 100, 1000, 100, S.n, (v) => { S.n = v; regen(); }).node,
+          slider('Route bị buffer', 0, 50, 5, S.buf * 100, (v) => { S.buf = v / 100; regen(); }, (v) => v + '%').node,
+          slider('Request reasoning', 0, 30, 1, S.reason * 100, (v) => { S.reason = v / 100; regen(); }, (v) => v + '%').node]),
+        el('div', { class: 'row' }, [select('Heartbeat', [['off', 'Tắt'], ['on', 'Bật : ping mỗi 15 s']], 'off', (v) => { S.hb = v === 'on'; regen(); }).node,
+          el('button', { text: 'Sinh log khác', onclick: () => { S.seed++; regen(); } })]),
+        el('div', { class: 'row' }, [select('TTFT đo ở', [['backend', 'Backend (log server)'], ['client', 'Client (trình duyệt)']], S.src, (v) => { S.src = v; render(); }).node,
+          select('Tokens/giây', [['bad', 'N / e2e'], ['ok', '(e2e − TTFT)/(N − 1)']], S.tps, (v) => { S.tps = v; render(); }).node,
+          select('Đếm tỉ lệ cắt', [['error', 'Số event error'], ['end', 'Thiếu event kết thúc, trừ huỷ'], ['all', 'Thiếu event kết thúc, gồm huỷ']], S.cut, (v) => { S.cut = v; render(); }).node]),
+        el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Dashboard mở sẵn với cách đo hay gặp nhưng sai ở cả ba chỗ. Đổi từng lựa chọn để xem cảnh báo nào tắt.' }),
+        cfgOut, flags, el('h4', { text: 'TTFT backend so với TTFT client, từng request', style: 'margin:18px 0 4px' }), plot,
+        el('h4', { text: '10 dòng đầu của log', style: 'margin:18px 0 4px' }), logBox,
+        el('h4', { text: 'Phân phối stop_reason', style: 'margin:18px 0 4px' }), stopBox,
+        el('p', { class: 'hint', text: 'Giả định của log: TTFT provider 0,4–1,5 s (đôi khi thêm tới 2 s), request reasoning 20–90 s; ITL 15–30 ms; mạng mỗi chiều 30–150 ms; backend xử lý 50–150 ms; lỗi giữa stream 2%, đứt 1%, khách huỷ 5%. Ngưỡng cắt 60 s theo README.' }));
+      regen();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

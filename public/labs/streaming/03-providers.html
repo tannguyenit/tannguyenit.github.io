@@ -1,0 +1,927 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-protocols-events-usage.html">← Lab trước</a><a href="04-relay-proxy-cdn.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flat = (html) => el('div', { class: 'sum', style: 'border:0;margin:0;padding:0', html });
+  const note = (level, html) => el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${level});border-radius:6px;padding:8px 12px;font-size:13.5px;margin-top:8px`, html });
+  const preStyle = 'margin:6px 0;font-size:12px;white-space:pre-wrap;word-break:break-word;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;max-height:380px;overflow:auto';
+  const bytes = (s) => new TextEncoder().encode(s).length;
+  const tok = (s) => Math.ceil(String(s).length / 4);
+  const J = (o) => JSON.stringify(o);
+
+  const Q = 'Đơn SV-4821 của tôi đâu rồi?';
+  const DELTAS = ['Đơn SV-4821', ' đang được GHN', ' giao, dự kiến', ' tới ngày 6/11.'];
+  const FULL = DELTAS.join('');
+  const IN = 1240;
+  const OUT = tok(FULL);
+  const OBF = ['x7Gq2', 'Lm', 'p0Zr9w', 'Qa1'];
+  const sse = (ev, data) => (ev ? 'event: ' + ev + '\n' : '') + 'data: ' + (typeof data === 'string' ? data : J(data)) + '\n\n';
+
+  function wire(pid, o) {
+    const cutAt = o.end === 'cut' ? 2 : 99, err = o.end === 'error';
+    const out = [];
+    const push = (s) => out.push(s);
+    const each = (fn, tail) => { for (let i = 0; i < DELTAS.length; i++) { if (i === cutAt) return 'cut'; if (err && i === 2) return 'err'; fn(DELTAS[i], i); } tail && tail(); return 'ok'; };
+    if (pid === 'responses') {
+      let seq = 0; const S = (t, x) => sse(t, Object.assign({ type: t, sequence_number: seq++ }, x));
+      push(S('response.created', { response: { id: 'resp_01', status: 'in_progress', output: [] } }));
+      push(S('response.in_progress', { response: { id: 'resp_01', status: 'in_progress' } }));
+      push(S('response.output_item.added', { output_index: 0, item: { id: 'msg_01', type: 'message', role: 'assistant', content: [] } }));
+      push(S('response.content_part.added', { item_id: 'msg_01', output_index: 0, content_index: 0, part: { type: 'output_text', text: '' } }));
+      const r = each((d, i) => push(S('response.output_text.delta', Object.assign({ item_id: 'msg_01', output_index: 0, content_index: 0, delta: d }, o.obf ? { obfuscation: OBF[i] } : {}))));
+      if (r === 'err') push(S('error', { code: 'server_error', message: 'Overloaded' }));
+      if (r === 'ok') {
+        push(S('response.output_text.done', { item_id: 'msg_01', output_index: 0, content_index: 0, text: FULL }));
+        push(S('response.content_part.done', { item_id: 'msg_01', output_index: 0, content_index: 0 }));
+        push(S('response.output_item.done', { output_index: 0, item: { id: 'msg_01', type: 'message', status: 'completed' } }));
+        push(S('response.completed', { response: { id: 'resp_01', status: 'completed', usage: { input_tokens: IN, output_tokens: OUT, total_tokens: IN + OUT } } }));
+      }
+      return { text: out.join(''), r };
+    }
+    if (pid === 'chat' || pid === 'vllm' || pid === 'grok') {
+      const usageOn = pid === 'grok' || o.usage, cont = pid === 'vllm' && o.cont;
+      const base = (x, k) => { const c = Object.assign({ object: 'chat.completion.chunk' }, x); if (cont) c.usage = { prompt_tokens: IN, completion_tokens: k, total_tokens: IN + k }; else if (usageOn && pid !== 'grok') c.usage = null; return c; };
+      let sent = 0;
+      push(sse(null, base({ choices: [{ index: 0, delta: { role: 'assistant', content: '' }, finish_reason: null }] }, 0)));
+      if (pid === 'grok' && o.rsn) ['Khách hỏi đơn,', ' cần trả trạng thái.'].forEach((t) => push(sse(null, base({ choices: [{ index: 0, delta: { reasoning_content: t }, finish_reason: null }] }, 0))));
+      const r = each((d) => { sent += tok(d); push(sse(null, base({ choices: [{ index: 0, delta: { content: d }, finish_reason: null }] }, sent))); });
+      if (r === 'err' && pid === 'grok') return { text: out.join(''), r: 'cut', unverifiedErr: true };
+      if (r === 'err') push(sse(null, { error: { message: 'Overloaded', type: 'server_error' } }));
+      if (r === 'ok') {
+        const last = base({ choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] }, OUT);
+        if (pid === 'grok') last.usage = { prompt_tokens: IN, completion_tokens: OUT, total_tokens: IN + OUT };
+        push(sse(null, last));
+        if (usageOn && pid !== 'grok' && !cont) push(sse(null, { object: 'chat.completion.chunk', choices: [], usage: { prompt_tokens: IN, completion_tokens: OUT, total_tokens: IN + OUT } }));
+        push(sse(null, '[DONE]'));
+      }
+      return { text: out.join(''), r };
+    }
+    if (pid === 'claude') {
+      push(sse('message_start', { type: 'message_start', message: { id: 'msg_01', type: 'message', role: 'assistant', model: 'claude-sonnet-5-5', content: [], stop_reason: null, usage: { input_tokens: IN, output_tokens: 1 } } }));
+      push(sse('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }));
+      push(sse('ping', { type: 'ping' }));
+      const r = each((d) => push(sse('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: d } })));
+      if (r === 'err') push(sse('error', { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }));
+      if (r === 'ok') {
+        push(sse('content_block_stop', { type: 'content_block_stop', index: 0 }));
+        push(sse('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: OUT } }));
+        push(sse('message_stop', { type: 'message_stop' }));
+      }
+      return { text: out.join(''), r };
+    }
+    if (pid === 'gemgc') {
+      const r = each((d, i) => {
+        const c = { candidates: [{ content: { role: 'model', parts: [{ text: d }] } }] };
+        if (i === DELTAS.length - 1) { c.candidates[0].finishReason = 'STOP'; c.usageMetadata = { promptTokenCount: IN, candidatesTokenCount: OUT, totalTokenCount: IN + OUT }; }
+        push(sse(null, c));
+      });
+      return { text: out.join(''), r: r === 'err' ? 'cut' : r, unverifiedErr: r === 'err' };
+    }
+    if (pid === 'gemint') {
+      const N = { c: 'interaction.created', s: 'step.start', d: 'step.delta', x: 'step.stop', f: 'interaction.completed' };
+      push(sse(N.c, { event_type: N.c, interaction: { id: 'int_01', status: 'in_progress' } }));
+      push(sse(N.s, { event_type: N.s, index: 0, step: { type: 'text' } }));
+      const r = each((d) => push(sse(N.d, { event_type: N.d, index: 0, delta: { text: d } })));
+      if (r === 'ok') {
+        push(sse(N.x, { event_type: N.x, index: 0 }));
+        push(sse(N.f, { event_type: N.f, interaction: { id: 'int_01', status: 'completed', usage: { total_input_tokens: IN, total_output_tokens: OUT, total_tokens: IN + OUT } } }));
+      }
+      return { text: out.join(''), r: r === 'err' ? 'cut' : r, unverifiedErr: r === 'err' };
+    }
+    if (pid === 'ollama') {
+      const L = (x) => J(x) + '\n';
+      const r = each((d) => push(L({ model: '(model)', message: { role: 'assistant', content: d }, done: false })));
+      if (r === 'err') push(L({ error: 'Overloaded' }));
+      if (r === 'ok') push(L({ model: '(model)', message: { role: 'assistant', content: '' }, done: true, done_reason: 'stop', prompt_eval_count: IN, eval_count: OUT }));
+      return { text: out.join(''), r };
+    }
+    if (pid === 'aisdk') {
+      push(sse(null, { type: 'start', messageId: 'msg_01' }));
+      push(sse(null, { type: 'start-step' }));
+      push(sse(null, { type: 'text-start', id: 't1' }));
+      const r = each((d) => push(sse(null, { type: 'text-delta', id: 't1', delta: d })));
+      if (r === 'err') push(sse(null, { type: 'error', errorText: 'Overloaded' }));
+      if (r === 'ok') { push(sse(null, { type: 'text-end', id: 't1' })); push(sse(null, { type: 'finish-step' })); push(sse(null, { type: 'finish' })); push(sse(null, '[DONE]')); }
+      return { text: out.join(''), r };
+    }
+  }
+
+  function parseSSE(text, cut) {
+    const evs = []; let data = [], name = '', comment = null;
+    const lines = text.split(/\r\n|\n|\r/);
+    const complete = cut ? lines.slice(0, -1) : lines;
+    let partial = '';
+    if (cut) partial = lines[lines.length - 1];
+    for (const line of complete) {
+      if (line === '') { if (data.length) evs.push({ name: name || 'message', data: data.join('\n') }); data = []; name = ''; continue; }
+      if (line[0] === ':') { evs.push({ comment: line.slice(1).trim() }); continue; }
+      const i = line.indexOf(':'), f = i < 0 ? line : line.slice(0, i); let v = i < 0 ? '' : line.slice(i + 1); if (v[0] === ' ') v = v.slice(1);
+      if (f === 'data') data.push(v); else if (f === 'event') name = v;
+    }
+    const dropped = data.length || partial ? (data.join('\n') + partial) : '';
+    return { evs: evs.map((e) => (e.comment !== undefined ? e : Object.assign(e, { obj: e.data === '[DONE]' ? '[DONE]' : JSON.parse(e.data) }))), dropped };
+  }
+  function parseNDJSON(text, cut) {
+    const lines = text.split('\n'), done = lines.slice(0, -1), last = lines[lines.length - 1];
+    return { evs: done.filter(Boolean).map((l) => ({ name: 'line', data: l, obj: JSON.parse(l) })), dropped: cut ? last : '' };
+  }
+  function cutWire(w, fmt) {
+    if (w.r !== 'cut') return { text: w.text, cut: false };
+    return { text: w.text + (fmt === 'ndjson' ? '{"model":"(model)","message":{"role":"assi' : 'data: {"ty'), cut: true };
+  }
+
+  const P = [
+    { id: 'responses', name: 'OpenAI Responses', fmt: 'sse', opts: ['obf'] },
+    { id: 'chat', name: 'OpenAI Chat Completions', fmt: 'sse', opts: ['usage'] },
+    { id: 'claude', name: 'Claude', fmt: 'sse', opts: [] },
+    { id: 'gemgc', name: 'Gemini streamGenerateContent', fmt: 'sse', opts: [] },
+    { id: 'gemint', name: 'Gemini Interactions', fmt: 'sse', opts: ['old'] },
+    { id: 'grok', name: 'xAI Grok', fmt: 'sse', opts: ['rsn'] },
+    { id: 'vllm', name: 'vLLM', fmt: 'sse', opts: ['usage', 'cont'] },
+    { id: 'ollama', name: 'Ollama /api/chat', fmt: 'ndjson', opts: [] },
+    { id: 'aisdk', name: 'Vercel AI SDK (UI message stream)', fmt: 'sse', opts: [] }
+  ];
+  const OPT = { obf: 'Giữ obfuscation (mặc định bật)', usage: 'stream_options.include_usage', cont: 'continuous_usage_stats', old: 'Adapter viết theo tên event trước 05/2026', rsn: 'Reasoning model (reasoning_content)' };
+
+  function adapt(pid, e, st, o) {
+    const x = e.obj, out = [];
+    const start = (key, type, syn) => { if (!st.open.has(key)) { st.open.add(key); out.push({ k: 'block_start', key, type, syn }); } };
+    const stop = (key, syn) => { if (st.open.has(key)) { st.open.delete(key); out.push({ k: 'block_stop', key, syn }); } };
+    const closeAll = () => [...st.open].forEach((k) => stop(k, true));
+    const ign = (why) => out.push({ k: 'ignored', why });
+    if (e.comment !== undefined) { ign('comment, giữ kết nối'); return out; }
+    if (pid === 'responses') {
+      const t = x.type;
+      if (t === 'response.output_item.added') start(x.item.id, x.item.type);
+      else if (t === 'response.output_text.delta') out.push({ k: 'block_delta', key: x.item_id, delta: x.delta });
+      else if (t === 'response.output_item.done') stop(x.item.id);
+      else if (t === 'response.completed' || t === 'response.incomplete') { st.usage = { in: x.response.usage.input_tokens, out: x.response.usage.output_tokens, at: t }; out.push({ k: 'response_end', stop: x.response.status, usage: st.usage }); }
+      else if (t === 'error' || t === 'response.failed') out.push({ k: 'error', code: x.code || 'response.failed', retryable: true });
+      else ign(t === 'response.output_text.done' ? 'đã có đủ từ delta' : 'vòng đời, không mang nội dung');
+      return out;
+    }
+    if (pid === 'chat' || pid === 'vllm' || pid === 'grok') {
+      if (x === '[DONE]') { if (st.finish) out.push({ k: 'response_end', stop: st.finish, usage: st.usage || null }); else out.push({ k: 'error', code: 'done_without_finish_reason', retryable: true }); return out; }
+      if (x.error) { out.push({ k: 'error', code: x.error.type || 'error', retryable: true }); return out; }
+      if (x.usage) st.usage = { in: x.usage.prompt_tokens, out: x.usage.completion_tokens, at: x.choices.length ? 'chunk có choices' : 'chunk usage, choices rỗng' };
+      const c = x.choices[0];
+      if (!c) { ign('chỉ mang usage'); return out; }
+      if (c.delta.reasoning_content) { start('reasoning', 'thinking', true); out.push({ k: 'block_delta', key: 'reasoning', delta: c.delta.reasoning_content }); }
+      if (c.delta.content) { stop('reasoning', true); start('0', 'text', true); out.push({ k: 'block_delta', key: '0', delta: c.delta.content }); }
+      if (c.finish_reason) { st.finish = c.finish_reason; closeAll(); }
+      if (!out.length) ign(c.delta.role ? 'chỉ có role' : 'không có nội dung');
+      return out;
+    }
+    if (pid === 'claude') {
+      const t = x.type;
+      if (t === 'message_start') st.usage = { in: x.message.usage.input_tokens, out: 0, at: 'message_start (input)' };
+      if (t === 'content_block_start') start(String(x.index), x.content_block.type);
+      else if (t === 'content_block_delta') out.push({ k: 'block_delta', key: String(x.index), delta: x.delta.text || '' });
+      else if (t === 'content_block_stop') stop(String(x.index));
+      else if (t === 'message_delta') { st.finish = x.delta.stop_reason; st.usage = Object.assign({}, st.usage, { out: x.usage.output_tokens, at: 'message_start + message_delta (cộng dồn)' }); ign('giữ stop_reason, usage'); }
+      else if (t === 'message_stop') out.push({ k: 'response_end', stop: st.finish, usage: st.usage });
+      else if (t === 'error') out.push({ k: 'error', code: x.error.type, retryable: ['overloaded_error', 'rate_limit_error', 'api_error'].includes(x.error.type) });
+      else ign(t === 'message_start' ? 'mở message, có input_tokens' : t === 'ping' ? 'ping' : 'event lạ: bỏ qua êm');
+      return out;
+    }
+    if (pid === 'gemgc') {
+      const c = x.candidates[0];
+      start('0', 'text', true);
+      c.content.parts.forEach((p) => p.text && out.push({ k: 'block_delta', key: '0', delta: p.text }));
+      if (x.usageMetadata) st.usage = { in: x.usageMetadata.promptTokenCount, out: x.usageMetadata.candidatesTokenCount, at: 'usageMetadata' };
+      if (c.finishReason) { st.finish = c.finishReason; closeAll(); }
+      return out;
+    }
+    if (pid === 'gemint') {
+      const N = o.old ? { s: 'content.start', d: 'content.delta', x: 'content.stop', f: 'interaction.complete' } : { s: 'step.start', d: 'step.delta', x: 'step.stop', f: 'interaction.completed' };
+      const t = x.event_type;
+      if (t === N.s) start(String(x.index), x.step.type);
+      else if (t === N.d) out.push({ k: 'block_delta', key: String(x.index), delta: x.delta.text });
+      else if (t === N.x) stop(String(x.index));
+      else if (t === N.f) { const u = x.interaction.usage; st.usage = { in: u.total_input_tokens, out: u.total_output_tokens, at: 'interaction.completed' }; out.push({ k: 'response_end', stop: x.interaction.status, usage: st.usage }); }
+      else ign(o.old ? 'adapter không biết tên này' : 'mở interaction');
+      return out;
+    }
+    if (pid === 'ollama') {
+      if (x.error) { out.push({ k: 'error', code: x.error, retryable: true }); return out; }
+      if (x.message.content) { start('0', 'text', true); out.push({ k: 'block_delta', key: '0', delta: x.message.content }); }
+      if (x.done) { closeAll(); st.usage = { in: x.prompt_eval_count, out: x.eval_count, at: 'dòng done: true' }; out.push({ k: 'response_end', stop: x.done_reason, usage: st.usage }); }
+      return out;
+    }
+    if (pid === 'aisdk') {
+      if (x === '[DONE]') { if (st.finish) out.push({ k: 'response_end', stop: 'finish', usage: null }); return out; }
+      const t = x.type;
+      if (t === 'text-start') start(x.id, 'text');
+      else if (t === 'text-delta') out.push({ k: 'block_delta', key: x.id, delta: x.delta });
+      else if (t === 'text-end') stop(x.id);
+      else if (t === 'finish') { st.finish = true; ign('chờ [DONE]'); }
+      else if (t === 'error') out.push({ k: 'error', code: x.errorText, retryable: true });
+      else ign('vòng đời step');
+      return out;
+    }
+    return out;
+  }
+  function finalize(pid, st) {
+    const out = [];
+    if (pid === 'gemgc' && st.finish) { out.push({ k: 'response_end', stop: st.finish, usage: st.usage || null, syn: true, closeEv: true }); }
+    return out;
+  }
+
+  function run(pid, o) {
+    const p = P.find((x) => x.id === pid), w = wire(pid, o), c = cutWire(w, p.fmt);
+    const parsed = p.fmt === 'ndjson' ? parseNDJSON(c.text, c.cut) : parseSSE(c.text, c.cut);
+    const st = { open: new Set(), usage: null, finish: null }, rows = [];
+    parsed.evs.forEach((e, i) => rows.push({ i, e, n: adapt(pid, e, st, o) }));
+    const fin = finalize(pid, st);
+    const all = rows.flatMap((r) => r.n).concat(fin);
+    const { text, end, err } = collect(all);
+    return { w, c, parsed, rows, fin, text, end, err, st, raw: c.text, rawBytes: bytes(c.text), textBytes: bytes(text) };
+  }
+  function collect(list) {
+    const types = {}; let text = '', thinking = '', end = null, err = null;
+    list.forEach((n) => { if (n.k === 'block_start') types[n.key] = n.type; if (n.k === 'block_delta') { if (types[n.key] === 'thinking') thinking += n.delta; else text += n.delta; } if (n.k === 'response_end') end = n; if (n.k === 'error') err = n; });
+    return { text, thinking, end, err };
+  }
+  const evName = (e) => (e.comment !== undefined ? ': ' + e.comment : e.obj === '[DONE]' ? 'data: [DONE]' : e.name !== 'message' && e.name !== 'line' ? e.name : e.obj.type || e.obj.event_type || (e.obj.error ? 'error' : e.obj.done ? 'done: true' : e.obj.choices ? (e.obj.choices.length ? 'chunk' : 'chunk (choices: [])') : e.obj.candidates ? 'GenerateContentResponse' : 'line'));
+  const normTxt = (n) => n.k === 'block_start' ? `block_start(${n.key}, ${n.type})` : n.k === 'block_delta' ? `block_delta(${n.key}, ${J(n.delta)})` : n.k === 'block_stop' ? `block_stop(${n.key})` : n.k === 'response_end' ? `response_end(${n.stop}, usage ${n.usage ? n.usage.in + '/' + n.usage.out : 'null'})` : n.k === 'error' ? `error(${n.code}, retryable=${n.retryable})` : `(bỏ qua: ${n.why})`;
+  const startInfo = { responses: 'response.created: id, status; chưa có usage', chat: 'chunk có delta.role, content rỗng', claude: 'message_start: id, model, input_tokens', gemgc: 'Ngay chunk chữ đầu tiên, không có event mở', gemint: 'interaction.created: id, status', grok: 'chunk có delta.role', vllm: 'chunk có delta.role', ollama: 'Ngay dòng chữ đầu tiên', aisdk: 'start, start-step, text-start' };
+  const endInfo = { responses: 'response.completed / .incomplete / .failed', chat: 'finish_reason, rồi data: [DONE]', claude: 'message_delta (stop_reason) rồi message_stop', gemgc: 'finishReason khác rỗng, rồi đóng kết nối', gemint: 'interaction.completed', grok: 'data: [DONE]', vllm: 'data: [DONE]', ollama: 'Dòng "done": true', aisdk: 'finish rồi data: [DONE]' };
+
+  return {
+    id: 'providers', nav: '3. Provider', ref: 'Phần 2',
+    title: 'Cùng một câu trả lời "Đơn SV-4821 đang được GHN giao", chín luồng event khác nhau: chỉ một adapter cho mỗi provider giữ cho phần còn lại của code không phải biết điều đó',
+    hook: 'Chọn provider: trình duyệt sinh đúng byte trên dây theo README, chạy một parser SSE thật, rồi adapter đổi từng event về bốn loại nội bộ. Thử cắt kết nối hoặc chèn lỗi giữa stream để xem adapter nào biết là hỏng.',
+    terms: [
+      ['Event', 'Một đơn vị trong stream SSE: vài dòng "event:" / "data:" rồi một dòng trống. Ví dụ Claude: event: content_block_delta, data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Đơn SV-4821"}}.'],
+      ['Delta', 'Phần mới thêm so với lần trước, không phải toàn bộ. Bốn delta "Đơn SV-4821", " đang được GHN", " giao, dự kiến", " tới ngày 6/11." nối lại thành câu trả lời.'],
+      ['Content block', 'Một khối trong câu trả lời của Claude: text, tool_use, thinking... Mỗi khối có index; delta mang index để biết thuộc khối nào.'],
+      ['Event kết thúc', 'Event duy nhất xác nhận stream xong: message_stop (Claude), response.completed (OpenAI Responses), data: [DONE] sau finish_reason (Chat Completions). Kết nối đóng mà không có nó là lỗi.'],
+      ['Token', `Mẩu chữ nhỏ mà model đọc, viết và tính tiền theo đó, thường vài ký tự một token. Lab ước lượng thô 4 ký tự / token: câu trả lời ShopViet ${FULL.length} ký tự ≈ ${OUT} token.`],
+      ['Usage', 'Số token đầu vào / đầu ra để tính tiền. Khi stream, nó đến ở cuối hoặc rải rác: Claude gửi input_tokens ở message_start, output_tokens cộng dồn ở message_delta.'],
+      ['Adapter / normalizer', 'Hàm nhỏ cho từng provider, đổi event của provider về khuôn nội bộ: block_start → block_delta… → block_stop, rồi response_end mang stop_reason và usage.'],
+      ['NDJSON', 'Mỗi dòng là một object JSON, không có "event:" hay "data:". Ollama dùng kiểu này: {"message":{"content":"Đơn"},"done":false}.'],
+      ['Sentinel [DONE]', 'Dòng data: [DONE] không phải JSON, chỉ để báo hết. OpenAI Chat Completions, Grok, vLLM có; Gemini thì README khuyên đừng dựa vào.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b>: trợ lý chat trả lời "Đơn SV-4821 của tôi đâu rồi?" bằng câu "Đơn SV-4821 đang được GHN giao, dự kiến tới ngày 6/11.", stream qua SSE xuống trình duyệt. Đang dùng Claude, muốn thêm OpenAI và Gemini làm dự phòng, và thử Ollama nội bộ.',
+      scenario: 'Frontend đang đọc thẳng event của Claude. Khi bật dự phòng sang Gemini, khung chat trống trơn; sang Chat Completions thì báo cáo chi phí thiếu hết usage; và khi Claude quá tải giữa chừng, câu trả lời cụt được lưu như câu hoàn chỉnh.',
+      ask: 'Mỗi provider gửi những event gì cho cùng một câu trả lời, event nào mở đầu, event nào kết thúc, usage nằm ở đâu, và làm sao đổi tất cả về một khuôn để frontend chỉ phải biết một kiểu?',
+      solves: 'Hình chính sinh byte thật cho từng provider theo README, parse bằng parser SSE / NDJSON viết theo đặc tả, chạy adapter của provider đó, và kiểm tra kết quả: đủ chữ, có event kết thúc, có usage. Bảng dưới so cả chín provider cùng lúc.',
+      read: [
+        'Bấm tên provider. Cột trái: các event parser nhận được (bấm thanh kéo để xem stream đến dần). Cột phải: event nội bộ adapter sinh ra. Event viền cam là do adapter <b>tự sinh</b> vì provider không gửi.',
+        'Chọn <b>Kết thúc</b>: <b>Bình thường</b>, <b>Đứt kết nối</b> (cắt giữa một event), <b>Lỗi giữa stream</b> (sau HTTP 200).',
+        'Tuỳ chọn riêng của provider hiện bên cạnh: include_usage, obfuscation, tên event cũ của Gemini Interactions...',
+        'Dòng kết luận đọc từ chính các event nội bộ: chữ đã gom, stop_reason, usage nằm ở event nào, và trạng thái <b>xong</b> / <b>lỗi</b> / <b>bị cắt</b>.',
+        'Bảng so sánh tính lại cho cả chín provider với cùng tuỳ chọn: số event, byte trên dây so với byte chữ, event mở đầu, event kết thúc, usage.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Event model theo provider (README Tra cứu nhanh, snapshot 11/2026)</h4>
+<div class="tbl"><table>
+<tr><th></th><th>Text delta</th><th>Event kết thúc</th><th>Usage</th><th>Lỗi giữa stream</th></tr>
+<tr><td>OpenAI Responses</td><td><code>response.output_text.delta</code></td><td><code>response.completed</code> / <code>.incomplete</code> / <code>.failed</code></td><td><code>response.completed</code> → <code>response.usage</code></td><td><code>error</code> hoặc <code>response.failed</code></td></tr>
+<tr><td>OpenAI Chat Completions</td><td><code>choices[].delta.content</code></td><td><code>data: [DONE]</code></td><td>Chunk cuối khi bật <code>stream_options.include_usage</code></td><td>Chunk có field <code>error</code></td></tr>
+<tr><td>Claude</td><td><code>content_block_delta</code> / <code>text_delta</code></td><td><code>message_stop</code></td><td><code>message_start</code> (input), <code>message_delta</code> (cộng dồn)</td><td><code>event: error</code> sau HTTP 200</td></tr>
+<tr><td>Gemini <code>streamGenerateContent</code></td><td><code>candidates[].content.parts[].text</code></td><td><code>finishReason</code> khác rỗng, rồi đóng kết nối</td><td><code>usageMetadata</code></td><td>Chưa xác minh</td></tr>
+<tr><td>Gemini Interactions</td><td><code>step.delta</code></td><td><code>interaction.completed</code></td><td><code>interaction.usage</code></td><td>Chưa xác minh</td></tr>
+<tr><td>Grok</td><td><code>choices[].delta.content</code></td><td><code>data: [DONE]</code></td><td><code>usage</code> trong chunk (theo ví dụ docs)</td><td>Chưa xác minh</td></tr>
+<tr><td>vLLM</td><td>Như Chat Completions</td><td><code>data: [DONE]</code></td><td>Chunk cuối khi <code>include_usage</code>; <code>continuous_usage_stats</code> cho mọi chunk</td><td>Chunk lỗi</td></tr>
+<tr><td>Ollama <code>/api/chat</code></td><td><code>message.content</code> mỗi dòng JSON</td><td>Dòng <code>"done": true</code></td><td>Dòng <code>done: true</code> (<code>prompt_eval_count</code>, <code>eval_count</code>)</td><td>Dòng <code>{"error": ...}</code></td></tr>
+</table></div>
+<h4>Khuôn nội bộ (README §1.4)</h4>
+<p><b>block_start → nhiều block_delta → block_stop</b>, lặp cho từng khối, rồi một <b>response_end</b> mang stop_reason và usage. Provider không có event mở / đóng khối (Chat Completions, Gemini <code>streamGenerateContent</code>, Ollama) thì adapter tự sinh. Ba quy tắc: gom theo khoá (index / item_id) chứ không theo thứ tự nhận; không xử lý nghiệp vụ trên khối chưa đóng; hết stream mà không có response_end là lỗi.</p>
+<h4>Bẫy đã biết</h4>
+<ul>
+<li>SDK Python của OpenAI chỉ raise khi chunk có field <code>error</code>; event <code>error</code> và <code>response.failed</code> của Responses được yield như event thường.</li>
+<li>Lỗi giữa stream của Claude thành <code>APIStatusError</code> với <code>status_code == 200</code>, không phải <code>OverloadedError</code>: phân loại theo <code>error.type</code> trong body.</li>
+<li>Claude: <code>output_tokens</code> trong <code>message_delta</code> là cộng dồn; block <code>fallback</code> không có delta; event lạ phải bỏ qua êm.</li>
+<li>Gemini: phải có <code>?alt=sse</code>; <code>finishReason</code> còn <code>SAFETY</code>, <code>RECITATION</code>, <code>MAX_TOKENS</code>...; Interactions đổi tên toàn bộ event từ 05/2026.</li>
+<li>vLLM: <code>--sse-keep-alive-interval</code> mặc định 0 (tắt); Ollama không phải SSE nên proxy chỉ nhận diện <code>text/event-stream</code> không nhận ra.</li>
+</ul>
+<div class="verdict"><b>Quy tắc chung:</b> một adapter mỏng cho mỗi provider, một khuôn nội bộ cho mọi thứ còn lại; stream chỉ thành công khi adapter thấy event kết thúc hợp lệ.</div>`,
+    why: {
+      c: 'Parser SSE đúng đặc tả + một adapter cho mỗi provider, đổi về block_start / block_delta / block_stop / response_end. Frontend, logging, đo usage chỉ biết khuôn này. Đổi provider hay provider đổi tên event thì sửa một file.',
+      s: 'Đọc thẳng event provider ở frontend (Gemini Interactions đổi tên 05/2026 là frontend hỏng). Chỉ lọc text delta và coi kết nối đóng là xong (mất lỗi giữa stream, mất usage). Dùng "tương thích OpenAI" như nhau cho mọi nơi (Grok, vLLM, Ollama khác nhau ở usage, sentinel, định dạng).',
+      p: 'Thêm một tầng mapping phải test với mỗi provider và mỗi lần nâng SDK; adapter phải tự sinh event mở / đóng khối cho provider không gửi, và phải biết chính xác event kết thúc của từng bên.'
+    },
+    deep: [
+      {
+        q: 'Sao provider không gửi thẳng từng chữ mà phải bọc trong cả đống event?',
+        a: `<p>Vì một câu trả lời không chỉ có chữ. Nó có thể có phần suy luận, nhiều đoạn văn bản, nhiều tool call song song, và cuối cùng là usage. Nếu chỉ gửi chữ, client không biết mẩu nào thuộc khối nào, và không biết lúc nào thì xong.</p>
+<p>Cái giá là byte. Với câu trả lời ShopViet 4 delta, mỗi provider bọc theo cách khác nhau. Hình dưới đếm byte UTF-8 thật của wire format mỗi provider so với byte của chính câu chữ. Bật / tắt <code>obfuscation</code> của OpenAI Responses: đó là chuỗi đệm ngẫu nhiên gắn vào mỗi delta, mặc định bật (README §2.2).</p>`,
+        viz(box) {
+          let obf = true; const out = el('div');
+          const c = el('input', { type: 'checkbox' }); c.checked = true; c.addEventListener('change', () => { obf = c.checked; draw(); });
+          function draw() {
+            const rows = P.map((p) => { const r = run(p.id, { end: 'ok', obf, usage: true }); return [p.name, r.rawBytes, p.id === 'responses']; });
+            const tb = bytes(FULL), mx = Math.max(...rows.map((r) => r[1]));
+            const worst = rows.reduce((a, b) => (b[1] > a[1] ? b : a));
+            const mn = Math.min(...rows.map((r) => r[1]));
+            out.replaceChildren(hbars(rows, { max: mx, fmt: (v) => v + ' B' }),
+              el('div', { class: 'stat', html: `<span>Byte của chữ: <b>${tb}</b></span><span>Lớn nhất: <b>${esc(worst[0])}</b> ${worst[1]} B = <b>${(worst[1] / tb).toFixed(1)}×</b> chữ</span>` }),
+              note('warn', `<b>Câu ${tb} byte đi trên dây thành ${mn}–${mx} byte.</b> Không phải lỗi: phần bọc mang khoá khối, thứ tự, usage, event kết thúc. Không có nghĩa tốn thêm tiền token: giá token khi stream và không stream như nhau (README §1.5). Trong hệ thống thật: băng thông quan trọng với mobile; tắt obfuscation bằng <code>stream_options: {"include_obfuscation": false}</code> chỉ khi tin đường truyền server ↔ OpenAI.`));
+          }
+          box.append(el('label', { class: 'ctl' }, [c, 'OpenAI Responses: giữ obfuscation']), out, el('div', { class: 'cap', text: 'Byte đếm từ wire text do lab sinh theo tên field README; field id / created / model thật bị lược bớt nên số thật còn lớn hơn. Có include_usage cho Chat Completions / vLLM.' }));
+          draw();
+        },
+        take: 'Event là phong bì mang cấu trúc. Phong bì khác nhau, nội dung như nhau: đó là lý do cần adapter.'
+      },
+      {
+        q: 'Claude có cả dòng "event:" lẫn field "type". Thế còn ping và event lạ thì xử lý sao?',
+        a: `<p>Mỗi event SSE của Claude có dòng <code>event:</code> và field <code>type</code> cùng tên trong <code>data</code> (README §2.3). Thứ tự: <code>message_start</code> → mỗi khối <code>content_block_start</code> → delta… → <code>content_block_stop</code> → một hoặc nhiều <code>message_delta</code> → <code>message_stop</code>.</p>
+<p><code>ping</code> có thể xuất hiện ở bất kỳ đâu. Tài liệu yêu cầu xử lý êm event chưa biết, vì Anthropic có thể thêm event mới. Đã có một trường hợp: khi bật server-side fallback, ở ranh giới hai model có một block <code>fallback</code> gồm <code>content_block_start</code> và <code>content_block_stop</code>, <b>không có delta nào ở giữa</b>.</p>
+<p>Bên dưới, hai parser chạy trên cùng stream: parser "ngây thơ" ném lỗi với event lạ và giả định khối nào cũng có delta (đọc <code>text</code> của delta cuối khi đóng khối); parser chịu lỗi theo README.</p>`,
+        viz(box) {
+          const S = { fb: true, unk: false }, out = el('div');
+          function stream() {
+            const ev = [['message_start'], ['content_block_start', 0, 'text'], ['content_block_delta', 0, 'Đơn SV-4821'], ['content_block_stop', 0]];
+            if (S.fb) ev.push(['content_block_start', 1, 'fallback'], ['content_block_stop', 1]);
+            if (S.unk) ev.push(['future_event']);
+            ev.push(['ping'], ['content_block_start', 2, 'text'], ['content_block_delta', 2, ' đang được GHN giao.'], ['content_block_stop', 2], ['message_delta'], ['message_stop']);
+            return ev;
+          }
+          function naive(ev) {
+            const last = {}, blocks = [];
+            for (const [t, i, v] of ev) {
+              if (t === 'content_block_delta') last[i] = { text: v };
+              else if (t === 'content_block_stop') blocks.push(last[i].text);
+              else if (!['message_start', 'content_block_start', 'message_delta', 'message_stop'].includes(t)) throw new Error('Unknown event: ' + t);
+            }
+            return blocks.join('');
+          }
+          function tolerant(ev) {
+            const b = {}; let txt = '';
+            for (const [t, i, v] of ev) { if (t === 'content_block_start') b[i] = ''; else if (t === 'content_block_delta') b[i] += v; else if (t === 'content_block_stop') txt += b[i]; }
+            return txt;
+          }
+          function draw() {
+            const ev = stream(); let a, ok;
+            try { a = { ok: true, v: naive(ev) }; } catch (e) { a = { ok: false, v: e.message }; }
+            ok = tolerant(ev);
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: ev.map((e) => e[0] + (e[2] ? '  (' + e[2] + ')' : e[1] !== undefined ? '  index ' + e[1] : '')).join('\n') }),
+              el('div', { class: 'stat', html: `<span>Parser ngây thơ: <b class="${a.ok ? 'ok' : 'bad'}">${esc(a.ok ? J(a.v) : a.v)}</b></span><span>Parser chịu lỗi: <b class="ok">${esc(J(ok))}</b></span>` }),
+              !a.ok ? note('bad', `<b>Parser ngây thơ chết giữa stream: ${esc(a.v)}.</b> ${S.unk ? 'Event mới không có trong switch thì ném lỗi.' : 'Khối fallback đóng mà chưa từng có delta, nên không có gì để đọc.'} Không có nghĩa Claude gửi sai: đây là hành vi có trong tài liệu. Trong hệ thống thật: mặc định bỏ qua event lạ, khởi tạo nội dung khối ở <code>content_block_start</code> chứ không ở delta đầu tiên.`) : note('ok', 'Cả hai parser cho cùng kết quả với stream này. Bật khối fallback hoặc event lạ để thấy khác biệt.'));
+          }
+          const tg = (k, t) => { const c = el('input', { type: 'checkbox' }); c.checked = S[k]; c.addEventListener('change', () => { S[k] = c.checked; draw(); }); return el('label', { class: 'ctl' }, [c, t]); };
+          box.append(el('div', { class: 'row' }, [tg('fb', 'Có block fallback (không delta)'), tg('unk', 'Có event lạ "future_event"')]), out, el('div', { class: 'cap', text: 'Tên future_event là giả định để minh hoạ event chưa biết; block fallback theo README §2.3.' }));
+          draw();
+        },
+        take: 'Parser Claude: mở khối ở content_block_start, bỏ qua ping và event lạ, đừng giả định khối nào cũng có delta.'
+      },
+      {
+        q: 'Usage của Claude đến ở hai chỗ. Cộng các message_delta lại có sai không?',
+        a: `<p>Sai. <code>input_tokens</code> đến ngay ở <code>message_start</code>. <code>output_tokens</code> đến trong <code>message_delta</code>, và README §1.5 ghi rõ: số này là <b>cộng dồn</b>, không phải phần tăng thêm. Có thể có <b>một hoặc nhiều</b> <code>message_delta</code>. Lấy giá trị cuối cùng, đừng cộng.</p>
+<p>Hình dưới chia ${OUT} token output (ước lượng thô 4 ký tự / token cho câu trả lời ShopViet) thành nhiều <code>message_delta</code> và so hai cách đọc.</p>`,
+        viz(box) {
+          const out = el('div');
+          function draw(n) {
+            const vals = Array.from({ length: n }, (_, i) => Math.round(OUT * (i + 1) / n));
+            const sum = vals.reduce((a, b) => a + b, 0), last = vals[vals.length - 1];
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: vals.map((v) => 'message_delta  usage.output_tokens = ' + v).join('\n') }),
+              hbars([['Lấy giá trị cuối', last, false], ['Cộng mọi message_delta', sum, sum > last]], { max: Math.max(sum, 1), fmt: (v) => v + ' token' }),
+              sum > last ? note('bad', `<b>Cộng lại ra ${sum} token, gấp ${(sum / last).toFixed(1)} lần số thật ${last}.</b> Mỗi giá trị đã bao gồm phần trước. Không có nghĩa Claude tính tiền gấp: hoá đơn đúng, chỉ báo cáo của bạn sai. Trong hệ thống thật: lưu đè, không cộng; đối chiếu định kỳ với billing (README §3.11 "Usage Claude bị đếm gấp nhiều lần").`) : note('ok', 'Chỉ một message_delta: hai cách ra cùng số. Kéo lên 2 trở lên.'));
+          }
+          box.append(slider('Số message_delta', 1, 5, 1, 3, draw, String).node, out); draw(3);
+        },
+        take: 'Cộng dồn hay phần tăng thêm phải đọc trong docs từng provider. Claude: cộng dồn, lấy số cuối.'
+      },
+      {
+        q: 'Chat Completions không thấy usage đâu cả. Bật include_usage xong thì code lại crash?',
+        a: `<p>Không bật <code>stream_options: {"include_usage": true}</code> thì khi stream không có usage (README §2.2). Bật lên thì có thêm <b>một chunk trước <code>data: [DONE]</code></b>, mang usage tổng và <code>choices</code> là <b>mảng rỗng</b>; các chunk khác có <code>usage: null</code>.</p>
+<p>Code hướng dẫn hay viết <code>chunk.choices[0].delta.content</code>. Trên chunk usage, <code>choices[0]</code> là <code>undefined</code>. Hình dưới chạy đúng dòng đó trên các chunk thật của lab.</p>`,
+        viz(box) {
+          const S = { inc: true, guard: false }, out = el('div');
+          function draw() {
+            const r = run('chat', { end: 'ok', usage: S.inc }), chunks = r.parsed.evs.filter((e) => e.obj !== '[DONE]').map((e) => e.obj);
+            let txt = '', usage = null, crash = null;
+            try { for (const ch of chunks) { if (S.guard && ch.usage) { usage = ch.usage; continue; } const d = ch.choices[0].delta; if (d.content) txt += d.content; if (ch.usage) usage = ch.usage; } } catch (e) { crash = e.message; }
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: S.guard ? 'for chunk in stream:\n    if chunk.usage:\n        usage = chunk.usage; continue\n    delta = chunk.choices[0].delta' : 'for chunk in stream:\n    delta = chunk.choices[0].delta' }),
+              el('div', { class: 'stat', html: `<span>Số chunk: <b>${chunks.length}</b></span><span>Chữ gom được: <b>${txt.length}</b> ký tự</span><span>usage: <b class="${usage ? 'ok' : 'bad'}">${usage ? usage.prompt_tokens + ' / ' + usage.completion_tokens : 'không có'}</b></span>` }),
+              crash ? note('bad', `<b>Crash ở chunk cuối: ${esc(crash)}.</b> Toàn bộ chữ đã đến, rồi vòng lặp chết đúng ở chunk mang usage vì <code>choices</code> rỗng. Không có nghĩa stream lỗi. Trong hệ thống thật: kiểm tra <code>chunk.usage</code> trước, như ví dụ README §2.2.`)
+                : !usage ? note('warn', '<b>Chạy êm nhưng không có usage.</b> Báo cáo chi phí đếm 0 cho mọi request stream. Trong hệ thống thật: bật <code>include_usage</code>, và khi thiếu thì ghi <code>usage_status = "missing"</code> thay vì đoán im lặng (README §1.5).') : note('ok', 'Có đủ chữ và usage.'));
+          }
+          const tg = (k, t) => { const c = el('input', { type: 'checkbox' }); c.checked = S[k]; c.addEventListener('change', () => { S[k] = c.checked; draw(); }); return el('label', { class: 'ctl' }, [c, t]); };
+          box.append(el('div', { class: 'row' }, [tg('inc', 'include_usage'), tg('guard', 'Kiểm tra chunk.usage trước')]), out); draw();
+        },
+        take: 'Chunk usage của Chat Completions có choices rỗng. Kiểm tra usage trước khi đọc choices[0].'
+      },
+      {
+        q: 'Lỗi giữa stream mà SDK không raise thì sao? SDK nào cũng nên raise chứ?',
+        a: `<p>HTTP chỉ có <b>một</b> status code, gửi ở đầu response. Khi stream, server gửi <code>200 OK</code> ngay trước token đầu tiên; nếu 3 giây sau provider quá tải thì không còn cách nào đổi 200 thành 529. Lỗi lúc đó phải đi <b>trong nội dung stream</b>, như một event. Mỗi SDK đóng gói event lỗi đó khác nhau (README §2.2, §2.3):</p>
+<ul><li><code>openai-python</code>: stream chỉ raise <code>APIError</code> khi <b>dữ liệu của chunk có field <code>error</code></b>. Chunk lỗi của Chat Completions có field này. Event <code>error</code> của Responses có dạng <code>{"type": "error", "code", "message", "sequence_number"}</code>, <b>không</b> có field <code>error</code> lồng bên trong, nên được yield như mọi event. <code>response.failed</code> cũng vậy.</li>
+<li><code>anthropic-sdk-python</code>: có raise, nhưng <code>event: error</code> thành <code>APIStatusError</code> với <code>status_code == 200</code>. Câu tiếp theo đi sâu vào trường hợp này.</li></ul>
+<p>Hình dưới áp đúng quy tắc của <code>openai-python</code> lên ba payload lỗi.</p>`,
+        viz(box) {
+          let branch = false; const out = el('div');
+          const cases = [['Chat Completions: chunk lỗi', { error: { message: 'Overloaded', type: 'server_error' } }], ['Responses: event error', { type: 'error', code: 'server_error', message: 'Overloaded', sequence_number: 6 }], ['Responses: response.failed', { type: 'response.failed', response: { status: 'failed', error: { code: 'server_error' } } }]];
+          function draw() {
+            const rows = cases.map(([n, d]) => { const raises = Object.prototype.hasOwnProperty.call(d, 'error'); const caught = raises || (branch && (d.type === 'error' || d.type === 'response.failed')); return { n, d, raises, caught }; });
+            out.replaceChildren(flat('<div class="tbl"><table><tr><th>Payload</th><th>Có field error ở gốc?</th><th>SDK raise?</th><th>Ứng dụng biết lỗi?</th></tr>' + rows.map((r) => `<tr${r.caught ? '' : ' class="cur"'}><td>${esc(r.n)}<br><code>${esc(J(r.d))}</code></td><td>${r.raises ? 'có' : 'không'}</td><td class="${r.raises ? 'ok' : 'bad'}">${r.raises ? 'raise APIError' : 'yield như event thường'}</td><td class="${r.caught ? 'ok' : 'bad'}">${r.caught ? 'có' : 'không: trôi qua im lặng'}</td></tr>`).join('') + '</table></div>'),
+              rows.some((r) => !r.caught) ? note('bad', '<b>Hai lỗi của Responses trôi qua im lặng.</b> Vòng lặp chỉ có nhánh text delta, gặp event lạ thì bỏ qua, rồi kết nối đóng: câu trả lời cụt được lưu như hoàn chỉnh. POC ở cuối bài chạy <code>openai</code> 3.60.0 thật: vòng lặp nhận <code>response.created</code>, một delta, rồi <code>error</code>, và kết thúc êm, không exception nào. Không có nghĩa SDK có bug: đây là cách nó đóng gói. Trong hệ thống thật: thêm nhánh <code>case "response.failed" | "error"</code>, và coi thiếu <code>response.completed</code> là lỗi (README §2.2).') : note('ok', 'Có nhánh xử lý: cả ba lỗi đều được bắt.'));
+          }
+          const c = el('input', { type: 'checkbox' }); c.addEventListener('change', () => { branch = c.checked; draw(); });
+          box.append(el('label', { class: 'ctl' }, [c, 'Vòng lặp có nhánh error / response.failed']), out, el('div', { class: 'cap', text: 'Quy tắc raise trích từ _streaming.py theo README §2.2; mã lỗi server_error là minh hoạ.' })); draw();
+        },
+        take: 'Đừng trông SDK báo lỗi giữa stream. Tự viết nhánh cho event lỗi và tự kiểm tra event kết thúc.'
+      },
+      {
+        q: 'SDK Claude có raise. Vậy code fallback "lỗi server (status_code >= 500) thì chuyển sang OpenAI" là đủ chứ?',
+        a: `<p>Không đủ. Cùng một lỗi <code>overloaded_error</code> (Claude quá tải) có thể đến theo hai đường:</p>
+<ul><li><b>Trước stream</b>: server trả luôn HTTP <code>529</code>. SDK raise <code>OverloadedError</code>, <code>status_code = 529</code>.</li>
+<li><b>Giữa stream</b>: đã có <code>200 OK</code> và vài chữ, rồi tới <code>event: error</code> với body <code>{"type": "error", "error": {"type": "overloaded_error"}}</code>. SDK raise <code>APIStatusError</code>, <code>status_code = 200</code>.</li></ul>
+<p>Vì sao lại là 200? README §2.3: khi gặp <code>event: error</code>, SDK dựng exception từ <b>chính response HTTP đang mở</b>, mà response đó có status 200. Bảng chọn loại exception tra theo status: 529 → <code>OverloadedError</code>, 429 → <code>RateLimitError</code>, ≥ 500 → <code>InternalServerError</code>. 200 không có trong bảng nên rơi về lớp cơ sở <code>APIStatusError</code>. Thông tin "quá tải" vẫn còn, nhưng nằm trong <b>body</b> (<code>error.type</code>), không nằm ở status. SDK TypeScript có báo cáo tương tự, với <code>status: undefined</code>.</p>
+<p>Hình dưới lấy đúng hai dòng POC đo được với <code>anthropic</code> 2.14.0 thật (xem POC cuối bài), rồi áp hai quy tắc fallback lên đó.</p>`,
+        viz(box) {
+          let rule = 'status'; const out = el('div');
+          const RETRYABLE = ['overloaded_error', 'rate_limit_error', 'api_error'];
+          const CASES = [['529 trước stream', '', 'OverloadedError', 529, 'overloaded_error'], ['200, rồi event: error giữa stream', 'Đơn SV-4821 đang', 'APIStatusError', 200, 'overloaded_error']];
+          function draw() {
+            const rows = CASES.map(([n, txt, exc, st, kind]) => ({ n, txt, exc, st, kind, fb: rule === 'status' ? st >= 500 : RETRYABLE.includes(kind) }));
+            const miss = rows.filter((r) => !r.fb);
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: rule === 'status' ? 'except anthropic.APIStatusError as e:\n    if e.status_code >= 500:\n        return fallback_openai()\n    raise' : 'RETRYABLE = {"overloaded_error", "rate_limit_error", "api_error"}\nexcept anthropic.APIStatusError as e:\n    kind = (e.body or {}).get("error", {}).get("type")\n    if kind in RETRYABLE:\n        return fallback_openai()\n    raise' }),
+              flat('<div class="tbl"><table><tr><th>Kịch bản</th><th>Chữ đã nhận</th><th>Exception</th><th>status_code</th><th>error.type</th><th>Fallback chạy?</th></tr>' + rows.map((r) => `<tr${r.fb ? '' : ' class="cur"'}><td>${esc(r.n)}</td><td>${esc(J(r.txt))}</td><td><code>${r.exc}</code></td><td>${r.st}</td><td><code>${r.kind}</code></td><td class="${r.fb ? 'ok' : 'bad'}">${r.fb ? 'có' : 'KHÔNG'}</td></tr>`).join('') + '</table></div>'),
+              miss.length ? note('bad', `<b>Cùng lỗi quá tải, nhưng lần giữa stream đi qua bộ lọc với status_code = 200 và fallback không chạy.</b> Vì status 200 đã gửi trước chữ đầu tiên, SDK chỉ còn status đó để gắn vào exception; loại lỗi thật nằm trong body. Không có nghĩa request thành công, cũng không có nghĩa SDK nuốt lỗi: exception vẫn được raise, chỉ là bộ lọc nhìn sai chỗ. Đây đúng là lỗi của <code>FallbackModel</code> trong pydantic-ai (issue #1258 của anthropic-sdk-python). Trong hệ thống thật: phân loại theo <code>error.type</code> trong body (README §2.3, §3.6); và vì đã có "${esc(CASES[1][1])}" trên màn hình, fallback phải bắt đầu lại câu trả lời hoặc báo gián đoạn, không nối tiếp mù.`)
+                : note('ok', 'Phân loại theo error.type: cả hai lần quá tải đều chuyển sang dự phòng. Lần giữa stream vẫn phải xử lý phần chữ đã hiện (bắt đầu lại hoặc báo gián đoạn).'));
+          }
+          box.append(select('Quy tắc fallback', [['status', 'status_code >= 500'], ['type', 'error.type trong body']], rule, (v) => { rule = v; draw(); }).node, out,
+            el('div', { class: 'cap', text: 'Exception, status_code và error.type là output đo thật của POC (anthropic 2.14.0) trên stream lỗi do server local phát theo README; không phải lỗi quá tải thật từ Anthropic.' })); draw();
+        },
+        take: 'Lỗi giữa stream mang status 200. Fallback và retry phải đọc error.type trong body, không đọc status_code.'
+      },
+      {
+        q: 'Gemini kết thúc ra sao, nếu không có [DONE]?',
+        a: `<p><code>streamGenerateContent</code> phải gọi với <code>?alt=sse</code>. Mỗi <code>data:</code> là một <code>GenerateContentResponse</code> đầy đủ cấu trúc, chỉ chứa phần mới. <code>finishReason</code> để trống khi còn sinh. README khuyên: <b>đừng dựa vào <code>data: [DONE]</code></b>, vì các nguồn mâu thuẫn; coi là xong khi đã có <code>finishReason</code> khác rỗng và kết nối đóng.</p>
+<p>Ngoài <code>STOP</code> và <code>MAX_TOKENS</code>, enum còn <code>SAFETY</code>, <code>RECITATION</code>, <code>BLOCKLIST</code>, <code>PROHIBITED_CONTENT</code>, <code>SPII</code>, <code>MALFORMED_FUNCTION_CALL</code>... Client chỉ biết <code>STOP</code> sẽ hiểu sai những lần stream bị chặn giữa chừng.</p>`,
+        viz(box) {
+          const S = { fr: 'SAFETY', waitDone: false }, out = el('div');
+          const FR = ['STOP', 'MAX_TOKENS', 'SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'MALFORMED_FUNCTION_CALL'];
+          function draw() {
+            const n = S.fr === 'STOP' ? 4 : 2, txt = DELTAS.slice(0, n).join('');
+            const naive = S.waitDone ? 'treo: chờ [DONE] không bao giờ đến, tới khi timeout' : 'lưu như câu trả lời hoàn chỉnh';
+            const good = S.fr === 'STOP' ? 'xong' : S.fr === 'MAX_TOKENS' ? 'bị cắt do giới hạn độ dài: báo "bị gián đoạn"' : 'bị chặn (' + S.fr + '): ẩn hoặc báo, không lưu như câu trả lời';
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Chữ đã nhận: <b>${esc(J(txt))}</b></span>` }),
+              flat(`<div class="tbl"><table><tr><th>Client</th><th>Kết quả</th></tr><tr class="${S.fr !== 'STOP' || S.waitDone ? 'cur' : ''}"><td>${S.waitDone ? 'Chờ data: [DONE]' : 'Chỉ biết STOP, còn lại coi như xong'}</td><td>${naive}</td></tr><tr><td>Đọc finishReason + đóng kết nối</td><td>${good}</td></tr></table></div>`),
+              S.waitDone ? note('bad', '<b>Client chờ sentinel mà tài liệu không hứa.</b> Kết nối đóng, vòng lặp vẫn chờ hoặc báo lỗi oan. Trong hệ thống thật: kết thúc theo finishReason + đóng kết nối (README §2.4).') : S.fr !== 'STOP' ? note('bad', `<b>Câu dừng ở "${esc(txt)}" với ${S.fr}, nhưng client coi là xong.</b> Không có nghĩa model trả lời ngắn: stream bị chặn hoặc cắt. Trong hệ thống thật: map từng giá trị finishReason sang trạng thái UI và stop_reason nội bộ.`) : note('ok', 'STOP và client không chờ [DONE]: kết thúc đúng.'));
+          }
+          const c = el('input', { type: 'checkbox' }); c.addEventListener('change', () => { S.waitDone = c.checked; draw(); });
+          box.append(el('div', { class: 'row' }, [select('finishReason', FR.map((f) => [f, f]), S.fr, (v) => { S.fr = v; draw(); }).node, el('label', { class: 'ctl' }, [c, 'Client chờ data: [DONE]'])]), out, el('div', { class: 'cap', text: 'Giả định: với mọi giá trị khác STOP, stream dừng sau 2 delta.' })); draw();
+        },
+        take: 'Gemini: kết thúc = finishReason khác rỗng + kết nối đóng. Xử lý cả enum, không chỉ STOP.'
+      },
+      {
+        q: 'Gemini Interactions đổi tên event tháng 05/2026. Ảnh hưởng tới đâu?',
+        a: `<p>Toàn bộ: <code>interaction.start</code> → <code>interaction.created</code>, <code>content.start</code> / <code>.delta</code> / <code>.stop</code> → <code>step.start</code> / <code>.delta</code> / <code>.stop</code>, <code>interaction.complete</code> → <code>interaction.completed</code>. <code>interaction.status_update</code> giữ nguyên (README §2.4).</p>
+<p>Adapter cũ không ném lỗi: nó chỉ không nhận ra event nào, nên coi tất cả là "event lạ, bỏ qua". Đây chính là quy tắc "bỏ qua event lạ" ở câu 2 quay lại cắn: bỏ qua êm là đúng, nhưng phải kèm "không có event kết thúc thì là lỗi".</p>`,
+        viz(box) {
+          const out = el('div');
+          function draw() {
+            const rows = [['Adapter mới, stream mới', false, false], ['Adapter cũ, stream mới', true, false]].map(([n, oldAdapter]) => {
+              const w = wire('gemint', { end: 'ok', old: false }), ps = parseSSE(w.text, false), st = { open: new Set() };
+              const ns = ps.evs.flatMap((e) => adapt('gemint', e, st, { old: oldAdapter }));
+              const txt = ns.filter((x) => x.k === 'block_delta').map((x) => x.delta).join(''), end = ns.some((x) => x.k === 'response_end'), recog = ns.filter((x) => x.k !== 'ignored').length;
+              return { n, txt, end, recog, total: ps.evs.length };
+            });
+            out.replaceChildren(flat('<div class="tbl"><table><tr><th></th><th>Event nhận ra / tổng</th><th>Chữ gom được</th><th>Có response_end</th></tr>' + rows.map((r) => `<tr${r.end ? '' : ' class="cur"'}><td>${r.n}</td><td>${r.recog} / ${r.total}</td><td>${esc(J(r.txt))}</td><td class="${r.end ? 'ok' : 'bad'}">${r.end ? 'có' : 'không'}</td></tr>`).join('') + '</table></div>'),
+              note('bad', `<b>Adapter cũ nhận ra ${rows[1].recog} / ${rows[1].total} event: khung chat trống, không lỗi nào được ném.</b> Nếu code coi "kết nối đóng" là xong, nó lưu một câu trả lời rỗng. Không có nghĩa Gemini lỗi. Trong hệ thống thật: frontend đọc khuôn nội bộ thì chỉ sửa một adapter; thiếu response_end thì báo <code>stream_truncated</code> (README §3.1, §3.11).`));
+          }
+          box.append(out); draw();
+        },
+        take: 'Bỏ qua event lạ + bắt buộc có event kết thúc: hai quy tắc phải đi cùng nhau.'
+      },
+      {
+        q: 'Self-hosted (vLLM, Ollama) thì "tương thích OpenAI" là đủ chưa?',
+        a: `<p>Gần đủ về format, không đủ về hành vi (README §2.6):</p>
+<ul><li><b>vLLM</b>: <code>stream_options.include_usage</code> như OpenAI; thêm <code>continuous_usage_stats: true</code> gắn usage tích luỹ vào <b>mọi</b> chunk, rất có ích khi stream bị cắt. <code>--sse-keep-alive-interval</code> mặc định 0, tức không có comment giữ kết nối lúc xếp hàng hay prefill. Client ngắt kết nối thì request bị huỷ, nhưng middleware kiểu <code>BaseHTTPMiddleware</code> từng làm hỏng tín hiệu này.</li>
+<li><b>Ollama</b> native: không phải SSE mà NDJSON. Không có tên event, không có comment để giữ kết nối, parser tự tách dòng. Proxy chỉ nhận diện <code>text/event-stream</code> để tắt buffer sẽ không nhận ra loại stream này.</li></ul>
+<p>Kéo điểm cắt: lab đứt stream vLLM sau chunk thứ k và đọc usage biết được tại thời điểm đó.</p>`,
+        viz(box) {
+          let k = 2; const out = el('div');
+          function draw() {
+            const rows = [['include_usage', { usage: true, cont: false }], ['include_usage + continuous_usage_stats', { usage: true, cont: true }]].map(([n, o]) => {
+              const w = wire('vllm', Object.assign({ end: 'ok' }, o)), ps = parseSSE(w.text, false), cutEvs = ps.evs.slice(0, k + 1);
+              const st = { open: new Set() }; cutEvs.forEach((e) => adapt('vllm', e, st, o));
+              const recv = cutEvs.map((e) => (e.obj.choices && e.obj.choices[0] && e.obj.choices[0].delta.content) || '').join('');
+              return { n, u: st.usage, recv };
+            });
+            out.replaceChildren(flat('<div class="tbl"><table><tr><th>Cấu hình</th><th>Chữ đã nhận</th><th>Usage biết được lúc đứt</th></tr>' + rows.map((r) => `<tr${r.u ? '' : ' class="cur"'}><td>${r.n}</td><td>${esc(J(r.recv))}</td><td class="${r.u ? 'ok' : 'bad'}">${r.u ? r.u.out + ' token output (cộng dồn)' : 'không có'}</td></tr>`).join('') + '</table></div>'),
+              !rows[0].u ? note('warn', `<b>Đứt sau chunk ${k}: chỉ bản có continuous_usage_stats biết đã sinh ${rows[1].u ? rows[1].u.out : 0} token.</b> Chunk usage thường chỉ đến ở cuối, nên stream đứt là mất. Không có nghĩa không bị tính: GPU đã chạy. Trong hệ thống thật: bật continuous_usage_stats, hoặc ghi <code>usage_status = "missing"</code> + ước lượng từ số ký tự đã nhận.`) : note('ok', 'Stream đủ: cả hai đều có usage.'));
+          }
+          box.append(slider('Đứt sau chunk', 1, 5, 1, k, (v) => { k = v; draw(); }, String).node, out, el('div', { class: 'cap', text: 'Token output ước lượng thô 4 ký tự / token; input ' + IN + ' token là số giả định.' })); draw();
+        },
+        take: 'Với self-hosted, kiểm tra usage, keep-alive và huỷ bằng test sau mỗi lần nâng cấp.'
+      },
+      {
+        q: 'Có helper trong SDK và Vercel AI SDK rồi, còn cần tự viết adapter không?',
+        a: `<p>Helper gom hộ phần khó (README §2.7): <code>anthropic</code> có <code>stream.text_stream</code> và <code>stream.get_final_message()</code> (TS: <code>stream.finalMessage()</code>); <code>openai</code> có <code>response.completed</code> mang response đầy đủ và <code>client.chat.completions.stream(...)</code>; <code>google-genai</code> có <code>chunk.text</code>. Chúng xử lý gom khối theo index, usage cộng dồn, event lạ. Nhưng hai SDK ở trên đều đóng gói lỗi giữa stream khác lỗi HTTP thường (câu 5, 6).</p>
+<p>Vercel AI SDK định nghĩa giao thức riêng giữa server và <code>useChat</code>: <i>UI message stream</i>, chạy trên SSE, mỗi chunk một dòng <code>data:</code> JSON, kết thúc bằng <code>data: [DONE]</code>; backend tự viết phải gửi header <code>x-vercel-ai-ui-message-stream: v1</code>. Chunk: <code>start</code>, <code>start-step</code>, <code>text-start</code> / <code>-delta</code> / <code>-end</code>, <code>reasoning-*</code>, <code>tool-input-start</code> / <code>-delta</code> / <code>-available</code>, <code>finish-step</code>, <code>finish</code>, <code>abort</code>, <code>error</code> (có <code>errorText</code>).</p>
+<p>Để ý: giao thức này <b>chính là một khuôn nội bộ</b> giống bốn loại ở bài này, chỉ là do thư viện định nghĩa. Chọn nó thì frontend <code>useChat</code> dùng được ngay; adapter phía server vẫn phải có, chỉ là thư viện viết hộ cho provider nó hỗ trợ. Chọn provider <b>Vercel AI SDK</b> ở hình chính để xem nó map về bốn loại nội bộ thế nào.</p>`,
+        take: 'Helper và AI SDK là adapter viết sẵn. Vẫn tự kiểm tra event kết thúc và nhánh lỗi.'
+      }
+    ],
+    poc: {
+      goal: "Chạy SDK <code>anthropic</code> và <code>openai</code> thật, trỏ <code>base_url</code> vào một server SSE local phát kịch bản lỗi: 529 trước stream, HTTP 200 rồi <code>event: error</code>, event <code>error</code> của Responses, chunk có field <code>error</code>. Bạn thấy SDK raise exception nào, status bao nhiêu.<br><b>Cái gì giả lập, cái gì đo thật.</b> Giả lập: byte lỗi do server local viết tay theo README, không phải Anthropic hay OpenAI quá tải thật; phần 3 (Gemini đổi tên event) chỉ là tra bảng tên trong Python, không gọi SDK nào. Đo thật: phản ứng của hai SDK thật (anthropic 2.14.0, openai 3.60.0) với các byte đó, tức exception nào, <code>status_code</code> nào, vòng lặp có dừng không. Kết luận về SDK là thật; việc provider thật gửi đúng payload này thì dựa trên tài liệu, POC không chứng minh.",
+      file: "docs/streaming/pocs/03_providers.py",
+      run: "uv run docs/streaming/pocs/03_providers.py",
+      needs: "Không cần key, Docker hay model: server <code>asyncio</code> nhỏ trên <code>127.0.0.1</code> (cổng ngẫu nhiên), tự tắt khi script xong. Cài <code>anthropic</code> và <code>openai</code> qua uv, khoảng 1 giây. Phần 4 (stream Claude thật, <code>claude-haiku-5-5</code>, max_tokens 60, < $0,001) chỉ chạy khi có <code>ANTHROPIC_API_KEY</code> trong <code>docs/streaming/pocs/.env</code>; lần chạy dưới đây không có key nên phần này bị bỏ qua.",
+      output: "=== 1. SDK thật (anthropic 2.14.0, openai 3.60.0) đọc stream lỗi từ server local\nkịch bản                           | chữ đã nhận         | exception        | status | error.type\nClaude: 529 trước stream           | ''                  | OverloadedError  | 529    | overloaded_error\nClaude: 200 rồi event: error       | 'Đơn SV-4821 đang'  | APIStatusError   | 200    | overloaded_error\nResponses: 200 rồi event error     | 'Đơn SV-4821 đang'  | không raise      | -      | -\nChat: chunk có field error         | 'Đơn SV-4821 đang'  | APIError         | không có | -\nResponses: vòng lặp nhận các event ['response.created', 'response.output_text.delta', 'error'] rồi kết thúc êm, không exception nào.\n\n=== 2. Logic fallback kiểu 'status_code >= 500' (như FallbackModel của pydantic-ai, README issue #1258)\nclaude_pre : theo status → fallback        | theo error.type 'overloaded_error' → fallback\nclaude_mid : theo status → KHÔNG fallback  | theo error.type 'overloaded_error' → fallback\n\n=== 3. Gemini Interactions đổi tên event 05/2026: adapter cũ gặp stream mới\nadapter tên cũ  : 0 delta văn bản, kết thúc = không (stream bị coi là cắt)\nadapter tên mới : 2 delta văn bản, kết thúc = có\n\n=== 4. Stream Claude thật (tuỳ chọn)\nBỏ qua: chưa có ANTHROPIC_API_KEY trong docs/streaming/pocs/.env\n\nRút ra: lỗi quá tải giữa stream của Claude thành APIStatusError status_code=200, nên kiểm tra status >= 500 bỏ lỡ fallback; event error của Responses không raise gì; phân loại theo error.type trong body mới đúng.",
+      measured: true,
+      read: ["Hai dòng Claude: cùng <code>overloaded_error</code> nhưng trước stream là <code>OverloadedError</code> status 529, giữa stream là <code>APIStatusError</code> status 200. Đây là hành vi của SDK thật (anthropic 2.14.0), khớp README và issue #1258.", "Bảng 2: logic fallback kiểu <code>status_code >= 500</code> bỏ lỡ lỗi giữa stream; đọc <code>error.type</code> trong body thì bắt được cả hai. Câu hỏi 6 ở trên dựng lại đúng hai dòng này.", "Responses: vòng lặp nhận event <code>error</code> như mọi event khác rồi kết thúc êm, không exception (openai 3.60.0): code chỉ có <code>try/except</code> sẽ không biết có lỗi. Chat Completions thì raise <code>APIError</code>, nhưng không có <code>status_code</code>.", "Bảng 3 là tra bảng tên trong Python, không phải stream Gemini thật: adapter dùng tên event Interactions cũ nhận 0 delta và không thấy event kết thúc khi gặp tên mới."]
+    },
+    mount(stage) {
+      const S = { p: 'claude', end: 'ok', obf: true, usage: false, cont: false, old: false, rsn: false };
+      const pills = el('div', { class: 'row' }), opts = el('div', { class: 'row' }), scrub = el('div'), left = el('div'), right = el('div'), verdict = el('div'), cmp = el('div');
+      const card = (small, body, css) => el('div', { class: 'ch', style: 'font-size:12px;word-break:break-word;' + (css || '') }, [el('small', { text: small }), el('span', { class: 'mono', text: body })]);
+      let R = null, P0 = null;
+      function view(k) {
+        const r = R, p = P0, N = r.rows.length, shown = r.rows.slice(0, k), atEnd = k === N;
+        left.replaceChildren(...shown.map((row) => card('#' + (row.i + 1) + '  ' + evName(row.e), row.e.comment !== undefined ? ':' + row.e.comment : row.e.data.length > 170 ? row.e.data.slice(0, 170) + '…' : row.e.data, row.i === k - 1 ? 'border-color:var(--accent)' : '')),
+          ...(atEnd && r.parsed.dropped ? [card('phần dở khi kết nối đóng: parser bỏ (đặc tả SSE)', r.parsed.dropped, 'border-color:var(--bad)')] : []),
+          ...(atEnd && r.c.cut ? [el('div', { class: 'hint', html: '<b class="bad">Kết nối đóng.</b> Không có event kết thúc.' })] : []));
+        const nShown = shown.flatMap((row) => row.n.map((n) => ['← #' + (row.i + 1), n])).concat(atEnd ? r.fin.map((n) => ['← đóng kết nối', n]) : []);
+        right.replaceChildren(...nShown.map(([src, n]) => card(src + (n.syn ? '  adapter tự sinh' : ''), normTxt(n), (n.syn ? 'border-left:4px solid var(--warn);' : '') + (n.k === 'ignored' ? 'opacity:.55;' : ''))));
+        const { text: txt, thinking, end, err } = collect(nShown.map((x) => x[1]));
+        const status = end ? 'xong' : err ? 'lỗi' : atEnd ? 'bị cắt' : 'đang nhận';
+        const notes = [el('div', { class: 'stat', html: `<span>Chữ gom được: <b>${esc(J(txt))}</b></span>${thinking ? `<span>Suy luận (khối riêng): <b>${esc(J(thinking))}</b></span>` : ''}<span>Trạng thái: <b class="${status === 'xong' ? 'ok' : status === 'đang nhận' ? '' : 'bad'}">${status}</b></span><span>stop_reason: <b>${end ? esc(end.stop) : '—'}</b></span><span>Usage: <b>${end && end.usage ? end.usage.in + ' in / ' + end.usage.out + ' out' : r.st.usage && atEnd ? 'một phần (' + r.st.usage.in + ' in)' : 'chưa có'}</b>${end && end.usage ? ' từ ' + esc(end.usage.at) : ''}</span>` })];
+        if (atEnd) {
+          if (r.w.unverifiedErr) notes.push(note('warn', `<b>README ghi "chưa xác minh" dạng lỗi giữa stream của ${esc(p.name)}.</b> Lab không bịa payload lỗi: mô phỏng như kết nối đóng sau 2 delta. Trong hệ thống thật: thử bằng request thật lúc quá tải và ghi lại raw stream trước khi viết nhánh lỗi.`));
+          if (status === 'bị cắt' && txt) notes.push(note('bad', `<b>Có ${txt.length} ký tự "${esc(txt)}" nhưng không có event kết thúc.</b> Code chỉ nối text delta tới khi kết nối đóng sẽ lưu câu cụt này như câu trả lời hoàn chỉnh. Không có nghĩa model trả lời ngắn. Trong hệ thống thật: hết stream mà không có response_end thì raise <code>StreamTruncated</code>, hiển thị "Câu trả lời bị gián đoạn" (README §1.4, §3.6).`));
+          if (status === 'bị cắt' && !txt) notes.push(note('bad', '<b>Không gom được chữ nào và không có event kết thúc.</b> Adapter không nhận ra event nào. Không có nghĩa provider không trả lời. Trong hệ thống thật: thiếu response_end là lỗi, đừng lưu câu trả lời rỗng; cập nhật adapter theo tên event mới (README §2.4).'));
+          if (err) notes.push(note('bad', `<b>Lỗi sau HTTP 200: ${esc(err.code)}, retryable=${err.retryable}.</b> Đã có "${esc(txt)}" trên màn hình. Không có nghĩa request lỗi từ đầu: status 200 đã gửi. Trong hệ thống thật: phân loại theo loại lỗi trong body; chỉ retry im lặng khi chưa gửi gì xuống client, còn ở đây phải giữ phần đã nhận và báo gián đoạn (README §3.6).${S.p === 'claude' ? ' Với SDK Python, lỗi này thành <code>APIStatusError</code> có <code>status_code = 200</code>: bộ lọc <code>&gt;= 500</code> bỏ sót (câu 6).' : S.p === 'responses' ? ' Với SDK Python, event này không raise gì: phải có nhánh riêng (câu 5).' : ''}`));
+          if (status === 'xong' && !end.usage) notes.push(note('warn', S.p === 'aisdk' ? '<b>Xong nhưng không có usage trên dây.</b> README không ghi chunk usage trong UI message stream. Trong hệ thống thật: ghi usage ở backend từ stream của provider gốc, không đọc từ stream gửi trình duyệt.' : `<b>Stream xong nhưng không có usage.</b> ${esc(p.name)} chỉ gửi usage khi bật <code>stream_options.include_usage</code>. Báo cáo chi phí sẽ đếm 0. Trong hệ thống thật: bật include_usage; nếu thiếu thì ghi <code>usage_status = "missing"</code>.`));
+          if (S.p === 'claude' && S.end !== 'ok') notes.push(el('div', { class: 'hint', html: 'Claude gửi <code>input_tokens</code> ngay ở <code>message_start</code>: stream bị cắt vẫn biết input, chỉ thiếu output.' }));
+          if (S.p === 'responses' && S.obf) notes.push(el('div', { class: 'hint', html: 'Mỗi delta có thêm field <code>obfuscation</code>: chuỗi đệm ngẫu nhiên, mặc định bật (README §2.2). Adapter bỏ qua nó.' }));
+          if (S.p === 'gemgc' && status === 'xong') notes.push(el('div', { class: 'hint', html: 'Gemini không có event kết thúc riêng: adapter tự sinh <code>response_end</code> khi đã thấy <code>finishReason</code> <b>và</b> kết nối đóng. Không chờ <code>[DONE]</code>.' }));
+          if (S.p === 'ollama') notes.push(el('div', { class: 'hint', html: 'Không phải SSE: mỗi dòng một JSON (NDJSON). Dòng cuối có <code>done: true</code>, <code>done_reason</code>, <code>prompt_eval_count</code>, <code>eval_count</code> và các thời gian xử lý (lược bớt ở đây).' }));
+          if (S.p === 'grok' && S.rsn) notes.push(el('div', { class: 'hint', html: '<code>delta.reasoning_content</code> đi vào một khối <code>thinking</code> riêng do adapter tự mở, không trộn vào câu trả lời.' }));
+        }
+        verdict.replaceChildren(...notes);
+      }
+      function draw() {
+        const p = P.find((x) => x.id === S.p), o = { end: S.end, obf: S.obf, usage: S.usage, cont: S.cont, old: S.old, rsn: S.rsn };
+        pills.replaceChildren(...P.map((x) => el('button', { class: x.id === S.p ? 'on' : '', text: x.name, onclick: () => { S.p = x.id; draw(); } })));
+        const tg = (k) => { const c = el('input', { type: 'checkbox' }); c.checked = S[k]; c.addEventListener('change', () => { S[k] = c.checked; draw(); }); return el('label', { class: 'ctl' }, [c, OPT[k]]); };
+        opts.replaceChildren(select('Kết thúc', [['ok', 'Bình thường'], ['cut', 'Đứt kết nối giữa stream'], ['error', 'Lỗi giữa stream (sau 200)']], S.end, (v) => { S.end = v; draw(); }).node, ...p.opts.map(tg));
+        R = run(S.p, o); P0 = p;
+        const N = R.rows.length;
+        scrub.replaceChildren(slider('Đã nhận event', 0, N, 1, N, (v) => view(v), (v) => v + ' / ' + N).node);
+        view(N);
+        const all = P.map((x) => { const rr = run(x.id, o); return { x, rr, st: rr.end ? 'xong' : rr.err ? 'lỗi' : 'bị cắt' }; });
+        cmp.replaceChildren(flat('<div class="tbl"><table><tr><th>Provider</th><th>Event</th><th>Byte dây / byte chữ</th><th>Mở đầu bằng</th><th>Kết thúc bằng</th><th>Usage (lab đọc được)</th><th>Trạng thái</th></tr>' + all.map(({ x, rr, st }) => `<tr${x.id === S.p ? ' class="cur"' : ''}><td>${esc(x.name)}</td><td>${rr.parsed.evs.length}</td><td>${rr.rawBytes} / ${bytes(FULL)} (${(rr.rawBytes / bytes(FULL)).toFixed(1)}×)</td><td>${esc(startInfo[x.id])}</td><td>${esc(endInfo[x.id])}</td><td>${rr.end && rr.end.usage ? esc(rr.end.usage.at) : rr.st.usage ? 'một phần: ' + esc(rr.st.usage.at) : '<span class="bad">không có</span>'}</td><td class="${st === 'xong' ? 'ok' : 'bad'}">${st}</td></tr>`).join('') + '</table></div>'));
+      }
+      stage.append(el('h4', { text: 'Chọn provider', style: 'margin:0 0 6px' }), pills, opts, scrub,
+        el('div', { class: 'cols' }, [el('div', { class: 'chunks', style: 'min-width:0' }, [el('h4', { text: 'Event trên dây (sau parser SSE)' }), left]), el('div', { class: 'chunks', style: 'min-width:0' }, [el('h4', { html: 'Khuôn nội bộ <small>(viền cam: adapter tự sinh)</small>' }), right])]),
+        verdict, el('h4', { text: 'Cả chín provider, cùng tuỳ chọn', style: 'margin:22px 0 6px' }), cmp,
+        el('div', { class: 'hint', text: 'Byte trên dây do lab sinh theo tên event / field trong README; các field như id, created, model bị lược bớt. Input ' + IN + ' token là giả định; output ' + OUT + ' token ước lượng thô 4 ký tự / token. Thứ tự event Responses là minh hoạ: README chỉ liệt kê nhóm event, không cam kết thứ tự giữa các item. Mã lỗi server_error là minh hoạ.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,760 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 01</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="00-workflow.html">← Lab trước</a><a href="02-protocols-events-usage.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const SAMPLE = [
+    ': ShopViet relay, kết nối đã mở',
+    'retry: 3000',
+    '',
+    'event: status',
+    'data: {"phase":"thinking","label":"Đang soạn câu trả lời"}',
+    '',
+    'id: 1',
+    'event: text',
+    'data: {"delta":"Dạ có bạn nhé. "}',
+    '',
+    'id: 2',
+    'event: text',
+    'data: {"delta":"Tai nghe Pro X chống ồn chủ động, "}',
+    '',
+    ': ping',
+    '',
+    'id: 3',
+    'event: text',
+    'data:{"delta":"pin khoảng 30 giờ."}',
+    '',
+    'event: note',
+    'data: dòng thứ nhất',
+    'data: dòng thứ hai',
+    '',
+    'event: done',
+    'data: {"stop_reason":"end"}',
+    '',
+    ''
+  ];
+  const EOL = { lf: '\n', crlf: '\r\n', cr: '\r' };
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const show = (s) => esc(s).replace(/\r/g, '<span style="color:var(--warn)">␍</span>').replace(/\n/g, '<span style="color:var(--mute)">↵</span>').replace(/�/g, '<b style="color:var(--bad)">�</b>');
+  const f1 = (x) => (Math.round(x * 10) / 10).toString().replace('.', ',');
+  const enc = new TextEncoder();
+
+  function buildText(eol, truncate) {
+    let t = SAMPLE.join(eol);
+    if (truncate) t = t.slice(0, t.length - eol.length);
+    return t;
+  }
+
+  function specParse(chunks) {
+    const dec = new TextDecoder('utf-8');
+    let buf = '', data = '', type = '', lastId = '', retry = null, ci = 0;
+    const out = [], comments = [];
+    const line = (l) => {
+      if (l === '') {
+        if (data === '') { type = ''; return; }
+        out.push({ type: type || 'message', data: data.endsWith('\n') ? data.slice(0, -1) : data, id: lastId, chunk: ci });
+        data = ''; type = '';
+        return;
+      }
+      if (l[0] === ':') { comments.push({ text: l.slice(1), chunk: ci }); return; }
+      const p = l.indexOf(':');
+      let f = l, v = '';
+      if (p >= 0) { f = l.slice(0, p); v = l.slice(p + 1); if (v[0] === ' ') v = v.slice(1); }
+      if (f === 'event') type = v;
+      else if (f === 'data') data += v + '\n';
+      else if (f === 'id') { if (!v.includes('\0')) lastId = v; }
+      else if (f === 'retry') { if (/^\d+$/.test(v)) retry = +v; }
+    };
+    const feed = (s, final) => {
+      buf += s;
+      let i = 0, start = 0;
+      while (i < buf.length) {
+        const c = buf[i];
+        if (c === '\n') { line(buf.slice(start, i)); start = i + 1; }
+        else if (c === '\r') {
+          if (i + 1 === buf.length && !final) break;
+          line(buf.slice(start, i));
+          if (buf[i + 1] === '\n') i++;
+          start = i + 1;
+        }
+        i++;
+      }
+      buf = buf.slice(start);
+    };
+    chunks.forEach((c, k) => { ci = k; feed(dec.decode(c, { stream: true }), false); });
+    ci = Math.max(0, chunks.length - 1);
+    feed(dec.decode(), true);
+    return { out, comments, retry, lastId, pending: data };
+  }
+
+  function naiveParse(chunks) {
+    let buf = '';
+    const out = [];
+    const take = (part, k) => {
+      let type = 'message';
+      part.split('\n').forEach((l) => { if (l.startsWith('event: ')) type = l.slice(7); });
+      part.split('\n').filter((l) => l.startsWith('data: ')).forEach((l) => out.push({ type, data: l.slice(6), chunk: k }));
+    };
+    chunks.forEach((c, k) => {
+      buf += new TextDecoder().decode(c);
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+      parts.forEach((p) => take(p, k));
+    });
+    if (buf.trim()) take(buf, Math.max(0, chunks.length - 1));
+    return out;
+  }
+
+  function cutPoints(bytes, mode, n, seed) {
+    const cuts = [];
+    if (mode === 'fixed') for (let i = n; i < bytes.length; i += n) cuts.push(i);
+    else if (mode === 'rand') { const rnd = seeded(seed); for (let i = 1 + Math.floor(rnd() * n); i < bytes.length; i += 1 + Math.floor(rnd() * n)) cuts.push(i); }
+    else {
+      const s = new TextDecoder().decode(bytes);
+      const at = (sub, plus) => { const k = s.indexOf(sub); return k < 0 ? -1 : enc.encode(s.slice(0, k)).length + plus; };
+      cuts.push(at('Dạ có', 2), at('Tai nghe', 0), at('giờ.', 3));
+      const cr = bytes.findIndex((b, i) => b === 13 && bytes[i + 1] === 10 && i > at('Tai nghe', 0));
+      if (cr > 0) cuts.push(cr + 1);
+    }
+    return [...new Set(cuts)].filter((c) => c > 0 && c < bytes.length).sort((a, b) => a - b);
+  }
+
+  function splitAt(bytes, cuts) {
+    const ch = [];
+    let s = 0;
+    cuts.concat(bytes.length).forEach((c) => { ch.push(bytes.slice(s, c)); s = c; });
+    return ch;
+  }
+
+  const isJSONish = (d) => d.trim().startsWith('{');
+  const jsonOk = (d) => { try { JSON.parse(d); return true; } catch (e) { return false; } };
+
+  function compare(spec, naive) {
+    const n = Math.max(spec.length, naive.length);
+    let mismatch = 0;
+    for (let i = 0; i < n; i++) { const a = spec[i], b = naive[i]; if (!a || !b || a.type !== b.type || a.data !== b.data) mismatch++; }
+    return mismatch;
+  }
+
+  return {
+    id: 'why-stream-sse', nav: '1. Vì sao stream, SSE', ref: '§1.1–1.2',
+    title: 'Stream không làm model nhanh hơn, chỉ cho khách thấy chữ sớm hơn; và một parser SSE tự viết hỏng ở đúng chỗ mạng cắt gói tin',
+    hook: 'Ở hình trên, đổi cách mạng cắt byte (cắt cả vào giữa chữ "ạ"), đổi kiểu xuống dòng, cho stream đóng sớm, rồi so hai parser. Ở hình dưới, kéo TTFT và tốc độ sinh để xem stream rút ngắn thời gian chờ được bao nhiêu.',
+    terms: [
+      ['Token', 'Mẩu chữ nhỏ model sinh mỗi bước, thường cỡ một âm tiết hoặc một phần của từ. Câu "Dạ có bạn nhé." có thể là 4–6 token.'],
+      ['TTFT', 'Time to first token: từ lúc gửi request tới lúc có token đầu. Gồm ba phần: chờ tới lượt (xếp hàng), model đọc hết prompt (gọi là prefill; prompt càng dài càng lâu), và với model suy luận (reasoning model, model "nghĩ nháp" trước khi trả lời) là thời gian nghĩ. Ví dụ 0,8 giây.'],
+      ['ITL', 'Inter-token latency: thời gian trung bình giữa hai token liên tiếp. ITL = (e2e − TTFT) / (output_tokens − 1). Ví dụ 20 ms.'],
+      ['Tokens/giây', 'Tốc độ sinh của một request, xấp xỉ 1 / ITL. ITL 20 ms thì khoảng 50 token/giây.'],
+      ['e2e latency', 'Tổng thời gian từ lúc gửi tới token cuối: e2e ≈ TTFT + (output_tokens − 1) × ITL. Ví dụ 0,8 + 1.499 × 0,02 ≈ 30,8 giây.'],
+      ['Thời gian chờ cảm nhận', 'Khoảng thời gian khách nhìn màn hình trống. Stream: bằng TTFT. Không stream: bằng e2e.'],
+      ['text/event-stream', 'Content-Type của SSE. Body là văn bản UTF-8, chia thành từng dòng; mỗi dòng kết thúc bằng LF, CRLF hoặc CR.'],
+      ['LF / CR / CRLF', 'Ký tự xuống dòng. LF là \\n (byte 0A), CR là \\r (byte 0D), CRLF là \\r\\n. Đặc tả SSE chấp nhận cả ba; trong hình CR hiện là ␍, LF hiện là ↵.'],
+      ['Field data / event / id / retry', 'Bốn field có nghĩa trong SSE. data: nội dung (nhiều dòng data được nối bằng LF); event: tên loại event, mặc định message; id: last event ID; retry: số ms chờ trước khi kết nối lại.'],
+      ['Dòng trống', 'Dòng không có ký tự nào. Nó đánh dấu kết thúc một event, lúc đó parser mới dispatch (phát) event đó cho code.'],
+      ['Comment', 'Dòng bắt đầu bằng dấu hai chấm, ví dụ ": ping". Client bỏ qua; dùng để giữ kết nối.'],
+      ['BOM', 'Byte order mark: 3 byte EF BB BF mà một số trình soạn thảo chèn vào đầu file UTF-8. Nếu nó nằm ở đầu stream, parser SSE phải bỏ đi, nếu không tên field đầu tiên sẽ dính thêm ký tự vô hình U+FEFF, thành một field lạ và bị bỏ qua.'],
+      ['Chunk', 'Một mảnh byte mà code đọc được trong một lần gọi reader.read(). Ranh giới chunk do mạng và các tầng proxy quyết định, có thể rơi vào giữa một dòng, giữa một chữ.'],
+      ['UTF-8', 'Cách mã hoá chữ thành byte. Chữ ASCII 1 byte, chữ "ạ" 3 byte (E1 BA A1). Cắt giữa ba byte đó mà giải mã từng mảnh riêng thì ra ký tự lỗi U+FFFD (hiện là �).'],
+      ['EventSource', 'API có sẵn của trình duyệt để đọc SSE, tự kết nối lại và gửi header Last-Event-ID. Chỉ gửi được GET, nên app chat thường dùng fetch + parser thay thế.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> stream câu trả lời của trợ lý xuống trình duyệt. Frontend đọc bằng <code>fetch</code> + <code>ReadableStream</code>, vì <code>EventSource</code> không gửi được POST với lịch sử hội thoại. Một dev tự viết parser theo bài hướng dẫn: giải mã từng chunk, <code>buffer.split("\\n\\n")</code>, lấy dòng bắt đầu bằng <code>data: </code>.',
+      scenario: 'Trên localhost mọi thứ đúng. Qua mạng di động và proxy, thỉnh thoảng câu trả lời có ký tự lạ thay cho chữ có dấu, có event JSON.parse báo lỗi, có lúc cả câu trả lời chỉ hiện ra khi stream đóng. Đồng thời sếp hỏi: stream có đáng không, hay chỉ cần model nhanh hơn?',
+      ask: 'Stream rút ngắn được phần chờ nào và không rút ngắn được phần nào? Và một parser SSE phải làm gì để đúng với mọi cách mạng cắt byte?',
+      solves: 'Chạy thật hai parser trên cùng một chuỗi byte, cắt theo nhiều cách, rồi so từng event. Parser đúng theo đặc tả HTML: giải mã UTF-8 dạng stream, giữ phần dòng chưa xong sang chunk sau, xử lý CR / LF / CRLF, nối nhiều dòng data, bỏ event chưa có dòng trống kết thúc. Biểu đồ dưới tính thời gian chờ từ công thức e2e của README.',
+      read: [
+        'Ô <b>Chunk</b>: mỗi khung là một lần reader.read(). Byte của chữ nhiều byte bị cắt đôi hiện bằng mã hex màu cam. ␍ là CR, ↵ là LF.',
+        'Hai bảng event: trái là parser theo đặc tả, phải là parser kiểu hướng dẫn. Cột "chunk" là chunk mà sau khi đọc nó event mới được phát. Dòng đỏ ở bảng phải là event khác với bảng trái.',
+        'Khung cảnh báo nói chuyện gì xảy ra, vì sao về mặt cơ chế, điều đó không có nghĩa gì, và cách xử lý trong hệ thống thật.',
+        'Biểu đồ thời gian chờ: trục ngang là giây, trục dọc là số token khách đã thấy. Đường xanh là stream, đường cam là không stream. Hai đường kết thúc cùng một điểm.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Thời gian (README §1.1)</h4>
+<ul><li><code>e2e ≈ TTFT + (output_tokens − 1) × ITL</code>; tokens/giây ≈ <code>1 / ITL</code>.</li>
+<li>Stream không đổi e2e, chỉ đổi lúc khách thấy chữ đầu: TTFT thay vì e2e. Ví dụ README: TTFT 0,8 s, ITL 20 ms, 1.500 token → cả hai chế độ xong ở 30,8 s, nhưng stream có chữ từ giây 0,8.</li>
+<li>Stream không sửa được TTFT cao (prompt dài, hàng đợi, reasoning). Muốn giảm TTFT: rút gọn prompt, prompt caching, đổi model, giảm mức reasoning.</li>
+<li>Stream còn là cách tránh HTTP timeout với request dài; và nó đổi kiểu lỗi: status 200 đã gửi trước token đầu, lỗi sau đó đi trong stream.</li></ul>
+<h4>Định dạng SSE (README §1.2, đặc tả HTML)</h4>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Hành vi</th></tr>
+<tr><td><code>data</code></td><td>Nối giá trị vào buffer kèm một LF. Nhiều dòng <code>data:</code> nối bằng LF; LF cuối bị bỏ khi dispatch</td></tr>
+<tr><td><code>event</code></td><td>Tên loại event, mặc định <code>message</code></td></tr>
+<tr><td><code>id</code></td><td>Đặt last event ID (bỏ qua nếu chứa NULL); giữ cho các event sau tới khi gặp <code>id:</code> khác</td></tr>
+<tr><td><code>retry</code></td><td>Thời gian chờ reconnect (ms); chỉ nhận khi toàn chữ số</td></tr>
+</table></div>
+<ul><li>Dòng bắt đầu bằng <code>:</code> là comment, bị bỏ qua: cơ chế keep-alive chuẩn ("every 15 seconds or so").</li>
+<li>Một dấu cách sau dấu <code>:</code> bị bỏ đúng một lần: <code>data:abc</code> và <code>data: abc</code> như nhau.</li>
+<li>Tên field phân biệt hoa thường; field lạ bị bỏ qua. BOM đầu stream bị bỏ.</li>
+<li><b>Event chưa có dòng trống kết thúc khi stream đóng bị bỏ</b>, không dispatch.</li>
+<li><code>EventSource</code>: chỉ GET, tự reconnect và gửi <code>Last-Event-ID</code>; dừng hẳn khi status khác 200, Content-Type khác <code>text/event-stream</code>, hoặc 204. HTTP/1.1: tối đa 6 kết nối mỗi domain; HTTP/2 mặc định 100 stream.</li></ul>
+<div class="verdict"><b>Điểm cần nhớ:</b> ranh giới chunk là ngẫu nhiên với code của bạn. Parser đúng phải giữ trạng thái qua các chunk ở cả hai tầng: byte (UTF-8) và dòng. Dùng parser đã được kiểm thử như <code>eventsource-parser</code>, hoặc viết theo đặc tả.</div>`,
+    why: {
+      c: 'Stream cho mọi câu trả lời có người đọc, và đọc stream bằng <code>fetch</code> + <code>TextDecoder</code> với <code>{stream: true}</code> + parser theo đặc tả (hoặc <code>eventsource-parser</code>). Stream đưa thời gian chờ cảm nhận về TTFT; parser theo đặc tả đúng với mọi cách cắt chunk, mọi kiểu xuống dòng.',
+      s: 'Không stream: khách chờ tới token cuối, và kết nối im lặng lâu dễ bị proxy cắt. <code>EventSource</code>: không gửi được POST, body hay header xác thực. Parser kiểu <code>split("\\n\\n")</code>: chạy đúng trên localhost vì chunk thường trọn vẹn, hỏng khi gặp CRLF, nhiều dòng data, chữ nhiều byte bị cắt đôi, hoặc stream đóng giữa event.',
+      p: 'Stream biến một response thành kết nối mở lâu đi qua nhiều tầng (Lab 00), lỗi có thể đến sau HTTP 200, và usage chỉ có ở cuối (Lab 02). Parser phải giữ trạng thái và có test với chunk cắt ngẫu nhiên. Không giảm được TTFT: phần đó phải xử lý ở prompt, cache, model.'
+    },
+    deep: [
+      {
+        q: 'Bật stream thì model có sinh nhanh hơn không?',
+        a: `<p>Không. Model sinh output từng token một ở cả hai chế độ, cùng tốc độ. Khác nhau ở chỗ provider <b>giữ</b> output tới token cuối (không stream) hay <b>gửi</b> từng phần ngay khi sinh ra (stream).</p>
+<p>README §1.1 tách độ trễ theo định nghĩa của NVIDIA: <code>e2e ≈ TTFT + (output_tokens − 1) × ITL</code>. Ví dụ README: TTFT 0,8 s, ITL 20 ms, 1.500 token → e2e ≈ 0,8 + 1.499 × 0,02 ≈ 30,8 giây <b>ở cả hai chế độ</b>. Khác biệt: khách thấy chữ đầu ở giây 0,8 khi stream, giây 30,8 khi không stream.</p>
+<p>Kéo slider ở hình dưới: hai đường luôn gặp nhau ở cùng một điểm cuối.</p>`,
+        take: 'Stream đổi thời gian chờ cảm nhận, không đổi tổng thời gian sinh.'
+      },
+      {
+        q: 'Đo được e2e, TTFT và số token rồi, tính tốc độ sinh thế nào?',
+        a: `<p>Từ công thức trên: <code>ITL = (e2e − TTFT) / (output_tokens − 1)</code>, tokens/giây ≈ <code>1 / ITL</code>. Lưu ý từ README: NVIDIA dùng TPOT như tên khác của ITL, nhưng một số công cụ benchmark định nghĩa TPOT hơi khác, nên kiểm tra công thức trước khi so số liệu.</p>`,
+        viz(box) {
+          const st = { e2e: 30.8, ttft: 0.8, n: 1500 }, out = el('div');
+          const draw = () => {
+            const itl = (st.e2e - st.ttft) / Math.max(1, st.n - 1);
+            out.innerHTML = itl <= 0 ? '<p class="bad">e2e phải lớn hơn TTFT.</p>' : `<div class="stat"><span>ITL: <b>${f1(itl * 1000)} ms</b></span><span>Tokens/giây: <b>${f1(1 / itl)}</b></span><span>Phần sinh chiếm: <b>${Math.round(((st.e2e - st.ttft) / st.e2e) * 100)}%</b> e2e</span></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('e2e', 1, 120, 0.1, st.e2e, (v) => { st.e2e = v; draw(); }, (v) => f1(v) + ' s').node,
+            slider('TTFT', 0.1, 60, 0.1, st.ttft, (v) => { st.ttft = v; draw(); }, (v) => f1(v) + ' s').node,
+            slider('Output', 2, 4000, 1, st.n, (v) => { st.n = v; draw(); }, (v) => v + ' tok').node]), out,
+            el('div', { class: 'cap', text: 'Giá trị mặc định là ví dụ minh hoạ trong README §1.1. Đo TTFT ở cả trình duyệt và backend (Lab 00): chênh lệch giữa hai nơi là độ trễ của hạ tầng ở giữa.' }));
+          draw();
+        },
+        take: 'Ba số TTFT, ITL, số token output đủ để giải thích mọi cảm nhận "chậm". Chậm vì TTFT thì stream không giúp; chậm vì ITL thì stream giúp nhiều.'
+      },
+      {
+        q: 'Câu trả lời 1.500 token mất 30 giây. Stream thì khách vẫn phải đợi 30 giây mới đọc xong, lợi ở đâu?',
+        a: `<p>Lợi ở chỗ khách <b>đọc song song</b> với lúc model viết. README §1.1: người đọc trung bình đọc chậm hơn tốc độ sinh của model. Với ITL 20 ms, model viết khoảng 50 token mỗi giây; khách đọc chưa kịp tới chỗ model đang viết, nên gần như không có lúc nào phải ngồi chờ.</p>
+<p>Không stream thì khác: 30 giây nhìn spinner, <b>rồi</b> mới bắt đầu đọc. Tổng thời gian tới lúc đọc xong dài hơn hẳn, dù model sinh nhanh như nhau. Đó là lý do README gọi thứ stream cải thiện là thời gian chờ <i>cảm nhận</i>.</p>`,
+        take: 'Stream không rút ngắn việc sinh; nó cho việc đọc bắt đầu sớm và chạy chồng lên việc sinh.'
+      },
+      {
+        q: 'Một event SSE thực ra trông thế nào? Vì sao lại cần dòng trống?',
+        a: `<p>SSE là văn bản thuần, UTF-8. Mỗi dòng là <code>tên_field: giá_trị</code>. Parser gom các dòng vào một event đang dở, và chỉ khi gặp <b>dòng trống</b> mới dispatch event đó. Lý do: một event có thể có nhiều dòng (nhiều dòng <code>data:</code>, cộng <code>event:</code>, <code>id:</code>), nên cần một dấu hiệu "hết event".</p>
+<p>Ví dụ event "note" trong hình chính có hai dòng data:</p>
+<p><code>event: note</code><br><code>data: dòng thứ nhất</code><br><code>data: dòng thứ hai</code><br><code>(dòng trống)</code></p>
+<p>Parser theo đặc tả cho ra <b>một</b> event, data là <code>"dòng thứ nhất\\ndòng thứ hai"</code>. Parser kiểu hướng dẫn coi mỗi dòng data là một event, nên ra <b>hai</b> event. Nhìn dòng "note" ở hai bảng trong hình chính.</p>`,
+        take: 'Dòng trống là ranh giới duy nhất của event. Không có nó thì không có event, kể cả khi data trông đã đủ.'
+      },
+      {
+        q: 'Sao chữ "ạ" thành ký tự lỗi khi mạng cắt gói tin?',
+        a: `<p>Vì "ạ" là <b>3 byte</b> trong UTF-8. Nếu chunk 1 kết thúc sau byte đầu và chunk 2 bắt đầu bằng hai byte sau, thì giải mã <b>từng chunk riêng</b> sẽ thấy hai mảnh không hợp lệ và thay bằng U+FFFD. <code>TextDecoder</code> với <code>{stream: true}</code> giữ lại byte dở dang chờ chunk sau. Bên dưới là giải mã thật trong trình duyệt.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (cut) => {
+            const b = enc.encode('Dạ có'), a = b.slice(0, cut), c = b.slice(cut);
+            const hex = (u) => [...u].map((x) => x.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+            const sep = new TextDecoder().decode(a) + new TextDecoder().decode(c);
+            const d = new TextDecoder();
+            const st = d.decode(a, { stream: true }) + d.decode(c, { stream: true }) + d.decode();
+            out.innerHTML = `<div class="tbl"><table><tr><th>Chunk 1</th><th>Chunk 2</th><th>Giải mã từng chunk riêng</th><th>TextDecoder {stream: true}</th></tr><tr><td class="mono">${hex(a)}</td><td class="mono">${hex(c)}</td><td class="mono">${show(sep)}</td><td class="mono">${show(st)}</td></tr></table></div>` +
+              `<div class="cap">${sep !== st ? '<b style="color:var(--bad)">Cắt rơi vào giữa một chữ nhiều byte.</b> Giải mã riêng sinh U+FFFD, không sửa lại được vì byte gốc đã mất khi chuyển sang chuỗi.' : 'Điểm cắt rơi đúng ranh giới chữ, hai cách cho cùng kết quả. Thử điểm cắt 2 hoặc 3.'}</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Cắt sau byte thứ', 1, 7, 1, 2, draw).node]), out);
+          draw(2);
+        },
+        take: 'Một TextDecoder cho cả stream, gọi với {stream: true}. Tạo decoder mới cho mỗi chunk là bug chỉ lộ ra với tiếng Việt, emoji, tiếng Nhật.'
+      },
+      {
+        q: 'Vậy buffer.split("\\n\\n") hỏng ở những ca nào?',
+        a: `<p>README §1.2 liệt kê: hỏng với CRLF, với event nhiều dòng <code>data:</code>, và với dòng comment. Bảng dưới chạy cả hai parser của hình chính trên vài chuỗi ngắn, mỗi chuỗi một chunk (không có lỗi cắt chunk), để thấy lỗi nằm ở logic chứ không chỉ ở mạng.</p>`,
+        viz(box) {
+          const cases = [['LF chuẩn', 'data: {"delta":"Dạ"}\n\n'], ['CRLF', 'data: {"delta":"Dạ"}\r\n\r\ndata: {"delta":" có"}\r\n\r\n'], ['Nhiều dòng data', 'data: dòng 1\ndata: dòng 2\n\n'], ['Không có dấu cách sau :', 'data:{"delta":"Dạ"}\n\n'], ['Comment không dòng trống riêng', ': ping\ndata: {"delta":"Dạ"}\n\n'], ['Field lạ tên Data', 'Data: x\ndata: y\n\n']];
+          const fmt = (evs) => evs.length ? evs.map((e) => show(JSON.stringify(e.data))).join('<br>') : '<span class="hint">(không có event)</span>';
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Ca</th><th>Theo đặc tả</th><th>split("\\n\\n")</th></tr>' + cases.map(([n, s]) => {
+            const ch = [enc.encode(s)], a = specParse(ch).out, b = naiveParse(ch), same = compare(a, b) === 0;
+            return `<tr><td>${n}</td><td class="mono">${fmt(a)}</td><td class="mono ${same ? '' : 'bad'}">${fmt(b)}</td></tr>`;
+          }).join('') })]), el('div', { class: 'cap', text: 'Ca CRLF: parser kiểu hướng dẫn không thấy "\\n\\n" nên không phát event nào trong lúc stream; chỉ khi stream đóng nó mới "tiện tay" xử lý phần còn lại, và data mang theo ␍.' }));
+        },
+        take: 'Hầu hết server gửi LF, nên bug CRLF chỉ lộ ra khi đổi provider hoặc đi qua một proxy viết lại body. Đừng đợi tới lúc đó.'
+      },
+      {
+        q: 'Stream đóng khi event cuối còn thiếu dòng trống thì sao?',
+        a: `<p>Theo đặc tả, event dở dang đó <b>bị bỏ</b>. README §1.2 cảnh báo: một parser "tiện tay" vẫn dispatch phần dở dang này sẽ đưa ra JSON cụt, hoặc như ở đây, một event <code>done</code> mà server chưa bao giờ gửi trọn.</p>
+<p>Tích "Stream đóng trước dòng trống cuối" ở hình chính. Parser theo đặc tả không phát <code>done</code>; code phía trên coi đây là stream bị gián đoạn. Parser kiểu hướng dẫn phát <code>done</code>, và UI báo "Xong" cho một câu trả lời chưa xong.</p>`,
+        take: 'Không có dòng trống thì không có event. Kết hợp với quy tắc "không có event kết thúc là lỗi" (Lab 02), đây là hàng rào chống câu trả lời cụt được lưu như hoàn chỉnh.'
+      },
+      {
+        q: 'EventSource tự reconnect, có Last-Event-ID, sao app chat lại không dùng?',
+        a: `<p>Vì <code>EventSource</code> chỉ gửi được <b>GET</b>: không có body, không có header tuỳ ý ngoài cờ <code>withCredentials</code>. API chat cần POST với lịch sử hội thoại và header xác thực. Nên client web hầu như luôn dùng <code>fetch</code> + <code>ReadableStream</code> + một parser (README §1.2).</p>
+<p>Còn <code>Last-Event-ID</code>: đặc tả không định nghĩa server phải replay thế nào; server tự lưu và tự quyết định. Không provider LLM nào trong README dùng cơ chế này để resume. OpenAI có resume riêng cho background response, Claude dùng request tiếp nối.</p>
+<p>Thêm một giới hạn: trên HTTP/1.1, trình duyệt chỉ mở tối đa 6 kết nối đồng thời tới một domain. Khách mở 7 tab chat là tab thứ 7 treo. HTTP/2 mặc định 100 stream.</p>`,
+        take: 'Hiểu đặc tả SSE để viết parser, nhưng đừng trông vào tính năng reconnect của EventSource cho chat LLM.'
+      },
+      {
+        q: 'Dòng ": ping" trong mẫu để làm gì, client bỏ qua cơ mà?',
+        a: `<p>Chính vì client bỏ qua nên nó an toàn để gửi bất cứ lúc nào. Mục đích là giữ <b>byte đi qua</b> kết nối: đặc tả ghi rằng một số proxy cũ đóng kết nối sau timeout ngắn, và khuyên gửi comment "every 15 seconds or so".</p>
+<p>Claude gửi event <code>ping</code> xen kẽ. vLLM có flag <code>--sse-keep-alive-interval</code> nhưng mặc định là 0, tức tắt. Nếu backend chuyển tiếp stream, hãy tự gửi heartbeat. Lab 00 cho thấy model im lặng 75 giây mà không ping thì nginx cắt ở giây 60.</p>`,
+        take: 'Comment là kênh keep-alive miễn phí của SSE. Parser phải bỏ qua nó, hạ tầng thì cần nó.'
+      }
+    ],
+    poc: {
+      goal: "Phần A đo thật TTFT và thời gian xong của cùng một model giả lập ở chế độ stream và không stream. Phần B gửi cùng một byte stream SSE qua TCP, 7 byte một lần (cắt cả giữa chữ có dấu), rồi so parser <code>split('\\n\\n')</code> với parser theo đặc tả WHATWG.",
+      file: "docs/streaming/pocs/01_why_stream_sse.py",
+      run: "uv run docs/streaming/pocs/01_why_stream_sse.py",
+      needs: "Không cần key, Docker hay model: server <code>asyncio</code> nhỏ trên <code>127.0.0.1</code> (cổng ngẫu nhiên), tự tắt khi script xong. Khoảng 7 giây, chỉ thư viện chuẩn.<br><b>Lưu ý thứ tự:</b> Phần A của script là thời gian chờ (hình B ở trên), Phần B của script là parser (hình A ở trên).<br><b>Kịch bản (không đo):</b> \"model\" là server Python giả lập, TTFT 500 ms và 20 ms/token do script đặt; \"token\" là một từ của câu trả lời về đơn SV-4821; chuỗi SSE và cách cắt 7 byte một lần do script dựng.<br><b>Đo thật:</b> thời điểm client nhận chữ đầu và xong qua TCP localhost; số lần <code>read()</code>, số event, JSON hỏng, ký tự � do hai parser thật đếm.",
+      output: "=== A. Cùng một model (scripted: TTFT 500 ms, ITL 20 ms, 105 token), đo thật qua localhost\nchế độ     | chữ đầu tiên |       xong | token\nstream     |       525 ms |    2811 ms | 105\nkhông      |      2807 ms |    2807 ms | 105\nITL đo = (e2e − TTFT)/(n − 1) = 22.0 ms → 46 token/s; công thức TTFT + (n−1)×ITL = 2811 ms\nVí dụ README: 0,8 + 1.499 × 0,02 = 30,78 s cho cả hai chế độ; stream thấy chữ ở 0,8 s.\n\n=== B. Cùng một byte stream qua TCP, server ghi 7 byte một lần (cắt cả giữa chữ 'ạ', 'à', 'ắ')\n\n-- Xuống dòng LF: client nhận 233 lần read, 2 lần bắt đầu giữa một ký tự UTF-8, stream dài 584 ms\nparser           | event | JSON ok | JSON hỏng | ký tự � | đến nửa đầu | văn bản ghép được\nsplit('\\n\\n')    |    14 |      11 |        3 |     3 |           6 | 'D���, đơn SV-4821 đang được GHN '\ntheo đặc tả      |    13 |      13 |        0 |     0 |           6 | 'Dạ, đơn SV-4821 đang được GHN x'\n   parser đặc tả: bỏ 1 comment, bỏ event cuối chưa có dòng trống = True\n\n-- Xuống dòng CRLF: client nhận 239 lần read, 4 lần bắt đầu giữa một ký tự UTF-8, stream dài 623 ms\nparser           | event | JSON ok | JSON hỏng | ký tự � | đến nửa đầu | văn bản ghép được\nsplit('\\n\\n')    |    14 |      11 |        3 |     5 |           0 | 'D���, đ��n SV-4821 đang được GHN '\ntheo đặc tả      |    13 |      13 |        0 |     0 |           6 | 'Dạ, đơn SV-4821 đang được GHN x'\n   parser đặc tả: bỏ 1 comment, bỏ event cuối chưa có dòng trống = True\n\nRút ra: stream và không stream xong cùng lúc; chỉ chữ đầu tiên đến sớm hơn. Parser split('\\n\\n') in ký tự �, ghép nhầm event nhiều dòng data, dispatch JSON cụt ở cuối, và với CRLF thì gom mọi event tới lúc đóng kết nối.",
+      measured: true,
+      read: ["Phần A: chữ đầu tiên ~520 ms khi stream và ~2.810 ms khi không, nhưng cả hai xong ở ~2.810 ms. Stream không làm model nhanh hơn.", "Phần A, số đo lệch kịch bản: TTFT 525 ms thay vì 500, ITL 22 ms thay vì 20. Vì sao: <code>asyncio.sleep(0.02)</code> thường ngủ lâu hơn số yêu cầu một chút, cộng thời gian ghi và đọc TCP, nên mỗi token chậm thêm khoảng 2 ms. Không có nghĩa công thức sai: thay ITL đo được vào công thức thì ra đúng e2e đo được (2.811 ms). Trong hệ thống thật: luôn tính ITL từ số đo, không lấy số quảng cáo.", "Phần B, cột ký tự �: parser decode từng chunk riêng in <code>D���</code> thay cho <code>Dạ</code> vì mạng cắt giữa các byte của chữ ạ; parser đặc tả dùng decoder tăng dần nên không lỗi ký tự nào.", "Cột JSON hỏng: 3 lỗi = 2 dòng của event nhiều dòng <code>data:</code> bị tách riêng + event cuối chưa có dòng trống bị dispatch; parser đặc tả bỏ event dở đó. Event <code>data:{…}</code> không có dấu cách (chữ \"x\") cũng chỉ parser đặc tả nhận.", "Cột \"đến nửa đầu\" = số event parser phát ra trong nửa đầu thời gian stream. Với CRLF, <code>split('\\n\\n')</code> được 0: không event nào được tách tới lúc đóng kết nối, giống hệt bị proxy buffer dù byte đã tới đủ."]
+    },
+    mount(stage) {
+      const st = { eol: 'lf', mode: 'utf8', n: 16, seed: 7, trunc: false };
+      const chunkBox = el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 10px' });
+      const stats = el('div', { class: 'stat' }), tables = el('div', { class: 'cols', style: 'margin-top:10px' }), flags = el('div', { style: 'margin-top:10px;font-size:13.5px' });
+      const nSl = slider('Kích thước tối đa', 1, 64, 1, st.n, (v) => { st.n = v; draw(); }, (v) => v + ' byte');
+      const modeSel = select('Cách mạng cắt byte', [['utf8', 'Cắt vào chỗ hiểm (giữa chữ "ạ", giữa dòng, giữa CR và LF)'], ['fixed', 'Mỗi N byte'], ['rand', 'Ngẫu nhiên 1..N byte'], ['none', 'Không cắt (một chunk)']], st.mode, (v) => { st.mode = v; draw(); });
+      const eolSel = select('Xuống dòng', [['lf', 'LF (\\n)'], ['crlf', 'CRLF (\\r\\n)'], ['cr', 'CR (\\r)']], st.eol, (v) => { st.eol = v; draw(); });
+      const tr = el('input', { type: 'checkbox' });
+      tr.addEventListener('change', () => { st.trunc = tr.checked; draw(); });
+      const reseed = el('button', { text: 'Cắt lại', onclick: () => { st.seed++; draw(); } });
+
+      const evTable = (title, evs, ref) => {
+        const rows = evs.map((e, i) => {
+          const o = ref && ref[i], bad = ref && (!o || o.type !== e.type || o.data !== e.data);
+          const j = isJSONish(e.data) ? (jsonOk(e.data) ? '<span class="ok">JSON ok</span>' : '<b class="bad">JSON lỗi</b>') : '';
+          return `<tr style="${bad ? 'background:color-mix(in srgb, var(--bad) 14%, transparent)' : ''}"><td class="mono">${i + 1}</td><td class="mono">${show(e.type)}</td><td class="mono" style="word-break:break-all">${show(e.data)} ${j}</td><td class="mono">#${e.chunk + 1}</td></tr>`;
+        }).join('');
+        return el('div', {}, [el('h4', { html: title }), el('div', { class: 'tbl', style: 'overflow-x:auto' }, [el('table', { style: 'border-collapse:collapse;font-size:12px;width:100%', html: '<tr><th>#</th><th>event</th><th>data</th><th>chunk</th></tr>' + (rows || '<tr><td colspan="4" class="hint">(không có event)</td></tr>') })])]);
+      };
+
+      function draw() {
+        nSl.node.style.display = st.mode === 'fixed' || st.mode === 'rand' ? '' : 'none';
+        reseed.style.display = st.mode === 'rand' ? '' : 'none';
+        const text = buildText(EOL[st.eol], st.trunc), bytes = enc.encode(text);
+        const cuts = st.mode === 'none' ? [] : cutPoints(bytes, st.mode, st.n, st.seed);
+        const chunks = splitAt(bytes, cuts);
+        const midChar = cuts.filter((c) => (bytes[c] & 0xc0) === 0x80).length;
+        const midLine = cuts.filter((c) => bytes[c - 1] !== 10 && !(bytes[c - 1] === 13 && st.eol === 'cr')).length;
+        const midCRLF = cuts.filter((c) => bytes[c - 1] === 13 && bytes[c] === 10).length;
+
+        const MAXC = 48;
+        chunkBox.replaceChildren(...chunks.slice(0, MAXC).map((c, i) => {
+          const parts = [];
+          let j = 0;
+          while (j < c.length) {
+            const b = c[j];
+            const len = b < 0x80 ? 1 : b >= 0xf0 ? 4 : b >= 0xe0 ? 3 : b >= 0xc0 ? 2 : 0;
+            if (len === 0 || j + len > c.length) { parts.push(`<span style="color:var(--warn);font-weight:700">${b.toString(16).toUpperCase()}</span>`); j++; continue; }
+            parts.push(show(new TextDecoder().decode(c.slice(j, j + len))));
+            j += len;
+          }
+          return el('div', { class: 'mono', style: 'font-size:11px;border:1px solid var(--line);border-radius:4px;padding:2px 5px;background:var(--bg);max-width:100%;word-break:break-all', html: `<span style="color:var(--accent)">#${i + 1}</span> ${parts.join('')}` });
+        }), ...(chunks.length > MAXC ? [el('div', { class: 'hint', text: `... và ${chunks.length - MAXC} chunk nữa` })] : []));
+
+        const spec = specParse(chunks), naive = naiveParse(chunks);
+        const mism = compare(spec.out, naive);
+        const fffd = naive.filter((e) => e.data.includes('�') || e.type.includes('�')).length;
+        const jbad = naive.filter((e) => isJSONish(e.data) && !jsonOk(e.data)).length;
+        const lastChunk = chunks.length - 1;
+        const naiveAtEnd = naive.length && naive.every((e) => e.chunk === lastChunk) && chunks.length > 1;
+        stats.innerHTML = `<span>Byte: <b>${bytes.length}</b></span><span>Chunk: <b>${chunks.length}</b></span><span>Cắt giữa chữ nhiều byte: <b class="${midChar ? 'bad' : ''}">${midChar}</b></span><span>Cắt giữa dòng: <b>${midLine}</b></span><span>Cắt giữa CR và LF: <b>${midCRLF}</b></span><span>Event (đặc tả / hướng dẫn): <b>${spec.out.length} / ${naive.length}</b></span><span>Event khác nhau: <b class="${mism ? 'bad' : 'ok'}">${mism}</b></span>`;
+        tables.replaceChildren(evTable(`Parser theo đặc tả <small>retry = ${spec.retry ?? '—'}, last id = ${esc(spec.lastId || '—')}, comment: ${spec.comments.length}</small>`, spec.out),
+          evTable('Parser kiểu hướng dẫn <small>decode từng chunk, split("\\n\\n"), dòng "data: "</small>', naive, spec.out));
+
+        const P = [], box = (c, h) => `<div style="border-left:3px solid ${c};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${h}</div>`;
+        if (fffd) P.push(box('var(--bad)', `<b>${fffd} event của parser kiểu hướng dẫn chứa ký tự lỗi �.</b> Vì sao: ${midChar} điểm cắt rơi giữa các byte của một chữ có dấu; mỗi chunk được giải mã bằng một TextDecoder mới nên byte dở dang bị thay bằng U+FFFD. Không có nghĩa server gửi sai: parser bên trái nhận đúng cùng chuỗi byte. Trong hệ thống thật: một TextDecoder cho cả stream, gọi <code>decode(chunk, {stream: true})</code>.`));
+        if (jbad) P.push(box('var(--bad)', `<b>${jbad} event có data bắt đầu bằng { nhưng JSON.parse lỗi.</b> Vì sao: ${st.eol !== 'lf' ? 'không tách được event theo "\\n\\n" nên data bị gộp hoặc dính ký tự xuống dòng khác' : fffd ? 'ký tự lỗi hoặc dòng bị cắt' : 'event dở dang bị phát ra khi stream đóng'}. Trong hệ thống thật: frontend sẽ ném exception giữa câu trả lời, hoặc tệ hơn, bỏ qua lặng lẽ một mảnh chữ.`));
+        if (st.eol !== 'lf' && naiveAtEnd) P.push(box('var(--warn)', `<b>Parser kiểu hướng dẫn không phát event nào cho tới chunk cuối.</b> Vì sao: với ${st.eol === 'crlf' ? 'CRLF, dòng trống là \\r\\n\\r\\n' : 'CR, dòng trống là \\r\\r'}, không bao giờ chứa "\\n\\n". Mọi thứ nằm trong buffer tới khi stream đóng. Không có nghĩa mạng chậm: chữ đã tới trình duyệt, chỉ parser chưa nhận ra. Trong hệ thống thật: khách thấy y như bị nginx buffer (Lab 00), và debug ở tầng mạng sẽ không tìm ra.`));
+        if (st.eol === 'cr' && !naive.length) P.push(box('var(--bad)', '<b>Parser kiểu hướng dẫn không ra event nào.</b> Vì sao: nó tách dòng bằng "\\n", nên với CR cả stream là một dòng duy nhất bắt đầu bằng ": ShopViet", không phải "data: ". Đặc tả chấp nhận CR đơn làm ký tự xuống dòng.'));
+        if (st.trunc) {
+          const sd = spec.out.some((e) => e.type === 'done'), nd = naive.some((e) => e.type === 'done');
+          P.push(box(nd && !sd ? 'var(--bad)' : 'var(--warn)', `<b>Stream đóng khi event done chưa có dòng trống kết thúc.</b> Parser theo đặc tả ${sd ? 'vẫn phát done' : 'bỏ event dở dang, không phát done'}${spec.pending ? ' (data còn treo: ' + show(JSON.stringify(spec.pending.replace(/\n$/, ''))) + ')' : ''}; parser kiểu hướng dẫn ${nd ? '<b>phát done</b> nhờ "tiện tay" xử lý phần còn lại' : 'không phát done'}. Vì sao: đặc tả chỉ dispatch khi gặp dòng trống. Không có nghĩa server đã gửi xong: kết nối có thể bị proxy cắt đúng lúc đó. Trong hệ thống thật: không có event kết thúc thì báo "bị gián đoạn", không lưu như câu trả lời hoàn chỉnh.`));
+        }
+        if (!st.trunc && spec.out.some((e) => e.data.includes('pin khoảng')) && !naive.some((e) => e.data.includes('pin khoảng'))) P.push(box('var(--bad)', '<b>Mảnh "pin khoảng 30 giờ." biến mất ở bảng phải.</b> Vì sao: server gửi <code>data:{...}</code> không có dấu cách sau dấu hai chấm; parser kiểu hướng dẫn chỉ nhận dòng bắt đầu bằng "data: ". Đặc tả bỏ một dấu cách nếu có, nên <code>data:abc</code> và <code>data: abc</code> như nhau. Không có nghĩa server sai chuẩn. Trong hệ thống thật: khách thấy câu trả lời thiếu một đoạn ở giữa, không có lỗi nào được báo.'));
+        if (!mism && !st.trunc) P.push(box('var(--ok)', `Hai parser cho cùng ${spec.out.length} event. ${st.mode === 'none' ? 'Một chunk, LF: đúng kiểu dữ liệu trên localhost. Chọn cách cắt "chỗ hiểm" để xem chuyện gì xảy ra trên mạng thật.' : 'Lần cắt này không trúng chỗ hiểm. Thử "Cắt lại", giảm kích thước, hoặc đổi kiểu xuống dòng.'} Lưu ý event "note": parser bên trái gộp hai dòng data thành một event có ↵ ở giữa.`));
+        else if (!st.trunc && naive.filter((e) => e.type === 'note').length > 1) P.push(box('var(--warn)', '<b>Event "note" thành hai event ở bảng phải.</b> Vì sao: đặc tả nối các dòng data liên tiếp bằng LF thành một data; parser kiểu hướng dẫn coi mỗi dòng là một event. Trong hệ thống thật: provider ít khi gửi nhiều dòng data, nhưng proxy hoặc backend tự viết thì có thể.'));
+        flags.innerHTML = P.join('');
+      }
+
+      const wait = { ttft: 0.8, tps: 50, n: 1500 };
+      const W = 860, H = 230, L = 52, R = 16, T = 14, B = 34;
+      const svg = el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Số token khách thấy theo thời gian khi stream và khi không stream' });
+      const wStat = el('div', { class: 'stat' }), wFlag = el('div', { style: 'margin-top:8px;font-size:13.5px' });
+      const sT = slider('TTFT', 0.1, 30, 0.1, wait.ttft, (v) => { wait.ttft = v; drawWait(); }, (v) => f1(v) + ' s');
+      const sR = slider('Tốc độ sinh', 5, 200, 1, wait.tps, (v) => { wait.tps = v; drawWait(); }, (v) => v + ' tok/s');
+      const sN = slider('Output', 20, 2000, 10, wait.n, (v) => { wait.n = v; drawWait(); }, (v) => v + ' tok');
+      const preset = (t, r, n) => { wait.ttft = t; wait.tps = r; wait.n = n; sT.input.value = t; sR.input.value = r; sN.input.value = n;
+        sT.node.querySelector('output').textContent = f1(t) + ' s'; sR.node.querySelector('output').textContent = r + ' tok/s'; sN.node.querySelector('output').textContent = n + ' tok'; drawWait(); };
+
+      function drawWait() {
+        const itl = 1 / wait.tps, e2e = wait.ttft + (wait.n - 1) * itl, tm = e2e * 1.08;
+        const X = (t) => L + (t / tm) * (W - L - R), Y = (k) => T + (1 - k / wait.n) * (H - T - B);
+        const kids = [el('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), stroke: 'var(--line)' }), el('line', { x1: L, x2: L, y1: T, y2: Y(0), stroke: 'var(--line)' })];
+        const step = tm > 60 ? 10 : tm > 20 ? 5 : tm > 6 ? 1 : 0.5;
+        for (let t = 0; t <= tm; t += step) kids.push(el('text', { x: X(t), y: H - 14, 'text-anchor': 'middle', class: 'mute', style: 'font-size:10px', text: f1(t) + 's' }));
+        kids.push(el('text', { x: 4, y: Y(wait.n) + 4, class: 'mute', style: 'font-size:10px', text: wait.n + ' tok' }), el('text', { x: 4, y: Y(0), class: 'mute', style: 'font-size:10px', text: '0' }));
+        kids.push(el('rect', { x: L, y: T, width: X(wait.ttft) - L, height: Y(0) - T, fill: 'var(--warn)', opacity: 0.1 }),
+          el('text', { x: L + 4, y: T + 12, style: 'font-size:11px;fill:var(--warn)', text: 'TTFT' }));
+        kids.push(el('path', { d: `M${X(0)},${Y(0)} L${X(e2e)},${Y(0)} L${X(e2e)},${Y(wait.n)} L${X(tm)},${Y(wait.n)}`, fill: 'none', stroke: 'var(--g2)', 'stroke-width': 2.5 }),
+          el('path', { d: `M${X(0)},${Y(0)} L${X(wait.ttft)},${Y(0)} L${X(wait.ttft)},${Y(1)} L${X(e2e)},${Y(wait.n)} L${X(tm)},${Y(wait.n)}`, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }),
+          el('line', { x1: X(e2e), x2: X(e2e), y1: T, y2: Y(0), stroke: 'var(--ink)', 'stroke-dasharray': '3 3' }),
+          el('text', { x: Math.min(X(e2e) - 4, W - 80), y: T + 12, 'text-anchor': 'end', style: 'font-size:11px', text: 'e2e ' + f1(e2e) + ' s (cả hai xong)' }));
+        svg.replaceChildren(...kids);
+        const saved = e2e - wait.ttft, pct = Math.round((saved / e2e) * 100);
+        wStat.innerHTML = `<span>ITL: <b>${f1(itl * 1000)} ms</b></span><span>Chờ chữ đầu khi stream: <b>${f1(wait.ttft)} s</b></span><span>Khi không stream: <b>${f1(e2e)} s</b></span><span>Stream bớt chờ: <b class="${pct < 30 ? 'bad' : 'ok'}">${f1(saved)} s (${pct}%)</b></span>`;
+        const P = [], box = (c, h) => `<div style="border-left:3px solid ${c};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${h}</div>`;
+        if (pct < 30) P.push(box('var(--warn)', `<b>Stream chỉ bớt được ${pct}% thời gian chờ.</b> Vì sao: TTFT ${f1(wait.ttft)} s chiếm phần lớn e2e, mà stream không rút ngắn TTFT. Không có nghĩa stream vô ích: khách vẫn thấy chữ sớm hơn ${f1(saved)} s và kết nối không im lặng tới cuối. Trong hệ thống thật: giảm TTFT bằng prompt ngắn hơn, prompt caching, model khác hoặc mức reasoning thấp hơn; hiển thị trạng thái "đang suy nghĩ".`));
+        if (e2e > 60) P.push(box('var(--bad)', `<b>Không stream thì kết nối im lặng ${f1(e2e)} s.</b> Vì sao: không có byte nào đi qua cho tới token cuối, vượt idle timeout mặc định 60 s của nginx và ALB (README §3.2). Không có nghĩa stream tự tránh được: stream cũng có khoảng im lặng TTFT ${f1(wait.ttft)} s. Trong hệ thống thật: với request dài, stream (kể cả khi chỉ gom lại bằng helper của SDK) để tránh HTTP timeout, như README khuyên.`));
+        if (!P.length) P.push(box('var(--ok)', `Khách thấy chữ từ giây ${f1(wait.ttft)} thay vì ${f1(e2e)}. Phần lớn thời gian chờ nằm ở pha sinh, đúng chỗ stream giúp được.`));
+        wFlag.innerHTML = P.join('');
+      }
+
+      stage.append(
+        el('h4', { style: 'margin:0 0 6px;font-size:14px', text: 'A. Parser SSE chạy thật trên chuỗi byte bị cắt' }),
+        el('div', { class: 'row' }, [modeSel.node, nSl.node, reseed]),
+        el('div', { class: 'row' }, [eolSel.node, el('label', { class: 'ctl' }, [tr, 'Stream đóng trước dòng trống cuối'])]),
+        el('div', { class: 'hint', style: 'margin:0', text: 'Chunk mà reader.read() trả về:' }), chunkBox, stats, tables, flags,
+        el('h4', { style: 'margin:22px 0 6px;font-size:14px', text: 'B. Thời gian chờ cảm nhận: stream và không stream' }),
+        el('div', { class: 'row' }, [sT.node, sR.node, sN.node]),
+        el('div', { class: 'row' }, [el('button', { text: 'Ví dụ README (0,8 s, 50 tok/s, 1.500 tok)', onclick: () => preset(0.8, 50, 1500) }), el('button', { text: 'Reasoning lâu, trả lời ngắn (giả định)', onclick: () => preset(25, 50, 150) }), el('button', { text: 'Câu trả lời chat ShopViet (giả định)', onclick: () => preset(0.8, 50, 150) })]),
+        svg, el('div', { class: 'legend', html: '<span><i style="background:var(--accent)"></i>Stream</span><span><i style="background:var(--g2)"></i>Không stream</span>' }), wStat, wFlag,
+        el('p', { class: 'hint', text: 'Hình A: chuỗi SSE là mẫu dựng tay theo định dạng trong README §1.2; hai parser là code thật chạy trong trình duyệt (TextDecoder, JSON.parse thật). Hình B: công thức e2e của README §1.1; nút README dùng ví dụ minh hoạ của README, hai nút còn lại là số giả định.' }));
+      draw();
+      drawWait();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

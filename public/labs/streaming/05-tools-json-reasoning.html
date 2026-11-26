@@ -1,0 +1,743 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 05</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-relay-proxy-cdn.html">← Lab trước</a><a href="06-errors-cancel.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flat = (html) => el('div', { class: 'sum', style: 'border:0;margin:0;padding:0', html });
+  const note = (level, html) => el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${level});border-radius:6px;padding:8px 12px;font-size:13.5px;margin-top:8px`, html });
+  const preStyle = 'margin:6px 0;font-size:12px;white-space:pre-wrap;word-break:break-word;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;max-height:320px;overflow:auto';
+  const J = (o) => JSON.stringify(o);
+  const tryParse = (s) => { try { return { ok: true, v: JSON.parse(s) }; } catch (e) { return { ok: false, e: e.message }; } };
+
+  function closeUp(s) {
+    let inStr = false, bs = false; const st = [];
+    for (const ch of s) {
+      if (inStr) { if (bs) bs = false; else if (ch === '\\') bs = true; else if (ch === '"') inStr = false; continue; }
+      if (ch === '"') inStr = true; else if (ch === '{') st.push('}'); else if (ch === '[') st.push(']'); else if (ch === '}' || ch === ']') st.pop();
+    }
+    let t = s; if (bs) t = t.slice(0, -1); if (inStr) t += '"';
+    t = t.replace(/[,:]\s*$/, '');
+    return t + st.reverse().join('');
+  }
+  function repair(s) {
+    if (!s.trim()) return { ok: false, e: 'rỗng' };
+    for (const c of [s, s.replace(/,?\s*"[^"]*"?\s*:?\s*$/, ''), s.replace(/,?\s*"[^"]*"\s*:\s*[^,{}\[\]"]*$/, '')]) { const r = tryParse(closeUp(c)); if (r.ok) return r; }
+    return { ok: false, e: 'không sửa được' };
+  }
+  const ORDER_RE = /^SV-\d+$/;
+  const schemaOk = (v) => v && typeof v === 'object' && typeof v.order_id === 'string' && ORDER_RE.test(v.order_id);
+  const TARGET = { order_id: 'SV-4821', reason: 'đặt nhầm' };
+  const ARGS = J(TARGET).replace('","', '", "').replace(':"', ': "').replace('":"', '": "');
+  const EAGER = ['{"order_id": "SV-4', '8', '21", "rea', 'son": "đặt n', 'hầm"}'];
+  const DEFAULT = ['{"order_id": "SV-4821"', ', "reason": "đặt nhầm"}'];
+  const THINK = ['Khách muốn huỷ đơn SV-4821.', ' huy_don có tác dụng phụ,', ' phải đúng mã đơn.'];
+  const TEXT = ['Mình sẽ huỷ đơn', ' SV-4821 cho bạn.'];
+  const SIG = 'EqQBCkY…(mờ, lưu nguyên)';
+
+  function claudeEvents(o) {
+    const E = [], push = (t, x) => E.push(Object.assign({ type: t }, x));
+    const args = o.eager ? EAGER : DEFAULT;
+    push('message_start', { message: { id: 'msg_01', role: 'assistant', content: [], usage: { input_tokens: 1380 } } });
+    push('content_block_start', { index: 0, content_block: { type: 'thinking', thinking: '' } });
+    (o.omit ? [''] : THINK).forEach((t) => push('content_block_delta', { index: 0, delta: { type: 'thinking_delta', thinking: t } }));
+    push('content_block_delta', { index: 0, delta: { type: 'signature_delta', signature: SIG } });
+    push('content_block_stop', { index: 0 });
+    push('content_block_start', { index: 1, content_block: { type: 'text', text: '' } });
+    TEXT.forEach((t) => push('content_block_delta', { index: 1, delta: { type: 'text_delta', text: t } }));
+    push('content_block_stop', { index: 1 });
+    push('content_block_start', { index: 2, content_block: { type: 'tool_use', id: 'toolu_01', name: 'huy_don', input: {} } });
+    const n = o.end === 'ok' ? args.length : o.eager ? 1 : 1;
+    args.slice(0, o.end === 'cut' ? (o.eager ? 3 : 1) : n).forEach((pj) => push('content_block_delta', { index: 2, delta: { type: 'input_json_delta', partial_json: pj } }));
+    if (o.end === 'cut') return E;
+    push('content_block_stop', { index: 2 });
+    push('message_delta', { delta: { stop_reason: o.end === 'max' ? 'max_tokens' : 'tool_use' }, usage: { output_tokens: o.end === 'max' ? 64 : 71 } });
+    push('message_stop', {});
+    return E;
+  }
+  function openaiEvents(o) {
+    const E = [], push = (t, x) => E.push(Object.assign({ type: t }, x));
+    push('response.created', { response: { id: 'resp_01', status: 'in_progress' } });
+    push('response.output_item.added', { output_index: 0, item: { id: 'rs_01', type: 'reasoning' } });
+    THINK.slice(0, 2).forEach((t) => push('response.reasoning_summary_text.delta', { item_id: 'rs_01', delta: t }));
+    push('response.output_item.done', { output_index: 0, item: { id: 'rs_01', type: 'reasoning', encrypted_content: 'gAAAAB…(mờ)' } });
+    push('response.output_item.added', { output_index: 1, item: { id: 'msg_01', type: 'message' } });
+    TEXT.forEach((t) => push('response.output_text.delta', { item_id: 'msg_01', delta: t }));
+    push('response.output_item.done', { output_index: 1, item: { id: 'msg_01', type: 'message' } });
+    push('response.output_item.added', { output_index: 2, item: { id: 'fc_01', type: 'function_call', call_id: 'call_01', name: 'huy_don', arguments: '' } });
+    const k = o.end === 'ok' ? EAGER.length : o.end === 'cut' ? 3 : 1;
+    EAGER.slice(0, k).forEach((d) => push('response.function_call_arguments.delta', { item_id: 'fc_01', delta: d }));
+    if (o.end === 'cut') return E;
+    if (o.end === 'ok') push('response.function_call_arguments.done', { item_id: 'fc_01', output_index: 2, arguments: EAGER.join('') });
+    push('response.output_item.done', { output_index: 2, item: { id: 'fc_01', type: 'function_call', call_id: 'call_01', name: 'huy_don', arguments: EAGER.slice(0, k).join('') } });
+    if (o.end === 'max') push('response.incomplete', { response: { status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' } } });
+    else push('response.completed', { response: { status: 'completed', usage: { input_tokens: 1380, output_tokens: 71 } } });
+    return E;
+  }
+
+  function step(p, ev, st) {
+    const t = ev.type, B = st.blocks;
+    const blk = (k, type, extra) => { B[k] = Object.assign({ key: k, type, buf: '', closed: false }, extra || {}); st.order.push(k); };
+    if (p === 'claude') {
+      if (t === 'content_block_start') { const cb = ev.content_block; blk(ev.index, cb.type, cb.type === 'tool_use' ? { name: cb.name, id: cb.id } : {}); if (cb.type === 'tool_use') st.status = 'Đang huỷ đơn (huy_don)…'; if (cb.type === 'thinking') st.status = 'Đang suy nghĩ…'; if (cb.type === 'text') st.status = null; }
+      else if (t === 'content_block_delta') { const d = ev.delta, b = B[ev.index]; if (d.type === 'signature_delta') b.sig = d.signature; else b.buf += d.text || d.thinking || d.partial_json || ''; b.deltas = (b.deltas || 0) + 1; }
+      else if (t === 'content_block_stop') B[ev.index].closed = true;
+      else if (t === 'message_delta') st.stop = ev.delta.stop_reason;
+      else if (t === 'message_stop') st.end = true;
+    } else {
+      if (t === 'response.output_item.added') { const it = ev.item, ty = it.type === 'reasoning' ? 'thinking' : it.type === 'message' ? 'text' : 'tool_use'; blk(it.id, ty, it.type === 'function_call' ? { name: it.name, id: it.call_id } : {}); st.status = ty === 'tool_use' ? 'Đang huỷ đơn (huy_don)…' : ty === 'thinking' ? 'Đang suy nghĩ…' : null; }
+      else if (t === 'response.reasoning_summary_text.delta' || t === 'response.output_text.delta' || t === 'response.function_call_arguments.delta') B[ev.item_id].buf += ev.delta;
+      else if (t === 'response.function_call_arguments.done') { B[ev.item_id].full = ev.arguments; }
+      else if (t === 'response.output_item.done') { const b = B[ev.item.id]; b.closed = true; if (ev.item.encrypted_content) b.sig = ev.item.encrypted_content; }
+      else if (t === 'response.completed') { st.stop = 'tool_use'; st.end = true; }
+      else if (t === 'response.incomplete') { st.stop = 'incomplete (' + ev.response.incomplete_details.reason + ')'; st.end = true; }
+    }
+  }
+  const toolKey = (st) => st.order.find((k) => st.blocks[k].type === 'tool_use');
+  const POL = [
+    ['eager', 'A. Ngay khi JSON tự đóng ngoặc parse được và qua schema'],
+    ['stop', 'B. Khi khối tool đóng, JSON.parse chuỗi đầy đủ'],
+    ['safe', 'C. Khối đóng + JSON.parse + schema + stop_reason tool_use']
+  ];
+  function policies(p, evs) {
+    const st = { blocks: {}, order: [] }, res = {};
+    evs.forEach((ev, i) => {
+      step(p, ev, st);
+      const k = toolKey(st); if (k === undefined) return;
+      const b = st.blocks[k];
+      if (!res.eager) { const r = repair(b.buf); if (r.ok && schemaOk(r.v)) res.eager = { i, args: r.v }; }
+      if (!res.stop && b.closed) { const r = tryParse(b.full || b.buf); res.stop = r.ok ? { i, args: r.v } : { i, err: r.e }; }
+      if (!res.safe && b.closed && st.stop) { const r = tryParse(b.full || b.buf); res.safe = r.ok && schemaOk(r.v) && st.stop === 'tool_use' ? { i, args: r.v } : { i, err: !r.ok ? 'JSON không hợp lệ' : st.stop !== 'tool_use' ? 'stop_reason = ' + st.stop : 'sai schema' }; }
+    });
+    return res;
+  }
+  const sameArgs = (a) => a && a.order_id === TARGET.order_id && a.reason === TARGET.reason;
+  const evLabel = (p, ev) => (p === 'claude' ? ev.type + (ev.type === 'message_delta' ? ' (' + ev.delta.stop_reason + ')' : ev.delta ? ' / ' + ev.delta.type : ev.content_block ? ' (' + ev.content_block.type + ')' : '') : ev.type + (ev.item ? ' (' + ev.item.type + ')' : ''));
+  const evBody = (ev) => { const d = ev.delta; if (!d) return ev.content_block ? J(ev.content_block) : ''; return typeof d === 'string' ? J(d) : J(d.text ?? d.thinking ?? d.partial_json ?? d.signature ?? d); };
+
+  return {
+    id: 'tools-json', nav: '5. Tool, JSON, reasoning', ref: '§3.3–3.5',
+    title: 'Tham số đang stream {"order_id": "SV-4 đã là JSON hợp lệ sau khi tự đóng ngoặc, và qua cả schema: chạy huy_don lúc đó là huỷ nhầm đơn',
+    hook: 'Kéo thanh qua từng event của một lượt có thinking, text và tool_use: parser gom từng khối, thử parse tham số dở dang, và ba chính sách thực thi cho thấy lúc nào chúng bấm nút huỷ đơn, với tham số nào.',
+    terms: [
+      ['Tool call', 'Model yêu cầu code của bạn chạy một hàm, kèm tham số JSON. Ví dụ Claude: block tool_use {"name": "huy_don", "input": {"order_id": "SV-4821"}}.'],
+      ['input_json_delta', 'Mảnh chuỗi JSON của tham số tool trong stream Claude, ở field partial_json. Ví dụ ba mảnh "{\\"order_id\\": \\"SV-4", "8", "21\\"}" nối lại mới thành tham số đủ.'],
+      ['content_block_stop', 'Event đóng một khối. Chỉ sau event này tham số tool mới đủ. OpenAI tương đương: response.function_call_arguments.done (có sẵn chuỗi đầy đủ) và response.output_item.done.'],
+      ['Partial JSON parser', 'Parser tự đóng chuỗi và ngoặc còn mở để đọc JSON dở dang. "{\\"order_id\\": \\"SV-4" thành {"order_id": "SV-4"}: hợp lệ cú pháp, sai nội dung.'],
+      ['Tác dụng phụ', 'Tool làm thay đổi thế giới thật: huy_don huỷ đơn, không gọi lại được. Khác tra_don_hang chỉ đọc.'],
+      ['Thinking / reasoning stream', 'Phần suy luận của model đến qua event riêng: thinking_delta (Claude), response.reasoning_summary_text.delta (OpenAI), part có thought: true (Gemini), delta.reasoning_content (Grok).'],
+      ['Signature', 'Chuỗi mờ (không đọc được, kiểu "EqQBCkY…") đến ở signature_delta ngay trước content_block_stop của khối thinking. Coi như hộp kín: không đọc, không sửa, lưu nguyên để gửi lại cùng khối thinking ở lượt sau (README §3.5).'],
+      ['stop_reason (lý do dừng)', 'Model cho biết vì sao nó ngừng viết, ở message_delta (Claude) hoặc status của response (OpenAI). Ví dụ: "tool_use" = dừng để chờ bạn chạy tool; "end_turn" = trả lời xong; "max_tokens" = chạm giới hạn độ dài, câu bị cắt giữa chừng.'],
+      ['max_tokens', 'Số token output tối đa bạn đặt trong request (token: mẩu chữ vài ký tự mà model viết và tính tiền theo). Model chạm giới hạn thì dừng ngay, kể cả giữa một chuỗi JSON như {"order_id": "SV-48.'],
+      ['eager_input_streaming', 'Cờ trên từng tool của Claude. Mặc định Claude buffer và kiểm tra từng giá trị tham số rồi mới gửi; bật cờ thì nhận mảnh JSON ngay khi model sinh, có thể dở hoặc không hợp lệ.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b>: khách gõ "Huỷ đơn SV-4821 giúp mình, mình đặt nhầm." Trợ lý (reasoning model) suy nghĩ, viết "Mình sẽ huỷ đơn SV-4821 cho bạn.", rồi gọi <code>huy_don({"order_id": "SV-4821", "reason": "đặt nhầm"})</code>. Tool có tác dụng phụ.',
+      scenario: 'Để giao diện "nhanh", đội frontend chạy tool ngay khi tham số parse được. Thỉnh thoảng có đơn SV-4, SV-48 bị huỷ dù không ai yêu cầu; log thì cho thấy JSON hợp lệ và qua schema.',
+      ask: 'Lúc nào thì tham số tool đã đủ để chạy? Partial JSON dùng được vào việc gì? Phần thinking và signature phải xử lý thế nào khi stream?',
+      solves: 'Hình chính sinh luồng event theo README (Claude hoặc OpenAI Responses), parser gom theo khối, và ba chính sách thực thi chạy song song trên cùng luồng: bảng cho biết mỗi chính sách bấm nút ở event nào, với tham số nào.',
+      read: [
+        'Chọn provider, bật / tắt <b>eager_input_streaming</b> (chỉ Claude) và <b>display: omitted</b> cho thinking.',
+        'Chọn <b>Kết thúc</b>: bình thường, <b>max_tokens cắt giữa tham số</b>, hoặc <b>đứt kết nối giữa tool call</b>.',
+        'Kéo <b>Đã nhận event</b>. Cột trái: event mới nhất được tô. Cột phải: khối đang gom, chuỗi tham số, kết quả JSON.parse thật và kết quả parser tự đóng ngoặc.',
+        'Bảng chính sách: ô đỏ là chạy tool với tham số sai hoặc chạy khi không nên. Khung "Màn hình" là thứ người dùng thấy; khung "Lưu vào lịch sử" là thứ được gửi lại ở lượt sau.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Tool call khi stream (README §3.3)</h4>
+<ul><li><b>Thời gian chạy tool là khoảng im lặng của stream.</b> Phát event <code>status</code> ("Đang tra cứu đơn hàng…") ngay khi biết tên tool: <code>response.output_item.added</code> (OpenAI), <code>content_block_start</code> (Claude), <code>step.start</code> (Gemini Interactions). Duy trì heartbeat trong lúc tool chạy.</li>
+<li><b>Tool phía server có event tiến trình riêng:</b> <code>response.web_search_call.searching</code>, <code>response.code_interpreter_call.interpreting</code>.</li>
+<li><b>Chỉ thực thi sau <code>content_block_stop</code> / <code>.done</code></b> (README §3.11: "Tool chạy với tham số sai").</li>
+<li><b>Đứt kết nối giữa tool call:</b> bỏ tool call dở, không lưu, không thực thi; tool call không có kết quả trong lịch sử làm request sau trả <code>400</code>.</li></ul>
+<h4>Structured output khi stream (README §3.4)</h4>
+<ul><li>Partial object chỉ để hiển thị; Vercel AI SDK ghi partial object (<code>DeepPartial</code>) không validate được, còn <code>elementStream</code> của <code>Output.array()</code> chỉ phát phần tử đã hoàn chỉnh và đã validate.</li>
+<li>Validate một lần, sau event kết thúc; dừng vì <code>max_tokens</code> / <code>length</code> / <code>incomplete</code> thì JSON chắc chắn không đủ, xử lý như lỗi.</li>
+<li>UI không cần xem trước thì đừng stream JSON: dùng helper gom kết quả.</li></ul>
+<h4>Reasoning khi stream (README §3.5)</h4>
+<div class="tbl"><table><tr><th>Provider</th><th>Event suy luận</th><th>Lưu ý</th></tr>
+<tr><td>OpenAI Responses</td><td><code>response.reasoning_summary_text.delta</code>, <code>response.reasoning_text.delta</code></td><td>Reasoning item để gửi lại lấy từ <code>response.output_item.done</code></td></tr>
+<tr><td>Claude</td><td><code>thinking_delta</code>, rồi <code>signature_delta</code> trước <code>content_block_stop</code></td><td><code>display: "omitted"</code>: không có văn bản nhưng vẫn có block và signature</td></tr>
+<tr><td>Gemini</td><td>Part có <code>thought: true</code> khi bật <code>includeThoughts</code></td><td>Số token ở <code>thoughtsTokenCount</code></td></tr>
+<tr><td>Grok</td><td><code>delta.reasoning_content</code></td><td></td></tr></table></div>
+<p>Kết nối có thể im lặng lâu (heartbeat + <code>status: thinking</code> bắt buộc); lưu message SDK gom được (<code>get_final_message()</code>, <code>response.output</code>), không dựng lịch sử từ chữ đã hiển thị; hiển thị suy luận khác câu trả lời.</p>
+<div class="verdict"><b>Quy tắc chung:</b> mọi thứ dở dang chỉ để xem. Quyết định, gọi API, ghi database chỉ sau khi khối đã đóng, JSON parse được, qua schema, và event kết thúc mang lý do dừng đúng.</div>`,
+    why: {
+      c: 'Gom theo khối; hiện <code>status</code> ngay khi có tên tool; hiện tham số dở dang chỉ như bản xem trước; thực thi tool có tác dụng phụ sau khi khối đóng, JSON parse được, qua schema và lý do dừng là tool_use; lưu nguyên message SDK gom được (kể cả thinking + signature).',
+      s: 'Chạy tool khi partial parser trả object hợp lệ (đúng cú pháp, đúng schema, sai nội dung). "Sửa" JSON bị cắt bởi max_tokens cho xong. Dựng lịch sử từ chữ đã hiển thị (mất signature, mất reasoning item). Lưu tool call dở dang khi đứt kết nối.',
+      p: 'Tool chạy muộn hơn một chút: chờ khối đóng rồi chờ thêm event mang lý do dừng, thường chỉ vài event sau (hình chính đếm đúng số event chênh); README không cho con số ms; cần heartbeat và trạng thái cho khoảng im lặng lúc suy nghĩ và lúc chạy tool; lưu trữ nặng hơn vì giữ nguyên block thinking và signature.'
+    },
+    deep: [
+      {
+        q: 'Tên tool đến ngay ở event mở khối, còn tham số đến sau. Biết tên sớm để làm gì?',
+        a: `<p>Để lấp khoảng im lặng. Trong vòng lặp agent, sau khi model trả tool call, backend chạy tool rồi gọi model lần nữa; trong lúc đó không có token nào đi xuống client (README §3.3). Biết tên tool từ <code>content_block_start</code> / <code>response.output_item.added</code> / <code>step.start</code>, backend phát ngay <code>status</code> "Đang huỷ đơn…" và giữ heartbeat suốt lúc tool chạy.</p>
+<p>Kéo thời gian tool chạy: hình tính khoảng màn hình đứng yên và khoảng không có byte nào trên dây, so với idle timeout 60 giây của nginx / ALB (README §3.2).</p>`,
+        viz(box) {
+          const S = { run: 70, status: false, hb: false }, out = el('div');
+          function draw() {
+            const still = S.status ? 0 : S.run, gap = S.hb ? Math.min(15, S.run) : S.status ? S.run : S.run;
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Màn hình đứng yên không lời giải thích: <b class="${still > 3 ? 'bad' : 'ok'}">${still} s</b></span><span>Khoảng không có byte trên dây: <b class="${gap > 60 ? 'bad' : 'ok'}">${gap} s</b></span>` }),
+              gap > 60 ? note('bad', `<b>Status chỉ gửi một lần lúc bắt đầu, sau đó ${S.run} giây không có byte: nginx / ALB cắt ở giây 60.</b> Không có nghĩa tool lỗi. Trong hệ thống thật: status cho người dùng, heartbeat cho proxy; hai việc khác nhau.`) : still > 3 ? note('warn', `<b>Người dùng nhìn ${still} giây mà không biết chuyện gì.</b> Hay bấm tải lại, tạo thêm request tốn tiền. Trong hệ thống thật: phát <code>status</code> ngay ở event mở khối tool.`) : note('ok', 'Có nhãn trạng thái và có byte đều trên dây.'));
+          }
+          const tg = (k, t) => { const c = el('input', { type: 'checkbox' }); c.addEventListener('change', () => { S[k] = c.checked; draw(); }); return el('label', { class: 'ctl' }, [c, t]); };
+          box.append(el('div', { class: 'row' }, [slider('Tool chạy (s)', 1, 180, 1, S.run, (v) => { S.run = v; draw(); }, String).node, tg('status', 'Phát status khi có tên tool'), tg('hb', 'Heartbeat 15 s')]), out, el('div', { class: 'cap', text: 'Thời gian tool chạy là giả định; 60 s là timeout mặc định nginx / ALB theo README §3.2.' })); draw();
+        },
+        take: 'Tên tool đến sớm để báo trạng thái; heartbeat giữ kết nối trong lúc tool chạy.'
+      },
+      {
+        q: 'Partial parser trả về {"order_id": "SV-4"} hợp lệ, qua cả schema. Sao không chạy luôn cho nhanh?',
+        a: `<p>Vì "hợp lệ" ở đây chỉ là cú pháp. Parser JSON dở dang tự đóng chuỗi và ngoặc còn mở, nên mọi tiền tố của <code>{"order_id": "SV-4821"}</code> đều thành một JSON đúng: <code>"SV-4"</code>, <code>"SV-48"</code>, <code>"SV-482"</code>. Schema kiểu <code>^SV-\\d+$</code> cũng không phân biệt được. README §1.4 có đúng ví dụ này: <code>{"order_id": "DH-2"</code> thêm <code>}</code> là JSON đúng cú pháp nhưng sai mã đơn.</p>
+<p>Kéo điểm cắt qua chuỗi tham số: trình duyệt chạy <code>JSON.parse</code> thật, parser tự đóng ngoặc, và kiểm tra schema.</p>`,
+        viz(box) {
+          const out = el('div');
+          function draw(n) {
+            const part = ARGS.slice(0, n), s = tryParse(part), r = repair(part), sc = r.ok && schemaOk(r.v);
+            const wrong = sc && !sameArgs(r.v) && r.v.order_id !== TARGET.order_id;
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: part + '▌' }),
+              el('div', { class: 'stat', html: `<span>JSON.parse: <b class="${s.ok ? 'ok' : 'bad'}">${s.ok ? 'được' : 'lỗi'}</b></span><span>Tự đóng ngoặc: <b>${r.ok ? esc(J(r.v)) : esc(r.e)}</b></span><span>Qua schema ^SV-\\d+$: <b class="${sc ? 'ok' : 'bad'}">${sc ? 'có' : 'không'}</b></span><span>huy_don sẽ huỷ: <b class="${wrong ? 'bad' : sc ? 'ok' : ''}">${sc ? esc(r.v.order_id) : '—'}</b></span>` }),
+              wrong ? note('bad', `<b>JSON hợp lệ, qua schema, và huỷ đơn ${esc(r.v.order_id)} thay vì SV-4821.</b> Chuỗi mới đến ${n} / ${ARGS.length} ký tự. Không có nghĩa model sinh sai: model chưa sinh xong. Trong hệ thống thật: không thực thi trước <code>content_block_stop</code> / <code>function_call_arguments.done</code>; với tool có tác dụng phụ, chờ cả event kết thúc.`) : sc && n < ARGS.length ? note('warn', `<b>Mã đơn đã đúng nhưng "reason" còn dở.</b> Ở điểm này chạy tool thì đúng đơn nhưng lưu lý do cụt. Không có cách nào từ chuỗi dở biết được nó đã đủ.`) : n === ARGS.length ? note('ok', 'Chuỗi đầy đủ: JSON.parse được không cần sửa.') : null);
+          }
+          box.append(slider('Ký tự đã nhận', 1, ARGS.length, 1, 18, draw, (v) => v + ' / ' + ARGS.length).node, out, el('div', { class: 'cap', text: 'Schema ^SV-\\d+$ là giả định của lab cho mã đơn ShopViet.' })); draw(18);
+        },
+        take: 'Partial JSON trả lời "đến giờ model viết gì", không trả lời "model muốn gì". Chỉ hành động khi khối đã đóng.'
+      },
+      {
+        q: 'Model gọi hai tool song song, delta đến xen kẽ. Gom thế nào cho đúng?',
+        a: `<p>Gom theo khoá, không theo thứ tự nhận (README §1.4). Với Chat Completions, delta đầu tiên của mỗi tool call có <code>id</code> và <code>function.name</code>, các delta sau chỉ có mảnh <code>function.arguments</code>; khoá đúng là <code>tool_calls[i].index</code> (README §2.2). Claude gom theo <code>index</code> của block, OpenAI Responses theo <code>item_id</code> / <code>output_index</code>.</p>
+<p>Ví dụ: khách hỏi "SV-4821 tới đâu rồi, và MLN-A3 ở Quận 1 còn không?". Hình dưới gom cùng các delta theo hai cách.</p>`,
+        viz(box) {
+          let key = 'id'; const out = el('div'), btns = el('div', { class: 'row' });
+          const D = [{ index: 0, id: 'call_01', function: { name: 'tra_don_hang', arguments: '' } }, { index: 1, id: 'call_02', function: { name: 'kiem_kho', arguments: '' } }, { index: 0, function: { arguments: '{"order_id": "SV-' } }, { index: 1, function: { arguments: '{"sku": "MLN-A3", ' } }, { index: 0, function: { arguments: '4821"}' } }, { index: 1, function: { arguments: '"store": "Q1"}' } }];
+          function draw() {
+            btns.replaceChildren(...[['id', 'Gom theo id'], ['index', 'Gom theo index']].map(([k, t]) => el('button', { class: k === key ? 'on' : '', text: t, onclick: () => { key = k; draw(); } })));
+            const g = {}; D.forEach((d) => { const k = key === 'index' ? d.index : (d.id || '(không có id)'); const c = g[k] = g[k] || { name: '', args: '' }; if (d.function.name) c.name = d.function.name; c.args += d.function.arguments; });
+            const rows = Object.entries(g).map(([k, c]) => { const r = tryParse(c.args); return [k, c.name || '(không tên)', c.args, r.ok]; });
+            const bad = rows.some((r) => !r[3] || r[1] === '(không tên)');
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: D.map((d) => 'tool_calls: ' + J([d])).join('\n') }),
+              flat('<div class="tbl"><table><tr><th>Khoá</th><th>Tên</th><th>arguments gom được</th><th>JSON.parse</th></tr>' + rows.map(([k, n, a, ok]) => `<tr${ok && n !== '(không tên)' ? '' : ' class="cur"'}><td>${esc(k)}</td><td>${esc(n)}</td><td><code>${esc(a)}</code></td><td class="${ok ? 'ok' : 'bad'}">${ok ? 'được' : 'lỗi'}</td></tr>`).join('') + '</table></div>'),
+              bad ? note('bad', '<b>Gom theo id: các mảnh sau không có id nên dồn chung vào một khoá "(không có id)", tên rỗng, JSON là hai nửa của hai tool trộn lẫn.</b> Không có nghĩa model gọi sai. Trong hệ thống thật: khoá là <code>index</code> với Chat Completions; test adapter bằng response có hai tool call song song.') : note('ok', 'Gom theo index: hai tool, mỗi tool một JSON đầy đủ.'));
+          }
+          box.append(btns, out); draw();
+        },
+        take: 'Gom theo index / item_id. id chỉ có ở delta đầu tiên.'
+      },
+      {
+        q: 'OpenAI Responses có function_call_arguments.done. Vậy còn cần tự nối delta không?',
+        a: `<p>Không bắt buộc. <code>response.function_call_arguments.done</code> có sẵn chuỗi <code>arguments</code> đầy đủ kèm <code>item_id</code>, <code>output_index</code>; tên function nằm trong item của <code>response.output_item.added</code> (README §2.2). Delta chỉ cần nếu muốn hiển thị tham số đang điền.</p>
+<p>Hai điểm cùng họ cần nhớ: <b>reasoning item lấy từ <code>response.output_item.done</code>, không lấy từ <code>.added</code></b>, vì <code>encrypted_content</code> có thể chưa đầy đủ khi item còn đang chạy; và <b>thứ tự event giữa các item không được cam kết</b>, đừng giả định text luôn đến sau function call hay ngược lại. Chọn <b>OpenAI Responses</b> ở hình chính: chính sách B đọc từ <code>.done</code>.</p>
+<p>Với Claude, mặc định tham số được buffer và kiểm tra từng giá trị trước khi gửi xuống, nên mảnh đến theo từng giá trị trọn vẹn; bật <code>eager_input_streaming: true</code> thì mảnh đến ngay khi model sinh, có thể dở hoặc không hợp lệ, nhất là khi dừng vì <code>max_tokens</code> (README §2.3).</p>`,
+        take: 'OpenAI: đọc tham số từ .done, reasoning item từ output_item.done. Claude: eager cho mảnh mịn hơn, rủi ro JSON dở cao hơn.'
+      },
+      {
+        q: 'Structured output stream dần thì hiển thị partial object được không?',
+        a: `<p>Được, <b>chỉ để hiển thị</b> (README §3.4). Partial object không validate được theo schema: Vercel AI SDK gọi nó là <code>DeepPartial</code>. Ngược lại, <code>elementStream</code> của <code>Output.array()</code> chỉ phát phần tử đã hoàn chỉnh và đã qua validate.</p>
+<p>Ví dụ: ShopViet stream bảng so sánh hai laptop dạng JSON. Kéo điểm cắt: số đang stream cũng là "giá trị hợp lệ", chỉ là chưa đủ chữ số.</p>`,
+        viz(box) {
+          const out = el('div');
+          const DATA = [{ sku: 'ZB14', name: 'Zenbook 14', price: 24990000 }, { sku: 'XPS13', name: 'XPS 13', price: 32490000 }];
+          const S = J(DATA);
+          const money = (v) => (typeof v === 'number' ? v.toLocaleString('vi-VN') + 'đ' : '…');
+          function draw(n) {
+            const part = S.slice(0, n), r = repair(part), arr = r.ok && Array.isArray(r.v) ? r.v : [];
+            const complete = []; let depth = 0, start = -1, inStr = false, bs = false;
+            for (let i = 0; i < part.length; i++) { const ch = part[i]; if (inStr) { if (bs) bs = false; else if (ch === '\\') bs = true; else if (ch === '"') inStr = false; continue; } if (ch === '"') inStr = true; else if (ch === '{') { if (depth === 1) start = i; depth++; } else if (ch === '}') { depth--; if (depth === 1 && start >= 0) { const o = tryParse(part.slice(start, i + 1)); if (o.ok && typeof o.v.price === 'number' && o.v.sku && o.v.name) complete.push(o.v); } } else if (ch === '[') depth++; else if (ch === ']') depth--; }
+            const lastPrice = arr.length ? arr[arr.length - 1].price : undefined, idx = arr.length - 1;
+            const shortNum = typeof lastPrice === 'number' && DATA[idx] && lastPrice !== DATA[idx].price;
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: part + '▌' }),
+              el('div', { class: 'cols' }, [el('div', {}, [el('h4', { text: 'Partial object (DeepPartial)' }), flat('<div class="tbl"><table><tr><th>Máy</th><th>Giá</th></tr>' + arr.map((p) => `<tr${p === arr[idx] && shortNum ? ' class="cur"' : ''}><td>${esc(p.name || '…')}</td><td>${money(p.price)}</td></tr>`).join('') + '</table></div>')]),
+                el('div', {}, [el('h4', { text: 'elementStream (phần tử đủ)' }), flat('<div class="tbl"><table><tr><th>Máy</th><th>Giá</th></tr>' + complete.map((p) => `<tr><td>${esc(p.name)}</td><td>${money(p.price)}</td></tr>`).join('') + '</table></div>')])]),
+              shortNum ? note('bad', `<b>Partial object báo ${esc(arr[idx].name || 'máy')} giá ${money(lastPrice)}.</b> Số ${DATA[idx].price} mới đến ${String(lastPrice).length} chữ số, và một số dở vẫn là số hợp lệ. Hiển thị thì chấp nhận được (sẽ tự sửa ở delta sau); dùng để tính tiền, so giá, ghi database thì sai. Trong hệ thống thật: quyết định trên phần tử đã đủ (elementStream) hoặc trên object cuối sau event kết thúc.`) : null);
+          }
+          box.append(slider('Ký tự đã nhận', 1, S.length, 1, 46, draw, (v) => v + ' / ' + S.length).node, out, el('div', { class: 'cap', text: 'Giá laptop là số minh hoạ. elementStream ở đây mô phỏng: chỉ đưa phần tử đã đóng ngoặc và có đủ field.' })); draw(46);
+        },
+        take: 'Partial object để xem; quyết định trên phần tử đủ hoặc object cuối.'
+      },
+      {
+        q: 'Stream dừng vì max_tokens giữa JSON. Sửa cho xong rồi dùng tiếp được không?',
+        a: `<p>Không. README §3.4: nếu stream dừng với <code>max_tokens</code> / <code>length</code> / <code>incomplete</code>, JSON chắc chắn không đầy đủ, xử lý như lỗi, đừng cố sửa. Lý do là parser "sửa" luôn tạo ra một JSON hợp lệ, và JSON đó có thể qua schema: mảng ngắn hơn, chuỗi cụt, số thiếu chữ số. Phải quyết định bằng <b>lý do dừng</b>, không bằng "parse được hay không".</p>`,
+        viz(box) {
+          let n = 3; const out = el('div');
+          const ITEMS = ['Zenbook 14', 'XPS 13', 'MacBook Air 13', 'ThinkPad X1', 'Galaxy Book4'];
+          function draw() {
+            const full = J({ top: ITEMS.map((x) => ({ name: x })) }), cut = Math.round(full.length * n / ITEMS.length) - 7, part = full.slice(0, cut), r = repair(part);
+            const ok = r.ok && Array.isArray(r.v.top) && r.v.top.every((x) => typeof x.name === 'string' && x.name.length > 0);
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: part + '   ← stop_reason: max_tokens' }),
+              el('div', { class: 'stat', html: `<span>Sau khi sửa: <b>${r.ok ? esc(J(r.v)) : esc(r.e)}</b></span><span>Qua schema (mảng, mỗi phần tử có name): <b class="${ok ? 'bad' : 'ok'}">${ok ? 'có' : 'không'}</b></span>` }),
+              ok ? note('bad', `<b>JSON "sửa" xong qua schema, nhưng là ${r.v.top.length} / ${ITEMS.length} máy${r.v.top.length && !ITEMS.includes(r.v.top[r.v.top.length - 1].name) ? ', máy cuối tên cụt "' + esc(r.v.top[r.v.top.length - 1].name) + '"' : ''}.</b> Không có nghĩa model chỉ muốn trả ít hơn. Trong hệ thống thật: thấy <code>max_tokens</code> thì báo lỗi / tăng giới hạn và gửi lại; không sửa.`) : note('warn', 'Ở điểm cắt này parser không sửa được hoặc schema bắt được. May mắn, không phải quy tắc: quyết định theo stop_reason.'));
+          }
+          box.append(slider('Cắt quanh phần tử', 1, ITEMS.length, 1, n, (v) => { n = v; draw(); }, String).node, out); draw();
+        },
+        take: 'Lý do dừng quyết định, không phải parse được hay không.'
+      },
+      {
+        q: 'Reasoning model suy nghĩ cả phút. Stream thấy gì trong lúc đó?',
+        a: `<p>Tuỳ provider và cấu hình: có thể là tóm tắt suy luận (OpenAI <code>response.reasoning_summary_text.delta</code>), văn bản suy luận (Claude <code>thinking_delta</code>), hoặc không có gì. Claude với <code>display: "omitted"</code>: khối thinking chỉ nhận một <code>thinking_delta</code> rỗng rồi tới signature. Khi không có gì được stream, client không nhận token nào suốt lúc model suy nghĩ (README §3.5).</p>
+<p>Hình dưới: cùng 90 giây suy nghĩ, hai cách hiển thị. Phần suy luận hiển thị nên trình bày khác câu trả lời (thu gọn, chữ mờ): nó không phải câu trả lời, và có thể không phản ánh đầy đủ những gì model đã làm.</p>`,
+        viz(box) {
+          const S = { think: 90, omit: true, hb: false }, out = el('div');
+          function draw() {
+            const gap = S.hb ? Math.min(15, S.think) : S.omit ? S.think : Math.min(S.think, 8);
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Khoảng dài nhất không có byte: <b class="${gap > 60 ? 'bad' : 'ok'}">${gap} s</b></span><span>Người dùng thấy: <b>${S.omit ? 'không có chữ suy luận' : 'tóm tắt suy luận chạy dần'}</b></span>` }),
+              gap > 60 ? note('bad', `<b>${gap} giây không byte nào: nginx / ALB (60 s) cắt trước khi có chữ đầu tiên.</b> Không có nghĩa model treo. Trong hệ thống thật: heartbeat của backend + event <code>status: thinking</code> là bắt buộc, kể cả khi provider có stream tóm tắt (tóm tắt có thể thưa).`) : note('ok', 'Không có khoảng trống quá 60 giây.'));
+          }
+          const tg = (k, t, v) => { const c = el('input', { type: 'checkbox' }); c.checked = v; c.addEventListener('change', () => { S[k] = c.checked; draw(); }); return el('label', { class: 'ctl' }, [c, t]); };
+          box.append(el('div', { class: 'row' }, [slider('Suy nghĩ (s)', 5, 240, 5, S.think, (v) => { S.think = v; draw(); }, String).node, tg('omit', 'display: omitted (không stream chữ suy luận)', true), tg('hb', 'Heartbeat 15 s', false)]), out, el('div', { class: 'cap', text: 'Giả định: khi stream tóm tắt, mỗi đoạn tóm tắt cách nhau tối đa 8 s (README không ghi tần suất).' })); draw();
+        },
+        take: 'Suy nghĩ là khoảng im lặng dài nhất của stream. Heartbeat + status, đừng trông vào tóm tắt.'
+      },
+      {
+        q: 'Đã hiển thị đủ chữ cho khách rồi, sao không lưu đúng chữ đó làm lịch sử?',
+        a: `<p>Vì chữ hiển thị thiếu những thứ model cần ở lượt sau: khối thinking và <b>signature</b> (Claude), reasoning item và <code>encrypted_content</code> (OpenAI). README §3.5: signature và encrypted content phải được lưu nguyên; hãy lưu message mà SDK gom được (<code>get_final_message()</code>, <code>response.output</code>). README §3.6 quy tắc 4: không lưu block thinking thiếu signature vào lịch sử.</p>
+<p>Signature đến ở <code>signature_delta</code>, <b>ngay trước</b> <code>content_block_stop</code> của khối thinking. Stream đứt trước event đó thì khối thinking không có signature.</p>`,
+        viz(box) {
+          const S = { src: 'sdk', sig: true }, out = el('div');
+          function draw() {
+            const thinking = { type: 'thinking', thinking: THINK.join('') }; if (S.sig) thinking.signature = SIG;
+            const content = S.src === 'ui' ? [{ type: 'text', text: TEXT.join('') }] : [thinking, { type: 'text', text: TEXT.join('') }, { type: 'tool_use', id: 'toolu_01', name: 'huy_don', input: TARGET }];
+            const hasTh = content.some((c) => c.type === 'thinking'), noSig = hasTh && !content.find((c) => c.type === 'thinking').signature;
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: J({ role: 'assistant', content }).replace(/,"/g, ', "') }),
+              S.src === 'ui' ? note('bad', '<b>Lịch sử chỉ còn chữ đã hiển thị: mất khối thinking, signature và cả tool_use.</b> Lượt sau model không thấy phần suy luận trước tool call; tool_result gửi lại không còn tool_use để ghép. Trong hệ thống thật: lưu message SDK gom được, không dựng từ UI (README §3.5, Tool Use §1.6).') : noSig ? note('bad', '<b>Khối thinking không có signature: stream đứt trước signature_delta.</b> Không có nghĩa model không suy nghĩ. Trong hệ thống thật: không lưu khối này vào lịch sử (README §3.6 quy tắc 4); với tool_use dở cũng vậy.') : note('ok', 'Message đầy đủ: thinking + signature, text, tool_use.'));
+          }
+          const c = el('input', { type: 'checkbox' }); c.checked = true; c.addEventListener('change', () => { S.sig = c.checked; draw(); });
+          box.append(el('div', { class: 'row' }, [select('Dựng lịch sử từ', [['sdk', 'Message SDK gom (get_final_message)'], ['ui', 'Chữ đã hiển thị cho khách']], S.src, (v) => { S.src = v; draw(); }).node, el('label', { class: 'ctl' }, [c, 'Đã nhận signature_delta'])]), out); draw();
+        },
+        take: 'Lịch sử là message SDK gom được, không phải chữ trên màn hình.'
+      },
+      {
+        q: 'Đứt kết nối ngay giữa tool call: có nên lưu tool_use dở rồi lượt sau model tự xử lý?',
+        a: `<p>Không. README §3.3: bỏ tool call dở dang, không lưu vào lịch sử, không thực thi. Tool call không có kết quả trong lịch sử sẽ làm request sau trả <code>400</code>. Và nếu đã thực thi theo tham số dở (chính sách A ở hình chính), đơn có thể đã bị huỷ nhầm trong khi lịch sử không có dấu vết nào.</p>`,
+        viz(box) {
+          let save = true; const out = el('div');
+          function draw() {
+            const asst = [{ type: 'text', text: TEXT.join('') }]; if (save) asst.push({ type: 'tool_use', id: 'toolu_01', name: 'huy_don', input: '{"order_id": "SV-48' });
+            const next = [{ role: 'assistant', content: asst }, { role: 'user', content: 'Sao chưa thấy huỷ?' }];
+            const orphan = asst.some((c) => c.type === 'tool_use') && !(typeof next[1].content !== 'string' && next[1].content.some((c) => c.type === 'tool_result'));
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: J(next).replace(/,"/g, ', "') }),
+              orphan ? note('bad', '<b>Request sau: 400.</b> tool_use toolu_01 không có tool_result đi kèm, và input của nó còn là chuỗi JSON dở. Không có nghĩa phải xoá cả lượt: phần text vẫn giữ được. Trong hệ thống thật: khi stream đứt, bỏ khối tool_use chưa đóng, hiển thị "bị gián đoạn", cho khách thử lại.') : note('ok', 'Chỉ giữ phần text đã đóng: request sau hợp lệ, model có thể gọi lại tool từ đầu.'));
+          }
+          const c = el('input', { type: 'checkbox' }); c.checked = true; c.addEventListener('change', () => { save = c.checked; draw(); });
+          box.append(el('label', { class: 'ctl' }, [c, 'Lưu cả tool_use dở vào lịch sử']), out); draw();
+        },
+        take: 'Khối chưa đóng không tồn tại: không chạy, không lưu.'
+      }
+    ],
+    poc: {
+      goal: "Arguments của tool <code>huy_don</code> đến từng mảnh. Một parser JSON dở dang \"sửa\" từng mảnh thành JSON, rồi <code>jsonschema</code> thật validate theo schema có pattern <code>^SV-\\d+$</code>. Sau đó ghép cả message Claude có thinking, block <code>fallback</code> không delta, text và tool_use.",
+      file: "docs/streaming/pocs/05_tools_json_reasoning.py",
+      run: "uv run docs/streaming/pocs/05_tools_json_reasoning.py",
+      needs: "Không cần key hay server: thuần Python + <code>jsonschema</code>, dưới 1 giây.<br><b>Cái gì giả lập, cái gì đo thật.</b> Giả lập: <b>toàn bộ</b> chuỗi event (5 mảnh arguments, khối thinking, signature, block <code>fallback</code>, stop_reason <code>max_tokens</code>) là kịch bản viết tay theo README §2.3, §3.3–3.5; không có model, không có API, không có SDK; parser JSON dở dang là hàm tự viết trong POC, không phải thư viện. Chạy thật: hàm đó và <code>jsonschema</code> thật trên các mảnh ấy, nên dòng \"qua schema: CÓ\" là kết quả thật. POC chứng minh tính chất của partial parser + schema; nó không chứng minh Claude thật cắt mảnh đúng như vậy.",
+      output: "=== 1. Mảnh arguments của huy_don đến từng phần (eager_input_streaming): parse dở dang + validate schema\nmảnh | đã nhận                                        | parse dở dang                                    | qua schema | block đã đóng\n   1 | {\"order_id\": \"SV-4                             | {\"order_id\": \"SV-4\"}                             | CÓ         | chưa\n   2 | {\"order_id\": \"SV-48                            | {\"order_id\": \"SV-48\"}                            | CÓ         | chưa\n   3 | {\"order_id\": \"SV-4821\", \"rea                   | {\"order_id\": \"SV-4821\"}                          | CÓ         | chưa\n   4 | {\"order_id\": \"SV-4821\", \"reason\": \"đặt n       | {\"order_id\": \"SV-4821\", \"reason\": \"đặt n\"}       | CÓ         | chưa\n   5 | {\"order_id\": \"SV-4821\", \"reason\": \"đặt nhầm\"}  | {\"order_id\": \"SV-4821\", \"reason\": \"đặt nhầm\"}    | CÓ         | chưa (chờ content_block_stop)\nMảnh 1 cho {\"order_id\": \"SV-4\"}: đúng kiểu, đúng pattern ^SV-\\d+$, nhưng là đơn khác. Schema không phân biệt được dở hay đủ.\n\n=== 2. Ghép cả message: thinking + block fallback (không có delta) + text + tool_use\nghép theo content_block_start (đúng): 4 block ['thinking', 'fallback', 'text', 'tool_use'], stop_reason=tool_use\n   thinking giữ signature: 'EqQBCgIYAh…'; thực thi: [('huy_don', {'order_id': 'SV-4821', 'reason': 'đặt nhầm'})]\ntạo block ở delta đầu tiên (giả định block nào cũng có delta): lỗi KeyError 1 ở content_block_stop của block fallback\n\n=== 3. Stream dừng vì max_tokens sau mảnh 3\nđã nhận '{\"order_id\": \"SV-4821\", \"rea', block đóng = False, stop_reason = max_tokens\nsửa JSON → {'order_id': 'SV-4821'}, qua schema = True; code đúng thực thi: không gì cả\n\nRút ra: mọi bản JSON dở dang đều có thể 'sửa' thành hợp lệ và qua schema, kể cả mã đơn sai SV-4. Chỉ thực thi khi block đã đóng và stop_reason là tool_use; block không có delta (fallback) phải được xử lý.",
+      measured: true,
+      read: ["Mảnh 1 cho <code>{\"order_id\": \"SV-4\"}</code> và qua schema: đúng kiểu, đúng pattern, nhưng là đơn khác. Cả 5 bản dở dang đều qua schema, nên schema không cho biết JSON đã đủ chưa.", "Phần 2: ghép theo <code>content_block_start</code> giữ được signature của thinking và chỉ thực thi tool một lần; parser tạo block ở delta đầu tiên lỗi <code>KeyError</code> ở block <code>fallback</code>.", "Phần 3: dừng vì <code>max_tokens</code> sau mảnh 3, JSON sửa được thành <code>{'order_id': 'SV-4821'}</code> và qua schema, nhưng code đúng không thực thi vì block chưa đóng và stop_reason không phải <code>tool_use</code>."]
+    },
+    mount(stage) {
+      const S = { p: 'claude', eager: true, omit: false, end: 'ok' };
+      const pills = el('div', { class: 'row' }), opts = el('div', { class: 'row' }), scrub = el('div'), left = el('div'), right = el('div'), pol = el('div'), ui = el('div'), hist = el('div'), notes = el('div');
+      let EVS = [];
+      const card = (small, body, css) => el('div', { class: 'ch', style: 'font-size:12px;word-break:break-word;' + (css || '') }, [el('small', { text: small }), el('span', { class: 'mono', text: body })]);
+      function view(k) {
+        const evs = EVS.slice(0, k), st = { blocks: {}, order: [] }, atEnd = k === EVS.length;
+        evs.forEach((ev) => step(S.p, ev, st));
+        left.replaceChildren(...evs.map((ev, i) => card('#' + (i + 1) + '  ' + evLabel(S.p, ev), evBody(ev) || (ev.item ? J(ev.item) : ev.response ? J(ev.response) : ''), i === k - 1 ? 'border-color:var(--accent)' : '')),
+          ...(atEnd && S.end === 'cut' ? [el('div', { class: 'hint', html: '<b class="bad">Kết nối đóng.</b> Không có event đóng khối tool, không có event kết thúc.' })] : []));
+        right.replaceChildren(...st.order.map((key) => {
+          const b = st.blocks[key], head = `khối ${key}: ${b.type}${b.name ? ' ' + b.name : ''} · ${b.closed ? 'đã đóng' : 'đang mở'}${b.sig ? ' · có signature' : ''}`;
+          const kids = [el('small', { text: head }), el('span', { class: 'mono', text: b.type === 'thinking' && S.omit && S.p === 'claude' ? '(rỗng: display omitted)' : b.buf || '(chưa có delta)' })];
+          if (b.type === 'tool_use') { const s = tryParse(b.full || b.buf), r = repair(b.buf); kids.push(el('div', { class: 'stat', html: `<span>JSON.parse: <b class="${s.ok ? 'ok' : 'bad'}">${s.ok ? 'được' : 'lỗi'}</b></span><span>Tự đóng ngoặc: <b class="${r.ok && !sameArgs(r.v) ? 'bad' : ''}">${r.ok ? esc(J(r.v)) : '—'}</b></span>${b.full ? '<span>.done: <b class="ok">có chuỗi đầy đủ</b></span>' : ''}` })); }
+          return el('div', { class: 'ch', style: 'font-size:12px;word-break:break-word;' + (b.closed ? '' : 'border-color:var(--warn)') }, kids);
+        }));
+        const thinkB = st.order.map((x) => st.blocks[x]).find((b) => b.type === 'thinking'), textB = st.order.map((x) => st.blocks[x]).find((b) => b.type === 'text'), toolB = st.order.map((x) => st.blocks[x]).find((b) => b.type === 'tool_use');
+        const prev = toolB ? repair(toolB.buf) : null;
+        ui.replaceChildren(el('div', { style: 'border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);font-size:14px' }, [
+          thinkB ? el('details', { style: 'color:var(--mute);font-size:12.5px;margin-bottom:6px' }, [el('summary', { text: 'Suy luận' + (thinkB.closed ? '' : ' (đang chạy)') }), el('span', { text: thinkB.buf || '(không hiển thị)' })]) : null,
+          el('div', { text: textB ? textB.buf : '' }),
+          st.status ? el('div', { class: 'hint', html: '<b>' + esc(st.status) + '</b>' }) : null,
+          toolB ? el('div', { class: 'hint', html: `Xem trước tham số (chỉ để xem): <code>${prev && prev.ok ? esc(J(prev.v)) : '…'}</code>` }) : null,
+          atEnd && S.end !== 'ok' ? el('div', { class: 'bad', style: 'font-size:13px;margin-top:6px', text: 'Câu trả lời bị gián đoạn. Đơn chưa được huỷ.' }) : null]));
+        if (atEnd) {
+          const content = [];
+          if (thinkB && thinkB.sig && thinkB.closed) content.push({ type: 'thinking', signature: '…' });
+          if (textB && textB.closed) content.push({ type: 'text', text: textB.buf });
+          const tp = toolB && toolB.closed ? tryParse(toolB.full || toolB.buf) : null;
+          if (toolB && toolB.closed && tp.ok && st.stop === 'tool_use') content.push({ type: 'tool_use', name: toolB.name, input: tp.v });
+          hist.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: J({ role: 'assistant', content }) }), el('div', { class: 'hint', text: S.end === 'ok' ? 'Lưu message đầy đủ; tool chạy, kết quả đi vào lượt sau.' : 'Bỏ khối tool_use chưa hợp lệ; giữ khối đã đóng. Không thực thi.' }));
+        } else hist.replaceChildren(el('div', { class: 'hint', text: 'Chưa có event kết thúc: chưa lưu gì.' }));
+      }
+      function draw() {
+        pills.replaceChildren(...[['claude', 'Claude'], ['openai', 'OpenAI Responses']].map(([k, t]) => el('button', { class: k === S.p ? 'on' : '', text: t, onclick: () => { S.p = k; draw(); } })));
+        const tg = (k, t) => { const c = el('input', { type: 'checkbox' }); c.checked = S[k]; c.addEventListener('change', () => { S[k] = c.checked; draw(); }); return el('label', { class: 'ctl' }, [c, t]); };
+        opts.replaceChildren(select('Kết thúc', [['ok', 'Bình thường'], ['max', 'max_tokens cắt giữa tham số'], ['cut', 'Đứt kết nối giữa tool call']], S.end, (v) => { S.end = v; draw(); }).node, ...(S.p === 'claude' ? [tg('eager', 'eager_input_streaming'), tg('omit', 'thinking display: omitted')] : []));
+        EVS = S.p === 'claude' ? claudeEvents(S) : openaiEvents(S);
+        const N = EVS.length;
+        scrub.replaceChildren(slider('Đã nhận event', 1, N, 1, N, (v) => view(v), (v) => v + ' / ' + N).node);
+        view(N);
+        const res = policies(S.p, EVS);
+        const row = (id, label) => { const r = res[id]; let cls = '', txt; if (!r) txt = 'không chạy'; else if (r.err) txt = `#${r.i + 1}: không chạy (${esc(r.err)})`; else { const good = sameArgs(r.args) && S.end === 'ok'; cls = good ? 'ok' : 'bad'; txt = `#${r.i + 1}: huy_don(${esc(J(r.args))})`; } return `<tr${cls === 'bad' ? ' class="cur"' : ''}><td>${label}</td><td class="${cls}">${txt}</td></tr>`; };
+        pol.replaceChildren(flat('<div class="tbl"><table><tr><th>Chính sách thực thi</th><th>Bấm nút ở event / với tham số</th></tr>' + POL.map(([id, l]) => row(id, l)).join('') + '</table></div>'));
+        const N2 = [], A = res.eager, B = res.stop;
+        const partOf = (a) => EVS.slice(0, a.i + 1).filter((e) => (e.delta && e.delta.type === 'input_json_delta') || e.type === 'response.function_call_arguments.delta').map((e) => e.delta.partial_json || e.delta).join('');
+        if (A && A.args.order_id !== TARGET.order_id) N2.push(note('bad', `<b>Chính sách A huỷ đơn ${esc(A.args.order_id)} ở event #${A.i + 1}, khi tham số mới là "${esc(partOf(A))}".</b> JSON tự đóng ngoặc hợp lệ, mã đơn khớp schema ^SV-\\d+$. Không có nghĩa model sai: model chưa viết xong. Trong hệ thống thật: chỉ thực thi sau <code>content_block_stop</code> / <code>.done</code>; với tool có tác dụng phụ, chờ cả lý do dừng (README §1.4, §3.3).`));
+        else if (A && !sameArgs(A.args)) N2.push(note('warn', `<b>Chính sách A đúng mã đơn nhưng chạy với ${esc(J(A.args))}: thiếu "reason".</b> ${S.p === 'claude' && !S.eager ? 'Không eager, Claude gửi từng giá trị trọn vẹn, nên mã đơn đến đủ một lần; bật <b>eager_input_streaming</b> để thấy mã đơn dở. ' : ''}Đơn đúng bị huỷ với lý do rỗng; may mắn, không phải bảo đảm. Trong hệ thống thật: chờ khối đóng.`));
+        if (S.end === 'max' && B && !B.err) N2.push(note('bad', `<b>Chính sách B chạy dù stream dừng vì giới hạn độ dài.</b> Khối đã đóng và JSON parse được, nhưng lý do dừng không phải tool_use. Trong hệ thống thật: kiểm tra cả lý do dừng.`));
+        if (S.end === 'max' && B && B.err) N2.push(note('warn', `<b>max_tokens: khối tool vẫn đóng, nhưng tham số là JSON dở (${esc(B.err)}).</b> Chính sách B dừng nhờ JSON.parse lỗi; chính sách C dừng nhờ <code>stop_reason</code>. ${S.p === 'claude' && !S.eager ? 'Không eager, mảnh đến theo từng giá trị trọn vẹn, nhưng thiếu dấu đóng vẫn là JSON dở. ' : ''}Không có nghĩa model không muốn gọi tool. Trong hệ thống thật: báo lỗi hoặc tăng giới hạn và gửi lại; không sửa JSON (README §3.4).`));
+        if (S.end === 'cut') N2.push(note('bad', `<b>Kết nối đứt giữa tool call: ${A ? 'chỉ chính sách A đã kịp bấm nút' : 'không chính sách nào chạy'}.</b> Khối tool chưa đóng. ${A ? 'Đơn ' + esc(A.args.order_id) + ' đã bị huỷ trong khi lịch sử sẽ không có dấu vết. ' : ''}Trong hệ thống thật: bỏ tool call dở, không lưu, không thực thi; tool call không có kết quả trong lịch sử làm request sau trả 400 (README §3.3).`));
+        if (S.end === 'ok' && res.safe && !res.safe.err) N2.push(note('ok', `Chính sách C chạy ở event #${res.safe.i + 1}: ${S.p === 'claude' ? 'sau message_delta (stop_reason tool_use)' : 'sau response.completed'}, chậm hơn B ${res.safe.i - B.i} event, đúng tham số.`));
+        if (S.p === 'claude' && S.omit) N2.push(el('div', { class: 'hint', html: '<code>display: "omitted"</code>: khối thinking chỉ có một <code>thinking_delta</code> rỗng rồi <code>signature_delta</code>. Không có chữ suy luận nhưng vẫn phải lưu khối và signature.' }));
+        if (S.p === 'openai') N2.push(el('div', { class: 'hint', html: 'OpenAI: chính sách B đọc chuỗi đầy đủ từ <code>response.function_call_arguments.done</code>; reasoning item lấy từ <code>response.output_item.done</code> vì <code>encrypted_content</code> ở <code>.added</code> có thể chưa đầy đủ. Lý do <code>max_output_tokens</code> là minh hoạ; README chỉ ghi xem <code>incomplete_details.reason</code>.' }));
+        notes.replaceChildren(...N2);
+      }
+      stage.append(el('h4', { text: 'Provider', style: 'margin:0 0 6px' }), pills, opts, scrub,
+        el('div', { class: 'cols' }, [el('div', { class: 'chunks', style: 'min-width:0' }, [el('h4', { text: 'Event nhận được' }), left]), el('div', { class: 'chunks', style: 'min-width:0' }, [el('h4', { html: 'Parser gom theo khối <small>(viền cam: khối đang mở)</small>' }), right])]),
+        el('h4', { text: 'Ba chính sách thực thi huy_don, chạy trên cả luồng', style: 'margin:16px 0 4px' }), pol, notes,
+        el('div', { class: 'cols', style: 'margin-top:14px' }, [el('div', {}, [el('h4', { text: 'Màn hình khách thấy' }), ui]), el('div', {}, [el('h4', { text: 'Lưu vào lịch sử (khi stream kết thúc)' }), hist])]),
+        el('div', { class: 'hint', text: 'Luồng event dựng theo tên event / field trong README §2.2, §2.3, §3.5; cách Claude cắt mảnh JSON khi không eager (theo từng giá trị) suy ra từ README §2.3, chưa xác minh. Schema ^SV-\\d+$ và các chuỗi thinking là giả định. Thanh kéo chỉ đổi phần hiển thị phía trên; bảng chính sách luôn chạy trên toàn luồng.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

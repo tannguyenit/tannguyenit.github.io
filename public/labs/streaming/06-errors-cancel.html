@@ -1,0 +1,769 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 06</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="05-tools-json-reasoning.html">← Lab trước</a><a href="07-ui-moderation.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const I = 3000, N = 600, TTFT = 0.8, ITL = 0.02, E2E = TTFT + (N - 1) * ITL, BACKOFF = 1, RECON = 3, CONT_EXTRA = 40;
+  const ANSWER = 'Dạ, tai nghe SV Buds mua tại ShopViet được đổi trả trong 7 ngày nếu lỗi do nhà sản xuất. Anh mang tai nghe, hộp và hoá đơn đến cửa hàng, hoặc tạo yêu cầu trong mục Đơn hàng. Nếu tai nghe bị rè do Bluetooth, anh thử xoá ghép nối rồi kết nối lại trước. Nếu vẫn rè, bộ phận kỹ thuật sẽ kiểm tra và nhắn kết quả cho anh.';
+  const tokAt = (t, ttft = TTFT) => (t < ttft ? 0 : Math.min(N, Math.floor((t - ttft) / ITL + 1e-9) + 1));
+  const textFor = (k, n = N) => ANSWER.slice(0, Math.round((k / n) * ANSWER.length));
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fx = (v, d = 1) => v.toFixed(d).replace('.', ',');
+  const CAPS = 'font-size:13.5px;line-height:1.55;padding:8px 12px;border:1px solid var(--line);border-radius:6px;margin-top:10px;background:var(--bg)';
+  const fmtI = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + '%';
+
+  function scenario(S) {
+    const pre = S.kind === 'pre', tInc = pre ? 0 : S.t, k = pre ? 0 : Math.min(N - 1, tokAt(tInc));
+    const detachedDrop = S.arch === 'detached' && S.kind === 'drop';
+    const a1 = { start: 0, ttft: TTFT, cut: tInc, out: detachedDrop ? N : k, inp: pre ? 0 : I, runsOn: detachedDrop };
+    const R = { k, tInc, a1, a2: null, dup: 0, doneAt: null, cls: 'ok', head: '', why: '', not: '', real: '', screen: '', status: '' };
+    const partial = esc(textFor(k));
+    const stop = '<span class="bad">Câu trả lời bị gián đoạn.</span> <button>Thử lại</button> <button>Viết tiếp</button>';
+    if (S.pol === 'ignore') {
+      R.screen = partial || '<i class="mute">(bong bóng trống)</i>';
+      R.status = 'Không có thông báo gì. Nút Sao chép bật như câu trả lời đã xong.';
+      R.cls = 'bad';
+      R.head = k ? `Câu trả lời cụt ${k}/${N} token được lưu như câu trả lời đầy đủ.` : 'Không có chữ nào, nhưng app vẫn coi là xong và lưu một câu trả lời rỗng.';
+      R.why = 'Vòng đọc dừng khi kết nối đóng. Code không kiểm tra event kết thúc (<code>message_stop</code>), cũng không có nhánh cho <code>event: error</code>, nên "hết dữ liệu" bị hiểu là "xong".';
+      R.not = 'Không có nghĩa provider trả lời ngắn. Model còn ' + (N - k) + ' token chưa kịp gửi.';
+      R.real = 'Trong hệ thống thật: circuit breaker và fallback (tự chuyển sang model dự phòng khi provider lỗi) cũng không chạy, vì code không hề thấy lỗi.';
+      if (pre) { R.why = 'Đây là lỗi loại 1: HTTP 529, chưa có byte nào. SDK ném exception theo status và còn tự retry được. Chỉ hỏng khi code nuốt exception rồi trả chuỗi rỗng.'; R.not = 'Không có nghĩa lỗi trước stream khó xử lý. Nó là loại dễ nhất.'; R.real = 'Trong hệ thống thật: để SDK retry, hoặc retry im lặng, vì khách chưa thấy gì.'; }
+    } else if (S.pol === 'retry') {
+      const st = tInc + BACKOFF;
+      R.a2 = { start: st, ttft: st + TTFT, out: N, inp: I, end: st + E2E, dupK: k };
+      R.dup = k + (detachedDrop ? N - k : 0); R.doneAt = st + E2E;
+      R.screen = k ? `<span style="background:color-mix(in srgb,var(--warn) 25%,transparent)">${partial}</span> ${esc(ANSWER)}` : esc(ANSWER);
+      R.status = k ? 'Khách thấy đoạn đầu, rồi cả câu trả lời in lại từ đầu ngay phía sau.' : 'Khách chỉ thấy spinner lâu hơn một chút.';
+      if (k) {
+        R.cls = 'bad'; R.head = `Retry im lặng sau khi đã gửi ${k} token: khách thấy đoạn đầu bị lặp, và ${R.dup} token output bị sinh hai lần.`;
+        R.why = 'Request thứ hai là một request mới, model sinh lại từ token đầu tiên. Client vẫn đang giữ phần cũ nên nối thêm vào sau (hoặc xoá đi rồi viết lại, cũng gây giật).';
+        R.not = 'Không có nghĩa retry là sai. Retry im lặng đúng khi chưa có gì hiển thị.';
+        R.real = 'Trong hệ thống thật: chỉ retry im lặng khi backend chưa gửi chữ nào xuống client; đã gửi rồi thì giữ phần đã nhận và hỏi khách (quy tắc 3, §3.6).';
+      } else {
+        R.cls = 'ok'; R.head = 'Lỗi xảy ra khi chưa gửi token nào: retry im lặng là đúng, khách chỉ chờ thêm khoảng ' + fx(BACKOFF + TTFT) + ' giây.';
+        R.why = 'Khách chưa thấy gì, nên request mới không chồng lên chữ cũ. Đây là trường hợp duy nhất retry im lặng an toàn.';
+        R.real = 'Trong hệ thống thật: retry có giới hạn số lần và có jitter, vì mỗi lần retry là một request mới tốn tiền như request đầu.';
+      }
+      if (detachedDrop) R.real += ' Kiến trúc tách generation: worker lần 1 vẫn chạy đến hết nên bạn trả tiền hai câu trả lời đầy đủ.';
+    } else if (S.pol === 'partial') {
+      R.screen = partial || '<i class="mute">(chưa có chữ)</i>';
+      R.status = stop;
+      R.cls = k ? 'ok' : 'warn';
+      R.head = k ? `Giữ ${k} token đã nhận, báo rõ là bị gián đoạn, để khách chọn thử lại hay viết tiếp.` : 'Chưa có chữ nào để giữ. Bắt khách tự bấm Thử lại là thừa: retry im lặng ở đây đúng hơn.';
+      R.why = k ? 'Không request mới nào được gửi tự động, nên không tốn thêm token. Khách biết câu trả lời chưa xong, không nhầm phần cụt là câu trả lời đủ.' : 'Lỗi đến trước token đầu tiên nên không có gì hiển thị bị chồng lên.';
+      R.not = k ? 'Không có nghĩa khách có câu trả lời đầy đủ. Bạn đổi một lần bấm của khách lấy sự trung thực.' : '';
+      R.real = 'Trong hệ thống thật: Thử lại = request mới từ đầu; Viết tiếp = continuation (§3.6). Cả hai đều tốn thêm token, nên để khách chọn.';
+      if (detachedDrop) R.cls = 'warn';
+    } else if (S.pol === 'continue') {
+      const st = tInc + BACKOFF, rem = N - k;
+      R.a2 = { start: st, ttft: st + TTFT, out: rem, inp: I + k + (k ? CONT_EXTRA : 0), end: st + TTFT + (rem - 1) * ITL, dupK: 0 };
+      R.doneAt = R.a2.end; R.dup = detachedDrop ? N - k : 0;
+      R.screen = `${partial}<span style="border-left:2px solid var(--warn);margin-left:2px;padding-left:2px">${esc(ANSWER.slice(partial.length ? textFor(k).length : 0))}</span>`;
+      R.status = 'Chỗ vạch cam là chỗ nối. Model viết tiếp dựa trên phần đã có.';
+      R.cls = k ? 'warn' : 'ok';
+      R.head = k ? `Không sinh lặp output, nhưng request tiếp nối gửi lại ${I} + ${k} + ${CONT_EXTRA} token input.` : 'Chưa có chữ nào: "viết tiếp" thực chất là gửi lại từ đầu.';
+      R.why = 'Claude không có API resume. Request tiếp nối là request mới: toàn bộ prompt cộng phần đã nhận được tính lại như input. Với Claude 4.6 trở đi, phần đã nhận nằm trong một user message mới, kèm câu yêu cầu viết tiếp (lab giả định câu này khoảng ' + CONT_EXTRA + ' token).';
+      R.not = k ? 'Không có nghĩa kết quả giống hệt stream không bị cắt. Chỗ nối có thể lệch giọng văn hoặc lặp ý.' : '';
+      R.real = 'Trong hệ thống thật: với nội dung quan trọng, README khuyên sinh lại từ đầu thường an toàn hơn. Prompt caching giảm được phần prefix nếu prefix không đổi.';
+    } else {
+      if (S.arch === 'attached') {
+        R.screen = partial || '<i class="mute">(chưa có chữ)</i>'; R.status = 'Client gửi Last-Event-ID, server không có event nào để gửi lại.';
+        R.cls = 'bad'; R.head = 'Last-Event-ID không làm gì cả: server không lưu event nào để replay.';
+        R.why = 'Đặc tả SSE chỉ quy định client gửi header <code>Last-Event-ID</code> khi kết nối lại. Việc lưu và gửi lại event là của server. Kiến trúc gắn generation với kết nối không lưu gì; kết nối đóng là generation dừng.';
+        R.not = 'Không có nghĩa provider hỗ trợ resume. Không provider LLM nào trong README dùng Last-Event-ID.';
+        R.real = 'Trong hệ thống thật: muốn resume kiểu này phải tách generation: worker ghi event vào Redis stream hoặc database kèm ID tăng dần (§3.1).';
+      } else if (S.kind === 'drop') {
+        const back = tInc + RECON;
+        R.doneAt = Math.max(E2E, back); R.screen = esc(ANSWER);
+        R.status = 'Mất chữ khoảng ' + RECON + ' giây, rồi phần bị lỡ hiện ra một lượt và stream chạy tiếp.';
+        R.cls = 'ok'; R.head = 'Resume đúng nghĩa: worker vẫn sinh tiếp, client nối lại và nhận các event sau ID cuối cùng. Không token nào bị sinh lại.';
+        R.why = 'Worker không phụ thuộc kết nối của khách. Event được lưu kèm ID; khi khách nối lại với Last-Event-ID, endpoint SSE đọc từ nơi lưu và gửi tiếp. Thời gian chờ ' + RECON + ' giây là giả định cho "a few seconds" trong đặc tả.';
+        R.real = 'Trong hệ thống thật: đổi lại, đóng tab không còn huỷ generation; nút Dừng phải gọi endpoint stop riêng.';
+      } else {
+        R.screen = partial || '<i class="mute">(chưa có chữ)</i>'; R.status = stop;
+        R.cls = 'warn'; R.head = S.kind === 'pre' ? 'Lỗi trước stream: chưa có event nào được lưu, Last-Event-ID không có gì để gửi.' : 'Last-Event-ID gửi lại đúng các event đã lưu, kể cả event error. Phần còn lại của câu trả lời không tồn tại.';
+        R.why = 'Lỗi nằm ở chặng backend–provider: worker nhận <code>overloaded_error</code> và dừng. Last-Event-ID chỉ nối lại chặng khách–server của bạn.';
+        R.not = 'Không có nghĩa kiến trúc tách generation vô dụng. Nó cứu được mạng của khách, không cứu được provider.';
+        R.real = 'Trong hệ thống thật: worker phải tự xử lý lỗi provider (retry khi chưa gửi gì, hoặc báo gián đoạn), rồi ghi kết quả đó thành event cho client.';
+      }
+    }
+    if (detachedDrop && (S.pol === 'ignore' || S.pol === 'partial')) { R.dup = N - k; R.real += ' Kiến trúc tách generation: worker vẫn sinh đủ ' + N + ' token dù khách chỉ thấy ' + k + '. Đã tách thì nên resume bằng Last-Event-ID.'; }
+    if (detachedDrop && S.pol === 'continue') R.real += ' Kiến trúc tách generation: worker lần 1 vẫn sinh tiếp ' + (N - k) + ' token mà không ai đọc, trong khi request tiếp nối sinh lại đúng phần đó.';
+    R.inBilled = a1.inp + (R.a2 ? R.a2.inp : 0);
+    R.outBilled = a1.out + (R.a2 ? R.a2.out : 0);
+    return R;
+  }
+
+  function timeline(S, R) {
+    const W = 640, H = 150, L = 92, maxT = Math.max(E2E, R.doneAt || 0, R.tInc + RECON) + 0.6, x = (t) => L + (t / maxT) * (W - L - 8);
+    const lane = (y, label) => [el('text', { x: 0, y: y + 13, class: 'mute', text: label }), el('rect', { x: L, y, width: W - L - 8, height: 18, rx: 3, fill: 'var(--bg)', stroke: 'var(--line)' })];
+    const seg = (y, t0, t1, fill, op = 1) => (t1 > t0 ? el('rect', { x: x(t0), y: y + 2, width: Math.max(1, x(t1) - x(t0)), height: 14, rx: 2, fill, opacity: op }) : null);
+    const g = [...lane(10, 'Lần 1 sinh'), ...lane(44, 'Lần 2 sinh'), ...lane(78, 'Khách thấy')];
+    const { a1, a2, tInc, k } = R;
+    const kT = k ? TTFT + (k - 1) * ITL : tInc;
+    if (S.kind !== 'pre') {
+      g.push(seg(10, TTFT, Math.min(tInc, E2E), 'var(--accent)'));
+      if (a1.runsOn) g.push(seg(10, tInc, E2E, S.pol === 'lastid' ? 'var(--accent)' : 'var(--warn)', 0.75));
+    }
+    if (a2) {
+      const dupEnd = a2.dupK ? a2.ttft + (a2.dupK - 1) * ITL : a2.ttft;
+      g.push(seg(44, a2.ttft, dupEnd, 'var(--warn)'), seg(44, dupEnd, a2.end, 'var(--accent)'));
+      g.push(el('line', { x1: x(a2.start), x2: x(a2.start), y1: 40, y2: 66, stroke: 'var(--mute)', 'stroke-dasharray': '3 3' }));
+    }
+    if (k) g.push(seg(78, TTFT, kT, 'var(--g1)'));
+    if (a2) g.push(seg(78, a2.ttft, a2.end, a2.dupK ? 'var(--warn)' : 'var(--g1)', 0.85));
+    if (S.pol === 'lastid' && S.arch === 'detached' && S.kind === 'drop') { const back = tInc + RECON; g.push(seg(78, back, Math.max(back + 0.05, E2E), 'var(--g1)', 0.85)); }
+    g.push(el('line', { x1: x(tInc), x2: x(tInc), y1: 4, y2: 102, stroke: 'var(--bad)', 'stroke-width': 2 }),
+      el('text', { x: Math.min(W - 110, x(tInc) + 4), y: 116, fill: 'var(--bad)', text: S.kind === 'pre' ? 'HTTP 529, chưa có byte nào' : `sự cố lúc ${fx(tInc)} s` }));
+    [0, 5, 10, 15, 20, 25, 30].filter((t) => t <= maxT).forEach((t) => g.push(el('text', { x: x(t) - 4, y: 140, class: 'mute', text: t + 's' })));
+    return el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Dòng thời gian stream khi có sự cố' }, g.filter(Boolean));
+  }
+
+  return {
+    id: 'errors-cancel', nav: '6. Lỗi giữa chừng & huỷ', ref: '§3.6–3.7',
+    title: 'Stream đứt ở giây thứ 6: thử lại, nối tiếp hay báo lỗi, và mỗi cách tốn thêm bao nhiêu token',
+    hook: 'Chọn loại sự cố, thời điểm và cách xử lý. Xem khách thấy gì và bạn bị tính bao nhiêu token. Bên dưới, bấm Dừng để xem token có thật sự ngừng bị tính không.',
+    terms: [
+      ['Sự cố trước stream', 'Provider trả HTTP status khác 200 trước khi gửi byte nào. Ví dụ 529 khi quá tải, 429 khi vượt rate limit. Thư viện HTTP nào cũng bắt được.'],
+      ['Lỗi trong stream', 'Status 200 đã gửi đi, chữ đang chảy, rồi đến một event báo lỗi. Ví dụ của Claude: event: error với {"type":"overloaded_error"}.'],
+      ['Đứt kết nối', 'Kết nối đóng mà không có event lỗi lẫn event kết thúc. Ví dụ khách đi vào thang máy, 4G mất sóng ở giây thứ 6.'],
+      ['Event kết thúc', 'Event cuối cùng xác nhận stream xong. Claude là message_stop, OpenAI Responses là response.completed, Chat Completions là data: [DONE]. Không có nó thì stream chưa xong.'],
+      ['Retry', 'Gửi lại cùng request. Đây là request mới, provider sinh lại từ token đầu và tính tiền như lần đầu.'],
+      ['Resume', 'Nhận tiếp phần còn lại mà không sinh lại. Có ba cơ chế khác nhau dùng chung chữ này: SSE Last-Event-ID, OpenAI background + starting_after, và Claude continuation.'],
+      ['Last-Event-ID', 'Header trình duyệt gửi khi nối lại SSE, mang id của event cuối đã nhận. Ví dụ đã nhận "id: 42" thì gửi "Last-Event-ID: 42", server tự gửi lại từ event 43.'],
+      ['Gắn / tách generation', 'Gắn: backend gọi provider ngay trong kết nối của khách, khách đi thì generation (việc model sinh chữ) dừng. Tách: một worker sinh chữ và ghi từng event vào Redis hoặc database kèm id; kết nối của khách chỉ đọc ra, nên đứt mạng thì worker vẫn chạy.'],
+      ['Continuation', 'Cách "viết tiếp" của Claude: tạo request mới chứa phần đã nhận và yêu cầu model viết tiếp. Không phải resume thật: input bị tính lại.'],
+      ['AbortController', 'Đối tượng của trình duyệt và Node để huỷ một fetch. Gọi controller.abort() thì kết nối đóng thật, không chỉ ngừng đọc.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> là cửa hàng điện tử online. Trợ lý chat của ShopViet trả lời khách từng chữ qua SSE: trình duyệt → backend → provider. Một câu trả lời điển hình (lab giả định): prompt 3.000 token (system prompt, lịch sử, đoạn chính sách đổi trả), output 600 token. Tốc độ lấy theo ví dụ trong README: TTFT (thời gian chờ tới chữ đầu tiên) 0,8 giây, sau đó cứ 20 ms ra một token (mẩu chữ vài ký tự), nên cả câu mất khoảng 0,8 + 599 × 0,02 ≈ ' + fx(E2E) + ' giây.',
+      scenario: 'Khách hỏi về đổi trả tai nghe. Ở giây thứ 6, khi đã hiện khoảng 260 token ((6 − 0,8) / 0,02 = 260), một trong ba chuyện xảy ra: 4G của khách mất sóng, provider gửi event overloaded_error, hoặc (trước đó) provider trả 529 ngay từ đầu. Có lúc khách tự bấm Dừng vì câu trả lời lan man.',
+      ask: 'Nên retry, resume hay báo lỗi? Mỗi cách làm khách thấy gì, và bạn trả thêm bao nhiêu token? Bấm Dừng thì token có ngừng bị tính không?',
+      solves: 'Quy tắc README §3.6: chỉ coi là xong khi có event kết thúc; chỉ retry im lặng khi chưa gửi gì xuống client; đã gửi thì giữ phần đã nhận và báo gián đoạn. §3.7: nối đủ bốn mắt xích huỷ, và luôn đặt max_tokens.',
+      read: ['Ba làn: <b>Lần 1 sinh</b> (request gốc), <b>Lần 2 sinh</b> (request retry hoặc tiếp nối), <b>Khách thấy</b>. Vạch đỏ là lúc sự cố.', 'Màu cam là token bị sinh mà khách không cần: sinh lặp, hoặc sinh tiếp khi không ai đọc.', 'Hộp "Màn hình khách" là chữ khách thực sự thấy, tính từ số token đã đến.', 'Số token input và output được cộng qua mọi lần gọi. README không ghi giá nên lab chỉ đếm token.', 'Phần dưới: bật tắt từng mắt xích huỷ và loại provider, rồi kéo thời điểm bấm Dừng.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Khi stream, status 200 đã đi trước token đầu tiên. Lỗi sau đó phải đi trong nội dung stream, hoặc không đến (đứt kết nối). Vì vậy cách nhận biết lỗi và cách xử lý khác hẳn request thường.</p>
+<div class="tbl"><table>
+<tr><th>Loại</th><th>Dấu hiệu</th><th>Ví dụ</th></tr>
+<tr><td>1. Lỗi trước stream</td><td>HTTP status khác 200</td><td>400, 401, 429, 529 trước khi có byte nào</td></tr>
+<tr><td>2. Lỗi trong stream</td><td>Status 200, sau đó có event lỗi</td><td>Claude <code>event: error</code>; OpenAI <code>error</code>, <code>response.failed</code>; Ollama dòng <code>{"error": ...}</code></td></tr>
+<tr><td>3. Đứt kết nối</td><td>Đóng, không có event lỗi lẫn event kết thúc</td><td>Proxy timeout, mạng di động, server restart</td></tr>
+</table></div>
+<h4>Quy tắc xử lý (README §3.6)</h4>
+<ol><li>Chỉ coi là xong khi có event kết thúc hợp lệ.</li><li>Phân loại lỗi theo loại trong body (<code>overloaded_error</code>, <code>rate_limit_error</code>, <code>api_error</code> retry được), không theo HTTP status.</li><li>Chỉ retry im lặng khi chưa gửi gì xuống client. Đã gửi thì giữ phần đã nhận, báo "bị gián đoạn", cho chọn thử lại hoặc viết tiếp.</li><li>Không lưu tool call dở dang và thinking thiếu signature vào lịch sử.</li><li>Retry có giới hạn và có jitter.</li></ol>
+<h4>Ba cơ chế "resume"</h4>
+<div class="tbl"><table>
+<tr><th>Cơ chế</th><th>Ai giữ trạng thái</th><th>Chi phí</th></tr>
+<tr><td>SSE <code>Last-Event-ID</code></td><td>Server của bạn tự lưu và replay</td><td>Chỉ chi phí lưu trữ</td></tr>
+<tr><td>OpenAI background + <code>starting_after</code></td><td>OpenAI lưu event</td><td>Không sinh lại</td></tr>
+<tr><td>Claude continuation</td><td>Không ai; request mới chứa phần đã nhận</td><td>Tính lại input, sinh tiếp phần còn lại</td></tr>
+</table></div>
+<h4>Huỷ: bốn mắt xích (README §3.7)</h4>
+<p>[1] Client <code>abort()</code> → [2] proxy chuyển việc đóng → [3] backend phát hiện (<code>req.signal</code>, <code>is_disconnected()</code>) → [4] request tới provider bị đóng. Đứt một mắt là huỷ vô tác dụng.</p>
+<div class="verdict"><b>Provider có ngừng tính tiền không:</b> Claude tính tiền request bị ngắt giữa chừng, không nói rõ tính đến đâu. Theo OpenRouter, OpenAI, Azure, Anthropic, DeepSeek, Together, DeepInfra, xAI hỗ trợ huỷ; Bedrock, Google AI Studio, Groq, Mistral, Perplexity thì không. <code>max_tokens</code> là trần chi phí duy nhất được bảo đảm.</div>`,
+    why: {
+      c: 'Coi stream là xong chỉ khi có event kết thúc. Phân loại lỗi theo error.type trong body. Retry im lặng khi chưa gửi token nào; đã gửi thì giữ phần đã nhận, báo gián đoạn và để khách chọn. Nối đủ bốn mắt xích huỷ và luôn đặt max_tokens. Lý do: khách không bị lừa bởi câu trả lời cụt, không thấy chữ lặp, và bạn không trả tiền cho token không ai đọc.',
+      s: 'Coi đóng kết nối là xong: lưu câu trả lời cụt, fallback không chạy. Retry im lặng mọi lúc: khách thấy đoạn đầu in lại, token output sinh hai lần. Trông chờ Last-Event-ID khi server không lưu event: không có gì để replay. Chỉ ngừng đọc thay vì abort: provider vẫn sinh tiếp.',
+      p: 'Thêm code: kiểm tra event kết thúc, phân loại lỗi, UI trạng thái "bị gián đoạn". Resume thật cần tách generation (worker, nơi lưu event, endpoint stop). Continuation tính lại input và có thể lệch giọng ở chỗ nối. Không bảo đảm được provider ngừng tính tiền, chỉ đo và đối soát được.'
+    },
+    deep: [
+      {
+        q: 'Vì sao lỗi lại đến sau HTTP 200? Provider không trả 529 như bình thường được à?',
+        a: `<p>HTTP gửi <b>dòng status và header trước</b>, rồi mới tới body. Khi stream, provider phải gửi <code>HTTP/1.1 200 OK</code> và <code>content-type: text/event-stream</code> ngay, để client bắt đầu nhận chữ. Lúc đó model mới sinh vài token. Nếu ở giây thứ 6 máy chủ quá tải, status 200 đã đi mất rồi, không gọi lại được.</p>
+<p>Cách duy nhất còn lại là báo lỗi <b>trong body</b>, dưới dạng một event. Với Claude, README trích ví dụ: <code>event: error</code> với <code>{"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}}</code>. Cùng lỗi đó, nếu xảy ra khi không stream, sẽ là HTTP 529.</p>
+<p>Kéo thanh trượt để chọn lúc máy chủ quá tải. Trước khi header đi (thời điểm 0), client nhận 529. Sau đó, client nhận 200 rồi một event error.</p>`,
+        viz(box) {
+          const out = el('pre', { class: 'mono', style: 'font-size:12px;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;margin:0' });
+          const draw = (t) => {
+            if (t === 0) { out.innerHTML = '0,00s  HTTP/1.1 529\n0,00s  {"type":"error","error":{"type":"overloaded_error",...}}\n\n<span class="ok">SDK bắt được: status 529 → OverloadedError, retry tự động.</span>'; return; }
+            const k = tokAt(t), lines = ['0,00s  HTTP/1.1 200 OK', '0,00s  content-type: text/event-stream', '0,30s  event: message_start   (usage.input_tokens: 3000)'];
+            if (k) lines.push(`0,80s  event: content_block_delta  "Dạ, t..."`, `  ...    ${k} delta văn bản`);
+            lines.push(`${fx(t, 2)}s  event: error  {"type":"overloaded_error","message":"Overloaded"}`, '         (không có message_stop)');
+            out.innerHTML = lines.join('\n') + '\n\n<span class="bad">Status đã là 200. Code chỉ nhìn status sẽ coi đây là thành công.</span>';
+          };
+          box.append(el('div', { class: 'row' }, [slider('Quá tải lúc', 0, 12, 0.5, 6, draw, (v) => (v === 0 ? 'trước header' : fx(v) + ' s')).node]), out,
+            el('div', { class: 'cap', text: 'Mốc 0,30s và 0,80s là giả định để minh hoạ. Nội dung event error lấy từ README §2.3.' }));
+          draw(6);
+        },
+        take: 'Khi stream, HTTP status chỉ nói về vài trăm mili giây đầu. Phần còn lại phải đọc trong nội dung stream.'
+      },
+      {
+        q: 'Vậy làm sao biết một stream "xong thật" hay bị cắt?',
+        a: `<p>Chỉ có một cách đáng tin: <b>thấy event kết thúc</b>. Kết nối đóng không phải là tín hiệu thành công, vì cả ba trường hợp (xong, lỗi, đứt) đều kết thúc bằng việc kết nối đóng.</p>
+<div class="tbl"><table><tr><th>Provider</th><th>Event kết thúc hợp lệ</th></tr>
+<tr><td>Claude</td><td><code>message_stop</code></td></tr><tr><td>OpenAI Responses</td><td><code>response.completed</code> (còn <code>.incomplete</code>, <code>.failed</code> là kết thúc không thành công)</td></tr>
+<tr><td>Chat Completions, vLLM, Grok</td><td><code>data: [DONE]</code> sau <code>finish_reason</code></td></tr><tr><td>Gemini Interactions</td><td><code>interaction.completed</code></td></tr><tr><td>Ollama</td><td>Dòng có <code>"done": true</code></td></tr></table></div>
+<p>Có thêm một bẫy nhỏ của đặc tả SSE: event chưa có dòng trống kết thúc khi stream đóng phải bị <b>bỏ</b>. Parser "tiện tay" vẫn đưa phần dở này ra sẽ ném JSON cụt vào code.</p>
+<p>Hình dưới chạy hai parser trên bốn stream thật (dạng text). Parser A coi đóng kết nối là xong. Parser B làm đúng đặc tả và đòi <code>message_stop</code>.</p>`,
+        viz(box) {
+          const d = (t) => `event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"${t}"}}\n\n`;
+          const head = 'event: message_start\ndata: {"type":"message_start"}\n\n' + d('Dạ, tai nghe ') + d('được đổi trả ');
+          const S = {
+            ok: head + d('trong 7 ngày.') + 'event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}\n\nevent: message_stop\ndata: {"type":"message_stop"}\n\n',
+            err: head + 'event: error\ndata: {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}\n\n',
+            drop: head,
+            half: head + 'event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"trong 7 ng'
+          };
+          function parse(raw, spec) {
+            const parts = raw.split('\n\n'), done = parts.pop(), evs = parts.filter(Boolean);
+            if (!spec && done) evs.push(done);
+            const out = { text: '', stop: false, err: null, crash: null };
+            for (const e of evs) {
+              const data = e.split('\n').filter((l) => l.startsWith('data:')).map((l) => l.slice(5).trim()).join('\n');
+              try { const j = JSON.parse(data); if (j.type === 'content_block_delta') out.text += j.delta.text; if (j.type === 'message_stop') out.stop = true; if (j.type === 'error') out.err = j.error.type; } catch (x) { out.crash = 'JSON.parse lỗi: ' + x.message.slice(0, 40); }
+            }
+            return out;
+          }
+          const res = el('div');
+          const draw = (k) => {
+            const A = parse(S[k], false), B = parse(S[k], true);
+            const vA = A.crash ? `<b class="bad">ném lỗi parse</b> (${esc(A.crash)})` : `<b class="${k === 'ok' ? 'ok' : 'bad'}">xong</b>, lưu "${esc(A.text)}"`;
+            const vB = B.stop ? `<b class="ok">xong</b>, có message_stop` : `<b class="ok">bị gián đoạn</b>${B.err ? ' (' + B.err + ', retry được)' : ', không có event kết thúc'}; giữ "${esc(B.text)}"`;
+            res.innerHTML = `<pre class="mono" style="font-size:11.5px;white-space:pre-wrap;max-height:180px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px">${esc(S[k])}<span class="bad">[kết nối đóng]</span></pre><div class="tbl"><table><tr><th>Parser</th><th>Kết luận</th></tr><tr><td>A: đóng là xong</td><td>${vA}</td></tr><tr><td>B: theo đặc tả, đòi message_stop</td><td>${vB}</td></tr></table></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [select('Stream', [['ok', 'Bình thường'], ['err', 'Có event error'], ['drop', 'Đứt, không báo gì'], ['half', 'Đứt giữa một event']], 'drop', draw).node]), res,
+            el('div', { class: 'cap', text: 'Parser ở đây chạy thật trên chuỗi bên trên. Với "Đứt giữa một event", parser A đưa dòng data dở dang vào JSON.parse và hỏng; parser B bỏ event đó như đặc tả yêu cầu.' }));
+          draw('drop');
+        },
+        take: 'Thiếu event kết thúc là lỗi, kể cả khi không có event lỗi nào. Đây là kiểm tra rẻ nhất và cứu nhiều bug nhất.'
+      },
+      {
+        q: 'SDK có báo lỗi mà. Sao fallback sang model khác vẫn không chạy?',
+        a: `<p>Vì lỗi giữa stream mang <b>status 200</b>. README phân tích <code>anthropic-sdk-python</code>: khi gặp <code>event: error</code>, SDK tạo exception từ chính response HTTP 200. Bảng ánh xạ lỗi tra theo status: 529 thành <code>OverloadedError</code>, 429 thành <code>RateLimitError</code>, từ 500 trở lên thành <code>InternalServerError</code>. 200 không có trong bảng, nên rơi về <code>APIStatusError</code> với <code>status_code == 200</code>.</p>
+<p>Code fallback viết kiểu "nếu <code>status_code &gt;= 500</code> thì chuyển model" sẽ bỏ qua đúng lúc cần nó nhất. Issue #1258 của pydantic-ai mô tả đúng điều này. SDK TypeScript có báo cáo tương tự với <code>status: undefined</code> (issue #1262).</p>
+<p>Bảng dưới chạy hai bộ phân loại trên năm lỗi. Bộ 1 nhìn status. Bộ 2 nhìn <code>error.type</code> trong body, như README khuyên.</p>`,
+        viz(box) {
+          const RETRY = new Set(['overloaded_error', 'rate_limit_error', 'api_error']);
+          const cases = [['529 trước stream', 529, 'overloaded_error'], ['429 trước stream', 429, 'rate_limit_error'], ['400 sai tham số', 400, 'invalid_request_error'], ['Giữa stream (Python SDK)', 200, 'overloaded_error'], ['Giữa stream (TS SDK)', undefined, 'overloaded_error']];
+          const byStatus = (s) => s !== undefined && (s >= 500 || s === 429);
+          const rows = cases.map(([n, s, t]) => { const a = byStatus(s), b = RETRY.has(t), diff = a !== b; return `<tr${diff ? ' style="background:var(--accent-soft)"' : ''}><td>${n}</td><td class="mono">${s === undefined ? 'undefined' : s}</td><td class="mono">${t}</td><td>${a ? 'retry/fallback' : 'không'}</td><td>${b ? 'retry/fallback' : 'không'}</td><td>${diff ? '<b class="bad">lệch</b>' : '<span class="ok">khớp</span>'}</td></tr>`; }).join('');
+          const miss = cases.filter(([, s, t]) => byStatus(s) !== RETRY.has(t)).length;
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Lỗi</th><th>status</th><th>error.type</th><th>Bộ 1: theo status</th><th>Bộ 2: theo type</th><th></th></tr>' + rows })]),
+            el('div', { class: 'cap', html: `Bộ 1 bỏ sót <b>${miss}/${cases.length}</b> lỗi, và đều là lỗi quá tải giữa stream. Đó chính là lúc fallback cần chạy nhất.` }));
+        },
+        take: 'Phân loại lỗi theo error.type trong body, cho cả lỗi trước stream lẫn giữa stream.'
+      },
+      {
+        q: 'Retry từ đầu có vấn đề gì, ngoài chuyện chữ bị lặp?',
+        a: `<p>Hai vấn đề về tiền và tải. Thứ nhất, mỗi lần retry là <b>một request mới</b>: toàn bộ 3.000 token input được tính lại, và token output sinh lại từ đầu. Thứ hai, khi provider quá tải, hàng trăm client cùng gặp lỗi gần như cùng lúc. Nếu tất cả cùng chờ đúng 1 giây rồi gửi lại, chúng tạo ra một đợt sóng mới đúng vào lúc provider yếu nhất.</p>
+<p><b>Jitter</b> là cộng một khoảng chờ ngẫu nhiên, để các retry trải ra thay vì dồn vào một thời điểm. <b>Exponential backoff</b> là mỗi lần thử lại chờ lâu gấp đôi lần trước (1, 2, 4 giây).</p>
+<p>Mô phỏng: một nhóm client cùng nhận <code>overloaded_error</code> ở giây 0, mỗi lần thử có 50% thành công (giả định), tối đa 3 lần thử lại. Trình duyệt đếm số request rơi vào mỗi 250 ms.</p>`,
+        viz(box) {
+          const svg = el('svg', { class: 'canvas', viewBox: '0 0 560 170', role: 'img', 'aria-label': 'Số request retry theo thời gian' }), stat = el('div', { class: 'stat' });
+          const S = { n: 200, pol: 'fixed' };
+          function draw() {
+            const rnd = seeded(9), B = 40, bins = new Array(B).fill(0); let retries = 0;
+            for (let c = 0; c < S.n; c++) {
+              let t = 0;
+              for (let a = 0; a < 3; a++) {
+                const base = S.pol === 'fixed' ? 1 : 2 ** a;
+                t += S.pol === 'jitter' ? rnd() * base * 2 : base;
+                retries++; const b = Math.floor(t / 0.25); if (b < B) bins[b]++;
+                if (rnd() < 0.5) break;
+              }
+            }
+            const mx = Math.max(...bins, 1), peak = Math.max(...bins);
+            svg.replaceChildren(...bins.map((v, i) => el('rect', { x: 20 + i * 13.3, y: 140 - (v / Math.max(mx, S.n * 0.5)) * 125, width: 11, height: (v / Math.max(mx, S.n * 0.5)) * 125, rx: 2, fill: v === peak ? 'var(--warn)' : 'var(--accent)' })),
+              el('line', { x1: 20, x2: 552, y1: 140, y2: 140, stroke: 'var(--line)' }), ...[0, 2, 4, 6, 8, 10].map((t) => el('text', { x: 16 + t * 53.2, y: 158, class: 'mute', text: t + 's' })));
+            stat.innerHTML = `<span>Đỉnh: <b>${peak}</b> request / 250 ms</span><span>Tổng số lần retry: <b>${retries}</b></span><span>Input tính lại: <b>${fmtI(retries * I)}</b> token</span>`;
+          }
+          box.append(el('div', { class: 'row' }, [slider('Số client', 50, 500, 50, 200, (v) => { S.n = v; draw(); }).node,
+            select('Chiến lược', [['fixed', 'Chờ đúng 1 s'], ['exp', 'Backoff 1, 2, 4 s'], ['jitter', 'Backoff + jitter']], 'fixed', (v) => { S.pol = v; draw(); }).node]), svg, stat,
+            el('div', { class: 'cap', text: 'Số client, xác suất thành công 50% và 3 lần thử là giả định. Cột cam là đỉnh. Chờ cố định tạo ba cột cao dồn đúng vào giây 1, 2, 3; jitter trải chúng ra.' }));
+          draw();
+        },
+        take: 'Retry tốn tiền như request mới và có thể làm provider quá tải nặng hơn. Giới hạn số lần, thêm backoff và jitter.'
+      },
+      {
+        q: 'Thay vì sinh lại, sao không "resume" cho rẻ? Provider có hỗ trợ không?',
+        a: `<p>Chữ "resume" được dùng cho <b>ba cơ chế không liên quan</b>:</p>
+<div class="tbl"><table><tr><th>Cơ chế</th><th>Ai giữ trạng thái</th><th>Sinh lại?</th><th>Dùng khi</th></tr>
+<tr><td>SSE <code>Last-Event-ID</code></td><td>Server của bạn</td><td>Không</td><td>Bạn đã tách generation khỏi kết nối</td></tr>
+<tr><td>OpenAI <code>background: true</code> + <code>starting_after</code></td><td>OpenAI</td><td>Không</td><td>Response dài trên OpenAI</td></tr>
+<tr><td>Claude continuation</td><td>Không ai</td><td>Sinh tiếp phần còn lại, tính lại input</td><td>Stream Claude bị cắt, muốn giữ phần đã có</td></tr></table></div>
+<p>Với OpenAI, bạn tạo response với cả <code>background: true</code> và <code>stream: true</code>, lưu <code>sequence_number</code> của event cuối, rồi khi mất kết nối gọi <code>GET /v1/responses/{id}?stream=true&amp;starting_after=...</code>. Đánh đổi: background response không tự dừng khi client đi mất, nút Dừng phải gọi <code>POST /v1/responses/{id}/cancel</code>.</p>
+<p>README ghi rõ: không provider LLM nào dùng cơ chế <code>Last-Event-ID</code> của SSE. Nếu muốn nó, bạn tự làm ở server của mình.</p>`,
+        take: 'Trước khi nói "resume", hỏi: ai đang giữ phần đã sinh? Nếu không ai giữ, đó là sinh lại hoặc viết tiếp, không phải resume.'
+      },
+      {
+        q: 'Last-Event-ID chạy cụ thể thế nào? Server phải nhớ bao lâu?',
+        a: `<p>Mỗi event server gửi có dòng <code>id:</code>, ví dụ <code>id: 42</code>. Trình duyệt nhớ id cuối. Khi nối lại, nó gửi header <code>Last-Event-ID: 42</code>. Đặc tả SSE <b>không quy định</b> server phải replay thế nào: bạn tự lưu event (Redis stream, database) và tự gửi lại từ 43.</p>
+<p>Nên câu hỏi thực tế là: nơi lưu giữ bao nhiêu event? Nếu bạn chỉ giữ 20 event gần nhất để tiết kiệm bộ nhớ, mà khách mất sóng lâu hơn thế, id khách gửi đã bị xoá khỏi nơi lưu. Lúc đó server không replay được và phải báo lỗi hoặc gửi lại từ đầu.</p>`,
+        viz(box) {
+          const out = el('div'), S = { last: 42, keep: 20 }, TOTAL = 60;
+          function draw() {
+            const now = Math.min(TOTAL, S.last + 12), oldest = Math.max(1, now - S.keep + 1), ok = S.last + 1 >= oldest;
+            const cells = Array.from({ length: TOTAL }, (_, i) => { const id = i + 1; const c = id <= S.last ? 'var(--g1)' : id <= now ? (ok ? 'var(--accent)' : 'var(--bad)') : 'var(--line)'; return el('span', { title: 'id ' + id, style: `height:18px;border-radius:2px;background:${c};opacity:${id < oldest ? 0.35 : 1}` }); });
+            out.replaceChildren(el('div', { style: 'display:grid;grid-template-columns:repeat(60,1fr);gap:1px;margin:6px 0' }, cells),
+              el('pre', { class: 'mono', style: 'font-size:12px;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;margin:6px 0', text: `GET /api/chat/stream/abc\nLast-Event-ID: ${S.last}\n\n` + (ok ? `server: gửi lại id ${S.last + 1} đến ${now} (${now - S.last} event), rồi stream tiếp` : `server: id ${S.last + 1} đã bị xoá (nơi lưu chỉ còn từ id ${oldest}) → không replay được`) }),
+              el('div', { class: 'cap', html: ok ? `Nơi lưu còn id ${oldest} đến ${now}, đủ để nối lại.` : `<b class="bad">Mất phần giữa.</b> Khách đã lỡ ${now - S.last} event, nhưng nơi lưu chỉ giữ ${S.keep}. Trong hệ thống thật: thời gian giữ event phải dài hơn khoảng mất kết nối bạn muốn chịu được.` }));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Mất kết nối sau id', 1, 48, 1, 42, (v) => { S.last = v; draw(); }).node, slider('Nơi lưu giữ', 5, 60, 5, 20, (v) => { S.keep = v; draw(); }, (v) => v + ' event').node]), out,
+            el('div', { class: 'cap', text: 'Xanh dương: khách đã nhận. Xanh ngọc: server gửi lại được. Đỏ: lỡ mà không gửi lại được. Ô mờ: đã bị xoá khỏi nơi lưu. Giả định trong lúc mất kết nối worker sinh thêm 12 event.' }));
+          draw();
+        },
+        take: 'Last-Event-ID chỉ là một con số client gửi lên. Toàn bộ khả năng resume nằm ở nơi lưu event của bạn.'
+      },
+      {
+        q: 'Claude continuation "viết tiếp" thì gửi gì, và vì sao lại tính tiền input lần nữa?',
+        a: `<p>Claude không có API resume. Trước đây có thể dùng <b>prefill</b>: đặt sẵn phần đã nhận vào đầu một assistant message để model viết nối vào. Với Claude 4.6 trở đi, prefill không còn được hỗ trợ, nên README hướng dẫn thêm một <b>user message</b> chứa phần đã nhận và yêu cầu viết tiếp. Request mới trông như sau:</p>
+<pre class="mono" style="font-size:12px;white-space:pre-wrap">{"messages": [
+  {"role": "user", "content": "Tai nghe của tôi bị rè, đổi trả được không?"},
+  {"role": "user", "content": "Your previous response was interrupted and ended with [Dạ, tai nghe SV Buds mua tại ShopViet được đổi trả trong 7 ngày...]. Continue from where you left off."}
+]}</pre>
+<p>Provider không nhớ gì từ request trước. Nó đọc lại từ đầu: system prompt, lịch sử, và cả phần đã sinh, giờ nằm ở phía input. Vì vậy input lần hai lớn hơn lần đầu đúng bằng số token đã nhận cộng câu yêu cầu. Bù lại, output chỉ còn phần chưa viết.</p>
+<p>Kéo điểm cắt để so tổng token của "viết tiếp" với "sinh lại từ đầu".</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (k) => {
+            const cont = { i: I + I + k + CONT_EXTRA, o: N }, scr = { i: I + I, o: k + N };
+            out.replaceChildren(hbars([['Viết tiếp: input', cont.i, true], ['Sinh lại: input', scr.i, false], ['Viết tiếp: output', cont.o, true], ['Sinh lại: output', scr.o, false]], { max: Math.max(cont.i, scr.i), fmt: (v) => fmtI(v) }),
+              el('div', { class: 'cap', html: `Cắt ở token ${k}/${N}. Viết tiếp: thêm <b>${k + CONT_EXTRA}</b> token input, tiết kiệm <b>${k}</b> token output so với sinh lại. Đáng hay không tuỳ bảng giá input và output của provider bạn dùng.` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Đã nhận', 0, N - 10, 10, 260, draw, (v) => v + ' token').node]), out,
+            el('div', { class: 'cap', text: 'Tính cho cả hai lần gọi. 3.000 token input và 600 token output là giả định của lab; câu yêu cầu viết tiếp giả định 40 token.' }));
+          draw(260);
+        },
+        take: 'Viết tiếp đổi token output lấy token input, và có thể lệch giọng ở chỗ nối. Với nội dung quan trọng, sinh lại từ đầu thường an toàn hơn.'
+      },
+      {
+        q: 'Khách bấm Dừng. Sao có lúc vẫn bị tính đủ 600 token?',
+        a: `<p>Vì huỷ là một <b>chuỗi bốn mắt xích</b>, đứt một mắt là vô tác dụng:</p>
+<ol><li><b>Client</b> gọi <code>controller.abort()</code> trên fetch. Chỉ ngừng đọc (thoát vòng lặp đọc stream) mà không abort thì kết nối vẫn mở.</li>
+<li><b>Proxy</b> (nginx, CDN, load balancer) phải chuyển việc đóng kết nối vào backend.</li>
+<li><b>Backend</b> phát hiện: Node/Next.js dùng <code>req.signal</code>; Python/Starlette thì generator bị huỷ hoặc kiểm tra <code>await request.is_disconnected()</code>. README ghi middleware dạng <code>BaseHTTPMiddleware</code> từng làm hàm này luôn trả False.</li>
+<li><b>Backend đóng request tới provider</b>: truyền signal vào SDK hoặc fetch, hoặc thoát khối <code>with ... stream</code>. Với AI SDK: <code>abortSignal: req.signal</code>.</li></ol>
+<p>Kể cả nối đủ bốn mắt, provider có ngừng sinh hay không còn tuỳ provider. Thử ở phần cuối của hình chính (ô "Bấm Dừng").</p>`,
+        take: 'Nối đủ bốn mắt xích và viết test: ngắt client giữa chừng, rồi kiểm tra request upstream có thật sự đóng.'
+      },
+      {
+        q: 'Provider nào ngừng tính tiền khi huỷ? Self-hosted thì "tiền" là gì?',
+        a: `<p>README ghi đây là điểm tài liệu chính thức nói ít nhất:</p>
+<ul><li><b>Claude:</b> request bị client ngắt hoặc timeout giữa chừng vẫn bị tính tiền. Không nói rõ tính đến token nào.</li>
+<li><b>OpenAI:</b> response thường thì huỷ bằng cách đóng kết nối; background response chạy tiếp cho đến khi gọi endpoint cancel.</li>
+<li><b>OpenRouter</b> (gateway): OpenAI, Azure, Anthropic, DeepSeek, Together, DeepInfra, xAI hỗ trợ huỷ; AWS Bedrock, Google AI Studio, Groq, Mistral, Perplexity thì không, có thể bị tính cả completion.</li>
+<li><b>Azure OpenAI:</b> khi content filter dừng stream, token đã sinh trước điểm lọc vẫn bị tính.</li>
+<li><b>Self-hosted (vLLM):</b> huỷ khi client ngắt kết nối. "Chi phí" là GPU: request không ai chờ vẫn giữ KV cache (bộ nhớ đệm của các token đã xử lý), làm chậm mọi request khác. README có bug report tháng 10/2026: request không stream bị ngắt nhưng engine vẫn sinh đến <code>max_tokens</code>.</li></ul>
+<p>Một nguồn chi phí ít ai để ý: khách bấm Dừng rồi Tạo lại ngay. Nếu request đầu chưa thật sự bị huỷ, bạn trả tiền cho hai câu trả lời chạy song song.</p>`,
+        take: 'Không tin, phải đo: huỷ ở vài thời điểm, so số token bị tính trên usage và billing với số token khách đã nhận.'
+      }
+    ],
+    poc: {
+      goal: "Phần A: khách đóng tab ở giây 1 khi provider giả lập đang sinh 210 token; server provider tự đếm token đã sinh. Phần B: bốn kiểu kết thúc stream (bình thường, 529, lỗi sau 200, đứt kết nối) với client \"lỏng\" và client bắt buộc <code>done</code>. Phần C: số học token của retry, continuation, resume.",
+      file: "docs/streaming/pocs/06_errors_cancel.py",
+      run: "uv run docs/streaming/pocs/06_errors_cancel.py",
+      needs: "Không cần key, Docker hay model: server <code>asyncio</code> nhỏ trên <code>127.0.0.1</code> (cổng ngẫu nhiên), tự tắt khi script xong. Khoảng 12 giây. <b>Kịch bản (script quyết định):</b> 'provider' là server giả lập phát token sau mỗi 20 ms; nó có dừng sinh khi client đi mất hay không là một cờ trong script (bật: giống vLLM; tắt: giống nhóm provider không hỗ trợ huỷ), không phải đo provider thật. Ba loại lỗi ở Phần B cũng do script tạo. Phần C là phép tính trên giả định của lab (prompt 3.000, output 600, đứt ở 260), không đo. <b>Đo thật:</b> số token server giả lập đã sinh (đếm trên server), số token khách nhận qua socket, và kết luận của hai client chạy thật trên các stream đó.",
+      output: "=== A. Khách đóng tab ở giây 1; provider sinh 210 token, 20 ms/token (đếm trên server provider)\nbackend relay / provider                     | khách nhận | đã sinh lúc đi | tổng sinh | sinh sau khi đi\nrelay đóng upstream / provider huỷ được      |        36 |         36 |       38 |            2\nrelay 'đọc nốt để log' / provider huỷ được   |        36 |         36 |      210 |          174\nrelay đóng upstream / provider không huỷ     |        36 |         36 |      210 |          174\n\n=== B. Ba loại lỗi, hai kiểu client (client 'lỏng' coi đóng kết nối là xong)\nsự cố                          | client lỏng                                  | client bắt buộc done\nbình thường                    | lưu là câu trả lời HOÀN CHỈNH (163 ký tự)    | lưu là câu trả lời HOÀN CHỈNH\n1. 529 trước stream            | lỗi HTTP 529 Overloaded                      | lỗi HTTP 529 Overloaded\n2. 200 rồi event error         | lưu là câu trả lời HOÀN CHỈNH (59 ký tự)     | báo lỗi overloaded, giữ phần đã nhận\n3. đứt kết nối, không event    | lưu là câu trả lời HOÀN CHỈNH (59 ký tự)     | báo 'bị gián đoạn', giữ phần đã nhận\n\n=== C. Đứt ở token 260/600, prompt 3.000 token: tổng token bị tính theo từng cách (số học, README §3.6)\ncách                                 | input tính | output tính | khách nhận\nchỉ báo lỗi, giữ phần đã nhận        |      3.000 |         260 | 260/600\nretry từ đầu                         |      6.000 |         860 | đủ, viết lại từ đầu\nClaude continuation (user message)   |      6.300 |         600 | đủ, chỗ nối có thể lệch\nOpenAI background + starting_after   |      3.000 |         600 | đủ, không sinh lại\n(giả định lần đứt vẫn bị tính 260 output token như trung tâm hỗ trợ Claude mô tả; +40 token cho câu yêu cầu viết tiếp là ước lượng)\n\nRút ra: chỉ khi relay đóng kết nối upstream VÀ provider huỷ được thì token ngừng sinh khi khách đi; relay đọc nốt để log làm provider sinh tới hết. Client không bắt buộc event done lưu câu trả lời cụt như hoàn chỉnh.",
+      measured: true,
+      read: ["Phần A: relay đóng upstream thì provider chỉ sinh thêm ~2 token sau khi khách đi. Relay \"đọc nốt để log\" hoặc provider không huỷ được thì sinh thêm ~174 token mà khách không bao giờ đọc.", "Phần B: lỗi sau HTTP 200 và đứt kết nối, client lỏng đều lưu 59 ký tự thành \"câu trả lời HOÀN CHỈNH\". Client bắt buộc <code>done</code> báo lỗi hoặc gián đoạn và giữ phần đã nhận.", "Phần C: retry tốn gấp đôi input và sinh lại 260 token output. Continuation tốn nhiều input nhất (6.300) vì gửi lại cả phần đã nhận, nhưng không sinh lại output (600 so với 860). Chỉ resume kiểu background không tốn thêm gì. Rẻ hơn hay đắt hơn tuỳ giá input/output của provider; README không ghi giá.", "Phần A chỉ chứng minh phía code của bạn: relay có đóng kết nối upstream hay không. Con số 174 ở dòng 'provider không huỷ' là do cờ trong script, không nói provider thật nào sinh bao nhiêu."]
+    },
+    mount(stage) {
+      const S = { kind: 'drop', t: 6, pol: 'retry', arch: 'attached' };
+      const tl = el('div'), stat = el('div', { class: 'stat' }), screen = el('div', { style: 'border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);font-size:14px' }), cap = el('div', { style: CAPS });
+      const tS = slider('Sự cố lúc', 0.4, 12.6, 0.2, S.t, (v) => { S.t = v; render(); }, (v) => fx(v) + ' s');
+      function render() {
+        tS.input.disabled = S.kind === 'pre';
+        const R = scenario(S);
+        tl.replaceChildren(timeline(S, R));
+        screen.innerHTML = `<div class="hint" style="margin:0 0 6px">Màn hình khách</div><div>${R.screen}</div><div class="hint">${R.status}</div>`;
+        stat.innerHTML = `<span>Khách đã thấy: <b>${R.k}</b>/${N} token</span><span>Input bị tính: <b>${fmtI(R.inBilled)}</b> (${pct(R.inBilled, I)} của 1 lần suôn sẻ)</span><span>Output bị tính: <b>${R.outBilled}</b> (${pct(R.outBilled, N)})</span><span>Token sinh thừa: <b class="${R.dup ? 'bad' : ''}">${R.dup}</b></span><span>Có câu trả lời đủ: <b>${R.doneAt ? fx(R.doneAt) + ' s' : 'không'}</b></span>`;
+        const col = R.cls === 'ok' ? 'var(--ok)' : R.cls === 'bad' ? 'var(--bad)' : 'var(--warn)';
+        cap.style.borderLeft = '3px solid ' + col;
+        cap.innerHTML = `<b style="color:${col}">${R.head}</b><br>Vì sao: ${R.why}${R.not ? '<br>Điều này không có nghĩa: ' + R.not : ''}<br>${R.real}`;
+      }
+      stage.append(
+        el('div', { class: 'row' }, [
+          select('Sự cố', [['drop', 'Đứt kết nối (4G mất sóng)'], ['error', 'Event error giữa stream'], ['pre', 'Lỗi trước stream (529)']], S.kind, (v) => { S.kind = v; render(); }).node, tS.node]),
+        el('div', { class: 'row' }, [
+          select('Cách xử lý', [['ignore', 'Coi đóng kết nối là xong'], ['retry', 'Retry im lặng từ đầu'], ['partial', 'Giữ phần đã nhận + báo gián đoạn'], ['continue', 'Viết tiếp (Claude continuation)'], ['lastid', 'Resume bằng Last-Event-ID']], S.pol, (v) => { S.pol = v; render(); }).node,
+          select('Kiến trúc', [['attached', 'Gắn generation với kết nối'], ['detached', 'Tách generation (worker + lưu event)']], S.arch, (v) => { S.arch = v; render(); }).node]),
+        tl, el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--accent)' }), 'token sinh và có ích']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'token sinh thừa / lặp']), el('span', {}, [el('i', { style: 'background:var(--g1)' }), 'khách nhận được']), el('span', {}, [el('i', { style: 'background:var(--bad)' }), 'sự cố'])]),
+        stat, el('div', { style: 'height:8px' }), screen, cap,
+        el('p', { class: 'hint', text: 'Giả định: retry và viết tiếp chờ 1 giây trước khi gửi; client SSE nối lại sau 3 giây; output bị tính đúng bằng số token đã sinh đến lúc dừng (README không nói rõ con số này); lỗi trước stream không bị tính tiền. Với kiến trúc gắn kết nối, backend được giả định đã nối đủ bốn mắt xích huỷ.' }));
+      render();
+
+      const C = { tc: 3, links: [true, true, true, true], prov: 'yes', natural: 600, max: 1024, regen: false };
+      const LINKS = [['[1] Client abort()', 'Chỉ ngừng đọc, kết nối vẫn mở'], ['[2] Proxy chuyển việc đóng', 'Proxy giữ kết nối tới backend'], ['[3] Backend phát hiện', 'Middleware làm is_disconnected() luôn False'], ['[4] Backend đóng request provider', 'Không truyền signal vào SDK']];
+      const chain = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin:8px 0' }), cout = el('div'), ccap = el('div', { style: CAPS });
+      const boxes = LINKS.map(([name], i) => {
+        const cb = el('input', { type: 'checkbox', checked: '' });
+        cb.addEventListener('change', () => { C.links[i] = cb.checked; renderC(); });
+        return { cb, node: el('label', { style: 'display:flex;gap:6px;align-items:flex-start;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--bg)' }, [cb, el('span', { text: name })]) };
+      });
+      const regen = el('input', { type: 'checkbox' });
+      regen.addEventListener('change', () => { C.regen = regen.checked; renderC(); });
+      const tcS = slider('Bấm Dừng lúc', 0.4, 12, 0.2, C.tc, (v) => { C.tc = v; renderC(); }, (v) => fx(v) + ' s');
+      function renderC() {
+        const total = Math.min(C.natural, C.max), seen = Math.min(total, tokAt(C.tc)), broken = C.links.indexOf(false);
+        const stops = broken < 0 && C.prov === 'yes', billed = stops ? seen : total, second = C.regen ? total : 0, all = billed + second;
+        boxes.forEach((b, i) => { b.node.style.borderColor = C.links[i] ? 'var(--ok)' : 'var(--bad)'; });
+        cout.replaceChildren(hbars([['Khách đã thấy', seen, false], ['Lần 1 bị tính', billed, !stops], ...(C.regen ? [['Lần 2 (Tạo lại)', second, false]] : []), ['Tổng output bị tính', all, true]], { max: Math.max(all, 1), fmt: (v) => v + ' tok' }),
+          el('div', { class: 'stat', html: `<span>Token bị tính mà không ai đọc: <b class="${billed - seen ? 'bad' : 'ok'}">${billed - seen}</b></span><span>Trần max_tokens: <b>${C.max}</b></span>` }));
+        let head, body, col;
+        if (stops) { col = 'var(--ok)'; head = `Huỷ có tác dụng: chỉ bị tính khoảng ${seen} token đã sinh.`; body = 'Bốn mắt xích đều nối, và provider dừng sinh khi kết nối đóng.'; }
+        else if (broken >= 0) { col = 'var(--bad)'; head = `Đứt ở ${LINKS[broken][0]}: provider sinh tiếp đến ${total} token.`; body = `Vì sao: ${LINKS[broken][1]}, nên tín hiệu huỷ không tới provider. Khách thấy nút Dừng có tác dụng (chữ ngừng hiện), nhưng hoá đơn thì không. Trong hệ thống thật: viết test ngắt kết nối cho từng tầng.`; }
+        else { col = 'var(--warn)'; head = `Code đúng hết, nhưng provider không hỗ trợ huỷ: có thể bị tính cả ${total} token.`; body = 'Theo OpenRouter, với nhóm provider như AWS Bedrock, Google AI Studio, Groq, Mistral, Perplexity, ngắt kết nối không dừng việc sinh ở upstream. Điều này không có nghĩa code của bạn sai. Trong hệ thống thật: max_tokens là trần duy nhất được bảo đảm, hãy đặt nó sát nhu cầu.'; }
+        if (C.max < C.natural && !stops) body += ` max_tokens = ${C.max} đã chặn ${C.natural - C.max} token.`;
+        if (C.regen && !stops) body += ' Khách bấm Tạo lại khi lần 1 chưa thật sự dừng: hai câu trả lời chạy song song, bạn trả cả hai.';
+        ccap.style.borderLeft = '3px solid ' + col; ccap.innerHTML = `<b style="color:${col}">${head}</b><br>${body}`;
+      }
+      stage.append(el('h4', { text: 'Bấm Dừng: token có ngừng bị tính không?', style: 'margin:24px 0 4px' }),
+        el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Bỏ tích một ô để làm đứt mắt xích đó. Chọn provider có hay không hỗ trợ huỷ (theo danh sách OpenRouter trong README). Câu trả lời tự nhiên dài 600 hoặc 2.000 token (giả định), bị chặn bởi max_tokens.' }),
+        chain, el('div', { class: 'row' }, [tcS.node, select('Provider', [['yes', 'Hỗ trợ huỷ'], ['no', 'Không hỗ trợ huỷ']], C.prov, (v) => { C.prov = v; renderC(); }).node]),
+        el('div', { class: 'row' }, [select('Độ dài tự nhiên', [['600', '600 token'], ['2000', '2.000 token (lan man)']], '600', (v) => { C.natural = +v; renderC(); }).node,
+          slider('max_tokens', 256, 4096, 256, C.max, (v) => { C.max = v; renderC(); }).node, el('label', { class: 'ctl' }, [regen, 'Khách bấm Tạo lại ngay sau khi Dừng'])]),
+        cout, ccap);
+      chain.append(...boxes.map((b) => b.node));
+      renderC();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

