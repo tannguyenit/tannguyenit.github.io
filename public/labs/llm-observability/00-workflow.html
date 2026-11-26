@@ -1,0 +1,658 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 00</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a class="off" href="#">← Lab trước</a><a href="01-why-not-logs.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const vn = (x, d = 0) => Number(x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const usd = (x) => '$' + x.toFixed(x < 0.01 ? 5 : 4);
+  const pc = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const PRICE = { input: 2, cacheRead: 0.10, cacheWrite: 2.5, output: 10 };
+  const MODEL = 'claude-sonnet-5-5';
+  const NORMAL_FINISH = ['stop', 'end_turn', 'stop_sequence', 'tool_use', 'tool_calls', 'pause_turn', 'completed'];
+  const TOGGLES = [
+    ['slow', 'Provider chậm (TTFT lượt 2 lên 4,2 s)'],
+    ['refusal', 'Model từ chối ở lượt 2'],
+    ['cachemiss', 'Deploy thêm giờ hiện tại vào system prompt (cache miss)'],
+    ['stale', 'Retriever trả chính sách hoàn tiền bản cũ']
+  ];
+
+  function chatCost(u) {
+    const unc = u.input - u.read - u.write;
+    return (unc * PRICE.input + u.read * PRICE.cacheRead + u.write * PRICE.cacheWrite + u.output * PRICE.output) / 1e6;
+  }
+
+  function buildTrace(f) {
+    const u1 = { input: 6200, read: f.cachemiss ? 0 : 5800, write: f.cachemiss ? 5800 : 0, output: 60 };
+    const u2 = { input: 6500, read: 5800, write: 0, output: f.refusal ? 18 : 220 };
+    const ttft2 = f.slow ? 4200 : 900;
+    const gen2 = Math.round(u2.output / 178 * 1000);
+    const c2s = 1651, c2e = c2s + ttft2 + gen2;
+    const end = c2e + 25;
+    const doc = f.stale ? 'chinh-sach-hoan-tien@2024-03' : 'chinh-sach-hoan-tien@2026-09';
+    const answer = f.refusal ? 'Xin lỗi, mình không thể hỗ trợ yêu cầu này.'
+      : f.stale ? 'Dạ, đơn SV-4821 dự kiến giao ngày 29/11. Nếu giao trễ, ShopViet hoàn tiền trong 3 ngày ạ.'
+        : 'Dạ, đơn SV-4821 dự kiến giao ngày 29/11. Nếu giao trễ, ShopViet hoàn tiền trong 14 ngày ạ.';
+    const fin2 = f.refusal ? 'refusal' : 'end_turn';
+    const S = [
+      { id: 'http', d: 0, name: 'POST /chat', kind: 'SERVER', s: 0, e: end, a: { 'http.request.method': 'POST', 'http.route': '/chat', 'http.response.status_code': 200, 'app.tenant.id': 'shopviet', 'app.user.hash': 'u_7f3a…', 'app.deploy.version': f.cachemiss ? 'web-2026.11.27b' : 'web-2026.11.27a' } },
+      { id: 'agent', d: 1, name: 'invoke_agent support-bot', kind: 'INTERNAL', s: 15, e: end - 10, a: { 'gen_ai.operation.name': 'invoke_agent', 'gen_ai.agent.name': 'support-bot', 'gen_ai.conversation.id': 'conv_91c2', 'gen_ai.prompt.version': f.cachemiss ? 'v15' : 'v14' } },
+      { id: 'ret', d: 2, name: 'retrieval policies', kind: 'INTERNAL', s: 20, e: 260, a: { 'gen_ai.operation.name': 'retrieval', 'app.retrieval.doc_ids': '[' + doc + ', giao-hang-noi-thanh@2026-06]', 'app.retrieval.scores': '[0,82, 0,64]', 'app.retrieval.doc_valid_until': f.stale ? '2025-08-31 (đã hết hiệu lực)' : 'null' } },
+      { id: 'emb', d: 3, name: 'embeddings text-embedding-x', kind: 'CLIENT', s: 25, e: 105, a: { 'gen_ai.operation.name': 'embeddings', 'gen_ai.request.model': 'text-embedding-x', 'gen_ai.usage.input_tokens': 24 } },
+      { id: 'vec', d: 3, name: 'vector search', kind: 'CLIENT', s: 110, e: 250, a: { 'db.system.name': 'vector-db', 'app.retrieval.top_k': 2 } },
+      { id: 'c1', d: 2, name: 'chat ' + MODEL, kind: 'CLIENT', s: 270, e: 1450, llm: true, u: u1, fin: 'tool_use', ttft: null },
+      { id: 'tool', d: 2, name: 'execute_tool get_order', kind: 'INTERNAL', s: 1460, e: 1640, a: { 'gen_ai.operation.name': 'execute_tool', 'gen_ai.tool.name': 'get_order', 'gen_ai.tool.call.id': 'toolu_01Kx…', 'app.tool.status': 'ok' } },
+      { id: 'c2', d: 2, name: 'chat ' + MODEL, kind: 'CLIENT', s: c2s, e: c2e, llm: true, u: u2, fin: fin2, ttft: ttft2, stream: true }
+    ];
+    S.filter((x) => x.llm).forEach((x, i) => {
+      x.cost = chatCost(x.u);
+      x.a = {
+        'gen_ai.operation.name': 'chat', 'gen_ai.provider.name': 'anthropic', 'gen_ai.request.model': MODEL, 'server.address': 'api.anthropic.com',
+        'gen_ai.response.model': MODEL, 'gen_ai.response.id': 'msg_01' + (i ? 'Q8' : 'P3') + '…',
+        'gen_ai.response.finish_reasons': '["' + x.fin + '"]',
+        'gen_ai.usage.input_tokens': x.u.input, 'gen_ai.usage.cache_read.input_tokens': x.u.read, 'gen_ai.usage.cache_write.input_tokens': x.u.write,
+        'gen_ai.usage.output_tokens': x.u.output, 'gen_ai.prompt.name': 'support-answer', 'gen_ai.prompt.version': f.cachemiss ? 'v15' : 'v14',
+        'app.llm.cost_usd': x.cost.toFixed(5)
+      };
+      if (x.stream) { x.a['gen_ai.request.stream'] = true; x.a['gen_ai.response.time_to_first_chunk'] = (x.ttft / 1000).toFixed(2) + ' s'; }
+      if (!NORMAL_FINISH.includes(x.fin)) x.a['app.llm.keep'] = true;
+    });
+    return { S, end, answer, doc, cost: S.filter((x) => x.llm).reduce((s, x) => s + x.cost, 0) };
+  }
+
+  function quantile(arr, q) { const a = arr.slice().sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * a.length))]; }
+
+  function aggregate(f, share, seed = 7) {
+    const rnd = seeded(seed), N = 2000;
+    const base = buildTrace({}), hit = buildTrace(f);
+    const llm = (t) => t.S.filter((x) => x.llm);
+    let ttft = [], ttftBase = [], cost = 0, costBase = 0, read = 0, inp = 0, readB = 0, inpB = 0, refusals = 0, refusalsB = 0;
+    for (let i = 0; i < N; i++) {
+      const z = randn(rnd), aff = rnd() < share, r0 = rnd();
+      const tB = base.S[7].ttft * Math.exp(0.25 * z);
+      const t = (aff ? hit.S[7].ttft : base.S[7].ttft) * Math.exp(0.25 * z);
+      ttftBase.push(tB); ttft.push(t);
+      costBase += base.cost; cost += aff ? hit.cost : base.cost;
+      llm(base).forEach((x) => { readB += x.u.read; inpB += x.u.input; });
+      llm(aff ? hit : base).forEach((x) => { read += x.u.read; inp += x.u.input; });
+      const refB = r0 < 0.002;
+      if (refB) refusalsB++;
+      if (refB || (aff && f.refusal)) refusals++;
+    }
+    return {
+      N, p95: quantile(ttft, 0.95), p99: quantile(ttft, 0.99), p95B: quantile(ttftBase, 0.95),
+      costRatio: cost / costBase, cost, hitRate: read / inp, hitRateB: readB / inpB,
+      refusal: refusals / N, refusalB: refusalsB / N
+    };
+  }
+
+  function alerts(f, share) {
+    const A = aggregate(f, share);
+    const canary = f.stale ? 0 : 1;
+    const judge = f.refusal ? 'n/a' : 0.92;
+    return { A, rows: [
+      { m: 'Tỉ lệ lỗi gọi model theo provider', rule: '> 5% trong 5 phút', lvl: 'page', v: '0,0%', fire: false },
+      { m: 'TTFT p95', rule: '> 3× baseline trong 10 phút', lvl: 'page', v: vn(A.p95) + ' ms (baseline ' + vn(A.p95B) + ')', fire: A.p95 > 3 * A.p95B },
+      { m: 'Chi phí theo giờ', rule: '> 3× cùng giờ tuần trước', lvl: 'page', v: '×' + A.costRatio.toFixed(2).replace('.', ','), fire: A.costRatio > 3 },
+      { m: 'Tỉ lệ refusal', rule: '> 2× baseline (giả định)', lvl: 'ticket', v: pc(A.refusal, 2) + ' (baseline ' + pc(A.refusalB, 2) + ')', fire: A.refusal > 2 * Math.max(A.refusalB, 0.001) },
+      { m: 'Cache hit rate (theo token)', rule: 'giảm > 20 điểm sau deploy (giả định)', lvl: 'ticket', v: pc(A.hitRate) + ' (trước ' + pc(A.hitRateB) + ')', fire: A.hitRateB - A.hitRate > 0.2 },
+      { m: 'Canary refund-days (README §3.5)', rule: 'pass rate giảm', lvl: 'ticket', v: canary + '/1 pass', fire: canary < 1 },
+      { m: 'Judge online: câu trả lời bám tài liệu', rule: 'điểm giảm', lvl: 'ticket', v: judge === 'n/a' ? 'không chấm (refusal)' : String(judge).replace('.', ','), fire: false }
+    ] };
+  }
+
+  function waterfall(T, sel, onPick) {
+    const W = 700, left = 250, right = 14, rowH = 26, H = T.S.length * rowH + 28;
+    const span = Math.max(T.end, 4500);
+    const x = (t) => left + (t / span) * (W - left - right);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'canvas', role: 'img', 'aria-label': 'Trace waterfall của một request ShopViet' });
+    for (let t = 0; t <= span; t += 1000) svg.append(el('line', { x1: x(t), x2: x(t), y1: 2, y2: H - 20, stroke: 'var(--line)' }), el('text', { x: x(t), y: H - 6, 'text-anchor': 'middle', class: 'mute', 'font-size': 11, text: (t / 1000) + ' s' }));
+    T.S.forEach((s, i) => {
+      const y = 6 + i * rowH;
+      const bad = s.llm && !NORMAL_FINISH.includes(s.fin);
+      const col = bad ? 'var(--bad)' : s.llm ? 'var(--accent)' : s.id === 'ret' || s.id === 'emb' || s.id === 'vec' ? 'var(--g2)' : s.id === 'tool' ? 'var(--g3)' : 'var(--g1)';
+      const g = el('g', { style: 'cursor:pointer', onclick: () => onPick(s.id) }, [
+        el('rect', { x: 0, y: y - 2, width: W, height: rowH - 2, fill: s.id === sel ? 'var(--accent-soft)' : 'transparent' }),
+        el('text', { x: 6 + s.d * 14, y: y + 14, 'font-size': 12, fill: 'var(--ink)', text: s.name }),
+        el('rect', { x: x(s.s), y: y + 3, width: Math.max(2, x(s.e) - x(s.s)), height: rowH - 10, rx: 3, fill: col, opacity: 0.85 }),
+        el('text', { x: Math.min(x(s.e) + 4, W - 60), y: y + 14, 'font-size': 11, fill: 'var(--mute)', text: vn(s.e - s.s) + ' ms' })
+      ]);
+      if (s.ttft) g.append(el('line', { x1: x(s.s + s.ttft), x2: x(s.s + s.ttft), y1: y + 1, y2: y + rowH - 5, stroke: 'var(--warn)', 'stroke-width': 2.5 }), el('title', { text: 'Chunk đầu tiên sau ' + vn(s.ttft) + ' ms' }));
+      svg.append(g);
+    });
+    return svg;
+  }
+
+  return {
+    id: 'workflow', nav: '0. Workflow', ref: 'Tổng quan',
+    title: 'Log ghi "POST /chat 200 3812ms". Request đó chậm, đắt, bị từ chối hay trả lời sai?',
+    hook: 'Bấm vào từng thanh trong trace để xem attribute của span. Bật các sự cố (chậm, refusal, cache miss, tài liệu cũ) và kéo tỉ lệ traffic bị ảnh hưởng: xem metric nào đổi, alert nào kêu, và cái gì vẫn xanh.',
+    terms: [
+      ['Token', 'Đơn vị provider dùng để đếm chữ model đọc vào (input) và viết ra (output), và để tính tiền. Một từ có thể là một hoặc vài token. Ví dụ: lượt gọi model thứ hai trong lab đọc 6.500 token, viết 220 token.'],
+      ['Stream, chunk', 'Stream: model gửi câu trả lời thành nhiều mẩu nhỏ (chunk) ngay khi sinh ra, thay vì chờ viết xong mới gửi một lần. Khách thấy chữ hiện dần, như khi chat với ChatGPT.'],
+      ['Prompt cache', 'Provider nhớ phần đầu prompt giống hệt lần trước (system prompt, tài liệu) trong vài phút. Lượt sau đọc lại phần đó rẻ hơn: Sonnet 5.5 tính 0,10 USD thay vì 2 USD cho 1 triệu token. Chỉ cần đổi một chữ ở đầu prompt là phần sau không đọc lại được.'],
+      ['Observability','Khả năng trả lời câu hỏi về hệ thống đang chạy mà không phải sửa code để hỏi. Ví dụ: "request của khách lúc 10:42 vì sao nói hoàn tiền 3 ngày?" mà không cần thêm log rồi deploy lại.'],
+      ['Trace', 'Toàn bộ công việc để phục vụ một request, gồm nhiều bước lồng nhau. Một câu hỏi của khách ShopViet là một trace với 8 bước trong hình.'],
+      ['Span', 'Một bước trong trace: có tên, thời điểm bắt đầu, kết thúc, attribute và trạng thái. Ví dụ span "execute_tool get_order" chạy 180 ms.'],
+      ['Attribute', 'Cặp khoá–giá trị gắn trên span. Ví dụ <code>gen_ai.usage.output_tokens = 220</code>.'],
+      ['gen_ai.*', 'Tên attribute theo OpenTelemetry GenAI semantic conventions, chuẩn đặt tên chung cho lượt gọi model, tool, agent. Đang ở trạng thái Development, tên có thể đổi.'],
+      ['Metric', 'Con số tổng hợp trên toàn traffic theo thời gian, rẻ và lưu lâu. Ví dụ TTFT p95 của 2.000 request trong 10 phút.'],
+      ['TTFT', 'Time to first token: từ lúc gửi request tới khi nhận chunk đầu tiên khi stream. Vạch cam trên thanh lượt 2.'],
+      ['p95', 'Giá trị mà 95% số request nhanh hơn. p95 = 1.300 ms nghĩa là cứ 100 request thì khoảng 5 request chậm hơn 1,3 giây.'],
+      ['finish_reasons', 'Lý do model dừng: <code>end_turn</code> (xong), <code>tool_use</code> (muốn gọi tool), <code>max_tokens</code> (bị cắt), <code>refusal</code> (từ chối).'],
+      ['Cache hit rate', 'Phần input token được đọc từ prompt cache: Σ cache_read / Σ input (Σ là cộng dồn). Lượt 1 đọc 5.800 trên 6.200 token là 94%; cả trace (hai lượt) là 11.600 / 12.700 ≈ 91%.'],
+      ['Sampling', 'Chỉ giữ một phần trace để đỡ tiền lưu. Ví dụ giữ 5% trace bình thường nhưng giữ 100% trace bị từ chối, bị cắt, có lỗi (README §3.1). Sampler là đoạn code ra quyết định giữ hay bỏ.'],
+      ['Tín hiệu chất lượng', 'Bằng chứng câu trả lời đúng hay sai. Ba loại trong lab: judge online (một model khác đọc câu trả lời và chấm điểm), thumbs down của khách, và canary (một câu hỏi cố định chạy theo lịch, đáp án kiểm bằng code, ví dụ câu trả lời phải chứa "14").'],
+      ['Alert page / ticket', 'Page: đánh thức người trực ngay. Ticket: tạo việc để xem trong ngày, không gọi ai dậy.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> bán đồ điện tử online. Trợ lý chat chạy production trả lời về đơn hàng (mã dạng SV-4821), giao hàng, hoàn tiền. Mỗi câu hỏi đi qua gateway, tìm tài liệu chính sách, gọi <code>' + MODEL + '</code>, gọi tool <code>get_order</code>, rồi gọi model lần nữa để viết câu trả lời.',
+      scenario: 'Đội vận hành có log ứng dụng dạng <code>POST /chat 200 3812ms</code> và dashboard HTTP. Hôm nay có bốn loại phàn nàn: bot trả lời chậm, hoá đơn LLM tăng, bot từ chối câu hỏi bình thường, bot nói hoàn tiền 3 ngày trong khi chính sách là 14 ngày. Dòng log của cả bốn đều là <code>200</code>.',
+      ask: 'Cần ghi gì cho mỗi request để biết request nào chậm, đắt, lỗi hay trả lời sai mà không ngồi đọc log bằng tay? Và mỗi loại sự cố thì metric hay alert nào bắt được?',
+      solves: 'Lab dựng một trace hoàn chỉnh của câu hỏi về đơn SV-4821 theo cây span ở README §1.2, gắn attribute <code>gen_ai.*</code>, tính chi phí từng lượt gọi model theo giá Sonnet 5.5, rồi giả lập 2.000 request trong 10 phút để tính metric và chạy các luật alert ví dụ của README §3.7.',
+      read: [
+        'Hình trên: trace waterfall. Mỗi hàng là một span, thụt lề theo cha con, thanh ngang là thời gian. Thanh xanh đậm là lượt gọi model, vạch cam là thời điểm chunk đầu tiên về. Thanh đỏ là lượt kết thúc bất thường.',
+        'Bấm một hàng để xem bảng attribute của span đó bên dưới.',
+        'Các nút sự cố đổi chính trace này. Thanh trượt "phần traffic bị ảnh hưởng" quyết định bao nhiêu trong 2.000 request giả lập gặp cùng sự cố, để tính metric và alert.',
+        'Bảng alert: đỏ là page, cam là ticket, xanh là im lặng. Khung chú thích bên dưới giải thích chỗ bất thường.',
+        'Dòng cuối: HTTP status, chi phí trace này, cache hit rate của trace, và câu trả lời khách nhận được.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Observability cho LLM cần thêm ba thứ so với APM (README §1.1): <b>nội dung</b> (có kiểm soát), <b>token và chi phí</b>, và <b>tín hiệu chất lượng</b>. Một request thành một trace; mỗi lượt gọi model là một span mang <code>gen_ai.*</code>.</p>
+<div class="tbl"><table>
+<tr><th>Câu hỏi của đội vận hành</th><th>Field / metric trả lời</th><th>Alert ví dụ (README §3.7)</th></tr>
+<tr><td>Request nào chậm?</td><td>Thời lượng span, <code>gen_ai.response.time_to_first_chunk</code>; TTFT p50/p95</td><td>TTFT p95 &gt; 3× baseline 10 phút: page</td></tr>
+<tr><td>Request nào đắt?</td><td><code>gen_ai.usage.*</code> đã chuẩn hoá × giá theo <code>gen_ai.response.model</code></td><td>Chi phí theo giờ &gt; 3× cùng giờ tuần trước: page; cache hit rate giảm sau deploy: ticket</td></tr>
+<tr><td>Request nào lỗi dù trả 200?</td><td><code>gen_ai.response.finish_reasons</code>, <code>error.type</code></td><td>Tỉ lệ lỗi theo provider &gt; 5%: page; refusal, bị cắt tăng: ticket</td></tr>
+<tr><td>Request nào trả lời sai?</td><td>Event <code>gen_ai.evaluation.result</code>, feedback, canary, id tài liệu trên span retrieval</td><td>Canary hoặc judge giảm: ticket</td></tr>
+</table></div>
+<p>Giá dùng trong lab: Sonnet 5.5 input 2, output 10, đọc cache 0,10 USD / 1 triệu token (Cost Optimization §2.1, ngày 06/11/2026); ghi cache TTL 5 phút = 1,25 × input = 2,5 USD (Cost Optimization §2.2). Ngưỡng alert là ví dụ minh hoạ của README, không phải chuẩn.</p>
+<div class="verdict"><b>Điểm cần nhớ:</b> HTTP 200 không nói gì về một lượt gọi LLM. Mỗi loại sự cố có một tín hiệu riêng: chậm thấy ở TTFT, đắt thấy ở token và cache, "lỗi trong 200" thấy ở finish_reasons, sai nội dung chỉ thấy ở tín hiệu chất lượng.</div>`,
+    why: {
+      c: 'Trace theo OpenTelemetry với span <code>gen_ai.*</code> cho mỗi lượt gọi model, metric token/TTFT/chi phí trên toàn traffic, tín hiệu chất lượng gắn vào trace, alert chia page và ticket. Lý do: mỗi sự cố hiện ra ở một chỗ khác nhau, và chỉ trace mới nối được "khách thấy gì" với "hệ thống đã làm gì".',
+      s: 'Chỉ log request/response: không có cấu trúc cha con, không có token và chi phí, grep theo thời gian ra hàng trăm dòng (Lab 01). Chỉ dashboard HTTP: mọi sự cố trong lab đều xanh. Ghi toàn bộ nội dung mọi request: đắt, và là kho PII (Lab 03).',
+      p: 'Phải instrument mọi đường gọi model, chuẩn hoá usage theo provider, giữ bảng giá có ngày hiệu lực, chọn sampling, quyết định chính sách nội dung, và chi phí lưu trace. Tín hiệu chất lượng tốn thêm tiền judge và công đọc trace.'
+    },
+    deep: [
+      {
+        q: 'Log đã có "POST /chat 200 3812ms". Thêm trace để làm gì?',
+        a: `<p>Dòng log đó trả lời được ba câu của APM: request có lỗi không (không), mất bao lâu (3,8 s), ở đâu (/chat). Nhưng bốn sự cố trong lab đều cho ra dòng log giống hệt nhau về hình thức: status 200, thời gian vài giây. README §1.1 liệt kê những lỗi gây hại nhất lại trông như request thành công: sai nội dung, bị cắt vì <code>max_tokens</code>, bị từ chối, tool call sai.</p>
+<p>Hình dưới bật lần lượt từng sự cố và in ra dòng log HTTP mà mỗi trường hợp sinh ra.</p>`,
+        viz(box) {
+          const rows = [['bình thường', {}]].concat(TOGGLES.map(([k, t]) => [t, { [k]: true }])).map(([t, f]) => {
+            const T = buildTrace(f);
+            return `<tr><td>${esc(t)}</td><td class="mono">POST /chat 200 ${T.end}ms</td><td class="mono">${T.S[7].fin}</td><td class="mono">${usd(T.cost)}</td></tr>`;
+          }).join('');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Tình huống</th><th>Log HTTP</th><th>finish_reasons lượt 2</th><th>Chi phí trace</th></tr>' + rows })]),
+            el('div', { class: 'cap', html: '<b style="color:var(--bad)">Năm tình huống, năm dòng log cùng status 200.</b> Vì sao: HTTP chỉ biết server có trả lời không; refusal của Claude là response bình thường (README §1.1, [35]), câu trả lời sai vẫn là text hợp lệ. Không có nghĩa log vô dụng: nó vẫn cần cho lỗi hạ tầng. Trong hệ thống thật: thêm span gọi model có finish_reasons, usage, model thực tế; thời lượng một mình không phân biệt được các trường hợp này.' }));
+        },
+        take: 'Status 200 nghĩa là "có trả lời", không phải "trả lời đúng".'
+      },
+      {
+        q: 'Vì sao một câu hỏi lại thành 8 span? Một lần gọi model không đủ à?',
+        a: `<p>Vì trợ lý không chỉ gọi model. Để trả lời "đơn SV-4821 bao giờ tới, trễ thì hoàn tiền mấy ngày", nó phải tìm tài liệu chính sách (retrieval: nhúng câu hỏi thành vector rồi tìm trong vector DB), hỏi model xem cần gì, model yêu cầu gọi tool <code>get_order</code>, rồi gọi model lần hai với kết quả tool để viết câu trả lời. Cây span trong hình đúng là cây ở README §1.2.</p>
+<p>Thứ tự đọc trên trace: model quyết định (span <code>chat</code> thứ nhất, <code>finish_reasons = ["tool_use"]</code>) → tool chạy (<code>execute_tool</code>) → model đọc kết quả (<code>chat</code> thứ hai). Khi câu trả lời sai, câu hỏi đầu tiên là retriever có lấy đúng tài liệu không, và id tài liệu trên span retrieval trả lời được mà không cần đọc nội dung (README §3.2).</p>
+<p>Với agent, số span không cố định: lần này 2 tool, lần sau 7. Số lượt gọi model mỗi run là dữ liệu cần theo dõi: p50 là 4 mà p99 là 60 thì có run đang chạy vòng.</p>`,
+        take: 'Mỗi bước có thể chậm, đắt hoặc sai riêng. Trace cho thấy bước nào.'
+      },
+      {
+        q: 'Span gọi model khác span HTTP thường ở chỗ nào?',
+        a: `<p>Bấm vào hàng <code>chat ${MODEL}</code> ở hình chính. Ngoài thời gian và trạng thái, span mang: model yêu cầu và model thực trả về, lý do kết thúc, token theo loại (input, đọc cache, ghi cache, output), TTFT khi stream, phiên bản prompt, và chi phí tự tính. Bảng "Field cần có" ở đầu README chia các field này thành 9 nhóm.</p>
+<p>Bốn attribute <code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code>, <code>gen_ai.request.model</code>, <code>server.address</code> phải có ngay lúc tạo span vì sampler ở SDK quyết định giữ hay bỏ trace ngay lúc span được tạo, và chỉ thấy attribute có lúc đó (README §2.6). Ví dụ luật "giữ 100% lượt gọi tới provider X" không chạy được nếu <code>gen_ai.provider.name</code> chỉ được gắn sau khi response về. Nội dung prompt và output thì không có trong bảng: đó là opt-in (Lab 03).</p>`,
+        take: 'Span LLM là chỗ duy nhất có đủ token, model thực tế và lý do kết thúc của một lượt gọi.'
+      },
+      {
+        q: 'Chi phí của trace này tính thế nào, và vì sao cache miss làm nó đắt gấp mấy lần?',
+        a: `<p>Mỗi lượt gọi: (input không cache × 2 + đọc cache × 0,10 + ghi cache × 2,5 + output × 10) / 1.000.000 USD, với giá Sonnet 5.5 từ Cost Optimization §2.1 và hệ số ghi cache 1,25 lần từ §2.2. Input không cache = input − đọc cache − ghi cache (README §2.6, hàm <code>cost_usd</code>).</p>`,
+        viz(box) {
+          const row = (t, f) => { const T = buildTrace(f); return T.S.filter((x) => x.llm).map((x, i) => `<tr class="${f.cachemiss ? 'cur' : ''}"><td>${t} · lượt ${i + 1}</td><td class="mono">${vn(x.u.input - x.u.read - x.u.write)}</td><td class="mono">${vn(x.u.read)}</td><td class="mono">${vn(x.u.write)}</td><td class="mono">${vn(x.u.output)}</td><td class="mono">${usd(x.cost)}</td></tr>`).join(''); };
+          const b = buildTrace({}).cost, m = buildTrace({ cachemiss: true }).cost;
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Lượt</th><th>Input không cache</th><th>Đọc cache</th><th>Ghi cache</th><th>Output</th><th>USD</th></tr>' + row('Bình thường', {}) + row('Cache miss', { cachemiss: true }) })]),
+            el('div', { class: 'cap', html: `<b style="color:var(--warn)">Cùng câu hỏi, cùng câu trả lời, chi phí ${usd(b)} thành ${usd(m)}: gấp ${(m / b).toFixed(1).replace('.', ',')} lần.</b> Vì sao: system prompt có thêm giờ hiện tại, prefix khác ở mỗi request, nên lượt 1 phải ghi lại 5.800 token với giá 2,5 thay vì đọc với giá 0,10 (chênh 25 lần). Lượt 2 vẫn đọc được vì lượt 1 vừa ghi xong trong cùng request. Không có nghĩa cache là xấu: chính cache làm trace bình thường rẻ như vậy. Trong hệ thống thật: alert khi cache hit rate giảm mạnh sau deploy (README §3.7) và giữ prefix ổn định.` }));
+        },
+        take: 'Chi phí của LLM không tỉ lệ với số request. Hai request giống nhau có thể chênh vài lần chỉ vì cache.'
+      },
+      {
+        q: 'Refusal trả 200. Vậy đếm nó là lỗi hay không?',
+        a: `<p>Không đếm là lỗi, nhưng không được bỏ qua. README §2.6: <code>stop_reason: "refusal"</code> vào <code>finish_reasons</code>, span không có trạng thái ERROR, không đặt <code>error.type</code>, nhưng bật <code>app.llm.keep = true</code> để trace được giữ khi sampling.</p>
+<p>Lý do: nếu đếm là lỗi, tỉ lệ lỗi theo provider (luật page) nhảy lên mỗi khi model từ chối một câu hỏi xấu, và người trực bị gọi dậy vì một hành vi đúng. Nếu bỏ qua, model từ chối câu hỏi bình thường sau một lần đổi prompt mà không ai biết. Bật nút "Model từ chối" ở hình chính: dòng tỉ lệ lỗi vẫn 0%, dòng refusal mới kêu.</p>
+<p>Cách giữ trace theo danh sách lý do <b>bình thường</b> (<code>NORMAL_FINISH</code>), không theo danh sách bất thường: mọi lý do lạ, kể cả lý do provider mới thêm, đều được giữ.</p>`,
+        take: 'Refusal là một kết quả, không phải một lỗi. Nó cần metric riêng.'
+      },
+      {
+        q: 'Chỉ 3% khách bị chậm. Alert TTFT p95 có kêu không?',
+        a: `<p>Thường là không, và đó không phải lỗi của alert. p95 là giá trị mà 95% request nhanh hơn. Nếu chỉ 3% request chậm, 95% request vẫn bình thường, nên p95 gần như đứng yên. Hình dưới bật "Provider chậm" và tăng dần phần traffic bị ảnh hưởng trong 2.000 request giả lập.</p>`,
+        viz(box) {
+          const res = [0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.2].map((s) => [s, aggregate({ slow: true }, s)]);
+          const quiet = res.filter(([s, A]) => s > 0 && A.p95 <= 3 * A.p95B).map(([s]) => s);
+          const maxQuiet = quiet.length ? Math.max(...quiet) : 0;
+          const rows = res.map(([s, A]) => `<tr class="${A.p95 <= 3 * A.p95B && s > 0 ? 'cur' : ''}"><td class="mono">${pc(s, 0)}</td><td class="mono">${vn(A.p95)} ms</td><td class="mono">${vn(A.p99)} ms</td><td class="${A.p95 > 3 * A.p95B ? 'bad' : 'ok'}">${A.p95 > 3 * A.p95B ? 'page' : 'im lặng'}</td></tr>`).join('');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Traffic bị chậm</th><th>TTFT p95</th><th>TTFT p99</th><th>Luật p95 &gt; 3× baseline</th></tr>' + rows })]),
+            el('div', { class: 'cap', html: `<b style="color:var(--warn)">Tới ${pc(maxQuiet, 0)} traffic bị chậm, luật p95 vẫn im lặng trong khi p99 đã hơn ${vn(res[1][1].p99)} ms ngay từ 2%.</b> Vì sao: phần chậm nằm ngoài 95% đầu. Không có nghĩa nên alert theo p99 cho mọi thứ: p99 nhiễu hơn và page sai nhiều hơn. Trong hệ thống thật: cắt metric theo chiều nhỏ (provider, region, model snapshot, loại phiên) để nhóm 3% đó thành 100% của một lát cắt (README §1.4, §3.5).` }));
+        },
+        take: 'Percentile toàn traffic che nhóm nhỏ. Cắt theo chiều mới thấy.'
+      },
+      {
+        q: 'Bot nói hoàn tiền 3 ngày. Judge online chấm "bám tài liệu" sao lại không bắt?',
+        a: `<p>Bật "Retriever trả chính sách hoàn tiền bản cũ" ở hình chính. Retriever lấy <code>chinh-sach-hoan-tien@2024-03</code>, bản ghi 3 ngày. Model đọc đúng tài liệu đó và trả lời đúng theo tài liệu đó. Judge "câu trả lời có bám tài liệu không" so câu trả lời với tài liệu được đưa vào, nên chấm cao: câu trả lời đúng là bám tài liệu.</p>
+<p>Lỗi nằm ở tài liệu, không ở model. Hai tín hiệu bắt được: (1) canary <code>refund-days</code> ở README §3.5, một câu hỏi cố định có đáp án kiểm bằng code (<code>"14" in out</code>), chạy theo lịch; (2) attribute trên span retrieval: id tài liệu kèm phiên bản và ngày hết hiệu lực. Không có id tài liệu trên span, bạn chỉ còn ảnh chụp màn hình của khách, đúng tình huống mở đầu README.</p>`,
+        take: 'Mỗi judge đo một câu hỏi hẹp. "Bám tài liệu" không có nghĩa là "đúng".'
+      },
+      {
+        q: 'Nhiều alert vậy, cái nào đáng gọi người trực dậy lúc 3 giờ sáng?',
+        a: `<p>README §3.7 chia hai mức. <b>Page</b> khi ảnh hưởng người dùng ngay và người trực làm được gì đó: lỗi provider (chuyển provider dự phòng), TTFT tăng vọt, stream bị cắt tăng, chi phí theo giờ tăng vọt (vòng lặp agent, lạm dụng, cache vỡ). <b>Ticket</b> cho những thứ cần xem trong ngày: model trả về có giá trị mới, tỉ lệ bị cắt, refusal, cache hit rate giảm, canary hoặc judge giảm.</p>
+<p>Alert chất lượng hiếm khi đáng page: người trực thường không sửa được gì ngay, trừ khi có hành động rõ như rollback prompt vừa deploy. Và các ngưỡng trong bảng chỉ là ví dụ: ngưỡng thật lấy từ vài tuần baseline của hệ thống bạn, chọn sao cho số lần page sai mỗi tháng đội chịu được.</p>
+<p>Còn một nhóm alert hay bị quên: alert cho chính pipeline observability. Số span nhận được giảm mạnh so với số request HTTP thì dashboard im lặng, và im lặng trông giống như ổn.</p>`,
+        take: 'Page cho thứ người trực sửa được ngay. Phần còn lại là ticket.'
+      }
+    ],
+    poc: {
+      goal: "<b>Viết tay (không thật):</b> không gọi model; usage, finish reason và thời gian từng bước là số đặt sẵn giống lab. <b>Chạy thật:</b> OpenTelemetry SDK tạo span thật cho câu hỏi về đơn SV-4821 (gateway → retrieval → chat → tool → chat), wrapper <code>traced_inference</code> của README §2.6 (chép nguyên văn) gắn <code>gen_ai.*</code>, chuẩn hoá usage, tính chi phí, ghi metric. Năm tình huống cho cùng một dòng log <code>200</code> nhưng khác attribute.",
+      file: "docs/llm-observability/pocs/00_workflow.py",
+      run: "uv run docs/llm-observability/pocs/00_workflow.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>opentelemetry-sdk</code> 1.45.2), chạy dưới 3 giây, miễn phí.",
+      output: "Kịch bản VIẾT TAY: usage, finish reason, thời gian của từng bước là số đặt sẵn giống lab 00 (không gọi model).\nPhần chạy thật: OpenTelemetry SDK 1.45.2, wrapper traced_inference của README §2.6 chép nguyên văn,\nexporter in-memory. Thời gian chờ chạy thật nhưng thu nhỏ 1/10; cột ms bên dưới đã nhân lại ×10.\nGiá: docs/cost-optimization/README.md §2.1 (giá niêm yết 06/11/2026); ghi cache = 1,25 × input (Cost Optimization §2.2 TTL 5 phút; README §3.3 TTL 30 phút của OpenAI).\n\n== 1. Cây span thật của câu hỏi về đơn SV-4821 (exporter in-memory) ==\nPOST /chat                                   SERVER      4230 ms\n  └─ invoke_agent support-bot                INTERNAL    4229 ms\n    └─ retrieval policies                    INTERNAL     331 ms\n      └─ embeddings text-embedding-x         CLIENT       120 ms\n      └─ vector search                       CLIENT       210 ms\n    └─ chat claude-sonnet-5-5                CLIENT      1288 ms  finish_reasons=[tool_use]  input=6200  cache_read=5800  output=60  cost_usd=0.00198\n    └─ execute_tool get_order                INTERNAL     270 ms\n    └─ chat claude-sonnet-5-5                CLIENT      2339 ms  finish_reasons=[end_turn]  input=6500  cache_read=5800  output=220  cost_usd=0.00418\n\n== 2. Attribute thật trên span chat lượt 2 ==\n  app.llm.cost_usd                           0.00418\n  app.tenant.id                              shopviet\n  gen_ai.operation.name                      chat\n  gen_ai.prompt.name                         support-answer\n  gen_ai.prompt.version                      v14\n  gen_ai.provider.name                       anthropic\n  gen_ai.request.model                       claude-sonnet-5-5\n  gen_ai.request.stream                      True\n  gen_ai.response.finish_reasons             ('end_turn',)\n  gen_ai.response.id                         msg_end_\n  gen_ai.response.model                      claude-sonnet-5-5\n  gen_ai.response.time_to_first_chunk        0.100 s (thời gian thu nhỏ; ×10 = 1.00 s)\n  gen_ai.usage.cache_read.input_tokens       5800\n  gen_ai.usage.input_tokens                  6500\n  gen_ai.usage.output_tokens                 220\n  server.address                             api.anthropic.com\n\n== 3. Năm tình huống: dòng log HTTP so với attribute trên span ==\nTình huống             Log HTTP               finish lượt 2  TTFT lượt 2  Chi phí   Cache hit  keep  Tài liệu\n---------------------  ---------------------  -------------  -----------  --------  ---------  ----  --------\nbình thường            POST /chat 200 4230ms  end_turn       1000 ms      $0.00616  91.3%      -     2026-09\nprovider chậm          POST /chat 200 7473ms  end_turn       4301 ms      $0.00616  91.3%      -     2026-09\nrefusal                POST /chat 200 3012ms  refusal        984 ms       $0.00414  91.3%      có    2026-09\ncache miss sau deploy  POST /chat 200 4100ms  end_turn       909 ms       $0.02008  45.7%      -     2026-09\ntài liệu cũ            POST /chat 200 4222ms  end_turn       1000 ms      $0.00616  91.3%      -     2024-03\n\n== 4. Metric do wrapper README ghi (InMemoryMetricReader, cộng qua 5 request) ==\nMetric                                                  response.model     Giá trị\n------------------------------------------------------  -----------------  --------\napp.llm.cost                                            claude-sonnet-5-5  0.0427\ngen_ai.client.inference.duration                        claude-sonnet-5-5  count=10\ngen_ai.client.inference.time_to_first_chunk             claude-sonnet-5-5  count=5\ngen_ai.client.inference.usage.cache_read.input_tokens   claude-sonnet-5-5  52200\ngen_ai.client.inference.usage.cache_write.input_tokens  claude-sonnet-5-5  5800\ngen_ai.client.inference.usage.input_tokens              claude-sonnet-5-5  63500\ngen_ai.client.inference.usage.output_tokens             claude-sonnet-5-5  1198\n\nCó app.tenant.id trên metric không: không (tenant chỉ ở span, README §2.6)\n\nRút ra: cả 5 tình huống đều ra 'POST /chat 200'. Chậm chỉ hiện ở TTFT lượt 2, refusal ở finish_reasons\n(kèm app.llm.keep, không ERROR), cache miss ở cache hit 45.7% và chi phí ×3.3\n($0.00616 → $0.02008), tài liệu cũ chỉ ở doc_ids của span retrieval: không metric nào đổi.",
+      measured: true,
+      read: ["Cây span: lượt chat 1 có <code>input=6200</code> dù usage Claude viết tay là <code>input_tokens=400</code>. Wrapper README đã cộng 5.800 token đọc cache, đúng quy ước OTel (input gồm cache).", "Bảng năm tình huống: cột Log HTTP đều <code>200</code>. Chậm chỉ hiện ở TTFT lượt 2 (khoảng 4.200 ms), refusal ở <code>finish_reasons</code> kèm <code>keep</code> (không ERROR), cache miss ở cache hit 46% và chi phí ×3,3 ($0,00616 → $0,02008, khớp lab), tài liệu cũ chỉ ở <code>doc_ids</code> của span retrieval.", "Metric do wrapper ghi không có <code>app.tenant.id</code>: tenant chỉ nằm trên span (README §2.6). Thời lượng span đo thật nhưng chờ thu nhỏ 1/10 rồi nhân lại, nên lệch vài chục ms so với lab."]
+    },
+    mount(stage) {
+      const st = { f: {}, sel: 'c2', share: 0.1 };
+      const flags = el('div', { class: 'row' });
+      const ctl = el('div', { class: 'row' }, [slider('Phần traffic bị ảnh hưởng (trong 2.000 request / 10 phút)', 0, 1, 0.01, st.share, (v) => { st.share = v; draw(); }, (v) => pc(v, 0)).node]);
+      const wf = el('div');
+      const detail = el('div');
+      const alertBox = el('div');
+      const cap = el('div', { style: 'margin-top:10px;font-size:13.5px' });
+      const foot = el('div', { class: 'stat', style: 'border-top:1px solid var(--line);padding-top:8px;margin-top:12px' });
+      const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+
+      function draw() {
+        flags.replaceChildren(...TOGGLES.map(([k, t]) => el('button', { class: st.f[k] ? 'on' : '', text: t, onclick: () => { st.f[k] = !st.f[k]; draw(); } })),
+          el('button', { text: 'Tắt hết', onclick: () => { st.f = {}; draw(); } }));
+        const T = buildTrace(st.f);
+        wf.replaceChildren(waterfall(T, st.sel, (id) => { st.sel = id; draw(); }));
+        const s = T.S.find((x) => x.id === st.sel) || T.S[0];
+        detail.replaceChildren(el('h4', { style: 'margin:8px 0 4px;font-size:13px', html: `Span <code>${esc(s.name)}</code> · kind ${s.kind} · ${vn(s.e - s.s)} ms · status UNSET` }),
+          el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Attribute</th><th>Giá trị</th></tr>' + Object.entries(s.a).map(([k, v]) => `<tr class="${k === 'app.llm.keep' || (k.includes('finish') && !String(v).match(/end_turn|tool_use/)) || (k === 'app.retrieval.doc_valid_until' && st.f.stale) || (k.includes('cache_write') && v > 0) ? 'cur' : ''}"><td class="mono">${esc(k)}</td><td class="mono">${esc(v)}</td></tr>`).join('') })]),
+          s.llm ? el('div', { class: 'hint', html: `Chi phí = (${vn(s.u.input - s.u.read - s.u.write)} × 2 + ${vn(s.u.read)} × 0,10 + ${vn(s.u.write)} × 2,5 + ${vn(s.u.output)} × 10) / 10⁶ = <b>${usd(s.cost)}</b> (giá Sonnet 5.5, Cost Optimization §2.1–2.2). Nội dung prompt và output không nằm trong span: capture nội dung là opt-in.` }) : null);
+
+        const { A, rows } = alerts(st.f, st.share);
+        alertBox.replaceChildren(el('h4', { style: 'margin:12px 0 4px;font-size:13px', text: `Metric và alert trên ${vn(A.N)} request giả lập, ${pc(st.share, 0)} gặp các sự cố đang bật` }),
+          el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Metric</th><th>Luật (ví dụ README §3.7)</th><th>Giá trị</th><th>Kết quả</th></tr>' + rows.map((r) => `<tr><td>${r.m}</td><td>${r.rule}</td><td class="mono">${r.v}</td><td style="font-weight:600;color:${r.fire ? (r.lvl === 'page' ? 'var(--bad)' : 'var(--warn)') : 'var(--ok)'}">${r.fire ? r.lvl : 'im lặng'}</td></tr>`).join('') })]));
+
+        const parts = [];
+        const on = Object.keys(st.f).filter((k) => st.f[k]);
+        if (!on.length) parts.push(box('var(--ok)', 'Trace bình thường: lượt 1 quyết định gọi <code>get_order</code>, lượt 2 viết câu trả lời 14 ngày. Bật một sự cố để xem nó hiện ra ở đâu.'));
+        if (on.length) parts.push(box('var(--bad)', `<b>HTTP vẫn là 200 với ${on.length} sự cố đang bật.</b> Tỉ lệ lỗi theo provider vẫn 0%. Mọi tín hiệu dưới đây đến từ attribute của span LLM và tín hiệu chất lượng, không từ HTTP.`));
+        if (st.f.slow) {
+          const fire = A.p95 > 3 * A.p95B;
+          parts.push(box(fire ? 'var(--ok)' : 'var(--warn)', fire
+            ? `<b>Chậm:</b> TTFT p95 ${vn(A.p95)} ms, vượt 3× baseline ${vn(A.p95B)} ms: page. Trên trace, vạch cam của lượt 2 nằm sau ${vn(T.S[7].ttft)} ms; thời gian sinh chữ không đổi, nên chậm nằm ở phía provider trước chunk đầu, không phải output dài ra.`
+            : `<b>Chậm mà không ai được báo:</b> ${pc(st.share, 0)} khách đợi chunk đầu ${vn(T.S[7].ttft)} ms, nhưng TTFT p95 ${vn(A.p95)} ms chưa tới 3× baseline; p99 đã là ${vn(A.p99)} ms. Vì sao: phần chậm nằm ngoài 95% đầu. Không có nghĩa nhóm này không quan trọng. Trong hệ thống thật: cắt TTFT theo provider, region, loại phiên để thấy nhóm nhỏ (README §1.4).`));
+        }
+        if (st.f.refusal) parts.push(box('var(--warn)', `<b>Refusal:</b> span lượt 2 có <code>finish_reasons = ["refusal"]</code>, không có <code>error.type</code>, status không phải ERROR, và có <code>app.llm.keep = true</code> để tail sampling giữ trace. Tỉ lệ refusal ${pc(A.refusal, 2)}: ticket. Không có nghĩa phải đếm refusal là lỗi: đếm vậy sẽ page người trực mỗi khi model từ chối đúng một câu hỏi xấu (README §2.6).`));
+        if (st.f.cachemiss) {
+          const fire = A.costRatio > 3;
+          parts.push(box(fire ? 'var(--bad)' : 'var(--warn)', `<b>Cache miss:</b> lượt 1 ghi ${vn(5800)} token cache thay vì đọc, trace tốn ${usd(T.cost)} thay vì ${usd(buildTrace({}).cost)}. Cache hit rate theo token: ${pc(A.hitRateB)} → ${pc(A.hitRate)}. Chi phí cả cửa sổ ×${A.costRatio.toFixed(2).replace('.', ',')}${fire ? ': page' : ', chưa tới ngưỡng page ×3; chỉ ticket cache hit rate kêu'}. Latency gần như không đổi nên dashboard latency xanh. Trong hệ thống thật: so cache hit rate trước và sau mỗi deploy; deploy <code>web-2026.11.27b</code> trên span HTTP chỉ ra thủ phạm.`));
+        }
+        if (st.f.stale && !st.f.refusal) parts.push(box('var(--bad)', `<b>Trả lời sai mà mọi metric vận hành đều xanh.</b> Câu trả lời "3 ngày" bám đúng tài liệu <code>${T.doc}</code> mà retriever đưa vào, nên judge "bám tài liệu" chấm 0,92. Chỉ canary <code>refund-days</code> (kiểm "14" bằng code) và attribute <code>app.retrieval.doc_valid_until</code> trên span retrieval lộ ra lỗi. Không có nghĩa judge vô dụng: nó đo một câu hỏi khác. Trong hệ thống thật: ghi id và phiên bản tài liệu trên span retrieval, chạy canary có đáp án cho chính sách quan trọng (README §3.2, §3.5).`));
+        if (st.f.stale && st.f.refusal) parts.push(box('var(--warn)', 'Tài liệu cũ vẫn được lấy về, nhưng lượt 2 từ chối nên khách không thấy con số sai. Canary vẫn đỏ vì nó chạy độc lập với traffic.'));
+        cap.innerHTML = parts.join('');
+        const hr = T.S.filter((x) => x.llm).reduce((a, x) => [a[0] + x.u.read, a[1] + x.u.input], [0, 0]);
+        foot.innerHTML = `<span>HTTP: <b>200 ${T.end}ms</b></span><span>Chi phí trace: <b>${usd(T.cost)}</b></span><span>Cache hit trace: <b>${pc(hr[0] / hr[1])}</b></span><span>Khách thấy: <b class="${st.f.refusal || st.f.stale ? 'bad' : 'ok'}">${esc(T.answer)}</b></span>`;
+      }
+
+      stage.append(flags, ctl, wf, detail, alertBox, cap, foot,
+        el('p', { class: 'hint', text: 'Số token, thời gian từng span, tốc độ sinh 178 token/giây và tỉ lệ refusal nền 0,2% là giả định. Giá từ Cost Optimization §2.1 (06/11/2026) và hệ số ghi cache §2.2. 2.000 request giả lập theo seed, TTFT phân phối log-normal quanh giá trị của trace; p95, p99, cache hit rate và tỉ lệ chi phí tính thật trong trình duyệt. Ngưỡng alert theo ví dụ README §3.7; ngưỡng có ghi "giả định" là của lab.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

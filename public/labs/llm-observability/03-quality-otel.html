@@ -1,0 +1,638 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-llm-metrics.html">← Lab trước</a><a href="04-tools.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const vn = (x, d = 0) => Number(x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const usd = (x) => '$' + (x >= 100 ? vn(x, 0) : x.toFixed(2));
+  const PRICE = { input: 2, output: 10 };
+  const SYSTEM = 'Bạn là trợ lý CSKH của ShopViet. Chỉ trả lời theo tài liệu chính sách được cung cấp. Prompt support-answer v14.';
+  const USER_MSG = 'Mình là Lan, sđt 0903 123 456, đơn SV-4821 giao tới 12 Nguyễn Trãi Q1 chưa? Mình mua máy đo đường huyết cho bố bị tiểu đường, cần gấp.';
+  const TOOL_RESULT = '{"order_id":"SV-4821","phone":"0903123456","email":"lan.nguyen@example.com","address":"12 Nguyễn Trãi, Q1","eta":"29/11"}';
+  const ANSWERS = {
+    end_turn: 'Dạ chị Lan, đơn SV-4821 dự kiến giao ngày 29/11 tới 12 Nguyễn Trãi, Q1. Em sẽ báo shipper ưu tiên giúp chị ạ.',
+    max_tokens: 'Dạ chị Lan, đơn SV-4821 dự kiến giao ngày 29/11 tới 12 Nguyễn',
+    refusal: 'Xin lỗi, mình không thể hỗ trợ yêu cầu này.'
+  };
+  const USAGE = { input_tokens: 700, cache_read_input_tokens: 5800, cache_creation_input_tokens: 0, output_tokens: 220 };
+  const NORMAL_FINISH = ['stop', 'end_turn', 'stop_sequence', 'tool_use', 'tool_calls', 'pause_turn', 'completed'];
+  const SPEC_VAR = 'OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT';
+  const LIB_VAR = 'OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT';
+  const ENVS = [
+    ['spec', SPEC_VAR + ' (tên theo spec)'],
+    ['lib', LIB_VAR + ' (tên thư viện đọc)'],
+    ['both', 'Cả hai: biến spec = NO_CONTENT, biến thư viện còn sót SPAN_AND_EVENT từ .env dev'],
+    ['libtrue', LIB_VAR + '=true (kiểu cũ)']
+  ];
+  const MODES = ['NO_CONTENT', 'SPAN_ONLY', 'EVENT_ONLY', 'SPAN_AND_EVENT'];
+  const PII = [
+    ['số điện thoại', /0\d{2,3}[ .]?\d{3}[ .]?\d{3,4}/g, true],
+    ['email', /[\w.+-]+@[\w-]+\.[\w.]+/g, true],
+    ['địa chỉ', /12 Nguyễn Trãi/g, false],
+    ['tên khách', /\bLan\b/g, false],
+    ['sức khoẻ', /tiểu đường|đường huyết/g, false]
+  ];
+
+  const mask = (t) => t.replace(PII[0][1], '[PHONE]').replace(PII[1][1], '[EMAIL]');
+  function findPII(t) { const hits = []; PII.forEach(([n, re]) => { const m = String(t).match(re); if (m) hits.push(n); }); return hits; }
+
+  function effectiveMode(env, mode) {
+    if (env === 'spec') return { mode: 'NO_CONTENT', why: `Thư viện <code>opentelemetry-util-genai</code> 1.3b0 đọc <code>${LIB_VAR}</code>, không đọc <code>${SPEC_VAR}</code>. Bạn đặt ${mode}, thư viện thấy không có biến nào.` };
+    if (env === 'libtrue') return { mode: 'NO_CONTENT', why: `<code>${LIB_VAR}=true</code> không nằm trong bốn giá trị <code>opentelemetry-util-genai</code> 1.3b0 nhận. Thư viện in cảnh báo rồi chạy NO_CONTENT, bất kể bạn muốn ${mode}. POC của bài đo được đúng dòng cảnh báo đó.` };
+    if (env === 'both') return { mode: 'SPAN_AND_EVENT', why: `Bạn đặt <code>${SPEC_VAR}=NO_CONTENT</code> và tin là đã tắt. Thư viện đọc <code>${LIB_VAR}</code>, đang là SPAN_AND_EVENT.` };
+    return { mode, why: '' };
+  }
+
+  function build(st) {
+    const eff = effectiveMode(st.env, st.mode);
+    const answer = ANSWERS[st.finish];
+    const out = st.finish === 'refusal' ? 18 : st.finish === 'max_tokens' ? 40 : USAGE.output_tokens;
+    const n = { input: USAGE.input_tokens + USAGE.cache_read_input_tokens + USAGE.cache_creation_input_tokens, read: USAGE.cache_read_input_tokens, write: USAGE.cache_creation_input_tokens, out };
+    const groups = [
+      ['Lúc tạo span (sampler cần)', [
+        ['gen_ai.operation.name', 'chat'], ['gen_ai.provider.name', 'anthropic'], ['gen_ai.request.model', 'claude-sonnet-5-5'], ['server.address', 'api.anthropic.com'],
+        ['gen_ai.request.stream', 'true'], ['gen_ai.request.max_tokens', st.finish === 'max_tokens' ? '40' : '1024']]],
+      ['Response', [
+        ['gen_ai.response.model', 'claude-sonnet-5-5'], ['gen_ai.response.id', 'msg_01Q8…'], ['gen_ai.response.finish_reasons', '["' + st.finish + '"]'],
+        ['gen_ai.response.time_to_first_chunk', '0.9']].concat(NORMAL_FINISH.includes(st.finish) ? [] : [['app.llm.keep', 'true']])],
+      ['Usage đã chuẩn hoá', [
+        ['gen_ai.usage.input_tokens', String(n.input)], ['gen_ai.usage.cache_read.input_tokens', String(n.read)], ['gen_ai.usage.output_tokens', String(n.out)]]],
+      ['Của bạn', [
+        ['gen_ai.prompt.name', 'support-answer'], ['gen_ai.prompt.version', 'v14'], ['gen_ai.conversation.id', 'conv_91c2'],
+        ['app.tenant.id', 'shopviet'], ['app.feature', 'support'], ['app.user.hash', 'u_7f3a…']]]
+    ];
+    const content = [
+      ['gen_ai.system_instructions', SYSTEM], ['gen_ai.input.messages', '[{"role":"user","parts":[{"type":"text","content":"' + USER_MSG + '"}]},{"role":"tool","parts":[{"type":"tool_call_response","response":' + TOOL_RESULT + '}]}]'],
+      ['gen_ai.output.messages', '[{"role":"assistant","parts":[{"type":"text","content":"' + answer + '"}],"finish_reason":"' + st.finish + '"}]']
+    ].map(([k, v]) => [k, st.mask ? mask(v) : v]);
+    const onSpan = eff.mode === 'SPAN_ONLY' || eff.mode === 'SPAN_AND_EVENT';
+    const onEvent = eff.mode === 'EVENT_ONLY' || eff.mode === 'SPAN_AND_EVENT';
+    const refOf = (k) => [k + '_ref', 's3://shopviet-llm-content/tenant=shopviet/2026/11/27/msg_01Q8/' + k.split('.').pop() + '.json'];
+    if (onSpan) groups.push(['Nội dung trên span (opt-in)', st.upload ? content.map(([k]) => refOf(k)) : content]);
+    const events = [];
+    if (onEvent) events.push(['event nội dung đi kèm span', st.upload ? content.map(([k]) => refOf(k)) : content]);
+    if (st.judge && st.finish !== 'refusal') events.push(['gen_ai.evaluation.result', [
+      ['gen_ai.evaluation.name', 'answer_grounded'], ['gen_ai.evaluation.score.value', st.finish === 'max_tokens' ? '0.40' : '0.95'],
+      ['gen_ai.evaluation.score.label', st.finish === 'max_tokens' ? 'fail' : 'pass'],
+      ['gen_ai.evaluation.explanation', st.finish === 'max_tokens' ? 'Câu trả lời dừng giữa địa chỉ, thiếu thông tin.' : 'Ngày giao khớp kết quả get_order.'],
+      ['gen_ai.response.id', 'msg_01Q8…']]]);
+    const leaks = [];
+    groups.concat(events).forEach(([g, rows]) => rows.forEach(([k, v]) => findPII(v).forEach((p) => leaks.push({ g, k, p }))));
+    if (st.upload && (onSpan || onEvent)) content.forEach(([k, v]) => findPII(v).forEach((p) => leaks.push({ g: 'object storage (bucket riêng)', k, p, bucket: true })));
+    return { eff, groups, events, leaks, n };
+  }
+
+  function attrTable(title, rows, note) {
+    return el('div', {}, [el('h4', { style: 'margin:10px 0 4px;font-size:13px', html: title + (note ? ` <small style="color:var(--mute);font-weight:400">${note}</small>` : '') }),
+      el('div', { class: 'tbl' }, [el('table', { html: rows.map(([k, v]) => {
+        const p = findPII(v);
+        const short = v.length > 150 ? v.slice(0, 150) + '…' : v;
+        return `<tr class="${p.length ? 'cur' : ''}"><td class="mono" style="white-space:nowrap">${esc(k)}</td><td class="mono" style="word-break:break-all">${esc(short)}${p.length ? ` <b style="color:var(--bad)">[${p.join(', ')}]</b>` : ''}</td></tr>`;
+      }).join('') })])]);
+  }
+
+  return {
+    id: 'quality-otel', nav: '3. Chất lượng & OTel', ref: '§1.4–1.5',
+    title: 'Bật ghi nội dung để debug câu trả lời sai: số điện thoại, địa chỉ và bệnh của khách nằm ở đâu trong span?',
+    hook: 'Chọn chế độ capture nội dung, biến môi trường bạn đặt, có che PII không, có đẩy nội dung ra object storage không, lý do kết thúc và judge online. Bảng attribute gen_ai.* tự dựng lại; ô tô màu là ô có dữ liệu cá nhân.',
+    terms: [
+      ['OpenTelemetry (OTel)', 'Chuẩn mở cho trace, metric, log. Ứng dụng ghi theo OTel thì đổ về backend nào nhận OTLP (giao thức gửi telemetry của OTel) cũng được: Langfuse, Datadog, Grafana.'],
+      ['Collector', 'Process trung gian của OTel: nhận telemetry từ ứng dụng, lọc, lấy mẫu, che bớt dữ liệu, rồi gửi tới một hay nhiều backend. Ứng dụng → Collector → Langfuse/Datadog (README §2.6).'],
+      ['opentelemetry-util-genai', 'Thư viện Python chung mà các instrumentation GenAI dùng để đọc biến môi trường capture và ghi nội dung vào span, event. Bản 1.3b0 là bản lab và POC dựa vào; "b" là beta.'],
+      ['Semantic conventions', 'Phần của OTel quy định tên attribute, tên span, tên metric. Ví dụ token output luôn là <code>gen_ai.usage.output_tokens</code>, không phải <code>completion_tokens</code> ở chỗ này, <code>out_tok</code> ở chỗ kia.'],
+      ['Development', 'Trạng thái của mọi attribute <code>gen_ai.*</code>: tên có thể đổi giữa các bản. Đã đổi thật: <code>gen_ai.system</code> thành <code>gen_ai.provider.name</code>.'],
+      ['Event', 'Bản ghi có thời điểm gắn với span, như một dòng log có cấu trúc. Ví dụ <code>gen_ai.evaluation.result</code> chứa điểm judge chấm cho một response.'],
+      ['Content capture', 'Ghi nội dung prompt, tool result, output vào telemetry. Mặc định tắt (<code>NO_CONTENT</code>). Bật thì chọn ghi lên span, lên event, hoặc cả hai.'],
+      ['*_ref', 'Attribute chứa URI trỏ ra storage ngoài thay cho nội dung. Ví dụ <code>gen_ai.input.messages_ref = s3://.../input.json</code>: span giữ con trỏ, nội dung nằm ở bucket có phân quyền riêng.'],
+      ['PII', 'Thông tin định danh cá nhân: tên, số điện thoại, email, địa chỉ. Thông tin sức khoẻ như "bố bị tiểu đường" còn nhạy cảm hơn.'],
+      ['Judge online', 'Một model (LLM-as-judge đã hiệu chỉnh) hoặc grader code chấm một phần trace production. Ví dụ chấm "ngày giao trong câu trả lời có khớp kết quả get_order không".'],
+      ['Tín hiệu ngầm (implicit)', 'Hành vi của người dùng sau câu trả lời: bấm tạo lại, hỏi lại cùng ý, chuyển sang nhân viên. Có trên mọi lượt nhưng nhiều cách hiểu.']
+    ],
+    problem: {
+      example: 'Trợ lý chat <b>ShopViet</b>, lượt gọi <code>chat claude-sonnet-5-5</code> thứ hai của một request: model đọc kết quả tool <code>get_order</code> và viết câu trả lời cho khách hỏi về đơn SV-4821.',
+      scenario: 'Sau vụ "hoàn tiền 3 ngày", một kỹ sư muốn bật ghi nội dung prompt và output ở production để lần sau debug nhanh. Tin nhắn của khách có tên, số điện thoại, địa chỉ, và câu "mua máy đo đường huyết cho bố bị tiểu đường". Tool result có thêm email.',
+      ask: 'Một lượt gọi model map thành những attribute <code>gen_ai.*</code> nào? Bật capture nội dung thì dữ liệu cá nhân đi tới đâu, che bằng regex chặn được bao nhiêu? Và chất lượng câu trả lời ghi vào trace bằng cách nào mà không cần lưu nội dung?',
+      solves: 'Lab dựng bảng attribute theo README §1.5 và bảng "Field cần có" từ một response Claude cố định, chuẩn hoá usage, áp dụng chế độ capture theo đúng biến môi trường thư viện đọc, chạy regex che PII thật trên nội dung, và đếm dữ liệu cá nhân còn lại theo nơi lưu.',
+      read: [
+        'Hàng điều khiển: chế độ capture (giá trị theo spec), biến môi trường bạn đặt, che PII trước khi đặt attribute, đẩy nội dung ra object storage, lý do kết thúc của model, bật judge online.',
+        'Dòng "Chế độ thực tế" cho biết thư viện thật sự chạy ở chế độ nào sau khi đọc biến môi trường.',
+        'Các bảng: attribute theo nhóm trên span, rồi event. Ô tô màu là ô có dữ liệu cá nhân; nhãn đỏ ghi loại dữ liệu.',
+        'Dòng cuối: số chỗ dữ liệu cá nhân xuất hiện, theo nơi lưu (backend trace hay bucket riêng).'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p><b>Chất lượng là tín hiệu cần quan sát</b> (README §1.4). Ba nguồn, xếp theo độ rẻ:</p>
+<div class="tbl"><table><tr><th>Nguồn</th><th>Ví dụ</th><th>Mạnh</th><th>Yếu</th></tr>
+<tr><td>Có sẵn trong response</td><td>Bị cắt, refusal, tool call sai schema, structured output không parse được, câu trả lời rỗng</td><td>Rẻ, chính xác</td><td>Chỉ bắt lỗi về hình thức</td></tr>
+<tr><td>Từ người dùng</td><td>Thumbs, tạo lại, sửa output, hỏi lại cùng ý, chuyển nhân viên</td><td>Có sẵn</td><td>Nhiễu, thiên lệch</td></tr>
+<tr><td>Chấm điểm online</td><td>Judge đã hiệu chỉnh hoặc grader code trên một phần trace</td><td>Đo được bám tài liệu, lộ thông tin nội bộ</td><td>Đắt hơn</td></tr></table></div>
+<p>Kết quả chấm gắn vào trace bằng event <code>gen_ai.evaluation.result</code>: <code>gen_ai.evaluation.name</code>, <code>score.value</code>, <code>score.label</code>, <code>explanation</code>, <code>gen_ai.response.id</code>. Event này không chứa nội dung nên lưu được lâu hơn.</p>
+<p><b>OTel GenAI semantic conventions</b> (README §1.5): duy trì ở repo <code>open-telemetry/semantic-conventions-genai</code>; mọi <code>gen_ai.*</code> là Development, chỉ <code>error.type</code>, <code>server.address</code>, <code>server.port</code> là Stable.</p>
+<div class="tbl"><table><tr><th>Span</th><th>Tên</th><th>Kind</th><th>Bắt buộc</th></tr>
+<tr><td>Gọi model</td><td><code>{gen_ai.operation.name} {gen_ai.request.model}</code></td><td>CLIENT</td><td><code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code></td></tr>
+<tr><td>Thực thi tool</td><td><code>execute_tool {gen_ai.tool.name}</code></td><td>INTERNAL</td><td><code>gen_ai.operation.name</code>, <code>gen_ai.tool.name</code></td></tr>
+<tr><td>Chạy agent</td><td><code>invoke_agent {gen_ai.agent.name}</code></td><td>INTERNAL</td><td><code>gen_ai.operation.name</code></td></tr></table></div>
+<div class="tbl"><table><tr><th></th><th>Theo spec</th><th><code>opentelemetry-util-genai</code> 1.3b0, <code>instrumentation-openai-v2</code> 2.4b0</th></tr>
+<tr><td>Bật ghi nội dung</td><td><code>OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT</code></td><td><code>OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT</code></td></tr>
+<tr><td>Giá trị</td><td><code>NO_CONTENT</code> (mặc định), <code>SPAN_ONLY</code>, <code>EVENT_ONLY</code>, <code>SPAN_AND_EVENT</code></td><td>Như bên trái; README ghi instrumentation OpenAI còn nhận <code>true</code> (kiểu cũ), nhưng POC đo trên util-genai 1.3b0: <code>true</code> bị cảnh báo và coi là NO_CONTENT</td></tr>
+<tr><td>Hook upload</td><td><code>OTEL_INSTRUMENTATION_GENAI_CONTENT_HOOK=upload</code></td><td><code>OTEL_INSTRUMENTATION_GENAI_COMPLETION_HOOK=upload</code></td></tr>
+<tr><td>Convention mới nhất</td><td>Không nhắc</td><td><code>OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental</code></td></tr></table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> metadata (<code>gen_ai.*</code>, token, finish reason, điểm judge) lưu lâu, ai cũng xem được; nội dung là opt-in, che trước khi rời ứng dụng, đẩy ra <code>*_ref</code> ở bucket có phân quyền và thời hạn riêng. Kiểm tra cấu hình bằng một span thật, không bằng cách đọc file .env.</div>`,
+    why: {
+      c: 'Đặt tên theo <code>gen_ai.*</code> làm chuẩn nội bộ, ghi metadata trên mọi span, để nội dung tắt mặc định và khi cần thì che trong code rồi đẩy ra <code>*_ref</code>; chất lượng ghi bằng event <code>gen_ai.evaluation.result</code> từ judge chạy trên mẫu đã che PII. Lý do: nhiều backend nhận <code>gen_ai.*</code> trực tiếp, metadata trả lời phần lớn câu hỏi vận hành, và điểm chất lượng không cần mang theo nội dung.',
+      s: 'Bật <code>SPAN_AND_EVENT</code> ở production cho tiện debug: mọi tin nhắn và tool result nằm trong backend trace với thời hạn lưu của trace. Chỉ dựa vào regex: không bắt được tên, địa chỉ tự do, thông tin sức khoẻ. Dùng OpenInference song song <code>gen_ai.*</code> mà không chọn một bộ: cùng lượt gọi có hai bộ tên. Tối ưu thẳng theo thumbs: kéo về câu trả lời chiều lòng.',
+      p: 'Tên <code>gen_ai.*</code> còn đổi; phải pin phiên bản instrumentation và kiểm tra mapping của backend khi nâng cấp. Bucket nội dung cần phân quyền, lifecycle, audit log. Debug một ca cụ thể chậm hơn khi nội dung không nằm ngay trên span. Judge online tốn tiền model và công hiệu chỉnh.'
+    },
+    deep: [
+      {
+        q: 'Response không có field "đúng/sai". Vậy đo chất lượng kiểu gì?',
+        a: `<p>Latency và lỗi đo được tự động, chất lượng thì không (README §1.4). Nhưng nếu chất lượng không là một đường trên dashboard, bạn chỉ biết nó giảm khi khách phàn nàn. Ba nguồn tín hiệu, xếp theo độ rẻ:</p>
+<ol><li><b>Có sẵn trong response.</b> Chọn "max_tokens" ở hình chính: <code>finish_reasons</code> đã cho biết câu trả lời dừng giữa địa chỉ. Refusal, tool call sai schema, JSON không parse được, câu trả lời rỗng cũng vậy. Rẻ và chính xác, nhưng chỉ bắt lỗi về hình thức: câu "hoàn tiền 3 ngày" hoàn hảo về hình thức.</li>
+<li><b>Từ người dùng.</b> Thumbs, bấm tạo lại, hỏi lại cùng ý, chuyển cho nhân viên.</li>
+<li><b>Chấm điểm online.</b> Judge hoặc grader code chạy trên một phần trace, đo thứ hai nguồn trên không đo được: câu trả lời có bám tài liệu không, có lộ thông tin nội bộ không.</li></ol>`,
+        take: 'Bắt đầu từ tín hiệu miễn phí trong response, rồi thêm người dùng, rồi judge cho phần còn lại.'
+      },
+      {
+        q: 'Có nút thumbs down rồi, cứ đếm nó là ra chất lượng chứ?',
+        a: `<p>Thumbs có hai vấn đề. Ít người bấm, và người bấm thường là người rất hài lòng hoặc rất bực (README §3.4). Hình dưới tính số nhãn một ngày với lưu lượng giả định.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (rate) => {
+            const conv = 20000, bad = 0.01;
+            const votes = conv * rate, badVotes = conv * bad * rate;
+            out.replaceChildren(hbars([['Hội thoại mỗi ngày', conv, false], ['Có bấm thumbs', votes, false], ['Câu trả lời sai và có thumbs down', badVotes, true]], { max: conv, fmt: (v) => vn(v, v < 10 ? 1 : 0) }),
+              el('div', { class: 'cap', html: `Giả định 20.000 hội thoại mỗi ngày, 1% trả lời sai, người gặp câu sai bấm thumbs với cùng tỉ lệ ${(rate * 100).toFixed(1).replace('.', ',')}% như mọi người. Một ngày chỉ có khoảng ${vn(badVotes, 1)} trace sai được người dùng chỉ ra. Và README §1.4 kể sự cố GPT-4o tháng 4/2025: bản cập nhật có thêm reward signal từ thumbs up/down, OpenAI viết rằng feedback người dùng "can sometimes favor more agreeable responses", model trở nên nịnh và bị rollback.` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Tỉ lệ hội thoại có bấm thumbs (giả định)', 0.005, 0.1, 0.005, 0.02, draw, (v) => (v * 100).toFixed(1).replace('.', ',') + '%').node]), out);
+          draw(0.02);
+        },
+        take: 'Feedback dùng để tìm trace cần đọc và làm ca eval. Quyết định cuối dựa trên eval có nhãn.'
+      },
+      {
+        q: 'Judge online chấm bao nhiêu phần trăm trace thì vừa?',
+        a: `<p>Đánh đổi giữa tiền và số lỗi bắt được. Mỗi lần chấm là một lượt gọi model. Hình dưới dùng giá Sonnet 5.5 (input 2, output 10 USD / 1 triệu token, Cost Optimization §2.1) cho judge, với số token mỗi lần chấm là giả định.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (s) => {
+            const conv = 20000, bad = 0.01, recall = 0.8, tin = 3000, tout = 200;
+            const per = (tin * PRICE.input + tout * PRICE.output) / 1e6;
+            const day = conv * s * per, caught = conv * bad * s * recall;
+            out.replaceChildren(el('div', { class: 'stat' }, [el('span', { html: `Trace chấm mỗi ngày: <b>${vn(conv * s)}</b>` }), el('span', { html: `Chi phí judge: <b>${usd(day)}/ngày</b> (${usd(day * 30)}/tháng)` }), el('span', { html: `Câu sai bắt được: <b>${vn(caught, 1)}/ngày</b>` })]),
+              el('div', { class: 'cap', html: `Giả định: 20.000 hội thoại/ngày, 1% sai, judge bắt 80% câu sai, mỗi lần chấm ${vn(tin)} token input và ${tout} token output (${(per * 1000).toFixed(2).replace('.', ',')} USD mỗi nghìn lần chấm). ${s >= 0.5 ? '<b style="color:var(--warn)">Chấm phần lớn traffic: chi phí judge tiến gần chi phí của chính trợ lý.</b> ' : ''}Mẫu gửi cho judge phải lấy <b>sau khi đã che PII</b>, vì nó được gửi tới một model khác (README §3.1). Và ưu tiên chấm trace đáng ngờ (bị cắt, feedback xấu, retriever không tìm được tài liệu) thay vì chỉ lấy ngẫu nhiên (README §3.6).` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Tỉ lệ trace được chấm', 0.01, 1, 0.01, 0.05, draw, (v) => Math.round(v * 100) + '%').node]), out);
+          draw(0.05);
+        },
+        take: 'Judge online là lấy mẫu. Chọn tỉ lệ theo số lỗi cần bắt mỗi ngày, không theo cảm giác "càng nhiều càng tốt".'
+      },
+      {
+        q: 'Điểm judge trung bình vẫn đẹp. Có thể yên tâm chưa?',
+        a: `<p>README §1.4 dẫn hai sự cố công khai. GPT-4o tháng 4/2025: eval offline và A/B test đều tốt, một số chuyên gia nói model "felt slightly off", OpenAI vẫn ra mắt, rồi phải rollback. Anthropic tháng 8–9/2025: ba lỗi hạ tầng làm giảm chất lượng Claude trong nhiều tuần, chỉ xuất hiện trên một số nền tảng, batch size, cấu hình; Anthropic viết "The evaluations we ran simply didn't capture the degradation users were reporting".</p>
+<p>Bài học: số tổng có thể đẹp trong khi một nhóm người dùng đang gặp lỗi. Cắt metric chất lượng theo chiều đủ nhỏ (provider, region, model snapshot, phiên bản prompt, loại phiên). Khi người đánh giá nói "có gì đó sai" mà số liệu nói ngược lại, đó là lúc điều tra, không phải lúc tin số liệu.</p>`,
+        take: 'Điểm chất lượng tổng hợp che lỗi của nhóm nhỏ, giống hệt p95 che khách chậm.'
+      },
+      {
+        q: 'Sao phải theo tên gen_ai.* mà không tự đặt tên cho dễ đọc?',
+        a: `<p>Để dữ liệu từ thư viện khác nhau đổ về một backend vẫn query được chung. Instrumentation OpenAI ghi <code>gen_ai.usage.output_tokens</code>, wrapper tự viết cho Claude cũng ghi đúng tên đó, Langfuse và Datadog đọc được cả hai. Tự đặt <code>tokens_out</code> thì mỗi dashboard phải biết hai bộ tên.</p>
+<p>Giá phải trả: mọi <code>gen_ai.*</code> đang ở trạng thái Development, tên có thể đổi và đã đổi (<code>gen_ai.system</code> thành <code>gen_ai.provider.name</code>, <code>gen_ai.client.token.usage</code> thành họ <code>gen_ai.client.inference.usage.*</code>). Backend đổi theo chậm hơn: Datadog nhận <code>gen_ai.*</code> theo semconv v1.37 trở lên, LangSmith map cả tên cũ <code>gen_ai.system</code>. Pin phiên bản instrumentation, kiểm tra lại mapping khi nâng cấp. Và nếu thư viện chưa đặt <code>OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental</code>, instrumentation OpenAI chạy theo semconv v1.30.0 (README §1.5).</p>`,
+        take: 'Tên chuẩn mua được khả năng query chung. Đổi lại phải theo dõi khi chuẩn đổi tên.'
+      },
+      {
+        q: 'Đặt đúng biến theo spec rồi, sao span vẫn không có nội dung?',
+        a: `<p>Chọn "tên theo spec" ở hình chính. Spec gọi biến là <code>${SPEC_VAR}</code>, còn <code>opentelemetry-util-genai</code> 1.3b0 và <code>opentelemetry-instrumentation-openai-v2</code> 2.4b0 đọc <code>${LIB_VAR}</code> (README §1.5). Thư viện không thấy biến nào nên chạy mặc định NO_CONTENT. Trường hợp này an toàn: bạn chỉ mất nội dung.</p>
+<p>Trường hợp ngược lại mới tệ: chọn "Cả hai". Bạn đặt biến spec bằng NO_CONTENT và tin là đã tắt, trong khi biến thư viện còn sót SPAN_AND_EVENT từ file .env của môi trường dev. Thư viện bật ghi nội dung, và không ai nhìn lại vì "đã tắt rồi". README: đọc README của đúng phiên bản instrumentation, rồi kiểm tra bằng một span thật trước khi tin cấu hình.</p>
+<p>Bẫy thứ ba: chọn "<code>…MESSAGE_CONTENT=true</code> (kiểu cũ)". README ghi instrumentation OpenAI còn nhận <code>true</code>. POC chạy thật trên <code>opentelemetry-util-genai</code> 1.3b0 thì thấy khác: thư viện in "true is not a valid option … Defaulting to NO_CONTENT" và không ghi gì. Vậy với util-genai 1.3b0, chỉ biến <code>…CAPTURE_MESSAGE_CONTENT</code> với một trong bốn giá trị <code>SPAN_ONLY</code>, <code>EVENT_ONLY</code>, <code>SPAN_AND_EVENT</code>, <code>NO_CONTENT</code> là có tác dụng. Dòng cảnh báo nằm trong log khởi động, ít ai đọc; span thật thì không nói dối.</p>`,
+        take: 'Cấu hình telemetry được kiểm bằng dữ liệu nó sinh ra, không bằng file cấu hình.'
+      },
+      {
+        q: 'Che số điện thoại và email bằng regex rồi, còn lo gì?',
+        a: `<p>Bật "Che PII" ở hình chính. Regex thay được số điện thoại và email vì chúng có định dạng. Tên "Lan", địa chỉ "12 Nguyễn Trãi" và câu "bố bị tiểu đường" vẫn còn nguyên. README §3.1: che bằng regex bắt được định dạng có cấu trúc nhưng không bắt được "tôi bị tiểu đường, đang dùng thuốc X". Nếu ứng dụng nhận loại nội dung đó, giải pháp là không ghi nội dung ở production, hoặc chỉ ghi trên mẫu nhỏ đã qua bộ phát hiện PII tốt hơn, có người duyệt quyền truy cập.</p>
+<p>Thứ tự che an toàn: trong code trước khi đặt attribute (chỗ duy nhất chắc dữ liệu chưa đi đâu), rồi ở bước export trong SDK, rồi ở Collector, cuối cùng ở backend. Tool result cũng là nội dung: <code>get_order</code> trả về số điện thoại, email, địa chỉ; ghi result vào span là ghi những thứ đó.</p>`,
+        take: 'Regex che được định dạng, không che được ý nghĩa. Ít ghi nội dung hơn là cách che tốt nhất.'
+      },
+      {
+        q: 'Che ở Collector bằng regex tiếng Việt, sao vẫn lọt địa chỉ và bệnh?',
+        a: `<p>Vì chuỗi Collector nhận không giống chuỗi bạn đọc trên bảng. <code>opentelemetry-util-genai</code> 1.3b0 ghi <code>gen_ai.input.messages</code> thành một chuỗi JSON, và trong chuỗi đó mỗi ký tự có dấu được viết dạng <code>\\uXXXX</code>: "Nguyễn Trãi" thành <code>Nguy\\u1ec5n Tr\\u00e3i</code> (POC đo trên span thật). Regex <code>12 Nguyễn Trãi</code> tìm chữ "ễ", trong chuỗi chỉ có 6 ký tự <code>\\u1ec5</code>. Hình dưới chạy cùng bộ regex của lab trên tin nhắn khách và kết quả tool, một lần trên chuỗi thô kiểu thư viện, một lần sau khi giải mã JSON.</p>`,
+        viz(box) {
+          const raw = (s) => s.replace(/[\u0080-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+          const text = USER_MSG + ' ' + TOOL_RESULT;
+          const r = findPII(raw(text)), d = findPII(text);
+          const row = (n, s, hits) => `<tr><td>${n}</td><td class="mono" style="word-break:break-all">${esc(s)}</td><td>${PII.map(([p]) => hits.includes(p) ? `<b>${p}</b>` : `<span style="color:var(--bad)">thiếu ${p}</span>`).join(', ')}</td></tr>`;
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Regex chạy trên</th><th>Trích chuỗi</th><th>Loại PII regex thấy</th></tr>' + row('Chuỗi thô thư viện ghi', raw(USER_MSG).slice(0, 130) + '…', r) + row('Sau khi giải mã JSON', USER_MSG.slice(0, 80) + '…', d) })]),
+            el('div', { class: 'cap', html: `<b style="color:var(--bad)">Trên chuỗi thô, regex thấy ${r.length}/${PII.length} loại; sau khi giải mã thấy ${d.length}/${PII.length}.</b> Vì sao: JSON cho phép viết ký tự ngoài bảng ASCII thành <code>\\u</code> cộng 4 chữ số hex; số điện thoại, email và chữ "Lan" không có dấu nên vẫn khớp, còn "Nguyễn Trãi", "tiểu đường", "đường huyết" thì không. POC ra đúng kết quả này trên span thật. Không có nghĩa dữ liệu đã được che hay mã hoá: ai giải mã JSON cũng đọc được nguyên văn. Trong hệ thống thật: che trong code trước khi đặt attribute; nếu phải che ở Collector hay backend, giải mã JSON trước khi chạy regex, và test bằng một span thật có tiếng Việt.` }));
+        },
+        take: 'Regex phải chạy trên đúng chuỗi được lưu. Với tiếng Việt trong JSON, chuỗi đó không giống chuỗi bạn nhìn thấy.'
+      },
+      {
+        q: 'Đẩy nội dung ra *_ref thì được gì, khi nó vẫn được lưu ở đâu đó?',
+        a: `<p>Bật "Đẩy nội dung ra object storage" ở hình chính: span chỉ còn URI. Nội dung nằm ở bucket có phân quyền và lifecycle rule riêng (ví dụ tự xoá sau vài ngày), trong khi metadata trên span lưu vài tháng tới hơn một năm cho kỹ sư, product, tài chính (README §3.1). Khi khách yêu cầu xoá dữ liệu, bạn xoá object trong bucket, không phải tìm trong backend trace.</p>
+<p>Spec lưu ý bản thân URI có thể lộ thông tin: trong lab, URI chứa tên bucket, <code>tenant=shopviet</code> và id response. Đặt URI không chứa dữ liệu khách, và nhớ rằng biến upload cũng lệch tên giữa spec (<code>OTEL_INSTRUMENTATION_GENAI_CONTENT_HOOK</code>) và thư viện (<code>OTEL_INSTRUMENTATION_GENAI_COMPLETION_HOOK</code>).</p>`,
+        take: 'Tách nội dung ra để nó có chính sách lưu riêng, ngắn hơn và hẹp hơn metadata.'
+      },
+      {
+        q: 'Phoenix ghi llm.model_name, wrapper ghi gen_ai.request.model. Cái nào đúng?',
+        a: `<p>Cả hai đều là quy ước, khác bộ. OpenInference của Arize dùng <code>openinference.span.kind</code> (<code>LLM</code>, <code>TOOL</code>, <code>AGENT</code>, <code>RETRIEVER</code>...), <code>llm.model_name</code>, <code>llm.token_count.prompt</code>, <code>input.value</code>, <code>output.value</code>; Phoenix dùng bộ này (README §1.5). Dùng nhiều nguồn instrumentation thì cùng một lượt gọi có thể có hai bộ tên.</p>
+<p>README khuyên chọn một bộ làm chuẩn nội bộ, ưu tiên <code>gen_ai.*</code> vì nhiều backend nhận trực tiếp, và kiểm tra backend map bộ còn lại thế nào. Langfuse đọc cả <code>gen_ai.*</code>, <code>llm.*</code> của OpenInference và <code>langfuse.*</code> riêng. Lưu ý thêm: gói <code>opentelemetry-instrumentation-anthropic</code> trên PyPI là của OpenLLMetry, không thuộc dự án OpenTelemetry.</p>`,
+        take: 'Một lượt gọi, một bộ tên. Chọn trước khi dashboard đầu tiên được dựng.'
+      }
+    ],
+    poc: {
+      goal: "<b>Viết tay (không thật):</b> tin nhắn khách, kết quả tool, câu trả lời, điểm judge, giống lab; không gọi model hay judge. <b>Chạy thật:</b> thư viện <code>opentelemetry-util-genai</code> 1.3b0, nơi các instrumentation GenAI Python đọc biến môi trường và ghi nội dung vào span/event. Bạn thấy biến nào thật sự bật capture và PII đi tới đâu.",
+      file: "docs/llm-observability/pocs/03_quality_otel.py",
+      run: "uv run docs/llm-observability/pocs/03_quality_otel.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>opentelemetry-sdk</code> 1.45.2, <code>opentelemetry-util-genai</code> 1.3b0), chạy dưới 3 giây, miễn phí.",
+      output: "Chạy thật: opentelemetry-util-genai 1.3b0 (thư viện các instrumentation GenAI Python dùng), SDK 1.45.2.\nTin nhắn khách, kết quả tool, câu trả lời là VIẾT TAY (giống lab 03); không gọi model.\n\n== 1. Biến môi trường nào thật sự bật ghi nội dung ==\ntrue is not a valid option for `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` environment variable. Must be one of NO_CONTENT, SPAN_ONLY, EVENT_ONLY, SPAN_AND_EVENT. Defaulting to `NO_CONTENT`.\ntrue is not a valid option for `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` environment variable. Must be one of NO_CONTENT, SPAN_ONLY, EVENT_ONLY, SPAN_AND_EVENT. Defaulting to `NO_CONTENT`.\nCấu hình                                            Mode thư viện đọc  Attr nội dung trên span  Event có nội dung  PII lộ\n--------------------------------------------------  -----------------  -----------------------  -----------------  -----------------------------------------\nChỉ biến spec = SPAN_AND_EVENT                      NO_CONTENT         0                        0                  -\nChỉ biến thư viện = SPAN_ONLY                       SPAN_ONLY          2                        0                  email, sức khoẻ, tên, điện thoại, địa chỉ\nSpec = NO_CONTENT, thư viện còn sót SPAN_AND_EVENT  SPAN_AND_EVENT     2                        1                  email, sức khoẻ, tên, điện thoại, địa chỉ\nBiến thư viện = true (kiểu cũ)                      NO_CONTENT         0                        0                  -\n\n== 2. Span thật khi bật SPAN_ONLY (cắt bớt chuỗi dài) ==\n  gen_ai.operation.name                    chat\n  gen_ai.provider.name                     anthropic\n  gen_ai.request.model                     claude-sonnet-5-5\n  server.address                           api.anthropic.com\n  gen_ai.response.finish_reasons           ('end_turn',)\n  gen_ai.response.model                    claude-sonnet-5-5\n  gen_ai.response.id                       msg_01Q8\n  gen_ai.usage.input_tokens                6500\n  gen_ai.usage.output_tokens               220\n  gen_ai.usage.cache_read.input_tokens     5800\n  gen_ai.input.messages                    [{\"role\":\"user\",\"parts\":[{\"content\":\"M\\u00ecnh l\\u00e0 Lan, s\\u0111t 0903 123 456, \\u0111\\u01a1n SV-4821 giao …\n  gen_ai.output.messages                   [{\"role\":\"assistant\",\"parts\":[{\"content\":\"D\\u1ea1 ch\\u1ecb Lan, \\u0111\\u01a1n SV-4821 d\\u1ef1 ki\\u1ebfn giao n…\n\n== 2b. Regex chạy thẳng trên chuỗi attribute (như một lớp che ở Collector/backend) so với sau json.loads ==\nĐọc attribute           PII regex thấy\n----------------------  -----------------------------------------\nchuỗi thô thư viện ghi  email, tên, điện thoại\nsau json.loads          email, sức khoẻ, tên, điện thoại, địa chỉ\nTrích chuỗi thô: …12 Nguy\\u1ec5n Tr\\u00e3i Q1 ch\\u01b0a? M\\u00ecnh mua m\\u00e1…\n\n== 3. Che bằng regex (điện thoại + email) trong code, trước khi đưa cho thư viện ==\nChe    Attribute               PII còn lại\n-----  ----------------------  -----------------------------------------\nkhông  gen_ai.input.messages   email, sức khoẻ, tên, điện thoại, địa chỉ\nkhông  gen_ai.output.messages  tên, địa chỉ\ncó     gen_ai.input.messages   sức khoẻ, tên, địa chỉ\ncó     gen_ai.output.messages  tên, địa chỉ\n\n== 4. Chất lượng gắn vào trace mà không cần nội dung: event gen_ai.evaluation.result ==\n  gen_ai.evaluation.result: {'gen_ai.evaluation.name': 'answer_grounded', 'gen_ai.evaluation.score.value': 0.95, 'gen_ai.evaluation.score.label': 'pass', 'gen_ai.evaluation.explanation': 'Ngày giao khớp kết quả get_order.', 'gen_ai.response.id': 'msg_01Q8'}\n  PII trong event: không; span NO_CONTENT có 0 attribute nội dung.\n\nRút ra: util-genai 1.3b0 chỉ đọc OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT. Đặt biến theo spec thì\nkhông ghi gì (an toàn), còn đặt spec = NO_CONTENT mà biến thư viện sót SPAN_AND_EVENT thì nội dung vào cả span\nlẫn event. 'true' kiểu cũ bị thư viện này coi là NO_CONTENT. Regex che được số điện thoại, email; tên,\nđịa chỉ, bệnh vẫn nằm trên span. Thư viện ghi JSON với \\uXXXX, nên regex tiếng Việt chạy thẳng trên attribute\nkhông thấy địa chỉ và bệnh. Điểm judge đi qua event không chứa nội dung, nối bằng response.id.",
+      measured: true,
+      read: ["Bảng 1: chỉ đặt biến theo spec (<code>OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT</code>) thì thư viện vẫn <code>NO_CONTENT</code>. Spec = NO_CONTENT mà biến thư viện còn sót <code>SPAN_AND_EVENT</code> thì nội dung vào cả span lẫn event, đủ 5 loại PII. <code>true</code> kiểu cũ bị thư viện này coi là NO_CONTENT (dòng cảnh báo là của thư viện).", "Mục 2b: thư viện ghi JSON với <code>\\uXXXX</code> (ví dụ <code>Nguy\\u1ec5n Tr\\u00e3i</code>), nên regex tiếng Việt chạy thẳng trên chuỗi attribute chỉ thấy email, tên, số điện thoại; phải <code>json.loads</code> mới thấy địa chỉ và bệnh. Lớp che ở Collector hay backend gặp đúng chuyện này.", "Mục 3: che số điện thoại và email trong code rồi vẫn còn tên, địa chỉ, bệnh trên span.", "Mục 4: event <code>gen_ai.evaluation.result</code> mang điểm và <code>gen_ai.response.id</code>, không có PII: chất lượng lưu lâu được mà không cần lưu nội dung."]
+    },
+    mount(stage) {
+      const st = { mode: 'NO_CONTENT', env: 'lib', mask: false, upload: false, finish: 'end_turn', judge: true };
+      const ctl1 = el('div', { class: 'row' }, [
+        select('Chế độ capture bạn muốn', MODES.map((m) => [m, m]), st.mode, (v) => { st.mode = v; draw(); }).node,
+        select('Biến môi trường bạn đặt', ENVS, st.env, (v) => { st.env = v; draw(); }).node
+      ]);
+      const ctl2 = el('div', { class: 'row' });
+      const effLine = el('div', { class: 'stat' });
+      const body = el('div');
+      const cap = el('div', { style: 'margin-top:10px;font-size:13.5px' });
+      const foot = el('div', { class: 'stat', style: 'border-top:1px solid var(--line);padding-top:8px;margin-top:12px' });
+      const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+
+      function draw() {
+        ctl2.replaceChildren(
+          el('button', { class: st.mask ? 'on' : '', text: 'Che PII bằng regex trước khi đặt attribute', onclick: () => { st.mask = !st.mask; draw(); } }),
+          el('button', { class: st.upload ? 'on' : '', text: 'Đẩy nội dung ra object storage (*_ref)', onclick: () => { st.upload = !st.upload; draw(); } }),
+          el('button', { class: st.judge ? 'on' : '', text: 'Judge online', onclick: () => { st.judge = !st.judge; draw(); } }),
+          select('stop_reason của Claude', [['end_turn', 'end_turn'], ['max_tokens', 'max_tokens'], ['refusal', 'refusal']], st.finish, (v) => { st.finish = v; draw(); }).node);
+        const B = build(st);
+        effLine.innerHTML = `<span>Chế độ thực tế của thư viện: <b class="${B.eff.mode === 'NO_CONTENT' ? 'ok' : 'bad'}">${B.eff.mode}</b></span><span>Usage Claude thô: <b>input ${USAGE.input_tokens} + cache_read ${vn(USAGE.cache_read_input_tokens)} + cache_creation ${USAGE.cache_creation_input_tokens}</b> → <code>gen_ai.usage.input_tokens</code> = <b>${vn(B.n.input)}</b></span>`;
+        body.replaceChildren(...B.groups.map(([g, rows]) => attrTable('Span <code>chat claude-sonnet-5-5</code> · ' + g, rows, g.startsWith('Nội dung') ? 'backend trace, thời hạn lưu của trace' : '')),
+          ...B.events.map(([g, rows]) => attrTable('Event <code>' + esc(g) + '</code>', rows, g.startsWith('gen_ai.evaluation') ? 'không chứa nội dung, lưu lâu được' : 'backend trace')));
+
+        const inTrace = B.leaks.filter((l) => !l.bucket), inBucket = B.leaks.filter((l) => l.bucket);
+        const kinds = [...new Set(inTrace.map((l) => l.p))];
+        const parts = [];
+        if (B.eff.why) parts.push(box(st.env === 'both' ? 'var(--bad)' : 'var(--warn)', `<b>${st.env === 'both' ? 'Bạn tin đã tắt, thư viện đang ghi nội dung.' : st.env === 'libtrue' ? 'Bạn tin đã bật bằng <code>true</code>, thư viện không ghi gì.' : `Bạn chọn ${st.mode}, thư viện chạy NO_CONTENT.`}</b> ${B.eff.why} Không có nghĩa spec sai hay thư viện sai: hai bên đang lệch tên ở thời điểm README viết. Trong hệ thống thật: đọc README của đúng phiên bản instrumentation, kiểm tra bằng một span thật (README §1.5).`));
+        if (inTrace.length) parts.push(box('var(--bad)', `<b>${inTrace.length} chỗ dữ liệu cá nhân nằm trong backend trace: ${kinds.join(', ')}.</b> ${st.mask ? 'Regex đã thay số điện thoại và email, nhưng tên, địa chỉ và thông tin sức khoẻ không có định dạng cố định nên lọt qua.' : 'Tin nhắn của khách và kết quả <code>get_order</code> đều nằm nguyên trong attribute.'} Vì sao: capture nội dung ghi cả system prompt, lịch sử, tool result và output. Không có nghĩa không bao giờ được ghi nội dung: debug và xây eval dataset cần nó. Trong hệ thống thật: nội dung tắt ở production hoặc chỉ trên mẫu nhỏ đã qua bộ phát hiện PII tốt hơn, che trong code trước khi đặt attribute, đẩy ra <code>*_ref</code> (README §3.1).`));
+        else if (inBucket.length) parts.push(box('var(--warn)', `Backend trace không còn dữ liệu cá nhân: span và event chỉ giữ URI. ${inBucket.length} chỗ dữ liệu cá nhân nằm trong bucket riêng, nơi đặt được phân quyền, thời hạn lưu ngắn và xoá theo yêu cầu của khách. URI vẫn lộ tên bucket và <code>tenant=shopviet</code> (README §3.1).`));
+        else parts.push(box('var(--ok)', 'Không có nội dung nào được ghi: span chỉ có metadata. Đủ để biết request chậm, đắt, bị cắt hay bị từ chối; không đủ để đọc lại câu trả lời. Đây là mặc định của spec.'));
+        if (st.finish === 'refusal') parts.push(box('var(--warn)', `<code>finish_reasons = ["refusal"]</code>, có <code>app.llm.keep = true</code>, không có <code>error.type</code>. ${st.judge ? 'Judge không chấm lượt bị từ chối trong lab: không có câu trả lời để chấm, tín hiệu chất lượng ở đây chính là finish reason.' : ''}`));
+        if (st.finish === 'max_tokens') parts.push(box('var(--warn)', `Với <code>max_tokens</code> = 40 (ví dụ một lần deploy hạ giới hạn quá tay), câu trả lời dừng ở "tới 12 Nguyễn": <code>finish_reasons = ["max_tokens"]</code> là tín hiệu chất lượng miễn phí, có sẵn trong response, bắt được trước cả judge.${st.judge ? ' Judge cũng chấm fail, và event của nó trỏ về response bằng <code>gen_ai.response.id</code>.' : ''}`));
+        cap.innerHTML = parts.join('');
+        foot.innerHTML = `<span>Attribute trên span: <b>${B.groups.reduce((s, [, r]) => s + r.length, 0)}</b></span><span>Event: <b>${B.events.length}</b></span><span>Dữ liệu cá nhân trong backend trace: <b class="${inTrace.length ? 'bad' : 'ok'}">${inTrace.length}</b></span><span>Trong bucket riêng: <b>${inBucket.length}</b></span>`;
+      }
+
+      stage.append(ctl1, ctl2, effLine, body, cap, foot,
+        el('p', { class: 'hint', text: 'Một response Claude cố định do lab dựng (tin nhắn, tool result, usage, id rút gọn, URI bucket là giả định). Tên attribute, giá trị chế độ capture, tên biến môi trường và phiên bản thư viện theo README §1.5 và bảng Field cần có. Regex che PII chạy thật trên nội dung; danh sách loại dữ liệu cá nhân để đếm là của lab, biết trước nội dung mẫu. Bảng hiện nội dung đã giải mã JSON (tiếng Việt đọc được); thư viện thật ghi dạng \\uXXXX, xem câu hỏi về regex ở Collector. Lab không gọi model hay judge thật.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,643 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 01</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="00-workflow.html">← Lab trước</a><a href="02-llm-metrics.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const vn = (x, d = 0) => Number(x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const T0 = (10 * 3600 + 42 * 60 + 7.3) * 1000;
+  const USER = 'u_7f3a';
+  const USER_REQS = [-137000, 0, 144000];
+  const SVC = ['gateway', 'agent', 'retriever', 'llm-client', 'tool-svc'];
+  const DOCS = ['giao-hang-noi-thanh@2026-06', 'bao-hanh-laptop@2026-01', 'chinh-sach-hoan-tien@2026-09', 'chinh-sach-hoan-tien@2024-03', 'doi-tra-tai-nghe@2025-11'];
+  const MODES = [
+    ['none', 'Không có id chung, chỉ gateway ghi user'],
+    ['gw', 'Gateway ghi request_id, service khác không ghi'],
+    ['all', 'Mọi dòng mang trace_id (traceparent truyền qua mọi service)'],
+    ['broken', 'Mọi dòng có trace_id, trừ tool-svc (không truyền traceparent)']
+  ];
+  const clock = (ms) => { const t = Math.max(0, ms); const h = Math.floor(t / 3600000), m = Math.floor(t / 60000) % 60, s = (t / 1000) % 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + s.toFixed(3).padStart(6, '0'); };
+  const hex = (rnd, n) => Array.from({ length: n }, () => '0123456789abcdef'[Math.floor(rnd() * 16)]).join('');
+
+  function makeReq(rnd, start, isUser, idx) {
+    const emb = 240, c1 = 900 + rnd() * 700, tool = 120 + rnd() * 140, ttft = 600 + rnd() * 900, gen = 700 + rnd() * 1500;
+    const t = { start, r: start + 20, c1s: start + 20 + emb, tls: 0, c2s: 0, end: 0 };
+    t.tls = t.c1s + c1; t.c2s = t.tls + tool; t.end = t.c2s + ttft + gen + 25;
+    const doc = isUser && idx === 1 ? 'chinh-sach-hoan-tien@2024-03' : DOCS[Math.floor(rnd() * DOCS.length)];
+    const order = isUser ? 'SV-4821' : 'SV-' + (4000 + Math.floor(rnd() * 6000));
+    const user = isUser ? USER : 'u_' + hex(rnd, 4);
+    return { ...t, doc, order, user, trace: hex(rnd, 8), req: 'r-' + hex(rnd, 4), target: isUser && idx === 1, mine: isUser, c1, tool, ttft, gen };
+  }
+
+  function linesOf(q) {
+    return [
+      { t: q.r, s: 2, m: `retrieve top_k=2 docs=[${q.doc}, ...]` },
+      { t: q.start + 5, s: 1, m: 'invoke support-bot' },
+      { t: q.tls - 5, s: 3, m: `model call ok ${Math.round(q.c1)}ms stop=tool_use` },
+      { t: q.tls + q.tool, s: 4, m: `get_order ${q.order} ok ${Math.round(q.tool)}ms` },
+      { t: q.end - 25, s: 3, m: `model call ok ${Math.round(q.end - 25 - q.c2s)}ms stop=end_turn` },
+      { t: q.end - 10, s: 1, m: 'done steps=4' },
+      { t: q.end, s: 0, m: `POST /chat 200 ${Math.round(q.end - q.start)}ms user=${q.user}` }
+    ];
+  }
+
+  function simulate(rpm, winMin, seed = 11) {
+    const rnd = seeded(seed);
+    const W = winMin * 60000, n = Math.round(rpm * 2 * winMin);
+    const reqs = [];
+    for (let i = 0; i < n; i++) reqs.push(makeReq(rnd, T0 - W + rnd() * 2 * W, false, 0));
+    USER_REQS.forEach((dt, i) => { if (Math.abs(dt) <= W) reqs.push(makeReq(seeded(100 + i), T0 + dt, true, i)); });
+    return { reqs, W, total: reqs.length * 7 };
+  }
+
+  function investigate(sim, mode) {
+    const mine = sim.reqs.filter((q) => q.mine);
+    const overl = (a, b) => b.start < a.end && b.end > a.start;
+    let toRead = mine.length;
+    let ambiguous = 0, sameDoc = 0, orphanTool = 0;
+    mine.forEach((q) => {
+      const others = sim.reqs.filter((o) => o !== q && overl(q, o));
+      if (mode === 'none' || mode === 'gw') {
+        toRead += 6 * (others.length + 1);
+        if (q.target) { ambiguous = others.length; sameDoc = others.filter((o) => o.doc === q.doc).length; }
+      } else {
+        toRead += 6;
+        if (mode === 'broken') {
+          const tl = sim.reqs.filter((o) => o !== q && o.tls + o.tool > q.tls - 200 && o.tls < q.tls + q.tool + 200).length;
+          toRead += tl;
+          if (q.target) orphanTool = tl;
+        }
+      }
+    });
+    return { mine, toRead, ambiguous, sameDoc, orphanTool };
+  }
+
+  function sample(sim, mode, max = 12) {
+    const tgt = sim.reqs.find((q) => q.target);
+    if (!tgt) return { lines: [], n: 0, tgt: null };
+    const pool = mode === 'all' || mode === 'broken' ? [tgt] : sim.reqs.filter((o) => o.start < tgt.end && o.end > tgt.start);
+    const ls = [];
+    pool.forEach((q) => linesOf(q).forEach((l) => {
+      if (mode === 'broken' && l.s === 4) return;
+      const idTag = mode === 'all' || (mode === 'broken' && l.s !== 4) ? ` trace_id=${q.trace}` : mode === 'gw' && l.s === 0 ? ` req=${q.req}` : '';
+      ls.push({ ...l, q, line: `${clock(l.t)} ${SVC[l.s].padEnd(10)} INFO ${l.m}${idTag}` });
+    }));
+    ls.sort((a, b) => a.t - b.t);
+    return { lines: ls.slice(0, max), n: ls.length, tgt };
+  }
+
+  function timeline(sim, mode) {
+    const tgt = sim.reqs.find((q) => q.target);
+    const W = 700, left = 86, right = 10, lane = 22, H = SVC.length * lane + 30;
+    const a = tgt.start - 1500, b = tgt.end + 1500;
+    const x = (t) => left + ((t - a) / (b - a)) * (W - left - right);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'canvas', role: 'img', 'aria-label': 'Dòng log theo service quanh request bị khiếu nại' });
+    SVC.forEach((s, i) => svg.append(el('text', { x: 4, y: 16 + i * lane, 'font-size': 11, fill: 'var(--mute)', text: s }), el('line', { x1: left, x2: W - right, y1: 12 + i * lane, y2: 12 + i * lane, stroke: 'var(--line)' })));
+    svg.append(el('rect', { x: x(tgt.start), y: 2, width: x(tgt.end) - x(tgt.start), height: SVC.length * lane, fill: 'var(--accent-soft)', opacity: 0.6 }));
+    for (let t = Math.ceil(a / 1000) * 1000; t <= b; t += 1000) svg.append(el('text', { x: x(t), y: H - 6, 'font-size': 10, 'text-anchor': 'middle', fill: 'var(--mute)', text: clock(t).slice(3, 8) }));
+    const filtered = mode === 'all' || mode === 'broken';
+    sim.reqs.filter((q) => q.end > a && q.start < b).forEach((q) => linesOf(q).forEach((l) => {
+      if (l.t < a || l.t > b) return;
+      const isT = q.target;
+      const kept = !filtered || isT || (mode === 'broken' && l.s === 4);
+      svg.append(el('circle', { cx: x(l.t), cy: 12 + l.s * lane, r: isT ? 4.5 : 3, fill: isT && filtered && !(mode === 'broken' && l.s === 4) ? 'var(--accent)' : kept ? 'var(--g2)' : 'var(--line)', stroke: isT ? 'var(--ink)' : 'none', 'stroke-width': isT ? 1.5 : 0, opacity: kept ? 0.9 : 0.35 }));
+    }));
+    return svg;
+  }
+
+  function traceTree(sim, mode) {
+    const q = sim.reqs.find((r) => r.target);
+    const ms = (v) => vn(Math.round(v)) + ' ms';
+    const rows = [
+      [0, 'POST /chat', ms(q.end - q.start), `user=${USER}`],
+      [1, 'invoke_agent support-bot', ms(q.end - q.start - 15), ''],
+      [2, 'retrieval policies', ms(q.c1s - q.r), `doc_ids=[${q.doc}, ...]`],
+      [2, 'chat claude-sonnet-5-5', ms(q.c1), 'finish_reasons=["tool_use"]'],
+      [2, 'execute_tool get_order', ms(q.tool), `tool=${q.order}`],
+      [2, 'chat claude-sonnet-5-5', ms(q.end - 25 - q.c2s), `TTFT ${ms(q.ttft)} · finish_reasons=["end_turn"]`]
+    ];
+    const txt = rows.map(([d, n, t, a], i) => {
+      const missing = mode === 'broken' && i === 4;
+      return `${'  '.repeat(d)}${d ? '└─ ' : ''}${missing ? '(khoảng trống ' + t + ', không có span con)' : n.padEnd(26 - d * 2) + ' ' + t.padStart(9) + '  ' + a}`;
+    }).join('\n');
+    const orphan = mode === 'broken' ? `\n\nTrace riêng, không có cha:\nexecute_tool get_order   ${ms(q.tool)}  tool=${q.order}` : '';
+    return el('div', { class: 'mono', style: 'white-space:pre;overflow-x:auto;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px', text: `trace_id=${q.trace}\n` + txt + orphan });
+  }
+
+  return {
+    id: 'why-not-logs', nav: '1. Log vs trace', ref: '§1.1–1.2',
+    title: 'Khách gửi ảnh chụp "hoàn tiền 3 ngày" lúc khoảng 10:42. Phải grep bao nhiêu dòng log mới tìm ra tài liệu nào gây lỗi?',
+    hook: 'Đổi cách ghi id trong log, kéo traffic và cửa sổ thời gian. So số dòng log phải đọc với một trace duy nhất, và xem chuyện gì xảy ra khi một service quên truyền trace context.',
+    terms: [
+      ['Log', 'Một dòng văn bản mỗi khi code muốn ghi gì đó. Ví dụ <code>10:42:11.112 gateway INFO POST /chat 200 3812ms</code>. Mỗi service ghi riêng, xếp theo thời gian.'],
+      ['Correlation id', 'Một id chung gắn vào mọi dòng log của cùng một request, ở mọi service. Có nó, grep một id là ra đủ các dòng; thiếu nó, phải đoán theo thời gian.'],
+      ['Trace id', 'Correlation id theo chuẩn OpenTelemetry: 16 byte, sinh ở đầu request, truyền sang service khác qua header. Ví dụ <code>trace_id=4bf92f35</code> (rút gọn).'],
+      ['traceparent', 'Header HTTP theo chuẩn W3C Trace Context chở trace id và span id cha sang service tiếp theo. Không gửi header này thì service bên kia bắt đầu một trace mới.'],
+      ['Span', 'Một bước có thời điểm bắt đầu, kết thúc, attribute, trạng thái, và id của span cha. Nhờ id cha, các span xếp được thành cây.'],
+      ['Span kind', 'Loại span: SERVER (nhận request), CLIENT (gọi ra ngoài, như gọi API model), INTERNAL (bước bên trong, như chạy tool).'],
+      ['Request đồng thời', 'Những request đang chạy cùng lúc. 120 request/phút, mỗi request khoảng 4 giây, nghĩa là lúc nào cũng có khoảng 8 request chồng lên nhau.'],
+      ['Instrumentation', 'Code gắn thêm vào ứng dụng hoặc thư viện để tự tạo span. Ví dụ thư viện HTTP đã được instrument tự mở span cho mỗi lần gọi ra ngoài và tự thêm header <code>traceparent</code>, bạn không phải viết tay.'],
+      ['Grep', 'Lọc dòng log chứa một chuỗi. <code>grep user=u_7f3a</code> chỉ ra dòng có đúng chuỗi đó, không ra dòng của service không ghi user.']
+    ],
+    problem: {
+      example: 'Trợ lý chat <b>ShopViet</b> chạy trên năm service: gateway, agent, retriever, llm-client (gọi <code>claude-sonnet-5-5</code>), tool-svc (chạy <code>get_order</code>). Mỗi request sinh 7 dòng log ở các service khác nhau.',
+      scenario: 'Khách hỏi về đơn SV-4821 và nhận câu "hoàn tiền trong 3 ngày", trong khi chính sách là 14 ngày. Bộ phận chăm sóc khách hàng gửi ảnh chụp, kèm user và giờ "khoảng 10:42". Trong vài phút quanh đó khách này hỏi 3 câu, và hệ thống phục vụ hàng trăm khách khác cùng lúc.',
+      ask: 'Từ user và giờ gần đúng, làm sao tìm ra dòng retriever của đúng request đó để biết tài liệu nào được đưa vào? Correlation id thay đổi việc này thế nào, và nếu một service quên truyền nó thì sao?',
+      solves: 'Lab sinh log giả lập theo seed cho mọi request trong cửa sổ thời gian, rồi đếm số dòng người điều tra phải đọc theo từng cách ghi id. Cùng request đó được dựng thành một trace theo cây span README §1.2.',
+      read: [
+        'Hình thời gian: mỗi hàng là một service, mỗi chấm là một dòng log trong khoảng vài giây quanh request bị khiếu nại (nền xanh nhạt). Chấm viền đậm là của request đó: lab biết, người điều tra thì không.',
+        'Khi có trace_id, chấm của các request khác mờ đi: grep theo id đã lọc chúng.',
+        'Khung trái: những dòng đầu tiên grep trả về, theo thứ tự thời gian. Khung phải: trace của request đó.',
+        'Dòng số liệu: số dòng phải đọc, số request đồng thời có thể bị ghép nhầm, số trace phải mở.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>APM trả lời ba câu: có lỗi không, mất bao lâu, chậm ở đâu. Với LLM, những lỗi gây hại nhất trông như request thành công (README §1.1):</p>
+<ul><li>Câu trả lời sai nội dung, bịa chính sách, trích nhầm tài liệu.</li><li>Output bị cắt vì <code>max_tokens</code>: Claude trả <code>stop_reason: "max_tokens"</code>, OpenAI Responses trả <code>status: "incomplete"</code>.</li><li>Model từ chối: với Claude là response bình thường có <code>stop_reason: "refusal"</code>.</li><li>Tool call sai schema hoặc gọi tool không tồn tại.</li><li>Model reasoning dùng hết token cho phần suy luận, không viết được chữ nào.</li></ul>
+<p>Thêm vào đó: chi phí không tỉ lệ với số request (cache, số lượt gọi trong agent), và model có thể đổi mà tên không đổi (Chen, Zaharia và Zou 2023: GPT-4 nhận diện số nguyên tố 84% bản tháng 3, 51% bản tháng 6, cùng tên <code>gpt-4</code>).</p>
+<div class="tbl"><table><tr><th></th><th>Log phẳng</th><th>Trace</th></tr>
+<tr><td>Đơn vị</td><td>Một dòng văn bản mỗi service</td><td>Một cây span cho cả request</td></tr>
+<tr><td>Nối các bước</td><td>Theo thời gian, hoặc correlation id nếu mọi service ghi</td><td>Trace id và id span cha, truyền bằng <code>traceparent</code></td></tr>
+<tr><td>Token, chi phí, model thực tế, finish reason</td><td>Chỉ khi tự ghi, tên tuỳ đội</td><td>Attribute <code>gen_ai.*</code> theo chuẩn</td></tr>
+<tr><td>Nội dung prompt, output</td><td>Hay bị ghi bừa vào log</td><td>Opt-in, tách ra <code>*_ref</code> được</td></tr></table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> observability cho LLM cần thêm nội dung (có kiểm soát), token và chi phí, tín hiệu chất lượng (README §1.1). Mỗi response hiển thị cho người dùng nên mang một id (trace id hoặc <code>gen_ai.response.id</code>) để bộ phận hỗ trợ gửi kèm khi báo lỗi (README §1.2).</div>`,
+    why: {
+      c: 'Trace OpenTelemetry với trace id truyền qua mọi service bằng <code>traceparent</code>, span LLM mang <code>gen_ai.*</code>, và trace id trả về cho client để gắn vào ảnh chụp hay feedback. Lý do: request LLM đi qua nhiều bước chạy đồng thời với hàng trăm request khác; chỉ quan hệ cha con mới ghép đúng các bước của một request.',
+      s: 'Log phẳng theo thời gian: số dòng phải đọc tăng theo traffic, và các request đồng thời không phân biệt được. Correlation id chỉ ở gateway: không phải correlation id. Log đầy đủ prompt và response vào log ứng dụng: lẫn PII vào kho log lưu lâu, không có token và chi phí theo chuẩn.',
+      p: 'Phải truyền context qua mọi ranh giới (HTTP, queue, MCP), kiểm tra trên trace thật rằng không có mảnh rời. Thêm SDK, Collector, backend trace và chi phí lưu trữ. Trace không tự có nội dung: muốn phát lại lỗi vẫn phải quyết định chính sách nội dung.'
+    },
+    deep: [
+      {
+        q: 'Có user và giờ rồi, grep log là xong chứ?',
+        a: `<p>Grep <code>user=u_7f3a</code> chỉ ra dòng của gateway, vì gateway là service duy nhất biết user. Retriever, llm-client, tool-svc không nhận user, nên dòng của chúng không chứa chuỗi đó. Để biết retriever trả tài liệu gì, người điều tra phải đọc mọi dòng retriever trong khoảng thời gian request chạy, và trong khoảng đó có nhiều request khác cũng đang chạy.</p>
+<p>Thêm nữa, khách hỏi 3 câu trong vài phút. "Khoảng 10:42" không nói câu nào. Hình dưới đếm, ở 120 request/phút, mỗi câu của khách chồng lên bao nhiêu request khác.</p>`,
+        viz(box) {
+          const sim = simulate(120, 5);
+          const mine = sim.reqs.filter((q) => q.mine);
+          const rows = mine.map((q) => { const o = sim.reqs.filter((r) => r !== q && r.start < q.end && r.end > q.start).length; return [clock(q.start).slice(0, 8) + (q.target ? ' (câu bị khiếu nại)' : ''), o, q.target]; });
+          box.append(hbars(rows, { max: Math.max(...rows.map((r) => r[1]), 1), fmt: (v) => v + ' request đồng thời' }),
+            el('div', { class: 'cap', html: `Mỗi câu của khách chạy cùng lúc với khoảng ${Math.round(rows.reduce((s, r) => s + r[1], 0) / rows.length)} request khác. Dòng retriever của chúng nằm xen kẽ, cùng định dạng. Người điều tra phải đọc hết và đoán dòng nào thuộc khách nào.` }));
+        },
+        take: 'Log phẳng nối các bước bằng thời gian. Khi có request đồng thời, thời gian không đủ để nối.'
+      },
+      {
+        q: 'Thêm request_id vào gateway là có correlation id rồi?',
+        a: `<p>Chưa. Chọn chế độ "Gateway ghi request_id" ở hình chính: số dòng phải đọc không giảm. Id chỉ có ích khi <b>mọi</b> dòng liên quan đều mang nó. Gateway biết request_id nhưng không gửi nó sang agent, retriever, llm-client, nên các service đó không có gì để ghi.</p>
+<p>Đó là việc của trace context. OpenTelemetry sinh trace id ở span đầu tiên, giữ nó trong context của process, và tự gắn header <code>traceparent</code> khi gọi HTTP ra ngoài (với thư viện HTTP đã được instrument). Service nhận đọc header, tạo span con với cùng trace id. Log của service đó cũng gắn được trace id nếu logger lấy từ context.</p>
+<p>Ví dụ header thật từ POC: <code>traceparent: 00-11dffba6cc9b3d45f3218ad4b672e3fd-eb9cb29b7643ce12-03</code>. Phần thứ hai (32 ký tự hex) là trace id, giữ nguyên qua mọi service; phần thứ ba là id của span vừa gọi ra, sẽ thành span cha ở service bên kia.</p>`,
+        take: 'Correlation id phải đi theo request qua mọi service, không chỉ nằm ở cửa vào.'
+      },
+      {
+        q: 'Mọi dòng có trace_id thì log với trace khác gì nhau nữa?',
+        a: `<p>Log có trace id giải quyết việc tìm. Trace còn cho ba thứ log không có:</p>
+<ul><li><b>Cấu trúc cha con.</b> Mỗi span có id span cha. Nhìn vào là biết <code>execute_tool</code> do agent gọi sau lượt <code>chat</code> thứ nhất, không phải đoán theo thứ tự dòng.</li>
+<li><b>Thời lượng thật của từng bước.</b> Span có thời điểm bắt đầu và kết thúc; log thường chỉ có một mốc. Waterfall ở Lab 00 vẽ từ chính các mốc này.</li>
+<li><b>Tên attribute chuẩn.</b> <code>gen_ai.usage.output_tokens</code> có cùng tên ở mọi thư viện theo chuẩn, nên backend query chung được. Log tự do thì mỗi đội đặt một kiểu: <code>tokens_out</code>, <code>completion_tokens</code>, <code>out_tok</code>.</li></ul>
+<p>Thêm nữa, trace đi cùng sampling: chọn giữ trace nào để đỡ tiền lưu, ví dụ giữ 100% trace lỗi và 5% trace bình thường (README §3.1). Vì cả cây span là một đơn vị, giữ là giữ trọn request. Log thường chỉ lọc theo mức (INFO, ERROR) từng dòng, nên giữ dòng ERROR mà mất các dòng INFO đi trước nó.</p>`,
+        take: 'Trace id giúp tìm. Cây span và attribute chuẩn giúp hiểu.'
+      },
+      {
+        q: 'Một lượt gọi LLM thành span trông thế nào?',
+        a: `<p>Span tên <code>chat claude-sonnet-5-5</code> (theo mẫu <code>{gen_ai.operation.name} {gen_ai.request.model}</code>), kind CLIENT. So với dòng log <code>model call ok 2161ms</code>, span mang thêm những gì cần để trả lời "chậm, đắt, lỗi hay sai":</p>
+<div class="tbl"><table><tr><th>Câu hỏi</th><th>Dòng log</th><th>Span <code>gen_ai.*</code></th></tr>
+<tr><td>Model nào thật sự trả lời?</td><td>không có</td><td><code>gen_ai.response.model</code></td></tr>
+<tr><td>Trả lời xong, bị cắt hay bị từ chối?</td><td><code>ok</code></td><td><code>gen_ai.response.finish_reasons</code></td></tr>
+<tr><td>Tốn bao nhiêu token, đọc cache bao nhiêu?</td><td>không có</td><td><code>gen_ai.usage.input_tokens</code>, <code>cache_read.input_tokens</code>, <code>output_tokens</code></td></tr>
+<tr><td>Khách chờ bao lâu mới thấy chữ đầu?</td><td>không có</td><td><code>gen_ai.response.time_to_first_chunk</code></td></tr>
+<tr><td>Prompt phiên bản nào?</td><td>không có</td><td><code>gen_ai.prompt.name</code>, <code>gen_ai.prompt.version</code></td></tr>
+<tr><td>Tra log của provider, nối feedback</td><td>không có</td><td><code>gen_ai.response.id</code></td></tr></table></div>
+<p>Bốn attribute <code>gen_ai.operation.name</code>, <code>gen_ai.provider.name</code>, <code>gen_ai.request.model</code>, <code>server.address</code> phải có ngay lúc tạo span, vì sampler cần chúng (README Tra cứu nhanh).</p>`,
+        take: 'Span LLM là một dòng log có cấu trúc, có cha, có thời lượng, và có tên field ai cũng hiểu.'
+      },
+      {
+        q: 'Stream thì span đóng lúc nào? Hàm trả về là xong chứ?',
+        a: `<p>Không. Với stream, hàm gọi model trả về một iterator (đối tượng để vòng <code>for</code> đọc dần từng chunk) gần như ngay lập tức; chữ đến dần sau đó, và usage thường đến ở chunk cuối. Instrumentation đóng span khi hàm trả về sẽ ghi thời lượng sai và mất usage (README §1.2). Hình dưới lấy lượt <code>chat</code> thứ hai của request bị khiếu nại và so hai cách đóng span.</p>`,
+        viz(box) {
+          const q = simulate(120, 5).reqs.find((r) => r.target);
+          const real = q.end - 25 - q.c2s, early = 12;
+          box.append(hbars([['Đóng khi hàm trả về iterator', early, false], ['Đóng khi stream kết thúc', real, true]], { max: real, fmt: (v) => vn(Math.round(v)) + ' ms' }),
+            el('div', { class: 'tbl' }, [el('table', { html: `<tr><th>Cách đóng span</th><th>Thời lượng ghi được</th><th>output_tokens</th></tr><tr><td>Khi hàm trả về</td><td class="mono bad">${early} ms</td><td class="bad">không có (usage chưa đến)</td></tr><tr class="cur"><td>Khi stream kết thúc</td><td class="mono">${vn(Math.round(real))} ms</td><td class="ok">có, từ chunk cuối</td></tr>` })]),
+            el('div', { class: 'cap', html: `<b style="color:var(--bad)">Span ${early} ms trong khi khách chờ ${vn(Math.round(real))} ms, và không có token.</b> Vì sao: span đóng trước khi chunk đầu tiên về. Dashboard latency sẽ đẹp bất thường, chi phí của các lượt này bằng 0. Không có nghĩa streaming khó đo: chỉ cần đóng span sau vòng đọc stream. Trong hệ thống thật: test instrumentation với cả stream bị ngắt giữa chừng; theo dõi tỉ lệ span thiếu usage (README §3.8).` }));
+        },
+        take: 'Với stream, span phải bao trọn vòng đọc, nếu không thời lượng và token đều sai.'
+      },
+      {
+        q: 'Vì sao tool-svc quên truyền traceparent lại tệ hơn không có trace?',
+        a: `<p>Chọn chế độ cuối ở hình chính. Trace của request vẫn có, nhưng chỗ <code>execute_tool</code> là một khoảng trống: agent chờ vài trăm mili giây mà không có span con nào giải thích. Span của tool thành một trace riêng, không có cha. Người đọc trace có thể kết luận sai rằng agent "đứng im", hoặc không biết tool nào đã chạy với đơn nào.</p>
+<p>README §3.2: tool gọi qua HTTP, queue hay MCP server (server cung cấp tool cho agent qua giao thức MCP) mà không truyền trace context thì span của tool thành trace riêng. Cách sửa là dùng W3C Trace Context (<code>traceparent</code>) khi gọi qua mạng, và kiểm tra trên một trace thật rằng <code>execute_tool</code> có cha là <code>invoke_agent</code>. Với queue, header không tự đi theo message: phải tự đưa trace context vào metadata của message.</p>`,
+        take: 'Một ranh giới không truyền context là một chỗ trace bị cắt làm đôi. Kiểm tra bằng trace thật, không bằng cấu hình.'
+      },
+      {
+        q: 'Có trace rồi, sao vẫn không đọc được câu trả lời "3 ngày" trong đó?',
+        a: `<p>Vì nội dung prompt và output là opt-in, mặc định không ghi (README §1.5). Trace trong lab có <code>doc_ids</code> trên span retrieval, đủ để thấy retriever lấy <code>chinh-sach-hoan-tien@2024-03</code>, nhưng không có text câu trả lời.</p>
+<p>Đây là quyết định có chủ đích. Để trả lời "vì sao bot nói 3 ngày" bằng cách phát lại, cần đúng prompt đã render, tài liệu, lịch sử hội thoại, tham số và output (README §1.1). Đó đều là nội dung người dùng, có thể có số điện thoại, địa chỉ. Lưu chúng là quyết định về quyền riêng tư: lớp metadata lưu lâu, lớp nội dung lưu ngắn, ở chỗ có phân quyền (README §3.1). Lab 03 mở phần này.</p>`,
+        take: 'Trace cho biết chuyện gì đã xảy ra. Có xem được nội dung hay không là một chính sách riêng.'
+      },
+      {
+        q: 'Làm sao để lần sau khỏi phải tra theo "khoảng 10:42"?',
+        a: `<p>README §1.2: mỗi response hiển thị cho người dùng nên mang theo một id, trace id hoặc <code>gen_ai.response.id</code>, để bộ phận hỗ trợ gửi kèm khi báo lỗi. Nút "báo câu trả lời sai" trong khung chat gửi kèm id đó; ảnh chụp có thể in id nhỏ ở góc.</p>
+<p>Khi đó việc điều tra là: mở trace theo id, không grep, không đoán giờ, không lẫn 3 câu của cùng khách. Feedback cũng nối với trace theo cách này (README §3.4): bảng <code>(trace_id, response_id, source, value, reason, created_at)</code>.</p>`,
+        take: 'Đưa id ra tới tay người báo lỗi. Đó là chỗ rẻ nhất để cắt chi phí điều tra.'
+      }
+    ],
+    poc: {
+      goal: "Phần 1 là <b>mô phỏng</b> có seed (thời điểm request ngẫu nhiên, cùng giả định với lab) để đếm dòng log phải đọc. Phần 2 chạy thật: hai process Python nói HTTP qua 127.0.0.1, OpenTelemetry SDK, header W3C <code>traceparent</code>, logger lấy trace_id từ context. Bạn thấy một header quyết định trace liền hay đứt.",
+      file: "docs/llm-observability/pocs/01_why_not_logs.py",
+      run: "uv run docs/llm-observability/pocs/01_why_not_logs.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>opentelemetry-sdk</code> 1.45.2), chạy dưới 3 giây, miễn phí.",
+      output: "Phần 1 là mô phỏng có seed (thời điểm request ngẫu nhiên, giống lab 01). Phần 2 chạy thật:\nhai process Python, HTTP thật qua 127.0.0.1, OpenTelemetry SDK 1.45.2, W3C traceparent.\n\n== 1. Mô phỏng: grep log quanh 10:42 khi không có id chung (120 request/phút, ±5 phút) ==\nCâu của khách            Request chạy chồng  Dòng ngoài gateway phải đọc\n-----------------------  ------------------  ---------------------------\n10:39:50                 16                  102\n10:42:07 (bị khiếu nại)  15                  96\n10:44:31                 21                  132\nTổng dòng log trong cửa sổ: 8,421. Không id chung: 333 dòng phải đọc; có trace_id ở mọi service: 3 + 6×3 = 21 dòng, không phụ thuộc traffic.\n\n== 2a. Trace thật, agent CÓ truyền traceparent khi gọi order-service (process khác) ==\ntrace 11dffba6cc9b…  (5 span)\n  POST /chat                     [agent]\n    └─ invoke_agent support-bot       [agent]\n      └─ execute_tool get_order         [agent]\n        └─ HTTP GET order-service         [agent]\n          └─ GET /orders/SV-4821            [order-service]\n\n== 2b. Trace thật, agent KHÔNG truyền traceparent khi gọi order-service (process khác) ==\ntrace 6daeb38cbde6…  (4 span)\n  POST /chat                     [agent]\n    └─ invoke_agent support-bot       [agent]\n      └─ execute_tool get_order         [agent]\n        └─ HTTP GET order-service         [agent]\ntrace 1b8cb4f7a64f…  (1 span)\n  GET /orders/SV-4821            [order-service] <- MỒ CÔI: trace riêng, không có cha\n\n== 3. grep trace_id trong file log chung của hai process ==\ngrep trace_id=11dffba6cc9b: 4 dòng, service: agent, order-service\ngrep trace_id=6daeb38cbde6: 3 dòng, service: agent\nHeader agent gửi ở lần 2a: {'traceparent': '00-11dffba6cc9b3d45f3218ad4b672e3fd-eb9cb29b7643ce12-03'}\nDòng order-service của request không truyền context:\n  order-service INFO get_order SV-4821 ok trace_id=1b8cb4f7a64f\n\nRút ra: cùng code, cùng HTTP; chỉ khác một header. Có traceparent thì GET /orders là con của HTTP GET\norder-service trong một trace 5 span và grep một trace_id ra dòng của cả hai service. Không có thì\norder-service mở trace mới: trace 4 span bị khuyết bước tool, và một trace 1 span mồ côi không ai tìm tới.",
+      measured: true,
+      read: ["Phần 1: mỗi câu của khách chạy chồng 15–21 request khác. Không có id chung phải đọc 333 dòng; có trace_id ở mọi service là 21 dòng, không đổi theo traffic.", "2a: có <code>traceparent</code> thì 1 trace 5 span, <code>GET /orders/SV-4821</code> của order-service là con của <code>HTTP GET order-service</code>.", "2b: cùng code, bỏ header: trace 4 span thiếu bước tool, và một trace 1 span mồ côi ở order-service. Grep trace_id của request đó không ra dòng log nào của order-service.", "Trace id sinh ngẫu nhiên, mỗi lần chạy ra giá trị khác; cấu trúc cây thì không đổi."]
+    },
+    mount(stage) {
+      const st = { mode: 'none', rpm: 120, win: 5 };
+      const ctl = el('div', { class: 'row' }, [
+        select('Cách ghi id trong log', MODES, st.mode, (v) => { st.mode = v; draw(); }).node,
+        slider('Traffic (request/phút)', 20, 400, 10, st.rpm, (v) => { st.rpm = v; draw(); }).node,
+        slider('Cửa sổ quanh 10:42 (± phút)', 3, 15, 1, st.win, (v) => { st.win = v; draw(); }).node
+      ]);
+      const tl = el('div');
+      const cols = el('div', { class: 'cols' });
+      const stat = el('div', { class: 'stat' });
+      const cap = el('div', { style: 'margin-top:10px;font-size:13.5px' });
+      const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+      let sim = null, key = '';
+
+      function draw() {
+        const k = st.rpm + '|' + st.win;
+        if (k !== key) { sim = simulate(st.rpm, st.win); key = k; }
+        const R = investigate(sim, st.mode);
+        const S = sample(sim, st.mode);
+        const hasTrace = st.mode === 'all' || st.mode === 'broken';
+        tl.replaceChildren(el('h4', { style: 'margin:4px 0;font-size:13px', text: 'Dòng log quanh request bị khiếu nại, theo service' }), timeline(sim, st.mode),
+          el('div', { class: 'legend' }, [el('span', { html: '<i style="background:var(--g2)"></i>dòng log phải xét' }), el('span', { html: '<i style="background:var(--accent)"></i>dòng của request bị khiếu nại (đã lọc theo trace_id)' }), el('span', { html: '<i style="background:var(--line)"></i>đã loại bằng grep trace_id' })]));
+        const logBox = el('div', { class: 'mono', style: 'white-space:pre;overflow-x:auto;font-size:11.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;line-height:1.55' });
+        S.lines.forEach((l) => logBox.append(el('div', { style: l.q.target ? 'color:var(--ink);font-weight:600' : 'color:var(--mute)', text: l.line })));
+        if (S.n > S.lines.length) logBox.append(el('div', { style: 'color:var(--mute)', text: `... thêm ${vn(S.n - S.lines.length)} dòng trong khoảng thời gian của request này` }));
+        cols.replaceChildren(
+          el('div', {}, [el('h4', { html: `Log phẳng <small>${hasTrace ? 'grep trace_id' : 'mọi dòng trong lúc request chạy'}</small>` }), logBox]),
+          el('div', {}, [el('h4', { html: `Trace <small>${hasTrace ? 'mở theo trace_id' : 'không dựng được'}</small>` }), hasTrace ? traceTree(sim, st.mode) : el('div', { class: 'hint', style: 'padding:8px;border:1px dashed var(--line);border-radius:6px', text: 'Không có trace id chung giữa các service, nên không có cây span nào để mở. Chỉ còn cách ghép dòng theo thời gian.' })]));
+        stat.innerHTML = `<span>Tổng dòng log trong cửa sổ: <b>${vn(sim.total)}</b></span><span>Câu khách hỏi trong cửa sổ: <b>${R.mine.length}</b></span><span>Dòng phải đọc: <b class="${R.toRead > 60 ? 'bad' : 'ok'}">${vn(R.toRead)}</b></span><span>Request có thể ghép nhầm: <b>${hasTrace ? 0 : R.ambiguous}</b></span><span>Trace phải mở: <b>${hasTrace ? R.mine.length : '—'}</b></span>`;
+
+        const parts = [];
+        if (st.mode === 'none') parts.push(box('var(--bad)', `<b>${vn(R.toRead)} dòng phải đọc cho ${R.mine.length} câu hỏi, và vẫn không chắc.</b> Trong lúc câu bị khiếu nại chạy, ${R.ambiguous} request khác cũng chạy; ${R.sameDoc} trong số đó cũng có dòng retriever lấy <code>chinh-sach-hoan-tien@2024-03</code>. Vì sao: chỉ gateway ghi user, các service khác chỉ nối được theo thời gian. Không có nghĩa log sai: từng dòng đều đúng, chỉ không ghép được. Trong hệ thống thật: truyền trace context qua mọi service (README §1.2, §3.2).`));
+        if (st.mode === 'gw') parts.push(box('var(--warn)', `<b>Có request_id mà số dòng phải đọc vẫn là ${vn(R.toRead)}.</b> Vì sao: id chỉ nằm ở dòng gateway; agent, retriever, llm-client, tool-svc không nhận được nên không ghi. Không có nghĩa request_id vô ích: nó là nửa đầu của việc truyền context. Trong hệ thống thật: id phải đi theo request qua header tới mọi service.`));
+        if (st.mode === 'all') parts.push(box('var(--ok)', `Grep trace_id: <b>${vn(R.toRead)} dòng</b> cho ${R.mine.length} câu hỏi, không phụ thuộc traffic. Mở trace của câu bị khiếu nại: span retrieval có <code>doc_ids=[chinh-sach-hoan-tien@2024-03, ...]</code>. Kéo traffic lên 400 request/phút: số dòng không đổi, còn chế độ không có id thì tăng theo.`));
+        if (st.mode === 'broken') parts.push(box('var(--bad)', `<b>Trace có một khoảng trống ở chỗ gọi tool, và ${R.orphanTool} dòng tool-svc khác chạy quanh đó không có trace_id.</b> Vì sao: tool-svc nhận request mà không có header <code>traceparent</code>, nên bắt đầu trace mới. Không có nghĩa tool không chạy: nó chạy, nhưng ở một trace khác không có cha. Trong hệ thống thật: truyền <code>traceparent</code> qua HTTP, queue, MCP, và kiểm tra trên trace thật rằng <code>execute_tool</code> có cha là <code>invoke_agent</code> (README §3.2).`));
+        if (!hasTrace && st.rpm >= 300) parts.push(box('var(--warn)', `Ở ${st.rpm} request/phút, mỗi giây có khoảng ${(st.rpm / 60).toFixed(1).replace('.', ',')} request mới. Số dòng phải đọc tăng tuyến tính theo traffic; với trace thì không.`));
+        cap.innerHTML = parts.join('');
+      }
+
+      stage.append(ctl, tl, cols, stat, cap,
+        el('p', { class: 'hint', text: 'Log giả lập theo seed: request đến ngẫu nhiên đều trong cửa sổ, mỗi request 7 dòng ở 5 service, thời lượng từng bước ngẫu nhiên trong khoảng giả định (tổng khoảng 2,5 đến 5,5 giây). Khách u_7f3a hỏi 3 câu lúc 10:39:50, 10:42:07 và 10:44:31 (giả định). "Dòng phải đọc" khi không có id chung = dòng của mọi request chạy chồng lên từng câu của khách; khi có trace_id = 6 dòng ngoài gateway mỗi câu, cộng dòng tool-svc chồng thời gian nếu tool-svc mất context.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

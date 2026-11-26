@@ -1,0 +1,786 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 07</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="06-cost-feedback-drift.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const pct = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const dec = (x, d = 2) => x.toFixed(d).replace('.', ',');
+  const int = (x) => Math.round(x).toLocaleString('vi-VN');
+  const flagBox = (l, t) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t });
+  const capHtml = (c) => '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + c.what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + c.why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + c.not + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + c.real + '</p></div>';
+  const noFlag = () => el('div', { class: 'ok', style: 'font-size:13px', text: 'Không phát hiện bất thường ở cấu hình này.' });
+  const debounce = (f, ms) => { let t = 0; return () => { clearTimeout(t); t = setTimeout(f, ms); }; };
+
+  const B = 288, DAYS = ['T2 23/11', 'T3 24/11', 'T4 25/11', 'T5 26/11', 'T6 27/11', 'T7 28/11', 'CN 29/11'];
+  const at = (d, h, m = 0) => d * B + h * 12 + Math.floor(m / 5);
+  const hourOf = (i) => Math.floor((i % B) / 12);
+  const clock = (i) => DAYS[Math.floor(i / B)] + ' ' + String(hourOf(i)).padStart(2, '0') + ':' + String((i % 12) * 5).padStart(2, '0');
+  const diurnal = (h) => 0.5 - 0.5 * Math.cos(2 * Math.PI * (h - 4) / 24);
+  const INC = [
+    { type: 'err', s: at(1, 14), e: at(1, 14, 40), what: 'Provider trả 429 (T3 14:00–14:40)', v: 0.25 },
+    { type: 'err', s: at(2, 11), e: at(2, 11, 30), what: 'Provider lỗi 5xx (T4 11:00–11:30)', v: 0.2 },
+    { type: 'ttft', s: at(3, 21), e: at(3, 22, 30), what: 'Provider quá tải, TTFT ×3,5 (T5 21:00–22:30)', v: 3.5 },
+    { type: 'trunc', s: at(5, 10), e: at(5, 11), what: 'Proxy mới cắt stream (T7 10:00–11:00)', v: 0.05 },
+    { type: 'cost', s: at(6, 2), e: at(6, 5), what: 'Agent chạy vòng ban đêm (CN 02:00–05:00)', v: 5 }
+  ];
+  const BF = [at(4, 19), at(4, 23)], DROP = [at(2, 9), at(2, 15)];
+  const inR = (i, r) => i >= r[0] && i < r[1];
+
+  function pois(lam, rnd) {
+    if (lam <= 0) return 0;
+    if (lam > 30) return Math.max(0, Math.round(lam + Math.sqrt(lam) * randn(rnd)));
+    let L = Math.exp(-lam), k = 0, p = 1;
+    do { k++; p *= rnd(); } while (p > L);
+    return k - 1;
+  }
+  function genWeek(seed, withInc) {
+    const rnd = seeded(seed), N = 7 * B, w = { req: [], err: [], trunc: [], ttft: [], cost: [] };
+    for (let i = 0; i < N; i++) {
+      const h = hourOf(i), bf = withInc && inR(i, BF) ? 2.5 : 1;
+      const req = Math.max(1, Math.round((25 + 375 * diurnal(h)) * bf * (1 + 0.1 * randn(rnd))));
+      let pe = 0.005, pt = 0.01, tt = (1.1 + 0.4 * diurnal(h)) * Math.exp((0.1 + 0.5 / Math.sqrt(req)) * randn(rnd)), cm = 1;
+      if (withInc) {
+        INC.forEach((x) => { if (inR(i, [x.s, x.e])) { if (x.type === 'err') pe = x.v; if (x.type === 'ttft') tt *= x.v; if (x.type === 'trunc') pt = x.v; if (x.type === 'cost') cm = x.v; } });
+        if (inR(i, BF)) tt *= 1.3;
+        if (rnd() < 0.004) pe = 0.07;
+      }
+      w.req.push(req); w.err.push(pois(req * pe, rnd)); w.trunc.push(pois(req * 0.6 * pt, rnd)); w.ttft.push(tt);
+      w.cost.push(req * 0.012 * cm * Math.exp(0.08 * randn(rnd)));
+    }
+    return w;
+  }
+  let DATA = null;
+  const data = () => (DATA || (DATA = { w1: genWeek(7001, false), w2: genWeek(7002, true) }));
+
+  const RULES = {
+    err: { name: 'Tỉ lệ lỗi gọi model', ex: '> 5% trong 5 phút', thr: [0.01, 0.2, 0.005, 0.05], win: 5, absolute: true },
+    ttft: { name: 'TTFT p95', ex: '> 3× baseline trong 10 phút', thr: [1.5, 5, 0.1, 3], win: 10 },
+    trunc: { name: 'Tỉ lệ stream bị cắt', ex: '> 2× baseline trong 10 phút', thr: [1.5, 6, 0.1, 2], win: 10 },
+    cost: { name: 'Chi phí', ex: '> 3× cùng giờ tuần trước', thr: [1.5, 5, 0.1, 3], win: 60 }
+  };
+
+  function series(key, cfg, drop) {
+    const { w1, w2 } = data(), N = 7 * B, wb = Math.max(1, Math.round(cfg.win / 5));
+    const has = (i) => !(drop && inR(i, DROP));
+    const val = [], base = [], fire = [];
+    const hourBase = {};
+    if (key === 'trunc' || key === 'ttft') {
+      for (let h = 0; h < 24; h++) {
+        const idx = []; for (let d = 0; d < 7; d++) for (let k = 0; k < 12; k++) idx.push(d * B + h * 12 + k);
+        if (key === 'trunc') hourBase[h] = idx.reduce((a, i) => a + w1.trunc[i], 0) / idx.reduce((a, i) => a + w1.req[i] * 0.6, 0);
+        else { const v = idx.map((i) => w1.ttft[i]).sort((a, b) => a - b); hourBase[h] = v[Math.floor(v.length / 2)]; }
+      }
+    }
+    for (let i = 0; i < N; i++) {
+      let num = 0, den = 0, n = 0, sum = 0, last = 0;
+      for (let j = Math.max(0, i - wb + 1); j <= i; j++) {
+        if (!has(j)) continue;
+        n++;
+        if (key === 'err') { num += w2.err[j]; den += w2.req[j]; }
+        else if (key === 'trunc') { num += w2.trunc[j]; den += w2.req[j] * 0.6; }
+        else if (key === 'ttft') sum += w2.ttft[j];
+        else { sum += w2.cost[j]; last += w1.cost[j]; }
+      }
+      let v = null, b = null, f = false;
+      if (key === 'err') { if (den > 0) { v = num / den; b = cfg.thr; f = den >= cfg.minReq && v > cfg.thr; } }
+      else if (key === 'trunc') { if (den > 0) { v = num / den; b = hourBase[hourOf(i)] * cfg.thr; f = den >= cfg.minReq && v > b; } }
+      else if (key === 'ttft') { if (n) { v = sum / n; b = hourBase[hourOf(i)] * cfg.thr; f = v > b; } }
+      else if (n === wb) { v = sum; b = last * cfg.thr; f = v > b; }
+      val.push(v); base.push(b); fire.push(f);
+    }
+    const pages = [];
+    for (let i = 0; i < N; i++) {
+      if (!fire[i]) continue;
+      const p = pages[pages.length - 1];
+      if (p && i - p.e <= 6) p.e = i; else pages.push({ s: i, e: i });
+    }
+    const incs = INC.filter((x) => x.type === key);
+    pages.forEach((p) => { p.inc = incs.find((x) => p.s <= x.e + wb && p.e >= x.s) || null; p.night = hourOf(p.s) < 6; p.bf = inR(p.s, BF); });
+    const found = incs.map((x) => { const p = pages.find((q) => q.inc === x); return { x, p, delay: p ? Math.max(0, p.s - x.s) * 5 : null }; });
+    return { val, base, fire, pages, found, wb };
+  }
+  function summarize(r, tol) {
+    const tp = r.pages.filter((p) => p.inc).length, fp = r.pages.length - tp, missed = r.found.filter((f) => !f.p).length, nightFp = r.pages.filter((p) => !p.inc && p.night).length;
+    const delays = r.found.filter((f) => f.p).map((f) => f.delay);
+    return { tp, fp, missed, nightFp, delay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : null, verdict: missed ? 'mù' : fp > tol ? 'ồn' : 'ổn' };
+  }
+
+  function chart(key, r, cfg, drop) {
+    const W = 680, H = 190, L = 44, R = 8, T = 18, Bm = 22, N = 7 * B;
+    const vals = r.val.filter((v) => v !== null), bs = r.base.filter((v) => v !== null);
+    const cap = key === 'err' ? Math.max(cfg.thr * 3, 0.02) : Math.max(...bs) * 1.6;
+    const hi = Math.min(Math.max(...vals, ...bs), cap), lo = 0;
+    const x = (i) => L + (i / (N - 1)) * (W - L - R), y = (v) => T + (1 - (Math.min(v, hi) - lo) / (hi - lo || 1)) * (H - T - Bm);
+    const kids = [];
+    INC.filter((z) => z.type === key).forEach((z) => kids.push(el('rect', { x: x(z.s), y: T, width: Math.max(2, x(z.e) - x(z.s)), height: H - T - Bm, fill: 'var(--warn)', opacity: 0.18 }, [el('title', { text: z.what })])));
+    kids.push(el('rect', { x: x(BF[0]), y: T, width: x(BF[1]) - x(BF[0]), height: H - T - Bm, fill: 'var(--g4)', opacity: 0.12 }, [el('title', { text: 'Black Friday: traffic ×2,5 (không phải sự cố)' })]));
+    if (drop) kids.push(el('rect', { x: x(DROP[0]), y: T, width: x(DROP[1]) - x(DROP[0]), height: H - T - Bm, fill: 'var(--dim)', opacity: 0.35 }, [el('title', { text: 'Exporter rớt span: không có dữ liệu' })]));
+    for (let d = 0; d <= 7; d++) kids.push(el('line', { x1: x(Math.min(N - 1, d * B)), x2: x(Math.min(N - 1, d * B)), y1: T, y2: H - Bm, stroke: 'var(--line)' }));
+    DAYS.forEach((t, d) => kids.push(el('text', { x: x(d * B) + 4, y: H - 6, class: 'mute', text: t.split(' ')[0] })));
+    let dv = '', db = '';
+    for (let i = 0; i < N; i += 2) {
+      if (r.val[i] !== null) dv += (dv && r.val[i - 2] !== null && i >= 2 ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r.val[i]).toFixed(1) + ' ';
+      if (r.base[i] !== null) db += (db && r.base[i - 2] !== null && i >= 2 ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r.base[i]).toFixed(1) + ' ';
+    }
+    kids.push(el('path', { d: dv, fill: 'none', stroke: 'var(--g1)', 'stroke-width': 1.1 }), el('path', { d: db, fill: 'none', stroke: 'var(--bad)', 'stroke-width': 1.2, 'stroke-dasharray': '4 3' }));
+    r.pages.forEach((p) => kids.push(el('polygon', { points: x(p.s) + ',' + (T - 2) + ' ' + (x(p.s) - 5) + ',' + (T - 12) + ' ' + (x(p.s) + 5) + ',' + (T - 12), fill: p.inc ? 'var(--ok)' : 'var(--bad)' }, [el('title', { text: (p.inc ? 'Page đúng: ' + p.inc.what : 'Page sai') + ' · ' + clock(p.s) })])));
+    const fmt = key === 'err' || key === 'trunc' ? (v) => pct(v, key === 'err' ? 0 : 1) : key === 'ttft' ? (v) => dec(v, 1) + ' s' : (v) => dec(v, 0) + ' USD';
+    kids.push(el('text', { x: 2, y: T + 8, class: 'mute', text: fmt(hi) }), el('text', { x: 2, y: H - Bm, class: 'mute', text: fmt(lo) }));
+    return el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Metric một tuần và các lần page' }, kids);
+  }
+
+  const FAILS = [
+    ['Có trace nhưng không có nội dung prompt', 'Capture nội dung tắt (mặc định), hoặc sai tên biến môi trường cho thư viện đang dùng', 'Đối chiếu README của instrumentation; spec và thư viện Python dùng tên biến khác nhau'],
+    ['Instrumentation không ghi attribute mới', 'Thiếu OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental', 'Bật opt-in, kiểm tra backend nhận tên mới'],
+    ['Cache hit rate trên 100%', 'Ghi input_tokens của Claude (chỉ phần sau breakpoint) làm tổng input', 'Chuẩn hoá: cộng cache read và cache write'],
+    ['Chi phí thấp hơn hoá đơn', 'Thiếu cache write, thiếu thinking của Gemini, stream không có usage, code path không qua wrapper', 'Đối soát hằng tháng, theo dõi app.llm.usage_missing'],
+    ['Span gọi model ngắn bất thường khi stream', 'Span đóng khi hàm trả về iterator', 'Đóng span khi stream kết thúc; test với stream lỗi giữa chừng'],
+    ['Stream không có usage', 'OpenAI Chat Completions thiếu stream_options.include_usage; stream bị ngắt trước chunk cuối', 'Bật tuỳ chọn; đánh dấu thiếu usage, không ghi 0'],
+    ['Refusal bị đếm là lỗi, hoặc bị bỏ qua', 'Claude trả refusal với HTTP 200', 'Đọc stop_reason, ghi vào finish_reasons, không đặt error.type'],
+    ['Span con biến mất trong LangSmith', 'Span cha không được export tới LangSmith', 'Đảm bảo span gốc cũng đi tới LangSmith'],
+    ['Trace Langfuse hiện sau 10 phút', 'Thiếu header x-langfuse-ingestion-version=4', 'Thêm header'],
+    ['Mất cả batch span ở Langfuse', 'Hàm mask_otel_spans ném lỗi', 'Test hàm mask; xử lý mọi kiểu dữ liệu attribute'],
+    ['Mất span khi process thoát', 'Exporter gửi theo batch nền, chưa flush', 'Gọi shutdown()/force_flush() trước khi thoát, nhất là job ngắn và serverless'],
+    ['Backend metric quá tải', 'Đặt tenant, user, trace id lên metric', 'Chiều nhiều giá trị chỉ để trên span'],
+    ['Trace agent đứt thành nhiều mảnh', 'Không truyền trace context khi gọi tool qua mạng', 'traceparent khi gọi HTTP/queue/MCP; kiểm tra quan hệ cha con trên trace thật'],
+    ['Tail sampling giữ trace thiếu span', 'Span đến sau decision_wait, hoặc span một trace đi tới nhiều Collector', 'Tăng decision_wait cho agent chạy lâu; load balancing theo trace id'],
+    ['Chi phí Datadog tăng theo agent', 'Mỗi lượt gọi model là một span tính phí', 'Ước tính số lượt gọi mỗi request trước khi bật cho toàn bộ traffic'],
+    ['Nội dung nhạy cảm nằm trong backend trace', 'Bật capture ở production, tool result chứa dữ liệu khách', 'Tách nội dung ra *_ref có phân quyền; che trước khi export'],
+    ['Dashboard xanh nhưng người dùng phàn nàn', 'Metric tổng hợp che lỗi của một nhóm; không có tín hiệu chất lượng', 'Cắt theo model snapshot, prompt version, loại phiên; canary; judge online']
+  ];
+  const CHECK = [
+    ['Instrumentation', 'Mọi lượt gọi model đi qua wrapper, kể cả job nền, batch, eval', [3]],
+    ['Instrumentation', 'Span có operation, provider, request.model, server.address ngay lúc tạo', []],
+    ['Instrumentation', 'Ghi response.model, response.id, finish_reasons, error.type', [6, 16]],
+    ['Instrumentation', 'Usage chuẩn hoá theo OTel (input gồm cache, output gồm reasoning)', [2, 3]],
+    ['Instrumentation', 'Span stream kết thúc khi stream kết thúc; có TTFT; test stream bị ngắt', [4, 5]],
+    ['Instrumentation', 'Phiên bản instrumentation pin; biến môi trường đối chiếu README đúng phiên bản', [0, 1]],
+    ['Instrumentation', 'Trace context truyền qua mọi lời gọi tool ngoài process', [12]],
+    ['Dữ liệu', 'Metadata và nội dung có chính sách lưu khác nhau', [15]],
+    ['Dữ liệu', 'Nội dung mặc định tắt, hoặc ra storage riêng qua *_ref', [15]],
+    ['Dữ liệu', 'Che PII trong process trước khi export; hàm che có test', [9, 15]],
+    ['Dữ liệu', 'Mẫu cho judge online lấy sau khi che', [15]],
+    ['Chi phí', 'Bảng giá có ngày hiệu lực, tra theo response.model', [3]],
+    ['Chi phí', 'Model không có giá được đánh dấu, không ghi 0', [3]],
+    ['Chi phí', 'Chi phí cắt theo tenant, feature từ span store', [11, 14]],
+    ['Chi phí', 'Đối soát hoá đơn hằng tháng', [3]],
+    ['Chất lượng', 'Mỗi response có id tra được trace', [16]],
+    ['Chất lượng', 'Feedback gắn trace id, phân biệt explicit và implicit', [16]],
+    ['Chất lượng', 'Canary theo lịch, có baseline dao động', [16]],
+    ['Chất lượng', 'Alert khi response.model có giá trị mới', [16]],
+    ['Chất lượng', 'Trace lỗi, cắt, refusal giữ 100%; feedback tiêu cực giữ qua lưu ngắn hạn', [6]],
+    ['Chất lượng', 'Có quy trình đưa trace production vào eval dataset', [16]],
+    ['Vận hành', 'Phân biệt alert page và alert ticket', []],
+    ['Vận hành', 'Có alert cho chính pipeline observability', [7, 8, 10]],
+    ['Vận hành', 'Exporter flush trước khi process thoát', [10]]
+  ];
+
+  return {
+    id: 'eval-alerts-failures', nav: '7. Eval, alert, failure', ref: '§3.6–3.9',
+    title: 'Luật alert "lỗi > 5% trong 5 phút" đánh thức người trực lúc 3 giờ sáng vì 2 lỗi trên 30 request: ngưỡng phải đặt theo baseline của chính ShopViet',
+    hook: 'Chọn một luật alert, kéo ngưỡng và cửa sổ thời gian. Lab chạy luật trên một tuần metric sinh ngẫu nhiên với seed cố định, nên lần nào mở cũng ra cùng một tuần (có 5 sự cố thật và một đêm Black Friday), đếm page đúng, page sai, sự cố bị lỡ và độ trễ phát hiện. Bảng dưới chấm cả bốn luật cùng lúc.',
+    terms: [
+      ['Page', 'Alert đánh thức người trực (điện thoại reo). Khác ticket: ticket để xem trong ngày.'],
+      ['Page sai (false page)', 'Alert reo khi không có sự cố cần người xử lý. Ví dụ 3 giờ sáng, 2 lỗi trên 30 request là 6,7%, vượt 5%, nhưng chỉ là nhiễu.'],
+      ['Sự cố bị lỡ', 'Có sự cố thật mà không luật nào reo. Ví dụ agent chạy vòng ban đêm đốt tiền 3 tiếng.'],
+      ['Cửa sổ (window)', 'Khoảng thời gian gộp dữ liệu trước khi so ngưỡng. "Trong 5 phút" nghĩa là tính tỉ lệ lỗi trên mọi request của 5 phút gần nhất.'],
+      ['Baseline', 'Mức bình thường của chính hệ thống. Ví dụ TTFT p95 lúc 21 giờ các ngày tuần trước là 1,5 giây; "3× baseline" là 4,5 giây.'],
+      ['Cùng giờ tuần trước', 'So 20:00–21:00 thứ Sáu này với 20:00–21:00 thứ Sáu tuần trước, để giờ cao điểm so với giờ cao điểm.'],
+      ['TTFT p95', 'Thời gian tới token đầu tiên, ở mức 95% request nhanh hơn. Ví dụ p95 = 2 giây nghĩa là 5% request chờ quá 2 giây mới thấy chữ đầu.'],
+      ['Stream bị cắt', 'Stream kết thúc giữa chừng: khách thấy câu trả lời dở. Thường do proxy, deploy, provider quá tải.'],
+      ['Eval dataset', 'Bộ ca kiểm thử (input, context, tiêu chí chấm) để chạy lại mỗi khi đổi prompt hay model.'],
+      ['Annotation queue', 'Hàng đợi trace để người có hiểu biết nghiệp vụ đọc và gắn nhãn trên giao diện. Langfuse và LangSmith đều có.'],
+      ['partial_success', 'Phản hồi OTLP cho biết backend chỉ nhận một phần span. Braintrust có thể trả HTTP 200 nhưng từ chối một số span qua partialSuccess.rejectedSpans.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> chép bảng alert ví dụ trong README vào hệ thống: lỗi &gt; 5% trong 5 phút, TTFT p95 &gt; 3× baseline trong 10 phút, stream bị cắt &gt; 2× baseline, chi phí &gt; 3× cùng giờ tuần trước. Tuần đầu, người trực bị gọi dậy nhiều đêm liền vì "lỗi" và "stream bị cắt" dù không có sự cố nào. Rạng sáng Chủ nhật, một agent chạy vòng 3 tiếng: luật chi phí có reo hay không tuỳ vòng lặp đốt tiền nhanh cỡ nào. Trong tuần dựng sẵn, nó làm chi phí gấp 5 và bị bắt; một vòng lặp chỉ làm chi phí gấp 2,5 sẽ nằm dưới ngưỡng 3× suốt 3 tiếng mà không ai được báo (kéo slider ở luật chi phí để thấy).',
+      scenario: 'Một tuần metric 5 phút một điểm (23/11–29/11), traffic theo giờ trong ngày: khoảng 25 request mỗi 5 phút lúc 4 giờ sáng, khoảng 400 lúc 16 giờ (giả định). Năm sự cố thật được cài sẵn, một đêm Black Friday traffic gấp 2,5 (không phải sự cố), vài đột biến lỗi 5 phút ngẫu nhiên. Tuần trước đó (không sự cố) làm baseline.',
+      ask: 'Với mỗi luật, ngưỡng và cửa sổ nào bắt được sự cố mà không gọi dậy vô ích? Luật nào ồn, luật nào mù? Và khi chính pipeline trace hỏng, alert nào còn reo?',
+      solves: 'Lab tính metric gộp theo cửa sổ, so với ngưỡng tuyệt đối (lỗi) hoặc baseline theo giờ của tuần trước (TTFT, stream bị cắt, chi phí), gom các lần vượt liên tiếp thành một page, rồi khớp page với sự cố. Ngưỡng mặc định đúng như bảng README §3.7, mà README ghi rõ chỉ để minh hoạ.',
+      read: [
+        'Đường xanh: metric gộp theo cửa sổ. Đường đỏ đứt: ngưỡng (cố định hoặc baseline × k). Vùng cam: sự cố thật. Vùng tím: Black Friday. Vùng xám: pipeline mất dữ liệu.',
+        'Tam giác trên đầu: mỗi page. Xanh là page đúng sự cố, đỏ là page sai. Rê chuột để xem giờ.',
+        'Bảng bốn luật: page đúng, page sai, page sai ban đêm (0–6 giờ), sự cố bị lỡ, độ trễ trung bình. "ồn" khi page sai vượt mức đội trực chịu được; "mù" khi lỡ sự cố.',
+        'Khung "Phát hiện từ dữ liệu" liệt kê luật ồn, luật mù và chỗ hỏng; khung cuối giải thích chuyện quan trọng nhất.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Từ log production về eval dataset (§3.6)</h4>
+<ol><li>Chọn trace: feedback tiêu cực, bị cắt, refusal, tool error, retriever không tìm thấy tài liệu, judge online chấm thấp, và một mẫu ngẫu nhiên.</li><li>Người hiểu nghiệp vụ đọc, phân loại lỗi, viết câu trả lời đúng (annotation queue của Langfuse, LangSmith).</li><li>Che, chuyển thành ca eval: input, context, tiêu chí chấm, nguồn (trace id, ngày).</li><li>Thêm vào bộ regression: lỗi đã sửa phải pass mãi.</li></ol>
+<p>Trace phải đủ để phát lại: prompt version, tài liệu retriever (hoặc id ở đúng phiên bản index), tham số model.</p>
+<h4>Alert (§3.7)</h4>
+<div class="tbl"><table><tr><th>Page</th><th>Ví dụ ngưỡng (minh hoạ)</th><th>Hành động</th></tr>
+<tr><td>Tỉ lệ lỗi theo provider</td><td>&gt; 5% trong 5 phút</td><td>Chuyển provider dự phòng, xem status page</td></tr>
+<tr><td>TTFT p95</td><td>&gt; 3× baseline trong 10 phút</td><td>Kiểm tra provider, prompt có phình không</td></tr>
+<tr><td>Stream bị cắt</td><td>&gt; 2× baseline trong 10 phút</td><td>Proxy, deploy, provider quá tải</td></tr>
+<tr><td>Chi phí theo giờ</td><td>&gt; 3× cùng giờ tuần trước</td><td>Vòng lặp agent, lạm dụng, cache vỡ</td></tr></table></div>
+<p>Ticket (không page): response model mới, tỉ lệ bị cắt hoặc refusal tăng, cache hit giảm sau deploy, tool error hoặc structured output không hợp lệ tăng, p99 inference_calls tăng, canary hoặc judge giảm, stream thiếu usage tăng. Alert cho chính pipeline: số span giảm so với số request HTTP, exporter rớt span, backend từ chối một phần (<code>partial_success</code>), dữ liệu đến trễ. Ngưỡng thật đặt theo baseline vài tuần, theo giờ trong ngày, sao cho page sai mỗi tháng nằm trong mức chịu được.</p>
+<h4>Failure modes (§3.8) và checklist (§3.9)</h4>
+<p>Mười bảy triệu chứng trong README, từ "có trace nhưng không có nội dung" tới "dashboard xanh nhưng người dùng phàn nàn"; câu hỏi 7 cho tra theo triệu chứng. Checklist bốn nhóm: Instrumentation, Dữ liệu và quyền riêng tư, Chi phí, Chất lượng và drift, Vận hành; câu hỏi 8 cho tick và xem failure mode nào còn hở.</p>
+<div class="verdict"><b>Điểm cần nhớ:</b> page chỉ cho thứ ảnh hưởng người dùng ngay và có người xử lý được; ngưỡng là con số của hệ thống bạn, chỉnh sau mỗi page sai và mỗi sự cố bị lỡ. Im lặng của pipeline trace trông giống hệt "mọi thứ ổn".</div>`,
+    why: {
+      c: 'Bốn luật page cho lỗi, TTFT, stream bị cắt, chi phí, với ngưỡng đặt theo baseline theo giờ, số request tối thiểu trong cửa sổ, và chi phí so cùng giờ tuần trước. Mọi tín hiệu chất lượng đi ticket. Một luật riêng cho chính pipeline: số span so với số request HTTP.',
+      s: 'Chép nguyên ngưỡng ví dụ: README ghi rõ chúng không lấy từ nghiên cứu hay chuẩn nào. Ngưỡng cố định cả ngày: ban đêm ít traffic nên nhiễu vượt ngưỡng. Page cho canary giảm lúc 3 giờ sáng: người trực thường không sửa được gì ngay.',
+      p: 'Cửa sổ dài hơn và số request tối thiểu làm page đến muộn hơn vài phút. Baseline phải có vài tuần dữ liệu và phải tính lại khi traffic đổi. Ngày bất thường hợp lệ (Black Friday) vẫn có thể làm luật chi phí reo nếu so tổng thay vì so trên mỗi request.'
+    },
+    deep: [
+      {
+        q: 'Lấy trace nào từ production để làm eval dataset? Lấy hết trace bị chê là đủ?',
+        a: `<p>README §3.6, bước 1: feedback tiêu cực, trace bị cắt, refusal, tool error, câu hỏi mà retriever không tìm thấy tài liệu, trace judge online chấm thấp, <b>và một mẫu ngẫu nhiên</b> để không chỉ có ca khó. Kéo số trace lấy từ mỗi nguồn trong một tuần của ShopViet; tỉ lệ ca có lỗi thật trong từng nguồn là giả định.</p>`,
+        viz(box) {
+          const SRC = [['Feedback tiêu cực', 40, 0.6], ['Bị cắt / refusal', 20, 0.7], ['Tool error', 15, 0.8], ['Retriever không thấy tài liệu', 15, 0.5], ['Judge online chấm thấp', 30, 0.55], ['Mẫu ngẫu nhiên', 0, 0.08]];
+          const st = SRC.map((s) => s[1]);
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const n = st.reduce((a, b) => a + b, 0), fails = SRC.reduce((a, s, i) => a + st[i] * s[2], 0), rnd = st[5];
+            out.innerHTML = '<div class="stat"><span>Ca trong dataset <b>' + int(n) + '</b></span><span>Ca có lỗi thật <b>' + pct(n ? fails / n : 0, 0) + '</b></span><span>Từ mẫu ngẫu nhiên <b class="' + (rnd ? 'ok' : 'bad') + '">' + pct(n ? rnd / n : 0, 0) + '</b></span><span>Pass rate "ước" từ dataset <b>' + pct(n ? 1 - fails / n : 0, 0) + '</b> so với thật <b>' + pct(1 - SRC[5][2], 0) + '</b></span></div>';
+            cap.innerHTML = !rnd ? '<span class="bad">Không có mẫu ngẫu nhiên: dataset toàn ca khó.</span> Pass rate tính trên dataset này nói về các ca khó, không nói về traffic thật; và một thay đổi làm hỏng câu hỏi thường ngày sẽ không bị bắt vì không có ca thường ngày. Không có nghĩa nên bỏ ca khó: chúng là nơi tìm lỗi. Trong hệ thống thật: hai luồng, có ghi nguồn cho mỗi ca.' : 'Có ' + int(rnd) + ' ca ngẫu nhiên. Báo cáo pass rate theo nguồn, không gộp: nhóm ngẫu nhiên cho con số chung, các nhóm có chủ đích cho danh sách lỗi.';
+          }
+          box.append(el('div', { class: 'row' }, SRC.map((s, i) => slider(s[0], 0, 100, 5, st[i], (v) => { st[i] = v; draw(); }).node)), out, cap);
+          draw();
+        },
+        take: 'Ca có chủ đích để tìm lỗi, ca ngẫu nhiên để dataset còn giống traffic thật.'
+      },
+      {
+        q: 'Đã chọn được trace sai. Sao vẫn có lúc không biến nó thành ca eval được?',
+        a: `<p>Vì trace thiếu thứ để phát lại. README §3.6: trace phải chứa đủ để phát lại: prompt version, tài liệu retriever trả về (hoặc id ở đúng phiên bản index), tham số model. Thiếu một thứ, ca eval không tái hiện được lỗi. Bật tắt những gì trace SV-4821 đang ghi (lỗi "hoàn tiền 3 ngày" ở Lab 5).</p>`,
+        viz(box) {
+          const F = [['pv', 'gen_ai.prompt.version'], ['doc', 'Id tài liệu + phiên bản index'], ['par', 'Tham số model (max_tokens, temperature)'], ['rm', 'gen_ai.response.model'], ['tool', 'Tool result (đã che)'], ['inp', 'Input của khách (đã che)']];
+          const on = new Set(['pv', 'rm', 'inp']);
+          const NEED = [['Tái hiện câu trả lời "3 ngày"', ['inp', 'doc', 'pv']], ['Biết lỗi ở retriever hay model', ['doc']], ['Chạy lại với đúng model', ['rm', 'par']], ['Tái hiện bước tra đơn', ['tool', 'inp']]];
+          const row = el('div', { class: 'row' }), out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            row.replaceChildren(...F.map(([k, t]) => el('button', { class: on.has(k) ? 'on' : '', text: t, onclick: () => { on.has(k) ? on.delete(k) : on.add(k); draw(); } })));
+            const res = NEED.map(([t, req]) => [t, req.filter((k) => !on.has(k))]);
+            out.innerHTML = '<div class="tbl"><table><tr><th>Mục tiêu</th><th>Thiếu</th></tr>' + res.map(([t, miss]) => '<tr><td>' + t + '</td><td class="' + (miss.length ? 'bad' : 'ok') + '">' + (miss.length ? miss.map((k) => F.find((f) => f[0] === k)[1]).join(', ') : 'đủ') + '</td></tr>').join('') + '</table></div>';
+            const bad = res.filter(([, m]) => m.length).length;
+            cap.innerHTML = bad ? '<span class="bad">' + bad + '/4 mục tiêu không làm được.</span> ' + (on.has('doc') ? '' : 'Thiếu phiên bản index: chạy lại hôm nay retriever lấy bản chính sách mới (14 ngày), ca eval pass, và lỗi "biến mất" dù chưa được sửa. ') + 'Trong hệ thống thật: kiểm tra một trace thật xem đủ để dựng ca eval chưa, trước khi cần nó.' : '<span class="ok">Trace đủ để phát lại.</span> Ghi nguồn (trace id, ngày) vào ca eval để truy lại.';
+          }
+          box.append(row, out, cap);
+          draw();
+        },
+        take: 'Trace tốt là trace phát lại được. Thiếu phiên bản index thì lỗi của hôm qua không tái hiện được hôm nay.'
+      },
+      {
+        q: 'README ghi "> 5% trong 5 phút". Sao ngưỡng đó lại gọi người trực dậy lúc 3 giờ sáng?',
+        a: `<p>Vì cùng một tỉ lệ lỗi nền cho ra dao động rất khác nhau tuỳ số request. README §3.7: các con số trong bảng chỉ để minh hoạ dạng của một luật alert; ngưỡng thật đặt theo baseline, xem phân phối theo giờ trong ngày, chọn sao cho số lần page sai mỗi tháng nằm trong mức đội trực chịu được.</p>
+<p>Lab tính chính xác xác suất "số lỗi / số request &gt; ngưỡng" trong một cửa sổ khi hệ thống hoàn toàn bình thường (lỗi nền 0,5%; mỗi request độc lập có 0,5% khả năng lỗi, giống tung 30 đồng xu rất lệch: phần lớn lần ra 0 lỗi, thỉnh thoảng ra 2), cho từng giờ theo traffic của ShopViet, rồi nhân ra số page sai kỳ vọng mỗi tuần.</p>`,
+        viz(box) {
+          const st = { thr: 0.05, win: 5, base: 0.005 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const tail = (n, p, k) => { let pr = Math.pow(1 - p, n), cdf = 0; for (let i = 0; i <= k && i <= n; i++) { cdf += pr; pr *= (n - i) / (i + 1) * p / (1 - p); } return Math.max(0, 1 - cdf); };
+          function draw() {
+            const rows = [], wb = st.win / 5;
+            let week = 0;
+            for (let h = 0; h < 24; h++) { const n = Math.round((25 + 375 * diurnal(h)) * wb), k = Math.floor(st.thr * n), p = tail(n, st.base, k), perH = p * 12 / wb; week += perH * 7; rows.push([String(h).padStart(2, '0') + 'h (' + n + ' req)', perH * 7, h < 6]); }
+            out.replaceChildren(hbars(rows.filter((_, i) => i % 2 === 0 || i < 6), { fmt: (v) => dec(v, 2) + ' page sai/tuần' }), el('div', { class: 'stat', html: '<span>Page sai kỳ vọng mỗi tuần (chỉ do nhiễu) <b class="' + (week > 1 ? 'bad' : 'ok') + '">' + dec(week, 1) + '</b></span>' }));
+            const night = rows.slice(0, 6).reduce((a, r) => a + r[1], 0);
+            cap.innerHTML = night > 0.5 ? '<span class="bad">' + dec(night, 1) + ' page sai mỗi tuần rơi vào 0–6 giờ</span>, giờ ít traffic nhất: 2 lỗi trên 30 request đã là 6,7%. Không có nghĩa lỗi ban đêm không quan trọng; là con số 5% trên mẫu nhỏ không đủ phân biệt sự cố với nhiễu. Trong hệ thống thật: thêm điều kiện số request tối thiểu, hoặc cửa sổ dài hơn ban đêm, hoặc ngưỡng theo giờ từ baseline.' : 'Với cấu hình này nhiễu ban đêm hiếm khi vượt ngưỡng. Kéo cửa sổ về 5 phút để thấy điều ngược lại.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Ngưỡng lỗi', 0.01, 0.2, 0.005, st.thr, (v) => { st.thr = v; draw(); }, (v) => pct(v, 1)).node,
+            slider('Cửa sổ (phút)', 5, 60, 5, st.win, (v) => { st.win = v; draw(); }).node,
+            slider('Lỗi nền (giả định)', 0.001, 0.02, 0.001, st.base, (v) => { st.base = v; draw(); }, (v) => pct(v, 1)).node]), out, cap);
+          draw();
+        },
+        take: 'Một tỉ lệ trên mẫu nhỏ là một con số rất ồn. Ngưỡng phải biết lúc đó có bao nhiêu request.'
+      },
+      {
+        q: 'Cửa sổ dài thì đỡ ồn. Sao không đặt 60 phút cho chắc?',
+        a: `<p>Vì cửa sổ dài làm page đến muộn, và sự cố ngắn bị pha loãng tới mức không vượt ngưỡng. Lab quét cửa sổ của luật lỗi trên đúng dữ liệu tuần của hình chính (ngưỡng 5%, chưa có số request tối thiểu): mỗi dòng là một cấu hình, cột cuối là độ trễ từ lúc sự cố bắt đầu tới page đầu tiên.</p>`,
+        viz(box) {
+          const st = { thr: 0.05, minReq: 0 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const rows = [5, 10, 15, 30, 45, 60].map((w) => { const r = series('err', { thr: st.thr, win: w, minReq: st.minReq }, false), s = summarize(r, 1); return [w, s]; });
+            out.innerHTML = '<div class="tbl"><table><tr><th>Cửa sổ</th><th>Page đúng</th><th>Page sai</th><th>Sai ban đêm</th><th>Sự cố bị lỡ (trên 2)</th><th>Trễ trung bình</th></tr>' + rows.map(([w, s]) => '<tr><td class="mono">' + w + ' phút</td><td class="mono">' + s.tp + '</td><td class="mono ' + (s.fp > 1 ? 'bad' : '') + '">' + s.fp + '</td><td class="mono">' + s.nightFp + '</td><td class="mono ' + (s.missed ? 'bad' : 'ok') + '">' + s.missed + '</td><td class="mono">' + (s.delay === null ? '—' : int(s.delay) + ' phút') + '</td></tr>').join('') + '</table></div>';
+            const best = rows.filter(([, s]) => !s.missed && s.fp <= 1);
+            cap.innerHTML = best.length ? 'Cửa sổ ' + best.map(([w]) => w).join(', ') + ' phút bắt đủ hai sự cố lỗi với tối đa 1 page sai. Cửa sổ ngắn hơn ồn, dài hơn chậm. Không có nghĩa con số này đúng cho hệ thống khác: nó phụ thuộc traffic và độ dài sự cố của tuần này.' : '<span class="bad">Không cửa sổ nào vừa bắt đủ sự cố vừa ít page sai.</span> Một tham số không đủ: thêm số request tối thiểu (kéo slider), hoặc dùng hai luật (cửa sổ ngắn ngưỡng cao cho sự cố lớn, cửa sổ dài ngưỡng thấp cho sự cố âm ỉ).';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Ngưỡng lỗi', 0.02, 0.15, 0.005, st.thr, (v) => { st.thr = v; draw(); }, (v) => pct(v, 1)).node,
+            slider('Request tối thiểu trong cửa sổ', 0, 400, 10, st.minReq, (v) => { st.minReq = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Cửa sổ đổi tiếng ồn lấy độ trễ. Chọn bằng dữ liệu của tuần thật, không bằng cảm giác.'
+      },
+      {
+        q: 'Canary tụt lúc 3 giờ sáng. Có nên gọi người trực dậy?',
+        a: `<p>Thường là không. README §3.7: alert về chất lượng (canary, judge) hiếm khi đáng page lúc 3 giờ sáng: người trực thường không sửa được gì ngay. Ngoại lệ là khi có hành động khẩn cấp rõ ràng, ví dụ rollback prompt vừa deploy, hoặc pin lại snapshot model cũ.</p>
+<p>Câu hỏi để quyết định một tín hiệu là page hay ticket: "người trực làm gì được trong 15 phút tới?". Lỗi provider: chuyển provider dự phòng. TTFT tăng vọt: kiểm tra provider, prompt phình. Chi phí gấp ba: tìm vòng lặp agent, tắt tính năng. Canary giảm 4 điểm: không có nút nào để bấm, trừ khi vừa có deploy. Vì thế danh sách ticket của README dài hơn danh sách page: response model mới, tỉ lệ bị cắt hoặc refusal tăng, cache hit giảm sau deploy, tool error tăng, p99 lượt gọi agent tăng, canary hay judge giảm, stream thiếu usage tăng.</p>`,
+        take: 'Page khi có hành động khẩn cấp rõ ràng. Phần còn lại là ticket, đọc trong giờ làm việc.'
+      },
+      {
+        q: 'Thứ Tư không có alert nào. Vậy là thứ Tư ổn?',
+        a: `<p>Không chắc. README §3.7: pipeline trace hỏng thì mọi thứ khác im lặng, và im lặng trông giống như ổn. Luật lỗi tính từ span; exporter rớt span thì tỉ lệ lỗi không có dữ liệu, không vượt ngưỡng, không reo. Bật "Exporter rớt span" trong hình chính: sự cố 5xx thứ Tư 11:00 biến mất khỏi alert.</p>
+<p>Còn một dạng khó thấy hơn: backend chỉ nhận một phần. Lab giả định khi exporter quá tải, span lỗi (có stack trace, lớn hơn) bị rớt nhiều hơn span bình thường.</p>`,
+        viz(box) {
+          const st = { drop: 0.3, bias: 2 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const n = 10000, trueErr = 0.08, de = Math.min(1, st.drop * st.bias), dn = st.drop;
+            const e = n * trueErr * (1 - de), ok = n * (1 - trueErr) * (1 - dn), seen = e / (e + ok);
+            out.innerHTML = '<div class="stat"><span>Request HTTP <b>' + int(n) + '</b></span><span>Span nhận được <b class="' + ((e + ok) / n < 0.9 ? 'bad' : '') + '">' + int(e + ok) + ' (' + pct((e + ok) / n, 0) + ')</b></span><span>Tỉ lệ lỗi thật <b>' + pct(trueErr) + '</b></span><span>Tỉ lệ lỗi đọc từ span <b class="' + (seen < 0.05 ? 'bad' : '') + '">' + pct(seen) + '</b></span></div>';
+            cap.innerHTML = (seen < 0.05 ? '<span class="bad">Sự cố 8% lỗi hiện ra thành ' + pct(seen) + ', dưới ngưỡng 5%.</span> ' : '') + 'Mọi metric tính từ span đều lệch theo cách rớt span. Luật bắt được chuyện này không nhìn span: so số span nhận được với số request HTTP (metric từ load balancer). Trong hệ thống thật: alert khi tỉ lệ span/request giảm mạnh, khi exporter báo rớt span (queue đầy), và khi OTLP trả partial_success có span bị từ chối.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Span bị rớt', 0, 0.8, 0.05, st.drop, (v) => { st.drop = v; draw(); }, (v) => pct(v, 0)).node,
+            slider('Span lỗi bị rớt nhiều hơn (lần, giả định)', 1, 3, 0.25, st.bias, (v) => { st.bias = v; draw(); }, (v) => dec(v)).node]), out, cap);
+          draw();
+        },
+        take: 'Alert cho chính pipeline đo bằng nguồn độc lập với span: số request HTTP.'
+      },
+      {
+        q: 'Gặp một triệu chứng lạ. Có bảng nào tra nhanh nguyên nhân không?',
+        a: `<p>README §3.8 liệt kê mười bảy failure mode thường gặp. Chọn triệu chứng để xem nguyên nhân thường gặp và cách xử lý; các lab trước đã dựng lại nhiều triệu chứng trong số này.</p>`,
+        viz(box) {
+          const out = el('div');
+          const LAB = { 2: 'Lab 6, câu hỏi 2', 3: 'Lab 6, phần A', 7: 'Lab 4, câu hỏi 4', 8: 'Lab 4, câu hỏi 3', 9: 'Lab 5, phần A', 11: 'Lab 6, câu hỏi 4', 12: 'Lab 5, phần B', 13: 'Lab 5, câu hỏi 6', 14: 'Lab 4, câu hỏi 6', 15: 'Lab 5, phần A', 16: 'Lab 6, câu hỏi 8' };
+          function draw(i) {
+            const [s, c, f] = FAILS[i];
+            out.innerHTML = '<div class="tbl"><table><tr><th>Triệu chứng</th><td>' + s + '</td></tr><tr><th>Nguyên nhân thường gặp</th><td>' + c + '</td></tr><tr><th>Cách xử lý</th><td>' + f + '</td></tr>' + (LAB[i] ? '<tr><th>Đã thấy ở</th><td>' + LAB[i] + '</td></tr>' : '') + '</table></div>';
+          }
+          box.append(select('Triệu chứng', FAILS.map((f, i) => [String(i), f[0]]), '16', (v) => draw(+v)).node, out);
+          draw(16);
+        },
+        take: 'Phần lớn failure mode là "trông bình thường nhưng sai": số liệu có, chỉ là nghĩa khác.'
+      },
+      {
+        q: 'Checklist dài 24 dòng. Thiếu dòng nào thì lộ failure mode nào?',
+        a: `<p>Tick những gì ShopViet đã làm (README §3.9). Mỗi dòng chưa tick mở ra các failure mode của §3.8 mà nó lẽ ra chặn được. Ánh xạ dòng nào chặn failure mode nào là của lab, dựng từ nội dung hai mục.</p>`,
+        viz(box) {
+          const done = new Set([0, 2, 7, 21]);
+          const list = el('div'), out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            list.replaceChildren(...CHECK.map(([g, t], i) => el('label', { class: 'ctl', style: 'display:flex;margin:2px 0' }, [(() => { const c = el('input', { type: 'checkbox' }); c.checked = done.has(i); c.addEventListener('change', () => { done.has(i) ? done.delete(i) : done.add(i); draw(); }); return c; })(), el('span', { text: g + ': ' + t })])));
+            const open = new Set();
+            CHECK.forEach(([, , fm], i) => { if (!done.has(i)) fm.forEach((k) => open.add(k)); });
+            const groups = [...new Set(CHECK.map((c) => c[0]))].map((g) => { const idx = CHECK.map((c, i) => [c, i]).filter(([c]) => c[0] === g); return [g, idx.filter(([, i]) => done.has(i)).length / idx.length * 100, false]; });
+            out.replaceChildren(hbars(groups, { max: 100, fmt: (v) => dec(v, 0) + '%' }));
+            cap.innerHTML = open.size ? '<b>Còn hở ' + open.size + '/' + FAILS.length + ' failure mode:</b> ' + [...open].sort((a, b) => a - b).map((k) => FAILS[k][0]).join('; ') + '.' : '<span class="ok">Mọi failure mode trong bảng đều có ít nhất một dòng checklist chặn.</span>';
+          }
+          box.append(list, out, cap);
+          draw();
+        },
+        take: 'Checklist có giá trị khi mỗi dòng gắn với một cách hỏng cụ thể.'
+      }
+    ],
+    poc: {
+      goal: "Hai tuần metric 5 phút một điểm là <b>tổng hợp</b> (numpy seed 7001/7002), cùng traffic theo giờ, năm sự cố và Black Friday như lab. Bảng alert ví dụ của README §3.7 được chép nguyên ngưỡng rồi chạy: gộp page, khớp page với sự cố, đếm page sai và sự cố bị lỡ; sau đó thêm điều kiện số request tối thiểu và cho exporter rớt span sáu tiếng.",
+      file: "docs/llm-observability/pocs/07_eval_alerts_failures.py",
+      run: "uv run docs/llm-observability/pocs/07_eval_alerts_failures.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>numpy</code>), chạy dưới 3 giây, miễn phí.",
+      output: "Hai tuần metric 5 phút một điểm TỔNG HỢP (numpy seed 7001 baseline, 7002 tuần có sự cố), cùng giả định với lab 07:\n25 → 400 request mỗi 5 phút theo giờ, lỗi nền 0,5%, cắt nền 1%, 0,012 USD/request, 5 sự cố cài sẵn, Black Friday ×2,5.\nPhần chạy thật: luật alert, gộp page (cách nhau ≤ 30 phút là một page), khớp page với sự cố.\n\n== 1. Bảng alert ví dụ của README §3.7, chép nguyên ngưỡng ==\nLuật                                        Page đúng  Page sai  Sai 0–6h  Sai lúc Black Friday  Sự cố bị lỡ  Trễ TB\n------------------------------------------  ---------  --------  --------  --------------------  -----------  -------\nLỗi > 5% / 5 phút                           2          7         1         0                     -            0 phút\nTTFT > 3× baseline / 10 phút                1          0         0         0                     -            5 phút\nCắt stream > 2× baseline / 10 phút          1          65        29        0                     -            0 phút\nChi phí > 3× cùng giờ tuần trước / 60 phút  1          0         0         0                     -            35 phút\nVí dụ page sai của luật lỗi: T3 07:45, T4 04:30, T6 14:30, T6 18:20\n\n== 2. Giữ ngưỡng README, thêm điều kiện số request tối thiểu / đổi mẫu số chi phí ==\nLuật                                             Page đúng  Page sai  Sai 0–6h  Sai lúc Black Friday  Sự cố bị lỡ  Trễ TB\n-----------------------------------------------  ---------  --------  --------  --------------------  -----------  -------\nLỗi > 5% / 5 phút, ≥150 request                  2          4         0         0                     -            0 phút\nCắt stream > 2× baseline / 10 phút, ≥150 stream  1          25        0         0                     -            0 phút\nChi phí MỖI REQUEST > 3× / 60 phút               1          0         0         0                     -            35 phút\n\n== 3. Exporter rớt span T4 09:00–15:00: luật nào còn reo? ==\nLuật                                            Page đúng  Page sai  Sai 0–6h  Sai lúc Black Friday  Sự cố bị lỡ           Trễ TB\n----------------------------------------------  ---------  --------  --------  --------------------  --------------------  ------\nLỗi > 5% / 5 phút, ≥150 request, pipeline hỏng  1          4         0         0                     5xx (T4 11:00–11:30)  0 phút\nLuật pipeline 'span nhận / request ở load balancer < 50% trong 10 phút' reo lúc T4 09:00.\n\nRút ra: ngưỡng README chép nguyên cho luật lỗi 7 page sai/tuần (1 lúc 0–6 giờ), phần lớn\nlà đột biến 5 phút; luật cắt stream 65 page sai vì cắt là sự kiện hiếm (vài stream đã vượt 2× nền).\nLuật chi phí tổng bắt được agent chạy vòng, không reo vì Black Friday (×2,5 < ×3). Thêm '≥150 request' hạ page sai còn 4 và 25, không lỡ\nsự cố. Khi exporter rớt span, sự cố 5xx thứ Tư không có page nào: chỉ luật theo dõi chính pipeline (span / request) reo.",
+      measured: true,
+      read: ["Bảng 1: luật lỗi \"> 5% trong 5 phút\" bắt cả hai sự cố lỗi nhưng có 7 page sai trong tuần; luật cắt stream có 65 page sai vì cắt là sự kiện hiếm, vài stream đã vượt 2× nền. Ngưỡng README chỉ để minh hoạ, đúng như README ghi.", "Ở seed này, luật chi phí tổng bắt được agent chạy vòng ban đêm và không reo lúc Black Friday (×2,5 nhỏ hơn ×3). Tình huống mở đầu ban đầu của lab (đêm agent chạy vòng mà không ai được báo) không lặp lại với ngưỡng mặc định, vì vòng lặp gấp 5 vượt xa 3×. Lab đã sửa lời kể và thêm slider mức đốt tiền của vòng lặp: chỉ khi vòng lặp làm chi phí gấp dưới 3 (ví dụ 2,5) thì luật 3× mới lỡ.", "Bảng 2: thêm \"≥ 150 request trong cửa sổ\" hạ page sai từ 7 còn 4 (lỗi) và từ 65 còn 25 (cắt stream), không lỡ sự cố nào. Lab cho số khác (lỗi 7 còn 2, cắt stream 70 còn 33) vì dữ liệu sinh bằng bộ số ngẫu nhiên khác (JavaScript so với numpy); kết luận giống nhau: điều kiện số request tối thiểu cắt phần lớn page sai mà không lỡ sự cố.", "Bảng 3: exporter rớt span T4 09:00–15:00 thì sự cố 5xx lúc 11:00 không có page nào. Chỉ luật theo dõi chính pipeline (span nhận / request ở load balancer) reo, ngay 09:00."]
+    },
+    mount(stage) {
+      const cfg = { err: { thr: 0.05, win: 5, minReq: 0 }, ttft: { thr: 3, win: 10, minReq: 0 }, trunc: { thr: 2, win: 10, minReq: 0 }, cost: { thr: 3, win: 60, minReq: 0 } };
+      const st = { key: 'err', drop: false, tol: 1 };
+      const ctl = el('div'), chartBox = el('div'), pageBox = el('div'), tblBox = el('div'), flags = el('div'), cap = el('div', { class: 'cap' });
+      function controls() {
+        const R = RULES[st.key], c = cfg[st.key];
+        const later = debounce(render, 80);
+        const thrFmt = R.absolute ? (v) => pct(v, 1) : (v) => dec(v, 1) + '× baseline';
+        ctl.replaceChildren(el('div', { class: 'row' }, [
+          slider('Ngưỡng', R.thr[0], R.thr[1], R.thr[2], c.thr, (v) => { c.thr = v; later(); }, thrFmt).node,
+          slider('Cửa sổ (phút)', 5, st.key === 'cost' ? 180 : 60, 5, c.win, (v) => { c.win = v; later(); }).node,
+          st.key === 'cost' ? slider('Agent chạy vòng CN 02:00 làm chi phí gấp', 1.5, 5, 0.5, INC[4].v, (v) => { INC[4].v = v; DATA = null; later(); }, (v) => dec(v, 1) + '×').node : null,
+          st.key === 'err' || st.key === 'trunc' ? slider(st.key === 'trunc' ? 'Stream tối thiểu trong cửa sổ' : 'Request tối thiểu trong cửa sổ', 0, 400, 10, c.minReq, (v) => { c.minReq = v; later(); }).node : null]));
+      }
+      function render() {
+        const res = {};
+        Object.keys(RULES).forEach((k) => { res[k] = series(k, cfg[k], st.drop); res[k].sum = summarize(res[k], st.tol); });
+        const r = res[st.key];
+        chartBox.replaceChildren(chart(st.key, r, cfg[st.key], st.drop));
+        const pages = r.pages.slice(0, 12);
+        pageBox.innerHTML = '<div class="hint" style="margin:4px 0">Page của luật đang chọn (' + r.pages.length + '): ' + (pages.length ? pages.map((p) => '<span class="mono" style="color:var(--' + (p.inc ? 'ok' : 'bad') + ')">' + clock(p.s) + '</span>').join(' · ') + (r.pages.length > 12 ? ' …' : '') : 'không có') + '</div>';
+        tblBox.innerHTML = '<div class="tbl"><table><tr><th>Luật</th><th>Cấu hình</th><th>Page đúng</th><th>Page sai</th><th>Sai 0–6 giờ</th><th>Sự cố bị lỡ</th><th>Trễ TB</th><th>Đánh giá</th></tr>' + Object.keys(RULES).map((k) => { const s = res[k].sum, c = cfg[k], tot = INC.filter((x) => x.type === k).length; return '<tr' + (k === st.key ? ' style="background:var(--accent-soft)"' : '') + '><td>' + RULES[k].name + '</td><td class="mono" style="font-size:12px">' + (RULES[k].absolute ? '&gt; ' + pct(c.thr, 1) : '&gt; ' + dec(c.thr, 1) + '×') + ' / ' + c.win + 'p' + (c.minReq ? ' / ≥' + c.minReq + ' req' : '') + '</td><td class="mono">' + s.tp + '</td><td class="mono ' + (s.fp > st.tol ? 'bad' : '') + '">' + s.fp + '</td><td class="mono ' + (s.nightFp ? 'bad' : '') + '">' + s.nightFp + '</td><td class="mono ' + (s.missed ? 'bad' : 'ok') + '">' + s.missed + '/' + tot + '</td><td class="mono">' + (s.delay === null ? '—' : int(s.delay) + ' phút') + '</td><td class="' + (s.verdict === 'ổn' ? 'ok' : 'bad') + '"><b>' + s.verdict + '</b></td></tr>'; }).join('') + '</table></div>';
+
+        const fl = [];
+        Object.keys(RULES).forEach((k) => {
+          const s = res[k].sum;
+          if (s.fp > st.tol) fl.push(['bad', RULES[k].name + ' ồn: ' + s.fp + ' page sai trong tuần' + (s.nightFp ? ', ' + s.nightFp + ' trong số đó lúc 0–6 giờ' : '') + '.']);
+          res[k].found.filter((f) => !f.p).forEach((f) => fl.push(['bad', RULES[k].name + ' lỡ sự cố: ' + f.x.what + '.']));
+        });
+        const bfPage = res.cost.pages.find((p) => p.bf);
+        if (bfPage) fl.push(['warn', 'Luật chi phí reo lúc ' + clock(bfPage.s) + ' vì Black Friday: traffic gấp 2,5 nên chi phí gấp 2,5. Đây là chi phí hợp lệ; so chi phí trên mỗi request sẽ không reo.']);
+        if (st.drop) {
+          const lost = res.err.found.find((f) => f.x.s === INC[1].s && !f.p);
+          fl.push(['bad', 'Exporter rớt span T4 09:00–15:00: mọi metric tính từ span không có dữ liệu' + (lost ? ', sự cố 5xx lúc 11:00 không được alert' : '') + '. Luật "span nhận được / request HTTP < 50% trong 10 phút" (tính từ load balancer) sẽ reo lúc ' + clock(DROP[0] + 2) + '.']);
+        }
+        flags.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [noFlag()]));
+        const s = r.sum, R = RULES[st.key];
+        let c;
+        if (st.drop && res.err.found.some((f) => f.x.s === INC[1].s && !f.p)) c = { what: 'Sự cố 5xx thứ Tư 11:00 không có alert nào.', why: 'Luật lỗi đọc từ span; trong 6 tiếng exporter rớt span, tỉ lệ lỗi không có dữ liệu nên không vượt ngưỡng.', not: 'Không có nghĩa luật lỗi sai: với dữ liệu đủ, nó bắt được sự cố này.', real: 'Alert cho chính pipeline observability (README §3.7): số span so với số request HTTP, exporter rớt span, partial_success.' };
+        else if (st.key === 'err' && s.nightFp > 0) c = { what: s.nightFp + ' page sai lúc 0–6 giờ, khi chỉ có vài chục request mỗi 5 phút.', why: 'Với 25–40 request, 2 lỗi đã là 5–8%. Ngưỡng 5% trong 5 phút là con số minh hoạ của README, không tính tới traffic ban đêm.', not: 'Không có nghĩa lỗi ban đêm bị bỏ qua: sự cố thật ban đêm vẫn có hàng chục lỗi liên tiếp.', real: 'Thêm số request tối thiểu (kéo lên khoảng 100–150 để thấy: trên tuần này page sai còn 2, không lỡ sự cố), hoặc cửa sổ dài hơn ban đêm; chỉnh lại sau mỗi page sai (README §3.7).' };
+        else if (st.key === 'cost' && res.cost.found.some((f) => !f.p)) c = { what: 'Agent chạy vòng 3 tiếng rạng sáng Chủ nhật mà luật chi phí không reo: đúng chuyện "không ai được báo" ở đầu bài.', why: 'Luật so chi phí ' + cfg.cost.win + ' phút gần nhất với cùng giờ tuần trước. Vòng lặp chỉ làm chi phí gấp ' + dec(INC[4].v, 1) + ', chưa tới ngưỡng ' + dec(cfg.cost.thr, 1) + '×. Ngưỡng 3× đủ cao để Black Friday (traffic gấp 2,5, chi phí hợp lệ) không reo, và chính khoảng hở đó để vòng lặp nhẹ lọt qua.', not: 'Không có nghĩa chỉ cần hạ ngưỡng: kéo xuống 2× thì bắt được vòng lặp nhưng Black Friday cũng reo. Cũng không có nghĩa chi phí đó nhỏ: 3 tiếng mỗi đêm là cả một khoản mỗi tháng.', real: 'So chi phí trên mỗi request thay vì tổng (Black Friday không đổi chi phí mỗi request, vòng lặp thì có; POC bảng 2), và kèm alert p99 inference_calls, tỉ lệ run chạm giới hạn (Lab 5): bắt vòng lặp trực tiếp, không cần chờ tiền.' };
+        else if (st.key === 'trunc' && s.fp > st.tol) c = { what: s.fp + ' page sai trong tuần, ' + s.nightFp + ' trong số đó lúc 0–6 giờ.' + (cfg.trunc.thr === 2 && cfg.trunc.win === 10 && !cfg.trunc.minReq ? ' Con số lớn này là cố ý: lab mặc định giữ nguyên ngưỡng minh hoạ của README để bạn thấy chép nguyên nó thì ồn tới mức nào.' : ''), why: 'Lấy ngưỡng README (2× trong 10 phút) làm ví dụ. Stream bị cắt là sự kiện hiếm, nền khoảng 1%. Lúc 4 giờ sáng, 10 phút chỉ có khoảng 30 stream (25 request mỗi 5 phút × 2 × 60% là stream), trung bình 0,3 stream bị cắt. Chỉ cần <b>1</b> stream bị cắt là 3,3%, vượt 2× nền (2%), và chuyện đó xảy ra ở khoảng 1 trên 4 lần đo. Ban ngày có khoảng 480 stream, trung bình 4,8 bị cắt; 10 stream là vượt ngưỡng, xác suất chỉ khoảng 2,5% mỗi lần đo, nhưng mỗi 5 phút đo một lần nên vẫn ra vài page mỗi ngày.', not: 'Không có nghĩa luật sai hay nên bỏ: proxy cắt stream sáng thứ Bảy là sự cố thật, khách thấy câu trả lời dở. Vấn đề là "2×" của một số rất nhỏ vẫn là một số rất nhỏ.', real: 'Với sự kiện hiếm, đòi số stream tối thiểu và cửa sổ dài hơn. Trên dữ liệu này, 3× baseline, 30 phút, ít nhất 300 stream bắt được sự cố với tối đa 1 page sai; kiểm lại trên baseline của hệ thống bạn.' };
+        else if (s.missed) c = { what: R.name + ' lỡ ' + s.missed + ' sự cố.', why: 'Ngưỡng ' + (R.absolute ? pct(cfg[st.key].thr, 1) : dec(cfg[st.key].thr, 1) + '× baseline') + ' với cửa sổ ' + cfg[st.key].win + ' phút pha loãng sự cố ngắn.', not: 'Không có nghĩa nên hạ ngưỡng tới mức reo liên tục.', real: 'Kết hợp hai luật: cửa sổ ngắn ngưỡng cao, cửa sổ dài ngưỡng thấp.' };
+        else if (s.fp > st.tol) c = { what: R.name + ' có ' + s.fp + ' page sai trong tuần, vượt mức ' + st.tol + ' đội trực chịu được.', why: 'Ngưỡng hoặc cửa sổ quá nhạy so với dao động bình thường' + (st.key === 'cost' && bfPage ? ', và Black Friday đẩy chi phí hợp lệ lên gấp 2,5' : '') + '.', not: 'Không có nghĩa luật vô ích: nó vẫn bắt được ' + s.tp + ' sự cố.', real: 'Ngưỡng theo baseline vài tuần, theo giờ trong ngày; với chi phí, so trên mỗi request hoặc loại trừ ngày có chiến dịch.' };
+        else c = { what: R.name + ': ' + s.tp + ' page đúng, ' + s.fp + ' page sai, không lỡ sự cố, trễ trung bình ' + (s.delay === null ? '—' : int(s.delay) + ' phút') + '.', why: 'Ngưỡng và cửa sổ hiện tại tách được sự cố khỏi dao động của tuần này.', not: 'Không có nghĩa sẽ đúng tuần sau: traffic, provider, tính năng đều đổi.', real: 'Ghi lại cấu hình, xem lại sau mỗi page sai và mỗi sự cố bị lỡ.' };
+        cap.innerHTML = capHtml(c);
+      }
+      stage.append(
+        el('div', { class: 'row' }, [
+          select('Luật', Object.entries(RULES).map(([k, R]) => [k, R.name + ' (README: ' + R.ex + ')']), st.key, (v) => { st.key = v; controls(); render(); }).node,
+          select('Pipeline trace', [['ok', 'Bình thường'], ['drop', 'Exporter rớt span T4 09:00–15:00']], 'ok', (v) => { st.drop = v === 'drop'; render(); }).node,
+          slider('Page sai chịu được mỗi tuần', 0, 5, 1, st.tol, (v) => { st.tol = v; render(); }).node]),
+        ctl, chartBox,
+        el('div', { class: 'legend', html: '<span><i style="background:var(--g1)"></i>metric theo cửa sổ</span><span><i style="background:var(--bad)"></i>ngưỡng</span><span><i style="background:var(--warn);opacity:.5"></i>sự cố thật</span><span><i style="background:var(--g4);opacity:.4"></i>Black Friday</span><span><i style="background:var(--ok)"></i>page đúng</span><span><i style="background:var(--bad)"></i>page sai</span>' }),
+        pageBox, tblBox,
+        el('h4', { text: 'Phát hiện từ dữ liệu', style: 'margin:14px 0 4px' }), flags, cap,
+        el('p', { class: 'hint', text: 'Metric sinh bằng seed cố định, 5 phút một điểm, hai tuần (tuần đầu làm baseline). Traffic theo giờ, lỗi nền 0,5%, stream bị cắt nền 1% (60% request là stream), TTFT nền 1,1–1,5 giây, 0,012 USD mỗi request, năm sự cố và Black Friday đều là giả định. Baseline TTFT là trung vị cùng giờ tuần trước, baseline stream bị cắt là tỉ lệ gộp cùng giờ tuần trước, chi phí so cùng cửa sổ tuần trước. Các lần vượt cách nhau dưới 30 phút gộp thành một page. Ngưỡng mặc định theo bảng README §3.7, vốn chỉ để minh hoạ.' })
+      );
+      controls();
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

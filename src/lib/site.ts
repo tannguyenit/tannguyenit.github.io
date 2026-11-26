@@ -56,6 +56,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Biết hệ thống LLM tốt lên hay tệ đi: golden dataset, grader bằng code và LLM-as-judge, phương sai và cỡ mẫu, eval cho RAG và agent, regression trong CI và A/B online.',
     parts: ['Workflow tổng hợp', 'Vì sao thử vài câu không phải eval', 'Phương sai và cỡ mẫu', 'Benchmark và grader bằng code', 'LLM-as-judge', 'Eval cho RAG, agent và extraction', 'Dataset, gán nhãn, regression và CI', 'Eval online, chi phí và failure modes']
   },
+  'llm-observability': {
+    title: 'LLM - 12 - LLM Observability',
+    description: 'Trace và span cho lượt gọi model, metric riêng của LLM, OpenTelemetry GenAI, công cụ, che PII, chi phí theo tenant, drift khi provider đổi model và alert đáng đánh thức người trực.',
+    parts: ['Workflow tổng hợp', 'Vì sao log thôi chưa đủ', 'Metric riêng của LLM', 'Chất lượng và OpenTelemetry GenAI', 'Công cụ observability', 'Log, PII và trace cho agent', 'Chi phí, feedback và drift', 'Eval từ log, alert và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

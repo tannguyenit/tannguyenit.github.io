@@ -1,0 +1,747 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-quality-otel.html">← Lab trước</a><a href="05-logging-pii-tracing-agents.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const pct = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const dec = (x, d = 2) => x.toFixed(d).replace('.', ',');
+  const int = (x) => Math.round(x).toLocaleString('vi-VN');
+  const usd = (x) => (x >= 100 ? int(x) : x >= 1 ? dec(x, 2) : x >= 0.01 ? dec(x, 3) : dec(x, 5)) + ' USD';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flagBox = (l, t) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t });
+  const capHtml = (c) => '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + c.what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + c.why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + c.not + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + c.real + '</p></div>';
+  const noFlag = () => el('div', { class: 'ok', style: 'font-size:13px', text: 'Không phát hiện bất thường ở cấu hình này.' });
+
+  const TOOLS = [
+    { id: 'langfuse', name: 'Langfuse', model: 'Tracing, prompt management, dataset, eval, score', host: 'Có: Docker Compose (một VM, không HA, không backup) hoặc Helm', free: 'Hobby 50k units/tháng, giữ 30 ngày. Core 29 USD/tháng 100k units, 90 ngày; Pro 199 USD/tháng, 3 năm', note: 'Nhận OTLP/HTTP (không gRPC) ở /api/public/otel; server v4. Mỗi trace, observation, score là một unit.' },
+    { id: 'langsmith', name: 'LangSmith', model: 'Tracing, dataset, eval, annotation queue', host: 'Chỉ gói Enterprise (Hybrid hoặc Self-Hosted)', free: 'Developer 0 USD/seat, 5k base trace/tháng, giữ 14 ngày. Plus 39 USD/seat/tháng, 10k base trace', note: 'Hợp nhất nếu đã dùng LangChain/LangGraph. Span con bị bỏ âm thầm nếu span cha không tới LangSmith.' },
+    { id: 'phoenix', name: 'Arize Phoenix', model: 'Tracing, eval, trực quan hoá embedding và drift', host: 'Có, license ELv2 (không phải open source theo OSI)', free: 'Tự host không mất phí', note: 'Dùng quy ước OpenInference, không phải gen_ai.*. Mạnh cho hệ thống RAG.' },
+    { id: 'helicone', name: 'Helicone (gateway)', model: 'Proxy ghi log trên đường đi của request', host: 'Có: Docker Compose, Helm, cài thủ công', free: 'Hobby 10k request, giữ 7 ngày. Pro 79 USD/tháng; Team 799 USD/tháng', note: 'Đổi base URL là có log. Nằm trên đường đi của mọi request: proxy chậm thì app chậm, proxy sập thì app không gọi được model. Chỉ thấy lượt gọi model.' },
+    { id: 'braintrust', name: 'Braintrust', model: 'Eval và log', host: 'Chỉ Enterprise', free: 'Starter 0 USD: 1 GB + 10k score, giữ 14 ngày. Pro 249 USD/tháng', note: 'Tính phí theo GB dữ liệu và số score.' },
+    { id: 'datadog', name: 'Datadog LLM Observability', model: 'APM + LLM Observability', host: 'Không', free: '40k LLM span/tháng cho khách hàng Datadog; giá phần vượt không có trên trang đã đọc', note: 'Nhận gen_ai.* từ semconv v1.37. Mỗi request tới provider là một span tính phí. Không có trên site gov.' },
+    { id: 'grafana', name: 'Grafana stack (Tempo, Prometheus, Loki)', model: 'Trace, metric, log tổng quát', host: 'Có', free: 'Không nêu trong README', note: 'Nhận OTLP; tự dựng dashboard từ gen_ai.client.inference.*. Không có giao diện xem prompt/response đẹp.' },
+    { id: 'otel', name: 'Tự xây trên OpenTelemetry', model: 'Collector + backend sẵn có', host: 'Có', free: '—', note: 'Tốn công nhất, linh hoạt nhất. Collector là nơi lấy mẫu trace, che dữ liệu, gửi một bản tới nhiều backend.' }
+  ];
+
+  function judge(st) {
+    const r = {};
+    TOOLS.forEach((t) => { r[t.id] = []; });
+    const add = (id, lvl, why) => r[id].push([lvl, why]);
+    if (st.res === 'strict') {
+      add('datadog', 'warn', 'Không self-host: chỉ gửi được metadata (tắt capture nội dung). Đọc prompt phải ở nơi khác.');
+      add('langsmith', st.ent ? 'warn' : 'out', st.ent ? 'Self-host chỉ ở Enterprise: cần đàm phán hợp đồng.' : 'Self-host chỉ có ở Enterprise; gói thường gửi dữ liệu lên SaaS.');
+      add('braintrust', st.ent ? 'warn' : 'out', st.ent ? 'Self-host chỉ ở Enterprise.' : 'Self-host chỉ có ở Enterprise.');
+      ['langfuse', 'phoenix', 'helicone', 'grafana', 'otel'].forEach((id) => add(id, 'plus', 'Tự host được: dữ liệu ở lại hạ tầng của ShopViet.'));
+      if (st.ops === 'cannot') {
+        add('langfuse', 'warn', 'Tự host production là tự vận hành PostgreSQL, Redis/Valkey, ClickHouse, S3, web, worker.');
+        add('phoenix', 'warn', 'Phải tự chạy và nâng cấp container.');
+        add('helicone', 'warn', 'Phải tự vận hành proxy mà mọi request đều đi qua.');
+        add('grafana', 'warn', 'Phải tự vận hành Tempo, Prometheus, Loki.');
+        add('otel', 'out', 'Tốn công nhất: Collector, backend, dashboard đều tự làm.');
+      }
+    } else {
+      if (st.ops === 'cannot') {
+        add('otel', 'warn', 'Tốn công nhất, trong khi đội không muốn vận hành thêm hệ thống.');
+        add('grafana', st.stack === 'grafana' ? 'plus' : 'warn', st.stack === 'grafana' ? 'Đã vận hành sẵn.' : 'Dựng mới cả stack chỉ để xem trace LLM.');
+      }
+      ['langfuse', 'langsmith', 'braintrust', 'helicone'].forEach((id) => add(id, 'plus', 'Có cloud: bật trong ngày.'));
+    }
+    if (st.stack === 'datadog') { add('datadog', 'plus', 'Đã dùng Datadog: span LLM chung trace với HTTP, DB; cùng alert, cùng người trực.'); add('otel', 'plus', 'Collector fan-out: APM nhận metric, công cụ LLM nhận trace.'); }
+    else if (st.stack === 'grafana') { add('grafana', 'plus', 'Đã vận hành Grafana: thêm dashboard từ metric gen_ai.client.inference.*.'); add('otel', 'plus', 'Đẩy OTLP vào Tempo/Prometheus sẵn có.'); add('datadog', 'warn', 'Mua thêm một APM khi đã có Grafana.'); }
+    else if (st.stack === 'langchain') { add('langsmith', 'plus', 'Đã dùng LangChain/LangGraph: tích hợp sâu nhất.'); add('datadog', 'warn', 'Chưa dùng Datadog: lợi thế chung trace với HTTP, DB không có.'); }
+    else add('datadog', 'warn', 'Chưa dùng Datadog: lợi thế chung trace với HTTP, DB không có.');
+    if (st.eval) {
+      ['langfuse', 'langsmith', 'phoenix', 'braintrust'].forEach((id) => add(id, 'plus', 'Có dataset và eval trong cùng sản phẩm.'));
+      add('helicone', 'warn', 'README mô tả Helicone như proxy ghi log, không nêu dataset hay eval.');
+      add('grafana', 'warn', 'Không có giao diện xem hội thoại, dataset, gán nhãn.');
+      add('datadog', 'warn', 'Giao diện dataset, so prompt, gán nhãn thường kém công cụ chuyên LLM (§2.5).');
+      add('otel', 'warn', 'Phải tự xây hoặc ghép thêm một công cụ eval.');
+    }
+    if (st.agent) add('helicone', 'warn', 'Proxy chỉ thấy lượt gọi model, không thấy retriever, tool, logic nghiệp vụ: không dựng được trace agent đầy đủ.');
+    return TOOLS.map((t) => {
+      const rs = r[t.id], out = rs.some((x) => x[0] === 'out'), warn = rs.filter((x) => x[0] === 'warn').length, plus = rs.filter((x) => x[0] === 'plus').length;
+      return { t, rs, out, warn, plus, score: out ? -99 : plus * 2 - warn * 3 };
+    });
+  }
+
+  function volume(st) {
+    const req = st.req * 30, llm = req * st.calls, obs = req * (st.calls + st.other);
+    return [
+      { id: 'langfuse', name: 'Langfuse Hobby', unit: 'unit (trace + observation)', used: req + obs, free: 50000 },
+      { id: 'langsmith', name: 'LangSmith Developer', unit: 'base trace', used: req, free: 5000 },
+      { id: 'helicone', name: 'Helicone Hobby', unit: 'request tới provider', used: llm, free: 10000 },
+      { id: 'datadog', name: 'Datadog (khách hàng Datadog)', unit: 'LLM span', used: llm, free: 40000 }
+    ].map((v) => ({ ...v, days: v.free / (v.used / 30) }));
+  }
+
+  const NORMAL_FINISH = new Set(['stop', 'end_turn', 'stop_sequence', 'tool_use', 'tool_calls', 'pause_turn', 'completed']);
+  const FINISH_SAMPLES = [
+    ['OpenAI Chat Completions', 'stop', 900], ['OpenAI Chat Completions', 'tool_calls', 300], ['OpenAI Chat Completions', 'length', 12], ['OpenAI Chat Completions', 'content_filter', 3],
+    ['OpenAI Responses', 'completed', 700], ['OpenAI Responses', 'max_output_tokens', 9],
+    ['Claude', 'end_turn', 1500], ['Claude', 'tool_use', 600], ['Claude', 'pause_turn', 20], ['Claude', 'max_tokens', 18], ['Claude', 'refusal', 6],
+    ['Gemini', 'STOP', 1100], ['Gemini', 'MAX_TOKENS', 10], ['Gemini', 'SAFETY', 4], ['Gemini', 'RECITATION', 2], ['Gemini', 'PROHIBITED_CONTENT', 1], ['Gemini', 'SPII', 1]
+  ];
+
+  return {
+    id: 'tools', nav: '4. Chọn công cụ', ref: 'Phần 2',
+    title: 'Không có công cụ observability tốt nhất: ba câu hỏi về dữ liệu, stack sẵn có và nhu cầu eval loại dần lựa chọn của ShopViet',
+    hook: 'Trả lời bốn câu hỏi ở trên cùng và kéo traffic. Thẻ công cụ đổi màu theo từng ràng buộc, kèm lý do lấy từ README; bảng dưới tính gói miễn phí của từng công cụ hết sau bao nhiêu ngày.',
+    terms: [
+      ['Backend observability', 'Nơi nhận, lưu và hiển thị trace. Ví dụ Langfuse, LangSmith, Datadog. Ứng dụng gửi span tới đó qua mạng.'],
+      ['Self-host', 'Tự chạy công cụ trên máy chủ của mình. Ví dụ Langfuse bằng Docker Compose: dữ liệu không rời hạ tầng ShopViet, nhưng ShopViet tự lo backup, nâng cấp.'],
+      ['Data residency', 'Ràng buộc dữ liệu chỉ được nằm ở nơi cho phép. Ví dụ: prompt chứa số điện thoại khách không được gửi lên SaaS ở nước ngoài.'],
+      ['OTLP', 'Giao thức gửi dữ liệu của OpenTelemetry, qua HTTP hoặc gRPC. Langfuse chỉ nhận OTLP qua HTTP, ví dụ POST tới /api/public/otel/v1/traces.'],
+      ['Exporter', 'Thành phần trong SDK gom span và gửi đi. Một ứng dụng có thể có hai exporter gửi cùng lúc tới hai backend.'],
+      ['OTel Collector', 'Tiến trình trung gian nhận span từ ứng dụng rồi xử lý (lấy mẫu, che dữ liệu) và gửi tiếp tới một hay nhiều backend. Gửi cùng một span tới nhiều nơi gọi là fan-out, ví dụ metric tới Grafana và trace tới Langfuse.'],
+      ['Proxy / gateway', 'Máy chủ đứng giữa ứng dụng và provider. Ứng dụng gọi https://gateway.../v1/messages thay vì gọi thẳng provider; gateway ghi log rồi chuyển tiếp.'],
+      ['Unit (Langfuse)', 'Đơn vị tính phí của Langfuse: mỗi trace, observation hoặc score là một unit. Observation là tên Langfuse gọi một span con. Câu hỏi của ShopViet có 1 trace + 6 observation (3 lượt gọi model, 3 bước retrieval/tool) = 7 unit.'],
+      ['OpenInference', 'Quy ước tên attribute của Arize (llm.*), khác với gen_ai.* của OpenTelemetry. Phoenix đọc OpenInference.'],
+      ['ELv2', 'Elastic License 2.0: xem được mã nguồn, tự host được, nhưng hạn chế bán phần mềm như dịch vụ managed. Không phải open source theo OSI.'],
+      ['finish reason', 'Lý do model dừng sinh. Claude: end_turn (xong), max_tokens (bị cắt), refusal (từ chối). Gemini viết hoa: STOP, MAX_TOKENS, SAFETY.'],
+      ['Sampling (lấy mẫu)', 'Chỉ giữ một phần trace để đỡ tốn. Ví dụ giữ 5% trace bình thường, giữ 100% trace có cờ app.llm.keep=true.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> đã instrument trợ lý chat bằng <code>gen_ai.*</code> (Lab 1–3). Giờ đội vận hành phải chọn nơi gửi trace. Pháp chế nói prompt có số điện thoại, địa chỉ giao hàng của khách. Đội hạ tầng đang dùng Grafana. Product muốn có dataset để chấm câu trả lời. Mỗi bên đề xuất một công cụ khác nhau.',
+      scenario: 'Trợ lý trả lời khoảng 3.000 câu hỏi mỗi ngày (giả định), mỗi câu gọi model 3 lần và có thêm 3 span retrieval/tool. Tám lựa chọn trong README Phần 2: Langfuse, LangSmith, Arize Phoenix, Helicone, Braintrust, Datadog, Grafana stack, tự xây trên OpenTelemetry.',
+      ask: 'Với ràng buộc của ShopViet, công cụ nào còn đứng được, vì sao? Gói miễn phí chịu được bao nhiêu ngày? Và làm sao để không bị khoá vào công cụ đã chọn?',
+      solves: 'Bộ chọn áp từng ràng buộc của README Phần 2 lên tám thẻ công cụ, hiện lý do loại hoặc cảnh báo. Bảng khối lượng tính số unit, trace, request, LLM span mỗi tháng theo cách tính phí của từng công cụ (README, ngày 06/11/2026) và số ngày trước khi hết gói miễn phí.',
+      read: [
+        'Viền xanh: hợp. Viền cam: dùng được nhưng có cái giá. Mờ, viền đỏ: bị loại bởi một ràng buộc cứng. Mỗi dòng trong thẻ là một lý do.',
+        'Ba thẻ hợp nhất được đánh số ở góc. Thứ tự chỉ là điểm cộng/trừ đơn giản của lab, không phải xếp hạng của README.',
+        'Bảng khối lượng: cột "Mỗi tháng" là lượng dùng theo đơn vị tính phí của công cụ; ô đỏ là hết gói miễn phí trước 30 ngày.',
+        'Khung "Phát hiện từ dữ liệu" liệt kê mâu thuẫn giữa các ràng buộc; khung cuối giải thích mâu thuẫn quan trọng nhất.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Ba câu hỏi theo thứ tự (README Phần 2): dữ liệu được phép đi đâu, đã có stack observability chưa, cần gì ngoài trace (prompt management, dataset, eval). Nguyên tắc chung: instrument bằng OpenTelemetry với <code>gen_ai.*</code> rồi export, để đổi công cụ không phải sửa code và có thể gửi tới hai nơi trong giai đoạn chuyển.</p>
+<div class="tbl"><table><tr><th>Công cụ</th><th>Self-host</th><th>Gói miễn phí (06/11/2026)</th><th>Điều cần biết trước</th></tr>
+<tr><td>Langfuse</td><td>Có (Compose, Helm)</td><td>Hobby 50k units/tháng, 30 ngày</td><td>Header <code>x-langfuse-ingestion-version=4</code>, thiếu thì trễ khoảng 10 phút; metadata lọc được cần tiền tố <code>langfuse.trace.metadata.*</code>; <code>mask_otel_spans</code> ném lỗi thì cả batch bị bỏ</td></tr>
+<tr><td>LangSmith</td><td>Chỉ Enterprise</td><td>Developer 5k trace/tháng, 14 ngày</td><td>Không tự thêm <code>/v1/traces</code> (404); span con bị bỏ âm thầm nếu span cha không tới</td></tr>
+<tr><td>Arize Phoenix</td><td>Có, ELv2</td><td>Tự host không mất phí</td><td>OpenInference; đọc license nếu nhúng vào sản phẩm bán cho khách</td></tr>
+<tr><td>Helicone</td><td>Có</td><td>Hobby 10k request, 7 ngày</td><td>Mọi request đi qua proxy; chỉ thấy lượt gọi model</td></tr>
+<tr><td>Braintrust</td><td>Chỉ Enterprise</td><td>1 GB + 10k score, 14 ngày</td><td>Tính theo GB và score</td></tr>
+<tr><td>Datadog</td><td>Không</td><td>40k LLM span/tháng cho khách hàng Datadog</td><td>Mỗi request tới provider là một span tính phí; không có trên site gov</td></tr>
+<tr><td>Tự xây trên OTel</td><td>Có</td><td>—</td><td>Tốn công nhất, linh hoạt nhất</td></tr>
+</table></div>
+<h4>Wrapper tự xây (§2.6), các quyết định đáng nhớ</h4>
+<ul><li>Span bao trọn vòng đọc stream; người dùng ngắt thì ghi <code>app.llm.cancelled</code>, không phải ERROR.</li>
+<li>Telemetry lỗi thì ghi nhận rồi bỏ qua, không được thay exception của ứng dụng.</li>
+<li>Attribute dùng cho sampling đặt ngay lúc tạo span.</li>
+<li>Giữ trace theo danh sách lý do <b>bình thường</b>; mọi lý do khác (bị cắt, refusal, lý do mới) đều giữ.</li>
+<li>Refusal không phải lỗi; model không có giá thì đánh dấu <code>app.llm.cost.unpriced</code>, không ghi 0; tenant ở trên span, không ở trên metric.</li></ul>
+<div class="verdict"><b>Điểm cần nhớ:</b> chọn công cụ là chọn nơi dữ liệu nằm. Instrument chuẩn OTel trước, công cụ sau; nhiều đội dùng hai nơi: APM cho metric và alert, công cụ LLM cho đọc trace và eval.</div>`,
+    why: {
+      c: 'Instrument bằng OTel <code>gen_ai.*</code>, đẩy qua Collector, rồi chọn backend theo ba câu hỏi: dữ liệu được đi đâu, stack sẵn có, cần eval không. Với ShopViet (nội dung không rời hạ tầng, đã có Grafana, cần dataset): metric và alert ở Grafana, trace và eval ở một công cụ tự host như Langfuse hoặc Phoenix.',
+      s: 'Dùng SDK riêng của một vendor ngay từ đầu: đổi công cụ là sửa code ở mọi chỗ gọi model. Chỉ dùng proxy: không thấy retriever và tool. Gửi toàn bộ nội dung lên SaaS vì tiện: vi phạm ràng buộc dữ liệu. Tự xây mọi thứ khi đội không muốn vận hành thêm hệ thống.',
+      p: 'Tự host là tự vận hành ClickHouse, S3, backup, nâng cấp. Hai nơi lưu là hai hệ thống phân quyền, hai hoá đơn. OTel <code>gen_ai.*</code> đang ở trạng thái Development: tên attribute có thể đổi, phải pin phiên bản instrumentation.'
+    },
+    deep: [
+      {
+        q: 'Sao câu hỏi đầu tiên lại là "dữ liệu được phép đi đâu", chứ không phải "công cụ nào nhiều tính năng nhất"?',
+        a: `<p>Vì đó là ràng buộc duy nhất không thương lượng được. Tính năng thiếu thì bù bằng công cụ thứ hai; dữ liệu khách đã gửi sang hệ thống bên thứ ba thì không lấy lại được. README Phần 2: nếu prompt chứa dữ liệu khách hàng không được rời hạ tầng của bạn, danh sách thu hẹp còn các công cụ tự host được.</p>
+<p>Một trace của ShopViet trông thế này (rút gọn). Phần metadata không chứa gì của khách; phần nội dung thì có:</p>
+<pre class="mono" style="font-size:12px;white-space:pre-wrap;background:var(--bg);padding:8px;border-radius:6px">{ "gen_ai.request.model": "claude-sonnet-5-5",
+  "gen_ai.usage.input_tokens": 6400,
+  "app.tenant.id": "shopviet",
+  "gen_ai.input.messages": "[{\\"role\\":\\"user\\",\\"content\\":\\"Đơn SV-4821 giao tới 12 Lê Lợi, gọi 0912 345 678 ...\\"}]" }</pre>
+<p>Ba dòng đầu gửi đâu cũng được. Dòng cuối là thứ pháp chế lo. Đó là lý do <code>gen_ai.input.messages</code> là opt-in, mặc định tắt (Tra cứu nhanh).</p>`,
+        take: 'Ràng buộc dữ liệu loại công cụ trước; tính năng chỉ xếp hạng những gì còn lại.'
+      },
+      {
+        q: 'Đã chọn Langfuse rồi, sao không dùng luôn SDK của Langfuse mà phải đi vòng qua OpenTelemetry?',
+        a: `<p>README Phần 2: instrument bằng OpenTelemetry với <code>gen_ai.*</code> rồi export sang công cụ. Code không phụ thuộc SDK của vendor, và có thể gửi cùng lúc tới hai nơi trong giai đoạn chuyển. Chọn một cấu hình bên dưới để xem đổi công cụ chạm vào bao nhiêu chỗ.</p>`,
+        viz(box) {
+          const st = { sites: 14, way: 'otel', target: 'langsmith' };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const edits = st.way === 'otel' ? 1 : st.sites;
+            const where = st.way === 'otel' ? 'Một khối exporter trong cấu hình Collector (hoặc biến môi trường OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS)' : st.sites + ' chỗ gọi model, mỗi chỗ import SDK Langfuse, gọi API riêng để tạo generation';
+            const dual = st.way === 'otel' ? 'Có: thêm exporter thứ hai, chạy song song vài tuần, so dữ liệu rồi tắt cái cũ' : 'Khó: phải gọi hai SDK ở mọi chỗ, hoặc chuyển một lần';
+            out.innerHTML = '<div class="tbl"><table><tr><th>Đổi sang ' + (st.target === 'langsmith' ? 'LangSmith' : 'Datadog') + '</th><th>Giá trị</th></tr><tr><td>Số chỗ phải sửa</td><td class="mono ' + (edits > 1 ? 'bad' : 'ok') + '">' + edits + '</td></tr><tr><td>Sửa ở đâu</td><td>' + where + '</td></tr><tr><td>Gửi song song hai nơi khi chuyển</td><td>' + dual + '</td></tr></table></div>';
+            cap.innerHTML = st.way === 'otel' ? 'Code ứng dụng chỉ biết <code>gen_ai.*</code>. LangSmith map <code>gen_ai.operation.name</code> thành run type, <code>gen_ai.usage.*</code> thành usage; Datadog nhận <code>gen_ai.*</code> từ semconv v1.37 (README §2.2, §2.5). Đổi đích là đổi cấu hình.' : '<span class="bad">' + st.sites + ' chỗ sửa, và mỗi chỗ là một cơ hội quên.</span> Không có nghĩa SDK vendor tệ: nó thường tiện hơn lúc đầu (ví dụ <code>propagate_attributes()</code> của Langfuse). Trong hệ thống thật: nếu dùng SDK vendor, bọc nó sau một wrapper của bạn để số chỗ sửa vẫn là 1.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            select('Cách instrument', [['otel', 'OTel gen_ai.* + exporter'], ['sdk', 'SDK Langfuse gọi trực tiếp']], st.way, (v) => { st.way = v; draw(); }).node,
+            select('Công cụ mới', [['langsmith', 'LangSmith'], ['datadog', 'Datadog']], st.target, (v) => { st.target = v; draw(); }).node,
+            slider('Số chỗ gọi model trong code (giả định)', 1, 40, 1, st.sites, (v) => { st.sites = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Chuẩn OTel là lớp đệm giữa code và công cụ. Đổi công cụ thành đổi cấu hình exporter.'
+      },
+      {
+        q: 'Đã gửi trace sang Langfuse, sao lọc theo tenant không ra, và có trace 10 phút sau mới hiện?',
+        a: `<p>Hai lỗi cấu hình hay gặp nhất của Langfuse (README §2.1):</p>
+<ul><li>Thiếu header <code>x-langfuse-ingestion-version=4</code>: dữ liệu OTel có thể mất tới khoảng 10 phút mới hiện.</li>
+<li>Attribute OTel thường không có tiền tố rơi vào <code>metadata.attributes</code>, không lọc trực tiếp được. Muốn lọc phải đặt <code>langfuse.trace.metadata.*</code>. User và session đọc từ <code>user.id</code>/<code>session.id</code> hoặc <code>langfuse.user.id</code>/<code>langfuse.session.id</code>. Trace-level field phải có trên <b>mọi</b> span.</li></ul>
+<p>Trace-level field là field nói về cả trace chứ không về một bước: user, session, tenant. Trong OTel, mỗi span tự mang attribute của nó, span con không tự kế thừa từ span gốc. Vì thế nếu chỉ đặt <code>app.tenant.id</code> ở span <code>POST /chat</code>, các span <code>chat</code> và <code>execute_tool</code> bên dưới không có nó. Cách gắn lên mọi span: OTel Baggage (mang cặp khoá–giá trị theo context, Lab 5) hoặc hàm <code>propagate_attributes()</code> của SDK Langfuse.</p>
+<p>Bật tắt từng attribute trên span của ShopViet để xem Langfuse đặt nó vào đâu (theo quy tắc tiền tố ở README, đơn giản hoá).</p>`,
+        viz(box) {
+          const ATTRS = [['gen_ai.request.model', 'claude-sonnet-5-5'], ['gen_ai.usage.input_tokens', '6400'], ['app.tenant.id', 'shopviet'], ['langfuse.trace.metadata.tenant', 'shopviet'], ['user.id', 'u_9f3a'], ['session.id', 'SV-4821'], ['app.feature', 'tra-don']];
+          const on = new Set([0, 1, 2, 4]);
+          const st = { header: false, allSpans: false };
+          const out = el('div'), cap = el('div', { class: 'cap' }), chips = el('div', { class: 'row' });
+          const place = (k) => k.startsWith('langfuse.trace.metadata.') ? ['Metadata lọc được', 'ok'] : k.startsWith('gen_ai.') ? ['Trường chuẩn (model, usage)', 'ok'] : (k === 'user.id' || k === 'session.id' || k.startsWith('langfuse.user') || k.startsWith('langfuse.session')) ? ['User / session', 'ok'] : ['metadata.attributes (không lọc trực tiếp)', 'bad'];
+          function draw() {
+            chips.replaceChildren(...ATTRS.map(([k], i) => el('button', { class: on.has(i) ? 'on' : '', text: k, onclick: () => { on.has(i) ? on.delete(i) : on.add(i); draw(); } })));
+            const rows = ATTRS.filter((_, i) => on.has(i)).map(([k, v]) => { const [p, c] = place(k); return '<tr><td class="mono">' + k + ' = ' + v + '</td><td class="' + c + '">' + p + '</td></tr>'; }).join('');
+            out.innerHTML = '<div class="tbl"><table><tr><th>Attribute trên span</th><th>Langfuse đặt vào</th></tr>' + rows + '</table></div><div class="stat"><span>Thời gian trace hiện <b class="' + (st.header ? 'ok' : 'bad') + '">' + (st.header ? 'gần như ngay' : 'có thể tới ~10 phút') + '</b></span><span>Lọc theo tenant trên span con <b class="' + (st.allSpans ? 'ok' : 'bad') + '">' + (st.allSpans ? 'được' : 'chỉ span gốc') + '</b></span></div>';
+            const tenantFilterable = on.has(3);
+            const fl = [];
+            if (on.has(2) && !tenantFilterable) fl.push('<span class="bad">app.tenant.id có trên span nhưng không lọc được</span>: nó nằm trong metadata.attributes.');
+            if (!st.header) fl.push('<span class="bad">Thiếu header ingestion version</span>: khi debug "trace không lên", kiểm tra header này trước.');
+            if (!st.allSpans) fl.push('<span class="bad">Trace-level field chỉ có trên span gốc</span>: dùng OTel Baggage hoặc <code>propagate_attributes()</code>.');
+            cap.innerHTML = (fl.length ? fl.join(' ') : '<span class="ok">Cấu hình đủ: lọc được theo tenant, trace hiện ngay.</span>') + ' Trong hệ thống thật: viết một test gửi một span mẫu và kiểm tra trên UI lọc được theo tenant trước khi bật cho production.';
+          }
+          box.append(chips, el('div', { class: 'row' }, [
+            select('Header x-langfuse-ingestion-version=4', [['no', 'Thiếu'], ['yes', 'Có']], 'no', (v) => { st.header = v === 'yes'; draw(); }).node,
+            select('Trace-level field', [['root', 'Chỉ trên span gốc'], ['all', 'Trên mọi span']], 'root', (v) => { st.allSpans = v === 'all'; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Kiểm tra trên UI của công cụ rằng field quan trọng lọc được, trước khi tin rằng "đã gửi".'
+      },
+      {
+        q: 'LangSmith trả 200 cho mọi request, vậy sao trace trên LangSmith thiếu cả nửa?',
+        a: `<p>README §2.2: endpoint trả 200 <b>trước khi xử lý</b>. Nếu span cha không bao giờ được export tới LangSmith (ví dụ span HTTP gốc do exporter khác xử lý, hoặc bị sampler loại), span con bị bỏ âm thầm. Phía bạn không thấy lỗi. Thêm một bẫy URL: endpoint là API URL cộng <code>/otel</code>; exporter tự thêm <code>/v1/traces</code>, tự thêm lần nữa sẽ bị 404.</p>
+<p>Gõ endpoint để xem URL thật mà exporter gọi.</p>`,
+        viz(box) {
+          const inp = el('input', { type: 'text', value: 'https://api.smith.langchain.com/otel/v1/traces', style: 'width:100%;font:13px var(--mono);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' });
+          const st = { parent: 'other' };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const base = (inp.value || '').trim().replace(/\/+$/, '');
+            const url = base + '/v1/traces', dbl = /\/v1\/traces\/v1\/traces$/.test(url), okBase = /\/otel$/.test(base);
+            const spans = [['POST /chat (span gốc HTTP)', st.parent === 'langsmith'], ['invoke_agent support-bot', true], ['chat claude-sonnet-5-5', true], ['execute_tool get_order', true]];
+            const arrive = spans.map(([n, sent], i) => { const kept = !dbl && sent && (i === 0 || spans[0][1]); return '<tr><td class="mono">' + n + '</td><td>' + (sent ? 'gửi tới LangSmith' : 'exporter khác') + '</td><td class="' + (kept ? 'ok' : 'bad') + '">' + (kept ? 'hiện' : dbl ? '404' : 'bị bỏ âm thầm') + '</td></tr>'; }).join('');
+            out.innerHTML = '<p class="mono" style="font-size:12.5px;margin:6px 0">exporter gọi: <b class="' + (dbl ? 'bad' : okBase ? 'ok' : '') + '">' + esc(url) + '</b></p><div class="tbl"><table><tr><th>Span</th><th>Đi đâu</th><th>Trên LangSmith</th></tr>' + arrive + '</table></div>';
+            cap.innerHTML = dbl ? '<span class="bad">/v1/traces bị lặp: 404.</span> Exporter tự thêm đuôi này; biến OTEL_EXPORTER_OTLP_ENDPOINT chỉ nên là API URL cộng /otel.' : st.parent !== 'langsmith' ? '<span class="bad">Span gốc HTTP đi tới backend khác, nên ba span con bị bỏ dù LangSmith trả 200.</span> Không có nghĩa instrumentation hỏng: Jaeger hay Grafana vẫn thấy đủ. Trong hệ thống thật: bảo đảm span gốc cũng đi tới LangSmith, rồi đếm số span nhận được so với số span gửi.' : '<span class="ok">URL đúng, span gốc cũng tới LangSmith: đủ bốn span.</span>';
+          }
+          inp.addEventListener('input', draw);
+          box.append(inp, el('div', { class: 'row', style: 'margin-top:8px' }, [select('Span gốc HTTP gửi tới', [['other', 'Backend khác (Grafana Tempo)'], ['langsmith', 'Cả LangSmith']], st.parent, (v) => { st.parent = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: '200 không có nghĩa là đã lưu. Đếm span phía backend, đừng tin mã trả về.'
+      },
+      {
+        q: 'Helicone chỉ cần đổi base URL là có log. Sao không dùng luôn mà còn viết instrumentation?',
+        a: `<p>README §2.4: proxy nằm <b>trên đường đi</b> của request. Proxy chậm thì ứng dụng chậm; proxy sập thì ứng dụng không gọi được model, trừ khi có đường vòng. Và proxy chỉ thấy lượt gọi model, không thấy retriever, tool, logic nghiệp vụ.</p>
+<p>Một câu hỏi "đơn SV-4821 đâu rồi?" của ShopViet đi qua sáu bước. Chọn cách quan sát để xem bước nào hiện trên trace. Độ trễ proxy là giả định; README khuyên đo trong môi trường của bạn.</p>`,
+        viz(box) {
+          const STEPS = [['invoke_agent', 'agent', 3900], ['embeddings câu hỏi', 'retrieval', 120], ['vector search', 'retrieval', 80], ['chat (chọn tool)', 'llm', 1400], ['execute_tool get_order', 'tool', 600], ['chat (trả lời)', 'llm', 1700]];
+          const st = { mode: 'proxy', add: 40 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const seen = (k) => st.mode === 'code' || (st.mode === 'proxy' ? k === 'llm' : true);
+            const extra = st.mode === 'code' ? 0 : 2 * st.add;
+            const rows = STEPS.map(([n, k, ms], i) => '<tr><td class="mono" style="padding-left:' + (i ? 22 : 8) + 'px">' + n + '</td><td class="mono">' + int(ms + (k === 'llm' && st.mode !== 'code' ? st.add : 0)) + ' ms</td><td class="' + (seen(k) ? 'ok' : 'bad') + '">' + (seen(k) ? 'thấy' : 'không thấy') + '</td></tr>').join('');
+            const n = STEPS.filter(([, k]) => seen(k)).length;
+            out.innerHTML = '<div class="tbl"><table><tr><th>Bước</th><th>Thời gian</th><th>Trên trace</th></tr>' + rows + '</table></div><div class="stat"><span>Bước thấy được <b>' + n + '/6</b></span><span>Độ trễ thêm mỗi câu hỏi <b class="' + (extra > 100 ? 'bad' : '') + '">' + int(extra) + ' ms</b></span></div>';
+            cap.innerHTML = st.mode === 'proxy' ? '<span class="bad">Chỉ thấy 2/6 bước.</span> Khi câu trả lời sai vì retriever lấy nhầm tài liệu, proxy cho thấy hai lượt gọi model trả 200, không cho thấy vì sao. Không có nghĩa gateway vô dụng: README §2.4 nói gateway hợp cho log tập trung nhiều đội, kiểm soát key và quota. Trong hệ thống thật: gateway cho log tập trung, instrumentation trong code cho trace đầy đủ.' : st.mode === 'both' ? 'Đủ 6 bước nhờ instrumentation trong code; gateway thêm ' + int(extra) + ' ms nhưng cho log tập trung và quota theo key. Cần đường vòng gọi thẳng provider khi gateway lỗi.' : 'Đủ 6 bước, không thêm hop mạng. Đổi lại phải viết và bảo trì wrapper (README §2.6).';
+          }
+          box.append(el('div', { class: 'row' }, [
+            select('Cách quan sát', [['proxy', 'Chỉ proxy (Helicone)'], ['code', 'Instrumentation trong code'], ['both', 'Cả hai']], st.mode, (v) => { st.mode = v; draw(); }).node,
+            slider('Độ trễ proxy thêm vào mỗi lượt gọi (giả định)', 0, 300, 10, st.add, (v) => { st.add = v; draw(); }, (v) => v + ' ms').node]), out, cap);
+          draw();
+        },
+        take: 'Proxy thấy lượt gọi model; trace của agent cần instrumentation trong code.'
+      },
+      {
+        q: 'ShopViet đã có Datadog cho API. Bật LLM Observability thì tốn bao nhiêu?',
+        a: `<p>README §2.5: Datadog tính phí theo LLM span, mỗi request tới provider là một span, nên một agent gọi model 15 lần cho một câu hỏi tạo 15 span. Blog của Datadog ghi miễn phí tới 40.000 LLM span/tháng cho khách hàng Datadog; giá phần vượt không có trên các trang đã đọc, cần hỏi Datadog.</p>
+<p>Kéo traffic và số lượt gọi model mỗi câu hỏi. Lab chỉ đếm span, không đoán giá phần vượt.</p>`,
+        viz(box) {
+          const st = { req: 3000, calls: 3 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const m = st.req * 30 * st.calls, over = Math.max(0, m - 40000), day = 40000 / (st.req * st.calls);
+            out.innerHTML = '<div class="stat"><span>LLM span mỗi tháng <b>' + int(m) + '</b></span><span>Vượt mức miễn phí <b class="' + (over > 0 ? 'bad' : 'ok') + '">' + int(over) + '</b></span><span>Hết 40k span sau <b class="' + (day < 30 ? 'bad' : 'ok') + '">' + dec(day, 1) + ' ngày</b></span></div>';
+            cap.innerHTML = (st.calls >= 8 ? '<span class="bad">Đổi từ chatbot một lượt gọi sang agent ' + st.calls + ' lượt gọi nhân số span lên ' + st.calls + ' lần với cùng traffic.</span> ' : '') + 'README §3.8 có đúng failure mode này: "Chi phí Datadog tăng theo agent". Không có nghĩa Datadog đắt hơn công cụ khác: giá phần vượt phải hỏi Datadog. Trong hệ thống thật: ước tính số lượt gọi model mỗi request trước khi bật cho toàn bộ traffic.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Câu hỏi mỗi ngày (giả định)', 100, 50000, 100, st.req, (v) => { st.req = v; draw(); }, int).node,
+            slider('Lượt gọi model mỗi câu hỏi', 1, 20, 1, st.calls, (v) => { st.calls = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Công cụ tính phí theo span thì kiến trúc agent nhân thẳng vào hoá đơn.'
+      },
+      {
+        q: 'Phoenix tự host miễn phí, mạnh về RAG. Sao không phải lựa chọn mặc định cho mọi đội?',
+        a: `<p>Ba lý do trong README §2.3:</p>
+<ul><li><b>License ELv2</b>: xem được mã nguồn và tự host được, nhưng không phải open source theo OSI và hạn chế cung cấp phần mềm như dịch vụ managed cho bên thứ ba. ShopViet dùng nội bộ thì ổn; nếu ShopViet định bán trợ lý kèm giao diện trace cho các gian hàng, phải đọc kỹ license.</li>
+<li><b>OpenInference, không phải <code>gen_ai.*</code></b>: Phoenix dùng quy ước <code>llm.*</code>. Nếu instrument bằng <code>gen_ai.*</code>, kiểm tra Phoenix hiển thị các attribute đó thế nào, hoặc dùng instrumentation OpenInference cho phần gửi về Phoenix.</li>
+<li><b>Miễn phí tiền license, không miễn phí vận hành</b>: tự host là tự chạy, tự nâng cấp, tự backup.</li></ul>
+<p>Arize AX là sản phẩm managed thương mại riêng, không phải Phoenix.</p>`,
+        take: 'Tự host miễn phí vẫn có giá: license cần đọc, quy ước attribute cần khớp, hệ thống cần người vận hành.'
+      },
+      {
+        q: 'Wrapper tự xây giữ trace theo danh sách lý do bình thường. Sao không liệt kê các lý do bất thường cho dễ hiểu?',
+        a: `<p>Vì mỗi provider đặt tên khác nhau cho cùng một chuyện: bị cắt là <code>length</code>, <code>max_output_tokens</code>, <code>max_tokens</code>, <code>MAX_TOKENS</code>; bị chặn có <code>content_filter</code>, <code>refusal</code>, <code>SAFETY</code>, <code>RECITATION</code>, <code>PROHIBITED_CONTENT</code>, <code>SPII</code> (README §2.6). Liệt kê bất thường thì dễ sót, và sót nghĩa là trace bị cắt rơi vào mẫu 5%.</p>
+<p>Code của README:</p>
+<pre class="mono" style="font-size:12px;white-space:pre-wrap;background:var(--panel);padding:8px;border-radius:6px">NORMAL_FINISH = {"stop", "end_turn", "stop_sequence", "tool_use", "tool_calls", "pause_turn", "completed"}
+if {r.lower() for r in rec.finish_reasons} - NORMAL_FINISH:
+    span.set_attribute("app.llm.keep", True)</pre>
+<p>Lab chạy đúng logic đó trên một ngày finish reason giả định của ShopViet. Đổi sang cách liệt kê bất thường, hoặc bỏ <code>.lower()</code>, để xem cái gì lọt.</p>`,
+        viz(box) {
+          const ABN = new Set(['length', 'max_tokens', 'refusal', 'content_filter']);
+          const st = { way: 'normal' };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function keep(r) { if (st.way === 'normal') return !NORMAL_FINISH.has(r.toLowerCase()); if (st.way === 'nolower') return !NORMAL_FINISH.has(r); return ABN.has(r); }
+          function draw() {
+            let missed = 0, missedN = 0, over = 0, overN = 0, kept = 0;
+            const rows = FINISH_SAMPLES.map(([p, r, n]) => {
+              const abn = !NORMAL_FINISH.has(r.toLowerCase()), k = keep(r);
+              if (k) kept += n;
+              if (abn && !k) { missed++; missedN += n; }
+              if (!abn && k) { over++; overN += n; }
+              const cls = abn && !k ? 'bad' : !abn && k ? 'bad' : k ? 'ok' : '';
+              return '<tr><td>' + p + '</td><td class="mono">' + r + '</td><td class="mono">' + int(n) + '</td><td class="' + cls + '">' + (k ? 'giữ 100%' : 'vào mẫu 5%') + (abn && !k ? ' (lọt)' : !abn && k ? ' (giữ thừa)' : '') + '</td></tr>';
+            }).join('');
+            const total = FINISH_SAMPLES.reduce((s, x) => s + x[2], 0);
+            out.innerHTML = '<div class="tbl"><table><tr><th>Provider</th><th>finish reason</th><th>Số span</th><th>Quyết định</th></tr>' + rows + '</table></div><div class="stat"><span>Giữ 100% <b>' + int(kept) + ' / ' + int(total) + '</b></span><span>Bất thường bị lọt <b class="' + (missedN ? 'bad' : 'ok') + '">' + int(missedN) + ' span (' + missed + ' loại)</b></span><span>Bình thường bị giữ thừa <b class="' + (overN ? 'bad' : 'ok') + '">' + int(overN) + ' span</b></span></div>';
+            cap.innerHTML = st.way === 'abn' ? '<span class="bad">Danh sách bất thường bỏ sót ' + missed + ' loại, ' + int(missedN) + ' span</span>: max_output_tokens của Responses, MAX_TOKENS viết hoa của Gemini, SAFETY, SPII... Với mẫu 5%, khoảng 95% trace đó biến mất. Không có nghĩa danh sách sai lúc viết: provider thêm lý do mới sau đó. Trong hệ thống thật: liệt kê lý do bình thường, mọi lý do khác (kể cả lý do chưa biết) đều giữ.' : st.way === 'nolower' ? '<span class="bad">Bỏ .lower(): STOP của Gemini không khớp "stop", nên ' + int(overN) + ' span Gemini bình thường bị giữ 100%.</span> Không lọt bất thường nào, nhưng chi phí lưu trace Gemini tăng khoảng 20 lần so với mẫu 5%. Trong hệ thống thật: chuẩn hoá chữ hoa thường trước khi so, và có test cho cả ba provider (README ghi wrapper đã được kiểm tra như vậy).' : '<span class="ok">Không lọt, không giữ thừa.</span> pause_turn của Claude và tool_calls là bình thường; mọi thứ khác giữ 100%.';
+          }
+          box.append(el('div', { class: 'row' }, [select('Cách quyết định giữ trace', [['normal', 'README: ngoài danh sách bình thường thì giữ'], ['abn', 'Liệt kê bất thường: length, max_tokens, refusal, content_filter'], ['nolower', 'Danh sách bình thường, quên .lower()']], st.way, (v) => { st.way = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Danh sách đóng là danh sách những gì bạn hiểu rõ (lý do bình thường). Mọi thứ lạ đều giữ.'
+      },
+      {
+        q: 'Dashboard chi phí báo 0 USD cho một nhóm request. Tiết kiệm được à?',
+        a: `<p>Gần như chắc là thiếu dữ liệu. README §2.6: <code>find_price</code> khớp tiền tố dài nhất trên <code>gen_ai.response.model</code> (model thực trả về); không tìm được giá thì đặt <code>app.llm.cost.unpriced=true</code>, không ghi 0. Chi phí <code>cost_usd</code> = input không cache × giá input + cache read × giá đọc cache + cache write × giá ghi + output × giá output, reasoning đã nằm trong output.</p>
+<p>Lab chạy đúng hai hàm đó. Bảng giá lấy từ Cost Optimization §2.1 (06/11/2026); giá ghi cache Claude = 1,25 × input (TTL 5 phút, Cost Optimization "Công thức chi phí một request"); gpt-6.1-terra ghi cache 1,25 × input (TTL 30 phút, README §3.3). Tên snapshot có hậu tố ngày là ví dụ giả định.</p>`,
+        viz(box) {
+          const PRICES = { 'claude-sonnet-5-5': { input: 2, cache_read: 0.10, cache_write: 2.5, output: 10 }, 'claude-haiku-5-5': { input: 0.10, cache_read: 0.01, cache_write: 0.125, output: 0.50 }, 'gpt-6.1-terra': { input: 1, cache_read: 0.05, cache_write: 1.25, output: 5 } };
+          const findPrice = (m) => { const ks = Object.keys(PRICES).filter((k) => m === k || m.startsWith(k + '-')); return ks.length ? PRICES[ks.sort((a, b) => b.length - a.length)[0]] : null; };
+          const st = { model: 'claude-sonnet-5-5-2026-10-01', mode: 'flag' };
+          const n = { input_tokens: 6400, 'cache_read.input_tokens': 4000, 'cache_write.input_tokens': 0, output_tokens: 350 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const p = findPrice(st.model);
+            let c = null;
+            if (p) { const unc = n.input_tokens - n['cache_read.input_tokens'] - n['cache_write.input_tokens']; c = (unc * p.input + n['cache_read.input_tokens'] * p.cache_read + n['cache_write.input_tokens'] * p.cache_write + n.output_tokens * p.output) / 1e6; }
+            const shown = p ? usd(c) : st.mode === 'flag' ? 'app.llm.cost.unpriced = true' : '0 USD';
+            out.innerHTML = '<p class="mono" style="font-size:12.5px;margin:4px 0">usage đã chuẩn hoá: input 6.400 (gồm 4.000 cache read), output 350</p><div class="stat"><span>Giá khớp <b>' + (p ? 'có' : 'không') + '</b></span><span>app.llm.cost_usd <b class="' + (p ? 'ok' : st.mode === 'flag' ? '' : 'bad') + '">' + shown + '</b></span>' + (p ? '<span>Mỗi 3.000 câu hỏi/ngày × 30 ngày <b>' + usd(c * 90000) + '</b></span>' : '') + '</div>';
+            cap.innerHTML = !p && st.mode === 'zero' ? '<span class="bad">Model ' + esc(st.model) + ' không có trong bảng giá, ghi 0 USD: dashboard trông như tiết kiệm.</span> Thường xảy ra khi gateway fallback sang model khác, hoặc provider trả về tên mới. Không có nghĩa request miễn phí: hoá đơn vẫn tính. Trong hệ thống thật: đánh dấu unpriced, alert khi tỉ lệ unpriced tăng, cập nhật bảng giá có ngày hiệu lực.' : !p ? 'Không có giá, span mang cờ unpriced: dashboard có thể đếm "x% chi phí chưa biết" thay vì báo 0. README §2.6: "Chi phí bằng 0 trên dashboard trông như tiết kiệm, trong khi thực ra là thiếu dữ liệu."' : 'Snapshot ' + esc(st.model) + ' khớp tiền tố "' + Object.keys(PRICES).find((k) => st.model === k || st.model.startsWith(k + '-')) + '". Giá tra theo model thực trả về, không theo model đã yêu cầu.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            select('gen_ai.response.model', [['claude-sonnet-5-5', 'claude-sonnet-5-5'], ['claude-sonnet-5-5-2026-10-01', 'claude-sonnet-5-5-2026-10-01 (giả định)'], ['gpt-6.1-terra-2026-09-15', 'gpt-6.1-terra-2026-09-15 (giả định, fallback)'], ['claude-opus-5-5', 'claude-opus-5-5 (chưa có trong bảng)']], st.model, (v) => { st.model = v; draw(); }).node,
+            select('Khi không có giá', [['flag', 'Đánh dấu unpriced (README)'], ['zero', 'Ghi 0']], st.mode, (v) => { st.mode = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Thiếu dữ liệu phải trông khác với số 0. Cờ unpriced làm khoảng trống hiện ra trên dashboard.'
+      }
+    ],
+    poc: {
+      goal: "Chọn công cụ thật ra là chọn nơi nhận OTLP. POC chạy wrapper README §2.6 thật trên từng giá trị finish reason của bốn API (số span mỗi giá trị là <b>giả định</b> giống lab), gửi span bằng <code>OTLPSpanExporter</code> thật tới một server ở 127.0.0.1 ghi lại đường dẫn và header theo cấu hình Langfuse/LangSmith, rồi tính số ngày trước khi hết gói miễn phí với traffic giả định. <b>Thật</b>: code wrapper README, exporter tự nối <code>/v1/traces</code>, header gửi đi. <b>Dựng sẵn</b>: server ở 127.0.0.1 là server giả, không phải Langfuse hay LangSmith; nó được viết để trả 200 cho hai đường dẫn đúng và 404 cho mọi đường dẫn khác. Chuyện LangSmith bỏ âm thầm span con khi thiếu span cha (câu hỏi 4) và độ trễ 10 phút của Langfuse không được kiểm ở POC, chỉ lấy từ README.",
+      file: "docs/llm-observability/pocs/04_tools.py",
+      run: "uv run docs/llm-observability/pocs/04_tools.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy khoảng 2 giây, miễn phí. Tuỳ chọn: <code>ANTHROPIC_API_KEY</code> trong <code>pocs/.env</code> để lấy <code>stop_reason</code> thật từ <code>claude-haiku-5-5</code> (2 lời gọi, dưới 0,0001 USD); lần chạy dưới đây chưa có key nên phần 1b bỏ qua.",
+      output: "Phần chạy thật: wrapper README §2.6 (chép nguyên văn) trên OpenTelemetry SDK 1.45.2; OTLPSpanExporter thật\ngửi protobuf qua HTTP tới một server ghi lại đường dẫn và header. Số span mỗi finish reason và traffic là GIẢ ĐỊNH.\n\n== 1. Sampler finish reason: wrapper README §2.6 chạy thật trên từng giá trị enum của provider ==\nProvider                 finish reason       Số span (giả định)  README    Liệt kê bất thường  Quên .lower()\n-----------------------  ------------------  ------------------  --------  ------------------  -------------\nOpenAI Chat Completions  stop                900                 mẫu 5%    mẫu                 mẫu\nOpenAI Chat Completions  tool_calls          300                 mẫu 5%    mẫu                 mẫu\nOpenAI Chat Completions  length              12                  giữ 100%  giữ                 giữ\nOpenAI Chat Completions  content_filter      3                   giữ 100%  giữ                 giữ\nOpenAI Responses         completed           700                 mẫu 5%    mẫu                 mẫu\nOpenAI Responses         max_output_tokens   9                   giữ 100%  LỌT                 giữ\nClaude                   end_turn            1500                mẫu 5%    mẫu                 mẫu\nClaude                   tool_use            600                 mẫu 5%    mẫu                 mẫu\nClaude                   pause_turn          20                  mẫu 5%    mẫu                 mẫu\nClaude                   max_tokens          18                  giữ 100%  giữ                 giữ\nClaude                   refusal             6                   giữ 100%  giữ                 giữ\nGemini                   STOP                1100                mẫu 5%    mẫu                 giữ\nGemini                   MAX_TOKENS          10                  giữ 100%  LỌT                 giữ\nGemini                   SAFETY              4                   giữ 100%  LỌT                 giữ\nGemini                   RECITATION          2                   giữ 100%  LỌT                 giữ\nGemini                   PROHIBITED_CONTENT  1                   giữ 100%  LỌT                 giữ\nGemini                   SPII                1                   giữ 100%  LỌT                 giữ\nCách quyết định     Span bất thường bị lọt vào mẫu 5%  Span bình thường bị giữ thừa\n------------------  ---------------------------------  ----------------------------\nREADME              0                                  0\nliệt kê bất thường  27                                 0\nquên .lower()       0                                  1100\n\n== 1b. Tuỳ chọn: finish reason thật từ Claude ==\nBỏ qua: chưa có ANTHROPIC_API_KEY trong docs/llm-observability/pocs/.env (chép .env.example).\n\n== 2. OTLP/HTTP exporter thật gửi tới server giả ở 127.0.0.1 (đường dẫn Langfuse / LangSmith) ==\nCấu hình                               Đường dẫn exporter gọi      HTTP  Kết quả export  Header nhận được\n-------------------------------------  --------------------------  ----  --------------  --------------------------------------------------------------------------------------------\nLangfuse, header như README            /api/public/otel/v1/traces  200   SUCCESS         {'authorization': 'Basic cGstbGYtZGVtbzpzay1sZi1kZW1v', 'x-langfuse-ingestion-version': '4'}\nLangSmith, endpoint .../otel           /otel/v1/traces             200   SUCCESS         {'x-api-key': 'lsv2-demo', 'langsmith-project': 'shopviet'}\nLangSmith, tự thêm /v1/traces          /otel/v1/traces/v1/traces   404   FAILURE         {'x-api-key': 'lsv2-demo'}\nBiến ..._TRACES_ENDPOINT đủ đường dẫn  /otel/v1/traces             200   SUCCESS         {'x-api-key': 'lsv2-demo'}\n\n== 3. Gói miễn phí (README, 06/11/2026) với 3,000 câu hỏi/ngày GIẢ ĐỊNH, 3 lượt gọi model + 3 span khác ==\nGói                  Đơn vị                      Dùng mỗi tháng  Miễn phí  Hết sau\n-------------------  --------------------------  --------------  --------  --------\nLangfuse Hobby       unit = trace + observation  630,000         50,000    2.4 ngày\nLangSmith Developer  base trace                  90,000          5,000     1.7 ngày\nHelicone Hobby       request tới provider        270,000         10,000    1.1 ngày\nDatadog LLM Obs      LLM span                    270,000         40,000    4.4 ngày\n\nRút ra: wrapper README giữ mọi lý do ngoài danh sách bình thường, không lọt span nào; liệt kê bất thường làm lọt\n27 span (max_output_tokens, MAX_TOKENS, SAFETY, SPII…); quên .lower() giữ thừa 1100 span STOP của Gemini. Exporter tự nối /v1/traces vào OTEL_EXPORTER_OTLP_ENDPOINT:\ntự thêm lần nữa thì 404, còn ..._TRACES_ENDPOINT được dùng nguyên văn. Ở 3.000 câu hỏi/ngày, mọi gói miễn phí\nhết trong 1.1–4.4 ngày.",
+      measured: true,
+      read: ["Bảng sampler: wrapper README (danh sách lý do bình thường + <code>.lower()</code>) không để lọt span nào. Liệt kê bất thường làm lọt 27 span (<code>max_output_tokens</code>, <code>MAX_TOKENS</code>, <code>SAFETY</code>, <code>SPII</code>…); quên <code>.lower()</code> giữ thừa 1.100 span <code>STOP</code> của Gemini.", "Bảng OTLP: exporter tự nối <code>/v1/traces</code> vào <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>; tự thêm lần nữa thành <code>/otel/v1/traces/v1/traces</code>. Phần nối đường dẫn là hành vi thật của exporter; mã 404 là do server giả trả cho đường dẫn lạ, khớp cảnh báo của README về LangSmith. <code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT</code> thì được dùng nguyên văn. Header <code>Authorization=Basic …</code> có dấu cách như README vẫn tới nguyên vẹn, cùng <code>x-langfuse-ingestion-version: 4</code>.", "Gói miễn phí: ở 3.000 câu hỏi/ngày (giả định), mỗi câu 3 lượt gọi model + 3 span khác, mọi gói hết trong 1,1–4,4 ngày. Langfuse đếm cả observation nên 630.000 unit/tháng."]
+    },
+    mount(stage) {
+      const st = { res: 'strict', ops: 'can', stack: 'grafana', eval: true, agent: true, ent: false, req: 3000, calls: 3, other: 3 };
+      const cards = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:10px 0' });
+      const volBox = el('div'), flags = el('div'), cap = el('div', { class: 'cap', style: 'margin-top:8px' });
+      function render() {
+        const res = judge(st), order = res.filter((x) => !x.out).sort((a, b) => b.score - a.score), top = order.slice(0, 3).map((x) => x.t.id);
+        cards.replaceChildren(...res.map((x) => {
+          const lvl = x.out ? 'bad' : x.warn ? 'warn' : 'ok', rank = top.indexOf(x.t.id);
+          return el('div', { style: 'position:relative;border:1px solid var(--line);border-left:4px solid var(--' + lvl + ');border-radius:8px;padding:8px 10px;background:var(--bg);font-size:12.5px;' + (x.out ? 'opacity:.55' : '') + (rank >= 0 ? ';box-shadow:0 0 0 2px var(--accent-soft)' : '') }, [
+            rank >= 0 ? el('span', { class: 'mono', style: 'position:absolute;top:6px;right:8px;color:var(--accent);font-size:12px', text: '#' + (rank + 1) }) : null,
+            el('b', { text: x.t.name, style: 'font-size:13.5px;display:block;padding-right:24px' }),
+            el('div', { style: 'color:var(--mute)', text: x.t.model }),
+            el('div', { html: '<b>Self-host:</b> ' + x.t.host }),
+            el('div', { html: '<b>Gói:</b> ' + x.t.free }),
+            el('div', { style: 'color:var(--mute)', text: x.t.note }),
+            el('ul', { style: 'margin:6px 0 0;padding-left:16px' }, x.rs.map(([l, w]) => el('li', { class: l === 'plus' ? 'ok' : l === 'out' ? 'bad' : '', style: l === 'warn' ? 'color:var(--warn)' : '', text: (l === 'plus' ? '+ ' : l === 'out' ? '× ' : '! ') + w })))
+          ]);
+        }));
+        const vol = volume(st);
+        volBox.innerHTML = '<div class="tbl"><table><tr><th>Gói miễn phí</th><th>Đơn vị tính</th><th>Mỗi tháng</th><th>Miễn phí</th><th>Hết sau</th></tr>' + vol.map((v) => '<tr><td>' + v.name + '</td><td>' + v.unit + '</td><td class="mono">' + int(v.used) + '</td><td class="mono">' + int(v.free) + '</td><td class="mono ' + (v.days < 30 ? 'bad' : 'ok') + '">' + (v.days >= 30 ? 'đủ cả tháng' : dec(v.days, 1) + ' ngày') + '</td></tr>').join('') + '</table></div><p class="hint">Langfuse: 1 trace + ' + (st.calls + st.other) + ' observation = ' + (1 + st.calls + st.other) + ' unit mỗi câu hỏi (chưa tính score). Core 29 USD/tháng gồm 100k units; README không ghi giá phần vượt. Braintrust tính theo GB, không quy đổi được từ số request.</p>';
+        const fl = [];
+        if (st.res === 'strict' && st.stack === 'datadog') fl.push(['warn', 'Stack sẵn có là Datadog nhưng nội dung không được rời hạ tầng: Datadog chỉ nhận được metadata. Đọc prompt phải ở một công cụ tự host. Đây là mô hình "hai nơi" của README §2.5.']);
+        if (st.res === 'strict' && st.ops === 'cannot') fl.push(['bad', 'Nội dung không được rời hạ tầng, nhưng đội không vận hành thêm hệ thống: mọi lựa chọn còn lại đều cần tự host. Hai ràng buộc mâu thuẫn; phải nới một cái (ví dụ chỉ gửi metadata lên SaaS, tắt capture nội dung).']);
+        if (st.res === 'strict' && !st.ent) fl.push(['warn', 'LangSmith và Braintrust bị loại vì self-host chỉ có ở Enterprise. Bật "Có ngân sách Enterprise" để xem chúng quay lại.']);
+        if (st.agent && st.eval && order[0] && order[0].t.id === 'helicone') fl.push(['bad', 'Helicone đứng đầu dù cần trace agent và eval: kiểm tra lại các ràng buộc.']);
+        vol.forEach((v) => { if (v.days < 30 && (v.id === 'langfuse' || v.id === 'datadog')) fl.push(['warn', (st.res === 'strict' && v.id === 'langfuse' ? '(Chỉ khi dùng Langfuse cloud; tự host không tính unit.) ' : '') + v.name + ' hết miễn phí sau ' + dec(v.days, 1) + ' ngày: ' + int(v.used) + ' ' + v.unit + ' mỗi tháng.' + (v.id === 'langfuse' ? ' Mỗi câu hỏi tốn ' + (1 + st.calls + st.other) + ' unit, nên agent nhiều bước đốt gói nhanh hơn số request gợi ý.' : ' Mỗi lượt gọi model là một span tính phí.')]); });
+        flags.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [noFlag()]));
+        const bestNames = order.slice(0, 3).map((x) => x.t.name).join(', ');
+        let c;
+        if (st.res === 'strict' && st.ops === 'cannot') c = { what: 'Mọi công cụ còn lại đều cần tự host, mà đội không muốn vận hành thêm.', why: 'Self-host là cách duy nhất để nội dung không rời hạ tầng; LangSmith và Braintrust chỉ tự host ở Enterprise, Datadog không tự host.', not: 'Không có nghĩa không làm observability được. Metadata (token, latency, finish reason) không chứa dữ liệu khách.', real: 'Tách hai lớp (README §3.1): metadata gửi lên SaaS bất kỳ, nội dung tắt hoặc để ở bucket nội bộ qua <code>*_ref</code>.' };
+        else if (st.res === 'strict' && st.stack === 'datadog') c = { what: 'Stack sẵn có không nhận được phần quan trọng nhất cho debug: nội dung prompt.', why: 'Datadog không có self-host; ràng buộc dữ liệu chỉ cho phép metadata đi ra.', not: 'Không có nghĩa bỏ Datadog. Metric và alert LLM ở đó vẫn có lợi: chung trace với HTTP, DB, cùng người trực.', real: 'Collector fan-out: Datadog nhận span đã bỏ nội dung, ' + (bestNames || 'công cụ tự host') + ' nhận bản đầy đủ trong hạ tầng ShopViet.' };
+        else if (st.res === 'free' && vol.some((v) => v.days < 30 && v.id === 'langfuse')) c = { what: 'Gói miễn phí Langfuse hết trước cuối tháng.', why: 'Langfuse tính mỗi trace và mỗi observation là một unit; ' + (1 + st.calls + st.other) + ' unit mỗi câu hỏi × ' + int(st.req * 30) + ' câu hỏi.', not: 'Không có nghĩa Langfuse đắt: tự host không tính unit.', real: 'Ước lượng unit từ cấu trúc trace thật (số span mỗi request) trước khi chọn gói; lấy mẫu trace bình thường để giảm unit.' };
+        else c = { what: 'Ba lựa chọn hợp nhất: ' + bestNames + '.', why: 'Xếp theo các ràng buộc đã chọn: dữ liệu ' + (st.res === 'strict' ? 'không rời hạ tầng' : 'được lên SaaS') + ', stack ' + st.stack + ', ' + (st.eval ? 'cần eval' : 'không cần eval') + ', ' + (st.agent ? 'cần trace agent' : 'chỉ cần log lượt gọi') + '.', not: 'Không phải xếp hạng của README; README chỉ nói không có công cụ tốt nhất cho mọi đội.', real: 'Instrument OTel <code>gen_ai.*</code> trước, thử hai công cụ song song một hai tuần trên traffic thật, rồi chọn.' };
+        cap.innerHTML = capHtml(c);
+      }
+      const set = (k, f) => (v) => { st[k] = f ? f(v) : v; render(); };
+      stage.append(
+        el('div', { class: 'row' }, [
+          select('1. Nội dung prompt', [['strict', 'Không được rời hạ tầng'], ['free', 'Được gửi lên SaaS']], st.res, set('res')).node,
+          select('Vận hành thêm hệ thống', [['can', 'Đội làm được'], ['cannot', 'Không muốn']], st.ops, set('ops')).node]),
+        el('div', { class: 'row' }, [
+          select('2. Stack sẵn có', [['none', 'Chưa có'], ['datadog', 'Datadog'], ['grafana', 'Grafana'], ['langchain', 'LangChain/LangGraph']], st.stack, set('stack')).node,
+          select('3. Cần dataset, eval', [['yes', 'Có'], ['no', 'Không']], 'yes', set('eval', (v) => v === 'yes')).node,
+          select('Cần trace agent đầy đủ', [['yes', 'Có'], ['no', 'Chỉ log lượt gọi']], 'yes', set('agent', (v) => v === 'yes')).node,
+          select('Ngân sách Enterprise', [['no', 'Không'], ['yes', 'Có']], 'no', set('ent', (v) => v === 'yes')).node]),
+        cards,
+        el('h4', { text: 'Khối lượng mỗi tháng so với gói miễn phí', style: 'margin:14px 0 4px' }),
+        el('div', { class: 'row' }, [
+          slider('Câu hỏi mỗi ngày (giả định)', 100, 50000, 100, st.req, set('req'), int).node,
+          slider('Lượt gọi model mỗi câu hỏi', 1, 15, 1, st.calls, set('calls')).node,
+          slider('Span khác (retrieval, tool)', 0, 20, 1, st.other, set('other')).node]),
+        volBox,
+        el('h4', { text: 'Phát hiện từ dữ liệu', style: 'margin:14px 0 4px' }), flags, cap,
+        el('p', { class: 'hint', text: 'Thông tin công cụ và gói: README Phần 2 và bảng "Chọn công cụ", đọc ngày 06/11/2026, có thể đã đổi. Quy tắc cộng/trừ điểm là của lab, chỉ để sắp thứ tự thẻ. Traffic, số lượt gọi và số span mỗi câu hỏi là giả định.' })
+      );
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

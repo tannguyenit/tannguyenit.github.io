@@ -1,0 +1,638 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-why-not-logs.html">← Lab trước</a><a href="03-quality-otel.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const vn = (x, d = 0) => Number(x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const pc = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const TRUNC = ['length', 'max_output_tokens', 'max_tokens', 'MAX_TOKENS'];
+  const MAX_OUT = 600;
+  const N = 600;
+
+  function q(arr, p) { if (!arr.length) return 0; const a = arr.slice().sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(p * a.length))]; }
+  const mean = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
+
+  function genLog(seed, slowShare, brokenShare) {
+    const rnd = seeded(seed);
+    const rows = [];
+    for (let i = 0; i < N; i++) {
+      const long = rnd() < 0.3, broken = long && rnd() < brokenShare, slow = rnd() < slowShare;
+      const input = long ? 30000 : 2600;
+      const read = long ? (broken ? 2000 : 27000) : 2000;
+      const uncached = input - read;
+      let ttft = 700 * Math.exp(0.35 * randn(rnd)) + uncached * 0.05;
+      if (slow) ttft *= 5;
+      const rate = 120 * Math.exp(0.2 * randn(rnd));
+      let out = Math.round(180 * Math.exp(0.5 * randn(rnd)));
+      let finish = 'end_turn';
+      if (out > MAX_OUT) { out = MAX_OUT; finish = 'max_tokens'; }
+      const u = rnd();
+      if (u < 0.006) { finish = 'refusal'; out = 20; }
+      const missing = u > 0.99;
+      const gen = out / rate * 1000;
+      rows.push({ id: 'req-' + String(i + 1).padStart(3, '0'), long, broken, slow, input, read, uncached, ttft, dur: ttft + gen, out, finish, missing, rate });
+    }
+    return rows;
+  }
+
+  function compute(rows, raw) {
+    const ok = rows.filter((r) => !r.missing);
+    const ttft = rows.map((r) => r.ttft), dur = rows.map((r) => r.dur);
+    const tpsRight = ok.map((r) => r.out / ((r.dur - r.ttft) / 1000));
+    const tpsWrong = ok.map((r) => r.out / (r.dur / 1000));
+    const inRec = (r) => raw ? r.uncached : r.input;
+    const sumRead = ok.reduce((s, r) => s + r.read, 0), sumIn = ok.reduce((s, r) => s + inRec(r), 0);
+    return {
+      ttft: { p50: q(ttft, 0.5), p95: q(ttft, 0.95), mean: mean(ttft) },
+      dur: { p50: q(dur, 0.5), p95: q(dur, 0.95), mean: mean(dur) },
+      tpsR: { p50: q(tpsRight, 0.5), p95: q(tpsRight, 0.05) },
+      tpsW: { p50: q(tpsWrong, 0.5), p95: q(tpsWrong, 0.05) },
+      hitTok: sumRead / sumIn, hitReq: ok.filter((r) => r.read > 0).length / ok.length,
+      refusal: rows.filter((r) => r.finish === 'refusal').length / rows.length,
+      trunc: rows.filter((r) => TRUNC.includes(r.finish)).length / rows.length,
+      missing: rows.filter((r) => r.missing).length / rows.length,
+      inP95: q(ok.map(inRec), 0.95), inSum: sumIn, outSum: ok.reduce((s, r) => s + r.out, 0)
+    };
+  }
+
+  function histo(rows, M) {
+    const W = 680, H = 170, left = 40, right = 12, top = 18, bot = 26;
+    const vals = rows.map((r) => r.ttft);
+    const maxV = Math.max(6000, q(vals, 0.995));
+    const B = 40, bw = maxV / B, bins = new Array(B).fill(0), binsS = new Array(B).fill(0);
+    rows.forEach((r) => { const i = Math.min(B - 1, Math.floor(r.ttft / bw)); bins[i]++; if (r.slow) binsS[i]++; });
+    const maxC = Math.max(...bins, 1);
+    const x = (v) => left + (Math.min(v, maxV) / maxV) * (W - left - right);
+    const y = (c) => top + (1 - c / maxC) * (H - top - bot);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'canvas', role: 'img', 'aria-label': 'Histogram TTFT với p50, trung bình và p95' });
+    for (let t = 0; t <= maxV; t += 1000) svg.append(el('line', { x1: x(t), x2: x(t), y1: top, y2: H - bot, stroke: 'var(--line)' }), el('text', { x: x(t), y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--mute)', text: (t / 1000) + ' s' }));
+    bins.forEach((c, i) => {
+      if (!c) return;
+      svg.append(el('rect', { x: x(i * bw) + 1, y: y(c), width: Math.max(1, x(bw) - x(0) - 2), height: H - bot - y(c), fill: 'var(--g1)', opacity: 0.8 }));
+      if (binsS[i]) svg.append(el('rect', { x: x(i * bw) + 1, y: y(binsS[i]), width: Math.max(1, x(bw) - x(0) - 2), height: H - bot - y(binsS[i]), fill: 'var(--warn)' }));
+    });
+    [['p50', M.ttft.p50, 'var(--ok)'], ['TB', M.ttft.mean, 'var(--ink)'], ['p95', M.ttft.p95, 'var(--bad)']].forEach(([n, v, c], i) => {
+      svg.append(el('line', { x1: x(v), x2: x(v), y1: top - 4, y2: H - bot, stroke: c, 'stroke-width': 2, 'stroke-dasharray': n === 'TB' ? '4 3' : '' }),
+        el('text', { x: x(v) + 3, y: top + 6 + i * 13, 'font-size': 11, fill: c, text: n + ' ' + vn(v) + ' ms' }));
+    });
+    return svg;
+  }
+
+  return {
+    id: 'llm-metrics', nav: '2. Metric LLM', ref: '§1.3',
+    title: 'Trung bình TTFT chỉ tăng chút ít, cache hit "100% request". Vì sao cả hai con số đều đang nói dối?',
+    hook: 'Kéo tỉ lệ request chậm và tỉ lệ phiên dài bị vỡ cache, đổi cách ghi input_tokens. Bảng tính lại TTFT, tokens/giây, cache hit rate, tỉ lệ refusal theo cách đúng và cách sai hay gặp, rồi đánh dấu chỗ hai cách lệch nhau.',
+    terms: [
+      ['Metric', 'Con số tổng hợp theo thời gian trên toàn traffic. Rẻ, lưu lâu, dùng để biết "có vấn đề không"; trace dùng để biết "vấn đề là gì".'],
+      ['Histogram', 'Loại metric đếm giá trị rơi vào từng khoảng (bucket), ví dụ bao nhiêu request có TTFT 0,64–1,28 s. Từ đó tính được p50, p95.'],
+      ['Counter', 'Loại metric chỉ cộng dồn, ví dụ tổng output token từ đầu ngày. Dùng để tính tổng và chi phí.'],
+      ['p50, p95', 'p50 (trung vị): một nửa request nhanh hơn. p95: 95% request nhanh hơn. 600 request thì p95 là request thứ 570 khi xếp từ nhanh tới chậm.'],
+      ['TTFT', 'Time to first token, ở OTel là <code>time_to_first_chunk</code>: từ lúc gửi request tới chunk đầu tiên khi stream. Là thời gian khách nhìn màn hình trống.'],
+      ['Tokens/giây', 'Tốc độ sinh chữ: <code>output_tokens / (duration − TTFT)</code>. 240 token sinh trong 2 giây sau chunk đầu là 120 token/giây.'],
+      ['Prompt cache', 'Provider nhớ phần đầu prompt giống hệt lần trước (system prompt, lịch sử hội thoại) trong vài phút; lượt sau đọc lại phần đó với giá rẻ hơn nhiều. Phần đọc lại gọi là <code>cache_read</code>. Sửa một chữ ở giữa lịch sử là mọi token sau chỗ đó phải tính giá đầy đủ (cache "vỡ").'],
+      ['Cache hit rate', 'Phần input token được đọc từ prompt cache, tính trên token: Σ cache_read / Σ input. Đọc 27.000 trên 30.000 token là 90%.'],
+      ['Refusal rate', 'Phần lượt gọi model kết thúc bằng từ chối. Với Claude là <code>stop_reason: "refusal"</code>, response vẫn HTTP 200.'],
+      ['Tỉ lệ bị cắt', 'Phần lượt gọi dừng vì chạm giới hạn output. Tên khác nhau theo provider: <code>length</code>, <code>max_output_tokens</code>, <code>max_tokens</code>, <code>MAX_TOKENS</code>.'],
+      ['Chuẩn hoá usage', 'Đưa token của mọi provider về một quy ước: input gồm cả phần cache, output gồm cả reasoning. Claude báo <code>input_tokens</code> chỉ là phần <b>không</b> đọc từ cache, nên phải cộng thêm. Ví dụ Claude trả <code>input_tokens: 28000, cache_read_input_tokens: 2000</code>: tổng input là 30.000, không phải 28.000.']
+    ],
+    problem: {
+      example: 'Trợ lý chat <b>ShopViet</b> gọi <code>claude-sonnet-5-5</code> với stream. Có hai loại phiên: hỏi nhanh (khoảng 2.600 input token, 2.000 là system prompt đã cache) và phiên dài nhiều lượt (khoảng 30.000 input token, lẽ ra 27.000 đọc từ cache).',
+      scenario: 'Đội vận hành mở dashboard một giờ gần nhất: TTFT trung bình 1,3 giây, cache hit 100% request, tokens/giây giảm. Khách thì phàn nàn bot "đơ" lâu trước khi trả lời, và hoá đơn tháng này cao hơn dự kiến.',
+      ask: 'Mỗi metric LLM phải tính thế nào để không nói dối: dùng percentile hay trung bình, tokens/giây có trừ TTFT không, cache hit tính theo request hay theo token, input_tokens của Claude có cộng phần cache không?',
+      solves: 'Lab sinh log 600 lượt gọi model theo seed, tính từng metric trong trình duyệt theo công thức của README §1.3, đồng thời tính theo cách sai hay gặp, và đánh dấu khi hai cách cho kết luận khác nhau.',
+      read: [
+        'Histogram: phân phối TTFT của 600 lượt gọi. Phần cam là nhóm request chậm. Ba vạch: p50 (xanh), trung bình (nét đứt), p95 (đỏ).',
+        'Bảng metric: cột "Cách đúng" theo README, cột "Cách sai hay gặp" là lỗi phổ biến. Dòng tô đỏ là nơi hai cách dẫn tới kết luận khác nhau.',
+        'Bảng log bên dưới: 8 lượt gọi đầu, với tokens/giây tính cả hai cách trên từng dòng.',
+        'Khung chú thích: điều bất thường, vì sao, không có nghĩa là gì, và cách làm trong hệ thống thật.',
+        'Seed: đổi bộ số ngẫu nhiên sinh log. Con số đổi chút ít, kết luận thì không nên đổi; nếu đổi seed mà kết luận đổi, đó là nhiễu.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Spec OTel định nghĩa các metric phía client (README §1.3). Tất cả <code>gen_ai.*</code> đang ở trạng thái Development.</p>
+<div class="tbl"><table><tr><th>Metric</th><th>Loại</th><th>Ý nghĩa</th></tr>
+<tr><td><code>gen_ai.client.inference.duration</code></td><td>Histogram (s)</td><td>Từ lúc gửi tới khi nhận đủ response hoặc lỗi</td></tr>
+<tr><td><code>gen_ai.client.inference.time_to_first_chunk</code></td><td>Histogram (s)</td><td>TTFT, chỉ với stream</td></tr>
+<tr><td><code>gen_ai.client.inference.usage.input_tokens</code></td><td>Counter</td><td>Tổng input, <b>đã gồm</b> cache read và cache write</td></tr>
+<tr><td><code>gen_ai.client.inference.usage.output_tokens</code></td><td>Counter</td><td>Tổng output, <b>đã gồm</b> reasoning</td></tr>
+<tr><td><code>...usage.cache_read.input_tokens</code>, <code>cache_write</code>, <code>reasoning.output_tokens</code></td><td>Counter</td><td>Các phần con</td></tr>
+<tr><td><code>gen_ai.client.inference.operation.input_tokens</code> / <code>output_tokens</code></td><td>Histogram</td><td>Phân phối token mỗi request; không dùng để tính tổng hay chi phí</td></tr></table></div>
+<p>Phải tự tính:</p>
+<div class="tbl"><table><tr><th>Chỉ số</th><th>Công thức</th><th>Bẫy</th></tr>
+<tr><td>Cache hit rate</td><td>Σ <code>cache_read.input_tokens</code> / Σ <code>input_tokens</code></td><td>Tính trên token, không trên số request</td></tr>
+<tr><td>Tokens/giây</td><td><code>output_tokens / (duration − TTFT)</code>, theo request rồi lấy p50/p95</td><td>Chia cho cả duration là trộn thời gian chờ vào tốc độ</td></tr>
+<tr><td>Tỉ lệ bị cắt</td><td>span có finish_reasons thuộc {<code>length</code>, <code>max_output_tokens</code>, <code>max_tokens</code>, <code>MAX_TOKENS</code>} / tổng</td><td>Định nghĩa tập này một chỗ, dùng chung</td></tr>
+<tr><td>Tỉ lệ refusal</td><td>span kết thúc bằng refusal / tổng</td><td>Không đếm là lỗi HTTP</td></tr>
+<tr><td>Stream thiếu usage</td><td>stream kết thúc không lỗi nhưng không có usage / tổng stream</td><td>Ghi 0 làm chi phí thấp giả</td></tr></table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> percentile thay cho trung bình; trừ TTFT khỏi thời lượng khi tính tốc độ; cache hit theo token; chuẩn hoá usage trước khi cộng. Mỗi lỗi trong bốn lỗi này làm dashboard trông ổn trong khi khách chờ lâu hơn hoặc hoá đơn cao hơn.</div>`,
+    why: {
+      c: 'Histogram cho thời gian (TTFT, duration) và xem p50/p95; counter cho token đã chuẩn hoá; tự tính cache hit theo token, tokens/giây sau TTFT, tỉ lệ bị cắt, refusal, thiếu usage. Lý do: đây là những con số trả lời "khách chờ bao lâu", "tốn bao nhiêu", "bao nhiêu lượt hỏng mà vẫn 200" trên toàn traffic với chi phí lưu trữ nhỏ.',
+      s: 'Trung bình: một nhóm nhỏ rất chậm chỉ kéo trung bình lên chút ít. Cache hit theo request: request nào đọc được system prompt cũng tính là hit. Ghi thẳng usage của provider: cache hit vượt 100% với Claude, thiếu thinking với Gemini. Dùng histogram <code>operation.*</code> để cộng chi phí: spec ghi rõ không dùng cho việc đó.',
+      p: 'Phải giữ một hàm chuẩn hoá usage cho từng provider và cập nhật khi provider đổi field. Percentile từ histogram phụ thuộc cách chia bucket. Chiều cắt metric phải ít giá trị (feature, tier), nên câu hỏi theo tenant phải query từ span, chậm hơn.'
+    },
+    deep: [
+      {
+        q: 'Có trace cho từng request rồi, sao còn cần metric?',
+        a: `<p>Trace để điều tra từng trường hợp, metric để biết có vấn đề hay không trên toàn bộ traffic, rẻ và lưu lâu (README §1.3). Trace thường bị lấy mẫu (giữ 5% trace bình thường), còn metric đếm 100% request. Một dashboard TTFT p95 theo giờ trong 13 tháng chỉ là vài nghìn điểm; 13 tháng trace đầy đủ là hàng terabyte.</p>
+<p>Quy trình thường gặp: metric kêu (TTFT p95 tăng), cắt metric theo chiều để khoanh vùng (provider nào, feature nào), rồi mở vài trace trong lát cắt đó để xem chuyện gì.</p>`,
+        take: 'Metric trả lời "có không, từ bao giờ, ở đâu". Trace trả lời "vì sao".'
+      },
+      {
+        q: 'TTFT trung bình 1,3 giây là ổn mà, sao khách vẫn kêu?',
+        a: `<p>Vì trung bình trộn khách nhanh và khách chậm vào một số. Hình dưới giữ mọi thứ khác cố định và tăng dần tỉ lệ request chậm gấp 5 lần (ví dụ một region của provider quá tải).</p>`,
+        viz(box) {
+          const base = compute(genLog(3, 0, 0.2), false);
+          const rows = [0.02, 0.05, 0.1].map((s) => { const M = compute(genLog(3, s, 0.2), false); return `<tr><td class="mono">${pc(s, 0)}</td><td class="mono">${vn(M.ttft.mean)} ms (×${(M.ttft.mean / base.ttft.mean).toFixed(2).replace('.', ',')})</td><td class="mono">${vn(M.ttft.p50)} ms</td><td class="mono bad">${vn(M.ttft.p95)} ms (×${(M.ttft.p95 / base.ttft.p95).toFixed(2).replace('.', ',')})</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: `<tr><th>Request chậm ×5</th><th>Trung bình</th><th>p50</th><th>p95</th></tr><tr><td class="mono">0%</td><td class="mono">${vn(base.ttft.mean)} ms</td><td class="mono">${vn(base.ttft.p50)} ms</td><td class="mono">${vn(base.ttft.p95)} ms</td></tr>` + rows })]),
+            el('div', { class: 'cap', html: 'Trung bình tăng chậm, p95 nhảy mạnh khi nhóm chậm đủ lớn để chiếm phần đuôi. p50 gần như không đổi: một nửa khách vẫn nhanh. Dashboard chỉ có trung bình sẽ thấy "chậm hơn một chút", trong khi cứ 20 khách có 1 khách chờ vài giây trước khi thấy chữ. README dùng TTFT p50/p95 và thời lượng p95 trên dashboard (Tra cứu nhanh).' }));
+        },
+        take: 'Trung bình là một con số cho một khách không tồn tại. Nhìn p50 cho khách điển hình, p95 cho khách xui.'
+      },
+      {
+        q: 'Sao phải đo TTFT riêng? Có tổng thời gian rồi mà.',
+        a: `<p>Với stream, khách bắt đầu đọc từ chunk đầu tiên. Tổng thời gian 6 giây mà chữ đầu hiện sau 0,7 giây cảm giác nhanh hơn tổng 4 giây mà màn hình trống 3,5 giây. Hai con số tăng vì lý do khác nhau: TTFT tăng khi provider quá tải hoặc prompt dài ra (phải xử lý nhiều input hơn trước khi sinh chữ đầu), thời lượng tăng khi output dài ra hoặc effort reasoning tăng (README Tra cứu nhanh).</p>
+<p>Trong lab, phiên dài bị vỡ cache có TTFT cao hơn vì phải xử lý 28.000 token không cache (giả định 0,05 ms mỗi token không cache). Kéo thanh "phiên dài bị vỡ cache" ở hình chính: p95 TTFT tăng dù không request nào bị đánh dấu chậm.</p>
+<p>Spec còn có <code>gen_ai.server.time_to_first_token</code>, nhưng đó là metric phía model server khi bạn tự host model, không phải phía ứng dụng gọi API (README §1.3).</p>`,
+        take: 'TTFT đo thời gian chờ, duration đo thời gian xong. Khách cảm nhận cái đầu.'
+      },
+      {
+        q: 'Tokens/giây giảm một nửa. Provider sinh chữ chậm đi à?',
+        a: `<p>Chưa chắc. Nếu chia output cho cả duration, thời gian chờ chunk đầu bị tính vào tốc độ sinh. Request chờ 3,5 giây rồi sinh 240 token trong 2 giây: cách sai cho 240 / 5,5 ≈ 44 token/giây, cách đúng cho 240 / 2 = 120 token/giây. Hai sự cố khác nhau (provider xếp hàng lâu trước khi xử lý, hay model sinh chậm) cho cùng một con số nếu dùng cách sai.</p>`,
+        viz(box) {
+          const rows = genLog(3, 0.1, 0.2).filter((r) => !r.missing);
+          const g = (f) => { const rr = rows.filter(f); return { n: rr.length, w: q(rr.map((r) => r.out / (r.dur / 1000)), 0.5), r: q(rr.map((r) => r.out / ((r.dur - r.ttft) / 1000)), 0.5), t: q(rr.map((r) => r.ttft), 0.5) }; };
+          const A = g((r) => !r.slow), B = g((r) => r.slow);
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: `<tr><th>p50 trong nhóm</th><th>Request thường (${A.n})</th><th>Request chậm ×5 (${B.n})</th></tr><tr><td>TTFT</td><td class="mono">${vn(A.t)} ms</td><td class="mono">${vn(B.t)} ms</td></tr><tr><td>output / duration (sai)</td><td class="mono">${vn(A.w)}</td><td class="mono bad">${vn(B.w)}</td></tr><tr class="cur"><td>output / (duration − TTFT) (đúng)</td><td class="mono">${vn(A.r)}</td><td class="mono">${vn(B.r)}</td></tr>` })]),
+            el('div', { class: 'cap', html: `<b style="color:var(--warn)">Cách sai nói nhóm chậm sinh chữ chậm hơn ${(A.w / B.w).toFixed(1).replace('.', ',')} lần; cách đúng nói tốc độ sinh như nhau.</b> Vì sao: trong lab, nhóm chậm chỉ chậm ở TTFT; tốc độ sinh của mọi request lấy từ cùng một phân phối. Cách sai còn làm số của request thường thấp hơn thật (${vn(A.w)} so với ${vn(A.r)}), vì TTFT bình thường cũng bị tính vào. Không có nghĩa tốc độ sinh không bao giờ đổi: khi nó đổi, cách đúng sẽ thấy. Trong hệ thống thật: tính theo từng request rồi lấy p50/p95 (README §1.3).` }));
+        },
+        take: 'Trừ TTFT trước khi chia, nếu không bạn đo thời gian chờ và gọi nó là tốc độ.'
+      },
+      {
+        q: 'Request nào cũng đọc được cache, vậy cache hit 100% là tốt chứ?',
+        a: `<p>"Có đọc cache" không nói đọc bao nhiêu. Mọi request ShopViet đều đọc được 2.000 token system prompt. Phiên dài bị vỡ cache (ví dụ lịch sử hội thoại bị sửa ở giữa) vẫn đọc được 2.000 token đó, nhưng 28.000 token còn lại tính giá input đầy đủ. Theo request: hit. Theo token: 2.000 / 30.000 ≈ 7%.</p>
+<p>README §1.3: cache hit rate tính trên token, không trên số request; OpenAI cũng khuyên tính như vậy và gộp theo user, workspace, ngày. Tiền tính theo token, nên chỉ hit rate theo token đi cùng hoá đơn. Kéo thanh "phiên dài bị vỡ cache" ở hình chính: cột theo request đứng yên ở 100%.</p>`,
+        take: 'Cache hit rate phải đếm token, vì hoá đơn đếm token.'
+      },
+      {
+        q: 'Dashboard báo cache hit hơn 100%. Lỗi gì vậy?',
+        a: `<p>Lỗi chuẩn hoá usage. Claude báo <code>input_tokens</code> <b>chỉ</b> là phần sau cache breakpoint cuối (breakpoint là điểm đánh dấu cuối đoạn prompt được cache; phần sau nó là phần không đọc từ cache); tổng input = <code>input_tokens + cache_read_input_tokens + cache_creation_input_tokens</code>. OTel quy ước <code>gen_ai.usage.input_tokens</code> là tổng, đã gồm cache. Ghi thẳng số của Claude vào đó thì mẫu số quá nhỏ (README §1.3).</p>
+<div class="tbl"><table><tr><th>Ví dụ giả định trong README</th><th>Ghi thẳng</th><th>Chuẩn hoá</th></tr>
+<tr><td>Claude: input_tokens 500, cache_read 9.000, cache_creation 500</td><td class="bad">input 500, hit rate 9.000 / 500 = 1.800%</td><td class="ok">input 10.000, hit rate 90%</td></tr>
+<tr><td>Gemini: candidatesTokenCount 400, thoughtsTokenCount 1.600</td><td class="bad">output 400, bỏ sót thinking</td><td class="ok">output 2.000</td></tr></table></div>
+<p>OpenAI Responses thì <code>input_tokens</code> đã gồm cached, <code>output_tokens</code> đã gồm reasoning. Ba provider, ba quy ước. Chọn "Ghi thẳng input_tokens của Claude" ở hình chính rồi kéo "Phiên dài bị vỡ cache" về 0% để thấy hit rate vượt 100% trên dữ liệu của lab. Ở mức mặc định 60% thì con số lại dưới 100%: câu hỏi kế tiếp giải thích vì sao đó mới là trường hợp đáng sợ.</p>`,
+        take: 'Không cộng token của hai provider trước khi đưa chúng về cùng một quy ước.'
+      },
+      {
+        q: 'Ghi thẳng mà cache hit ra dưới 100%, trông hợp lý. Vậy là không sao?',
+        a: `<p>Không. Ghi thẳng <code>input_tokens</code> của Claude không phải lúc nào cũng làm con số vượt 100%. Mẫu số lúc đó là phần <b>không</b> cache. Khi cache tốt, phần không cache rất nhỏ nên tỉ lệ vọt lên hàng trăm phần trăm, ai nhìn cũng biết sai. Khi cache vỡ nhiều, phần không cache lớn lên, tỉ lệ rơi về dưới 100% và trông như một con số thật. Hình dưới tính cả hai cách trên log của lab, chỉ đổi tỉ lệ phiên dài bị vỡ cache.</p>`,
+        viz(box) {
+          const rows = [0, 0.2, 0.6, 1].map((b) => { const L = genLog(3, 0.08, b); const raw = compute(L, true).hitTok, ok = compute(L, false).hitTok; return `<tr class="${raw <= 1 ? 'cur' : ''}"><td class="mono">${pc(b, 0)}</td><td class="mono">${pc(ok)}</td><td class="mono bad">${pc(raw)}</td><td>${raw > 1 ? 'vô lý, dễ bị phát hiện' : '<b style="color:var(--bad)">trông hợp lý, sai</b>'}</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Phiên dài vỡ cache</th><th>Hit rate chuẩn hoá (đúng)</th><th>Ghi thẳng input_tokens</th><th>Người xem dashboard thấy</th></tr>' + rows })]),
+            el('div', { class: 'cap', html: '<b style="color:var(--bad)">Cùng một lỗi chuẩn hoá, lúc ra hàng trăm phần trăm, lúc ra một con số dưới 100%.</b> Vì sao: mẫu số là phần không cache; cache càng vỡ, mẫu số càng lớn, tỉ lệ càng nhỏ. POC của bài đo trên log riêng cũng thấy vậy: 719% khi prefix ổn định, 95% khi 60% phiên dài vỡ prefix (đúng ra là 88% và 49%). Không có nghĩa con số dưới 100% là đã chuẩn hoá đúng: chính lúc cache vỡ, lúc cần dashboard nhất, nó báo cache vẫn ổn. Trong hệ thống thật: kiểm tra hàm chuẩn hoá trên một response thật (trên từng span, <code>gen_ai.usage.input_tokens</code> phải lớn hơn hoặc bằng <code>cache_read.input_tokens</code>), không đợi dashboard vượt 100% mới nghi (README §1.3, §3.8).' }));
+        },
+        take: 'Lỗi chuẩn hoá nguy hiểm nhất khi nó cho ra một con số trông bình thường.'
+      },
+      {
+        q: 'Có counter usage và histogram operation, dùng cái nào để tính tiền?',
+        a: `<p>Counter <code>gen_ai.client.inference.usage.*</code>. Spec tách hai họ có chủ đích: counter để cộng tổng và ước chi phí; histogram <code>gen_ai.client.inference.operation.input_tokens</code> / <code>output_tokens</code> chỉ để xem phân phối (p95 input mỗi request tăng là dấu hiệu context phình), và spec ghi rõ không dùng chúng để tính tổng hay chi phí (README §1.3).</p>
+<p>Code cũ dùng <code>gen_ai.client.token.usage</code> và <code>gen_ai.client.operation.duration</code> cho lượt gọi model là theo bản spec cũ. Bản hiện tại không còn <code>gen_ai.client.token.usage</code>; <code>gen_ai.client.operation.duration</code> vẫn tồn tại nhưng spec ghi không dùng cho inference, embeddings, execute tool, invoke agent.</p>`,
+        take: 'Counter để cộng, histogram để xem hình dạng. Đừng cộng histogram.'
+      },
+      {
+        q: 'Tỉ lệ bị cắt 0% trên dashboard. Chắc chưa?',
+        a: `<p>Kiểm tra tập giá trị đang đếm. Cùng một chuyện "chạm giới hạn output" có bốn tên: <code>length</code> (Chat Completions), <code>max_output_tokens</code> (Responses, trong <code>incomplete_details.reason</code>), <code>max_tokens</code> (Claude), <code>MAX_TOKENS</code> (Gemini). Dashboard chỉ đếm <code>length</code> sẽ báo 0% cho mọi lượt gọi Claude bị cắt. README §1.3: định nghĩa tập này một chỗ, dùng chung cho dashboard và alert.</p>
+<p>Tương tự với stream thiếu usage: OpenAI Chat Completions chỉ gửi usage khi đặt <code>stream_options.include_usage</code>, và chunk usage có thể không đến nếu stream bị ngắt. Nếu ghi 0 cho những lượt đó, chi phí trông thấp hơn thật. Lab đánh dấu 1% lượt thiếu usage và loại chúng khỏi phép cộng token, không ghi 0.</p>`,
+        viz(box) {
+          const rows = genLog(3, 0, 0.2);
+          const n = rows.filter((r) => r.finish === 'max_tokens').length;
+          box.append(hbars([['Đếm finish_reasons = "length"', 0, false], ['Đếm cả tập 4 giá trị', n / rows.length * 100, true]], { max: Math.max(1, n / rows.length * 100 * 1.3), fmt: (v) => v.toFixed(1).replace('.', ',') + '%' }),
+            el('div', { class: 'cap', html: `${n} trên ${rows.length} lượt gọi Claude trong lab chạm <code>max_tokens</code> = ${MAX_OUT}. Bộ lọc theo tên của OpenAI Chat Completions không thấy lượt nào.` }));
+        },
+        take: 'Tên finish reason khác nhau giữa provider. Một tập dùng chung, định nghĩa một chỗ.'
+      },
+      {
+        q: 'Muốn xem chi phí theo từng tenant, gắn tenant lên metric luôn cho tiện?',
+        a: `<p>Không. Mỗi tổ hợp giá trị attribute trên metric là một time series riêng (một đường riêng mà backend metric phải lưu và tính, ví dụ "output token của model A, provider B, tenant C"). README §2.6: 50.000 tenant nhân với số model, số provider sẽ làm backend metric quá tải. Tenant để trên span; chi phí theo tenant query từ span store hoặc bảng sự kiện mỗi lượt gọi một dòng (README §3.3). Trên metric chỉ đặt chiều có ít giá trị như feature, gói dịch vụ.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (t) => {
+            const series = (tn) => tn * 3 * 2 * 5;
+            out.replaceChildren(hbars([['Metric có feature (5 giá trị)', 3 * 2 * 5, false], [`Thêm tenant (${vn(t)} giá trị)`, series(t), true]], { max: series(t), fmt: (v) => vn(v) + ' series' }),
+              el('div', { class: 'cap', html: `Giả định 3 model × 2 provider × 5 loại token, chưa tính bucket của histogram. Gắn tenant nhân số series lên ${vn(t)} lần, cho mỗi metric.` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Số tenant', 10, 50000, 10, 50000, draw, (v) => vn(v)).node]), out);
+          draw(50000);
+        },
+        take: 'Chiều nhiều giá trị nằm trên span. Metric chỉ mang chiều ít giá trị.'
+      }
+    ],
+    poc: {
+      goal: "Log 600 lượt gọi là <b>tổng hợp</b> (numpy seed 3, cùng phân phối giả định với lab). Trên log đó, công thức đúng của README §1.3 và công thức sai hay gặp chạy cạnh nhau; <code>normalize_usage</code> của README chạy thật trên usage dạng Claude; TTFT được ghi vào histogram OTel thật với bucket của README để xem p95 đọc từ bucket lệch bao nhiêu.",
+      file: "docs/llm-observability/pocs/02_llm_metrics.py",
+      run: "uv run docs/llm-observability/pocs/02_llm_metrics.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>numpy</code>, <code>opentelemetry-sdk</code> 1.45.2), chạy dưới 3 giây, miễn phí.",
+      output: "Log TỔNG HỢP: 600 lượt gọi claude-sonnet-5-5 sinh bằng numpy seed 3, cùng phân phối giả định với lab 02\n(30% phiên dài 30.000 token, TTFT ~700 ms + 0,05 ms mỗi token không cache, ~120 tok/s). Không gọi model.\nPhần chạy thật: công thức, normalize_usage của README §2.6, histogram của OpenTelemetry SDK.\n\n== 1. TTFT: trung bình so với percentile khi 8% request bị provider làm chậm ×5 ==\n             p50     Trung bình  p95\n-----------  ------  ----------  --------\nKhông sự cố  817 ms  1,020 ms    2,228 ms\n8% chậm ×5   865 ms  1,442 ms    3,928 ms\nTăng         ×1.06   ×1.41       ×1.76\n\n== 2. Tokens/giây: output / tổng thời gian (sai) so với output / (thời gian − TTFT) (README §1.3) ==\nNhóm             n    p50 cách sai  p50 cách đúng\n---------------  ---  ------------  -------------\nRequest thường   528  73            120\nRequest bị chậm  63   32            121\n\n== 3. Cache hit: theo request so với theo token; input_tokens Claude thô so với đã chuẩn hoá ==\nLog                      Theo request  Theo token (chuẩn hoá)  Theo token (input_tokens thô)\n-----------------------  ------------  ----------------------  -----------------------------\nPrefix ổn định           100.0%        87.8%                   719.4%\n60% phiên dài vỡ prefix  100.0%        48.7%                   94.7%\nVí dụ một dòng: Claude trả {'input_tokens': 28000, 'cache_read_input_tokens': 2000, 'cache_creation_input_tokens': 0, 'output_tokens': 162} → normalize_usage: {'input_tokens': 30000, 'output_tokens': 162, 'cache_read.input_tokens': 2000, 'cache_write.input_tokens': 0, 'reasoning.output_tokens': 0}\n\n== 4. Tỉ lệ bị cắt và refusal ==\nCách đếm                                                      Kết quả\n------------------------------------------------------------  -------\nfinish == 'length' (thói quen Chat Completions)               0.0%\nfinish ∈ {length, max_output_tokens, max_tokens, MAX_TOKENS}  0.7%\nrefusal                                                       0.3%\nstream thiếu usage                                            1.5%\n\n== 5. p95 đọc từ histogram OTel (bucket README §2.6) so với p95 tính từ từng request ==\nBucket (s): [0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56, 5.12] …\nĐếm      : [0, 0, 0, 0, 0, 1, 149, 277, 110, 41, 16] …\n                                                p95\n----------------------------------------------  ------\nTừ từng request                                 3.93 s\nNội suy trong bucket (kiểu histogram_quantile)  4.62 s\n\nRút ra: 8% request chậm làm trung bình tăng ×1.41 còn p95 tăng ×1.76. Tokens/giây cách sai\nbáo nhóm chậm sinh 32 tok/s so với 73, cách đúng thấy 121 so với 120: tốc độ sinh như nhau.\nCache hit theo request luôn 100% vì system prompt luôn được đọc; theo token mới thấy prefix vỡ. input_tokens thô\ncủa Claude cho 719% khi cache tốt, nhưng 95% khi prefix vỡ: con số sai mà trông hợp lý, không chỉ là '>100%'.\nĐếm cắt chỉ bằng 'length' cho 0% trên log Claude. Histogram chỉ biết bucket: p95 lệch 0.69 s.",
+      measured: true,
+      read: ["TTFT: 8% request chậm ×5 làm p50 ×1,06, trung bình ×1,41, p95 ×1,76. Nhìn p50 hay trung bình sẽ đánh giá thấp mức khách bị ảnh hưởng.", "Tokens/giây: cách sai báo nhóm chậm 32 so với 73 tok/s; cách đúng (trừ TTFT) cho 121 so với 120: tốc độ sinh không đổi, chỉ TTFT đổi.", "Cache hit theo request luôn 100%. Theo token: 88% khi prefix ổn định, 49% khi 60% phiên dài vỡ prefix. <code>input_tokens</code> thô của Claude cho 719% ở log thứ nhất nhưng 95% ở log thứ hai: lỗi chuẩn hoá không phải lúc nào cũng lộ ra bằng con số trên 100%.", "Đếm bị cắt chỉ bằng <code>length</code> ra 0% trên log Claude; đủ bốn giá trị ra 0,7%. p95 nội suy trong bucket histogram là 4,62 s so với 3,93 s thật."]
+    },
+    mount(stage) {
+      const st = { seed: 3, slow: 0.08, broken: 0.6, raw: false };
+      const ctl = el('div', { class: 'row' }, [
+        select('Seed', [['3', 'seed 3'], ['7', 'seed 7'], ['21', 'seed 21']], '3', (v) => { st.seed = +v; draw(); }).node,
+        slider('Request chậm ×5 (region quá tải)', 0, 0.15, 0.01, st.slow, (v) => { st.slow = v; draw(); }, (v) => pc(v, 0)).node,
+        slider('Phiên dài bị vỡ cache', 0, 1, 0.05, st.broken, (v) => { st.broken = v; draw(); }, (v) => pc(v, 0)).node,
+        select('input_tokens của Claude', [['0', 'Chuẩn hoá (cộng cache read + write)'], ['1', 'Ghi thẳng input_tokens của Claude']], '0', (v) => { st.raw = v === '1'; draw(); }).node
+      ]);
+      const hist = el('div'), tbl = el('div'), logT = el('div');
+      const cap = el('div', { style: 'margin-top:10px;font-size:13.5px' });
+      const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+
+      function draw() {
+        const rows = genLog(st.seed, st.slow, st.broken);
+        const M = compute(rows, st.raw);
+        const B = compute(genLog(st.seed, 0, st.broken), st.raw);
+        hist.replaceChildren(el('h4', { style: 'margin:4px 0;font-size:13px', text: `TTFT của ${N} lượt gọi model trong một giờ (giả lập)` }), histo(rows, M),
+          el('div', { class: 'legend' }, [el('span', { html: '<i style="background:var(--g1)"></i>request thường' }), el('span', { html: '<i style="background:var(--warn)"></i>request trong nhóm chậm' })]));
+        const fTTFT = M.ttft.p95 > 2 * M.ttft.mean;
+        const tail = rows.filter((r) => r.ttft >= M.ttft.p95);
+        const tSlow = tail.filter((r) => r.slow).length, tBroken = tail.filter((r) => !r.slow && r.broken).length;
+        const fTps = M.tpsR.p50 / M.tpsW.p50 > 1.4;
+        const fHit = st.raw || M.hitReq - M.hitTok > 0.25;
+        const line = (n, right, wrong, flag) => `<tr class="${flag ? 'bad' : ''}"><td>${n}</td><td class="mono">${right}</td><td class="mono">${wrong}</td><td style="color:${flag ? 'var(--bad)' : 'var(--ok)'};font-weight:600">${flag ? 'lệch' : 'khớp'}</td></tr>`;
+        tbl.replaceChildren(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Metric</th><th>Cách đúng (README §1.3)</th><th>Cách sai hay gặp</th><th></th></tr>'
+          + line('TTFT', `p50 ${vn(M.ttft.p50)} · p95 ${vn(M.ttft.p95)} ms`, `trung bình ${vn(M.ttft.mean)} ms`, fTTFT)
+          + line('Thời lượng', `p50 ${vn(M.dur.p50)} · p95 ${vn(M.dur.p95)} ms`, `trung bình ${vn(M.dur.mean)} ms`, false)
+          + line('Tokens/giây', `out / (dur − TTFT): p50 ${vn(M.tpsR.p50)}, p5 (5% chậm nhất) ${vn(M.tpsR.p95)}`, `out / dur: p50 ${vn(M.tpsW.p50)}, p5 ${vn(M.tpsW.p95)}`, fTps)
+          + line('Cache hit rate', `theo token: ${pc(M.hitTok)}`, `theo request: ${pc(M.hitReq)}`, fHit)
+          + line('Tỉ lệ bị cắt', `tập 4 giá trị: ${pc(M.trunc)}`, `chỉ "length": 0,0%`, M.trunc > 0)
+          + line('Tỉ lệ refusal', `finish = refusal: ${pc(M.refusal)}`, 'HTTP lỗi: 0,0%', M.refusal > 0)
+          + line('Stream thiếu usage', `đánh dấu, loại khỏi tổng: ${pc(M.missing)}`, 'ghi 0 token, chi phí 0', M.missing > 0)
+          + line('Input token mỗi request', `histogram p95: ${vn(M.inP95)}`, `counter tổng: ${vn(M.inSum)}`, false) })]));
+        logT.replaceChildren(el('h4', { style: 'margin:10px 0 4px;font-size:13px', text: '8 lượt gọi đầu trong log' }), el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>id</th><th>loại</th><th>input</th><th>cache read</th><th>TTFT</th><th>dur</th><th>out</th><th>finish</th><th>tok/s đúng</th><th>tok/s sai</th></tr>'
+          + rows.slice(0, 8).map((r) => `<tr class="${r.slow || r.broken ? 'cur' : ''}"><td class="mono">${r.id}</td><td>${r.long ? (r.broken ? 'dài, vỡ cache' : 'dài') : 'ngắn'}${r.slow ? ', chậm' : ''}</td><td class="mono">${vn(st.raw ? r.uncached : r.input)}</td><td class="mono">${vn(r.read)}</td><td class="mono">${vn(r.ttft)}</td><td class="mono">${vn(r.dur)}</td><td class="mono">${r.missing ? '?' : r.out}</td><td class="mono">${r.finish}</td><td class="mono">${r.missing ? '—' : vn(r.out / ((r.dur - r.ttft) / 1000))}</td><td class="mono">${r.missing ? '—' : vn(r.out / (r.dur / 1000))}</td></tr>`).join('') })]));
+
+        const parts = [];
+        if (fTTFT) parts.push(box('var(--bad)', `<b>TTFT trung bình ${vn(M.ttft.mean)} ms, nhưng 5% khách chờ từ ${vn(M.ttft.p95)} ms trở lên.</b> Trong ${tail.length} request ở phần đuôi đó: ${tSlow} thuộc nhóm chậm ×5, ${tBroken} là phiên dài bị vỡ cache (phải xử lý 28.000 token không cache trước chữ đầu), ${tail.length - tSlow - tBroken} còn lại. Vì sao trung bình không thấy: phần đuôi chỉ là 5% số request, chia đều cho cả 600. So với khi không có nhóm chậm, trung bình ×${(M.ttft.mean / B.ttft.mean).toFixed(2).replace('.', ',')}, p95 ×${(M.ttft.p95 / B.ttft.p95).toFixed(2).replace('.', ',')}. Không có nghĩa trung bình sai về toán: nó trả lời câu hỏi khác. Trong hệ thống thật: dashboard TTFT p50/p95, cắt theo loại phiên và region để tách hai nguyên nhân (README Tra cứu nhanh, §3.5).`));
+        if (fTps) parts.push(box('var(--warn)', `<b>Tokens/giây: cách sai cho p50 ${vn(M.tpsW.p50)}, cách đúng ${vn(M.tpsR.p50)}.</b> Vì sao: chia cho cả duration là tính thời gian chờ chunk đầu (TTFT p95 ${vn(M.ttft.p95)} ms) vào tốc độ sinh. Không có nghĩa model sinh chậm. Trong hệ thống thật: <code>output_tokens / (duration − TTFT)</code> theo từng request (README §1.3).`));
+        if (st.raw) {
+          const N0 = compute(rows, false);
+          parts.push(box('var(--bad)', `<b>Cache hit rate ${pc(M.hitTok)} khi ghi thẳng, ${pc(N0.hitTok)} khi chuẩn hoá${M.hitTok > 1 ? ': vượt 100%' : ''}.</b> Vì sao: mẫu số đang là <code>input_tokens</code> của Claude, chỉ phần không đọc từ cache, nên quá nhỏ. ${M.hitTok > 1 ? 'Kéo tỉ lệ phiên dài bị vỡ cache xuống thấp: phần không cache càng nhỏ, con số càng vô lý.' : 'Ở mức vỡ cache này con số chưa vượt 100% nên trông hợp lý, và đó là lúc nguy hiểm nhất: nó sai mà không ai nghi.'} Không có nghĩa cache tốt hơn thật. Trong hệ thống thật: chuẩn hoá <code>input = input_tokens + cache_read + cache_creation</code> trước khi ghi <code>gen_ai.usage.input_tokens</code> (README §1.3, §3.8).`));
+        } else if (fHit) parts.push(box('var(--bad)', `<b>Theo request: ${pc(M.hitReq)} có cache hit. Theo token: ${pc(M.hitTok)}.</b> Vì sao: mọi request đều đọc 2.000 token system prompt, nên đều tính là hit; phiên dài bị vỡ cache trả giá input đầy đủ cho 28.000 token còn lại. Không có nghĩa system prompt cache vô ích. Trong hệ thống thật: Σ cache_read / Σ input theo token, cắt theo loại phiên để thấy phiên dài (README §1.3, §3.5).`));
+        if (!parts.length) parts.push(box('var(--ok)', 'Với cấu hình này, cách đúng và cách sai cho kết luận gần nhau. Tăng tỉ lệ request chậm, tỉ lệ phiên dài bị vỡ cache, hoặc chọn ghi thẳng input_tokens để thấy chúng tách ra.'));
+        if (M.trunc > 0) parts.push(box('var(--warn)', `${pc(M.trunc)} lượt gọi dừng vì <code>max_tokens</code> nhưng bộ lọc chỉ có <code>length</code> đếm ra 0. Và ${pc(M.refusal)} refusal không hiện trong tỉ lệ lỗi HTTP vì Claude trả refusal với HTTP 200.`));
+        cap.innerHTML = parts.join('');
+      }
+
+      stage.append(ctl, hist, tbl, logT, cap,
+        el('p', { class: 'hint', text: '600 lượt gọi giả lập theo seed: 30% phiên dài (30.000 input token), 70% phiên ngắn (2.600); system prompt 2.000 token luôn đọc được từ cache; phiên dài lành đọc 27.000 token. TTFT log-normal quanh 700 ms cộng 0,05 ms mỗi token không cache, nhóm chậm ×5; tốc độ sinh quanh 120 token/giây; output quanh 180 token, max_tokens = 600; refusal 0,6%, thiếu usage 1%. Tất cả là giả định của lab. Percentile, tỉ lệ và tổng tính thật trong trình duyệt.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

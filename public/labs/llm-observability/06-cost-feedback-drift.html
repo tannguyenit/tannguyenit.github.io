@@ -1,0 +1,798 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 06</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="05-logging-pii-tracing-agents.html">← Lab trước</a><a href="07-eval-alerts-failures.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const pct = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const dec = (x, d = 2) => x.toFixed(d).replace('.', ',');
+  const int = (x) => Math.round(x).toLocaleString('vi-VN');
+  const usd = (x) => (x >= 100 ? int(x) : x >= 1 ? dec(x, 2) : x >= 0.01 ? dec(x, 3) : dec(x, 5)) + ' USD';
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const flagBox = (l, t) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t });
+  const capHtml = (c) => '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + c.what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + c.why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + c.not + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + c.real + '</p></div>';
+  const noFlag = () => el('div', { class: 'ok', style: 'font-size:13px', text: 'Không phát hiện bất thường ở cấu hình này.' });
+  const debounce = (f, ms) => { let t = 0; return () => { clearTimeout(t); t = setTimeout(f, ms); }; };
+
+  const PRICE = {
+    'claude-sonnet-5-5': { name: 'Claude Sonnet 5.5', fam: 'claude', in: 2, out: 10, cr: 0.10, cw: 2.5 },
+    'claude-haiku-5-5': { name: 'Claude Haiku 5.5', fam: 'claude', in: 0.10, out: 0.50, cr: 0.01, cw: 0.125 },
+    'gpt-6.1-terra': { name: 'gpt-6.1-terra', fam: 'openai', in: 1, out: 5, cr: 0.05, cw: 1.25 }
+  };
+  const costOf = (p, inTot, cr, cw, out) => ((inTot - cr - cw) * p.in + cr * p.cr + cw * p.cw + out * p.out) / 1e6;
+
+  const TENANTS = [['shopviet', 0.42], ['gh-anphat', 0.16], ['gh-minhtam', 0.14], ['gh-hoanglong', 0.11], ['gh-phucloc', 0.10], ['gh-tanthanh', 0.07]];
+  const FEATURES = {
+    'tu-van': { label: 'Tư vấn sản phẩm', w: 0.38, model: 'claude-sonnet-5-5', inp: 9000, cache: 6000, out: 350 },
+    'tra-don': { label: 'Tra đơn hàng', w: 0.30, model: 'claude-haiku-5-5', inp: 2500, cache: 1500, out: 120 },
+    'doi-tra': { label: 'Đổi trả (agent 3 lượt)', w: 0.12, model: 'claude-sonnet-5-5', inp: 14000, cache: 8000, out: 600 },
+    'so-sanh': { label: 'So sánh cấu hình', w: 0.12, model: 'claude-sonnet-5-5', inp: 7000, cache: 4000, out: 900 },
+    'tom-tat': { label: 'Tóm tắt đánh giá', w: 0.08, model: 'claude-haiku-5-5', inp: 20000, cache: 0, out: 300 }
+  };
+  const FKEYS = Object.keys(FEATURES);
+
+  function genLog(o) {
+    const rnd = seeded(6060), rows = [], days = 7;
+    const pick = (arr) => { const r = rnd(); let a = 0; for (const [k, w] of arr) { a += w; if (r < a) return k; } return arr[arr.length - 1][0]; };
+    const fArr = FKEYS.map((k) => [k, FEATURES[k].w]);
+    for (let d = 0; d < days; d++) {
+      for (let i = 0; i < o.req; i++) {
+        const tenant = pick(TENANTS), fk = pick(fArr), F = FEATURES[fk];
+        const user = 'u_' + Math.floor(rnd() * 4000).toString(16).padStart(3, '0');
+        const scale = Math.exp(0.35 * randn(rnd));
+        const inTot = Math.round(F.inp * scale), hit = rnd() < 0.85, cr = F.cache && hit ? F.cache : 0, cw = F.cache && !hit ? F.cache : 0;
+        const out = Math.round(F.out * Math.exp(0.4 * randn(rnd)));
+        const fallback = F.model === 'claude-sonnet-5-5' && rnd() < o.fb;
+        rows.push({ tenant, fk, user, req: F.model, resp: fallback ? 'gpt-6.1-terra' : F.model, inTot, cr: fallback ? 0 : cr, cw: fallback ? 0 : cw, out, missing: rnd() < o.miss });
+      }
+      for (let i = 0; i < o.abuse; i++) {
+        const inTot = Math.round(7000 * Math.exp(0.2 * randn(rnd)));
+        rows.push({ tenant: 'gh-minhtam', fk: 'so-sanh', user: 'u_51c0', req: 'claude-sonnet-5-5', resp: 'claude-sonnet-5-5', inTot, cr: 4000, cw: 0, out: Math.round(2400 * Math.exp(0.2 * randn(rnd))), missing: false });
+      }
+    }
+    return rows;
+  }
+
+  function priced(rows, m) {
+    return rows.map((r) => {
+      const trueP = PRICE[r.resp], trueC = costOf(trueP, r.inTot, r.cr, r.cw, r.out);
+      const p = PRICE[m.reqModel ? r.req : r.resp];
+      let inTot = r.inTot, cr = r.cr, cw = r.cw;
+      const isClaude = PRICE[r.resp].fam === 'claude';
+      if (m.rawInput && isClaude) inTot = r.inTot - r.cr - r.cw;
+      let c;
+      if (r.missing) c = m.missZero ? 0 : null;
+      else if (m.rawInput && isClaude) c = (inTot * p.in + r.out * p.out) / 1e6;
+      else if (m.noWrite) c = ((inTot - cr) * p.in + cr * p.cr + r.out * p.out) / 1e6;
+      else c = costOf(p, inTot, cr, cw, r.out);
+      return { ...r, trueC, c, inRec: inTot };
+    });
+  }
+
+  function drift(o) {
+    const rnd = seeded(9100 + o.seed), N = 60, S = { out: [], ref: [], can: [], model: [] };
+    for (let d = 0; d < N; d++) {
+      const after = d >= o.D, wk = (d % 7 === 5 || d % 7 === 6) ? 1.06 : 1;
+      const outShift = after && o.mode !== 'none' ? 1 + o.len : 1, refShift = after && o.mode !== 'none' ? o.ref : 0, canShift = after && o.mode !== 'none' ? o.can : 0;
+      S.out.push(350 * wk * outShift * (1 + 0.03 * randn(rnd)));
+      const n = 3000, pr = 0.004 + refShift;
+      S.ref.push(clamp(pr + Math.sqrt(pr * (1 - pr) / n) * randn(rnd), 0, 1));
+      const m = o.cases * o.runs, pc = clamp(0.92 - canShift, 0, 1);
+      S.can.push(clamp(pc + Math.sqrt(pc * (1 - pc) / m) * randn(rnd), 0, 1));
+      S.model.push(after && o.mode === 'alias' ? 'mới' : 'cũ');
+    }
+    return S;
+  }
+  function detect(xs, win, k, from) {
+    const res = [];
+    for (let t = 0; t < xs.length; t++) {
+      if (t < win) { res.push(null); continue; }
+      const w = xs.slice(t - win, t), m = w.reduce((a, b) => a + b, 0) / win, sd = Math.sqrt(w.reduce((a, b) => a + (b - m) * (b - m), 0) / Math.max(1, win - 1)) || 1e-9;
+      res.push({ m, sd, flag: t >= from && Math.abs(xs[t] - m) > k * sd });
+    }
+    return res;
+  }
+  function chart(xs, det, D, label, fmt, color) {
+    const W = 640, H = 120, L = 52, R = 10, T = 14, B = 18;
+    const lo = Math.min(...xs, ...det.filter(Boolean).map((r) => r.m - 3 * r.sd)), hi = Math.max(...xs, ...det.filter(Boolean).map((r) => r.m + 3 * r.sd));
+    const span = hi - lo || 1, x = (i) => L + (i / (xs.length - 1)) * (W - L - R), y = (v) => T + (1 - (v - lo) / span) * (H - T - B);
+    const band = det.map((r, i) => (r ? [i, r] : null)).filter(Boolean);
+    const kids = [el('text', { x: 2, y: 11, class: 'mute', text: label })];
+    if (band.length) kids.push(el('path', { d: band.map(([i, r], j) => (j ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r.m + r.k * r.sd).toFixed(1)).join(' ') + ' ' + band.slice().reverse().map(([i, r]) => 'L' + x(i).toFixed(1) + ' ' + y(r.m - r.k * r.sd).toFixed(1)).join(' ') + ' Z', fill: 'var(--accent-soft)', opacity: 0.7 }));
+    kids.push(el('line', { x1: x(D), x2: x(D), y1: T, y2: H - B, stroke: 'var(--warn)', 'stroke-dasharray': '4 3' }));
+    kids.push(el('path', { d: xs.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' '), fill: 'none', stroke: 'var(--' + color + ')', 'stroke-width': 1.8 }));
+    det.forEach((r, i) => { if (r && r.flag) kids.push(el('circle', { cx: x(i), cy: y(xs[i]), r: 3.5, fill: i >= D ? 'var(--ok)' : 'var(--bad)' }, [el('title', { text: 'Ngày ' + (i + 1) + ': ' + fmt(xs[i]) })])); });
+    kids.push(el('text', { x: 2, y: y(hi) + 10, class: 'mute', text: fmt(hi) }), el('text', { x: 2, y: y(lo), class: 'mute', text: fmt(lo) }), el('text', { x: L, y: H - 4, class: 'mute', text: 'ngày 1' }), el('text', { x: W - R - 44, y: H - 4, class: 'mute', text: 'ngày 60' }));
+    return el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': label }, kids);
+  }
+
+  return {
+    id: 'cost-feedback-drift', nav: '6. Chi phí, feedback, drift', ref: '§3.3–3.5',
+    title: 'Hoá đơn chỉ nói ShopViet tiêu bao nhiêu, không nói ai tiêu; và model có thể đổi hành vi mà tên không đổi',
+    hook: 'Phần A sinh một tuần log có seed, tính chi phí từng lượt gọi theo giá thật rồi cộng theo tenant, feature, model, user. Bật từng lỗi đối soát hay gặp để xem tổng tự tính lệch hoá đơn bao nhiêu. Phần B cho provider đổi model âm thầm ở một ngày bạn chọn; bộ phát hiện tự tìm ngày đó.',
+    terms: [
+      ['Tenant', 'Một khách hàng dùng chung hệ thống. Ở đây là các gian hàng trên sàn ShopViet dùng trợ lý trên trang của họ, ví dụ gh-anphat.'],
+      ['Feature', 'Tính năng gọi model. Ví dụ tu-van (tư vấn sản phẩm), tra-don (tra đơn hàng).'],
+      ['Chi phí theo lượt', 'Tính tiền cho từng span: input không cache × giá input + cache read × giá đọc cache + cache write × giá ghi + output × giá output.'],
+      ['gen_ai.response.model', 'Model thực trả lời. Gọi claude-sonnet-5-5 qua gateway có fallback, response có thể là gpt-6.1-terra.'],
+      ['Đối soát hoá đơn', 'Mỗi tháng so tổng tự tính với hoá đơn provider. Lệch vài phần trăm là bình thường; lệch nhiều là có lỗi.'],
+      ['Cardinality', 'Số giá trị khác nhau của một chiều. 6 tenant là thấp; 50.000 tenant trên metric là quá tải backend metric.'],
+      ['Feedback explicit', 'Người dùng chủ động bấm: thumbs up/down, chấm sao. Ít người bấm.'],
+      ['Feedback implicit', 'Suy ra từ hành vi: tạo lại câu trả lời, hỏi lại cùng ý, chuyển nhân viên. Có trên mọi lượt nhưng nhiều cách hiểu.'],
+      ['Drift', 'Thứ gì đó trôi khỏi trạng thái bình thường. Ba nghĩa: model đổi phiên bản, hành vi đổi mà tên không đổi, dữ liệu vào đổi.'],
+      ['Alias / snapshot', 'Alias là tên chung (claude-sonnet-5-5); snapshot là bản cố định cụ thể. Provider có thể trỏ alias sang snapshot mới.'],
+      ['Canary', 'Bộ câu hỏi cố định có đáp án kiểm bằng code, chạy theo lịch. Ví dụ "hoàn tiền trong bao nhiêu ngày?" phải chứa "14".'],
+      ['Baseline ± k·sd', 'Trung bình và độ lệch chuẩn (sd, mức dao động thường ngày) của N ngày trước. Ngày nào lệch quá k lần sd thì bị đánh dấu. Ví dụ 14 ngày qua output trung bình 350 token, sd 10, k = 3: ngày nào dưới 320 hoặc trên 380 token bị đánh dấu.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> mở trợ lý chat cho các gian hàng trên sàn. Hoá đơn tháng của provider tăng, tài chính hỏi gian hàng nào và tính năng nào tiêu tiền. Cùng tuần đó, đội chăm sóc khách hàng báo trợ lý "nói dài hơn và hay từ chối hơn", trong khi không ai deploy gì.',
+      scenario: 'Phần A: một tuần log, mỗi dòng là một câu hỏi, có tenant, feature, user (đã hash), model yêu cầu, model trả lời, token chuẩn hoá. Một phần nhỏ Sonnet được gateway fallback sang gpt-6.1-terra; một phần stream không có usage; job eval hằng đêm gọi model không qua wrapper. Phần B: 60 ngày metric của tính năng tư vấn, provider thay đổi ở một ngày.',
+      ask: 'Tenant, feature, user nào tiêu nhiều nhất? Tổng tự tính lệch hoá đơn bao nhiêu, vì lỗi nào? Và khi model đổi âm thầm, metric nào bắt được, sau bao nhiêu ngày, với bao nhiêu báo động giả?',
+      solves: 'Phần A tính chi phí từng dòng theo giá Cost Optimization §2.1 (06/11/2026) và công thức README §2.6, cộng theo chiều bạn chọn, so với "hoá đơn" tính đúng. Mỗi lỗi đối soát của README §3.3 là một nút. Phần B chạy bộ phát hiện baseline ± k·sd trên ba metric và bộ phát hiện "giá trị mới" trên gen_ai.response.model.',
+      read: [
+        'Ô tổng: tự tính, hoá đơn, chênh lệch. Đỏ khi chênh quá 5%.',
+        'Bảng theo chiều: chi phí, phần trăm, chi phí mỗi câu hỏi, cache hit rate. Dòng đỏ là bất thường được phát hiện.',
+        'Phần B: dải xanh nhạt là baseline ± k·sd của N ngày trước; vạch cam là ngày provider đổi; chấm xanh là phát hiện đúng (sau ngày đổi), chấm đỏ là báo động giả.',
+        'Khung "Phát hiện từ dữ liệu" của mỗi phần liệt kê bất thường; khung cuối giải thích bất thường quan trọng nhất.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Chi phí theo user, feature, tenant (§3.3)</h4>
+<ul><li>Tính chi phí ở cả hai nơi: lúc ghi span (attribute, cộng theo mọi chiều) và lúc query (tính lại được khi bảng giá sai hoặc provider đổi giá).</li>
+<li>Giá theo <code>gen_ai.response.model</code>, bảng giá có ngày hiệu lực, đủ loại token (input không cache, cache read, cache write theo TTL, output). OpenAI: cache write 30 phút 1,25×, 12 giờ 2,5× giá input.</li>
+<li>Reasoning là tập con của output: không cộng hai lần.</li>
+<li>Tenant, feature, user (hash) trên span; trên metric chỉ chiều ít giá trị.</li></ul>
+<div class="tbl"><table><tr><th>Lệch hoá đơn nhiều thường do</th></tr>
+<tr><td>Bỏ sót cache write, hoặc ghi <code>input_tokens</code> của Claude mà không cộng phần cache</td></tr>
+<tr><td>Bỏ sót thinking của Gemini (<code>thoughtsTokenCount</code> không nằm trong <code>candidatesTokenCount</code>)</td></tr>
+<tr><td>Stream không có usage (<code>app.llm.usage_missing</code>)</td></tr>
+<tr><td>Code path gọi model không qua wrapper (batch, job nền, eval)</td></tr>
+<tr><td>Bảng giá lỗi thời</td></tr></table></div>
+<h4>Feedback (§3.4)</h4>
+<p>Mỗi response mang id tra được trace; thumbs down gửi id đó kèm lý do và nguồn; lưu như score gắn trace (Langfuse score, LangSmith <code>create_feedback()</code>, hoặc bảng <code>(trace_id, response_id, source, value, reason, created_at)</code>). Phân biệt explicit, implicit, từ nhân viên. Đừng tối ưu thẳng theo thumbs: OpenAI ghi feedback người dùng "can sometimes favor more agreeable responses".</p>
+<h4>Drift (§3.5)</h4>
+<div class="tbl"><table><tr><th>Nghĩa</th><th>Phát hiện</th></tr>
+<tr><td>Model đổi phiên bản</td><td>Alert khi <code>gen_ai.response.model</code> có giá trị chưa thấy trong 30 ngày; pin snapshot cho tính năng quan trọng</td></tr>
+<tr><td>Hành vi đổi, tên không đổi</td><td>Canary có đáp án kiểm bằng code, chạy theo lịch, biết trước dao động bình thường; chạy ở nhiều đường đi</td></tr>
+<tr><td>Dữ liệu vào đổi</td><td>Phân phối độ dài input, ngôn ngữ, chủ đề, tỉ lệ retriever không tìm được tài liệu đủ điểm</td></tr></table></div>
+<p>Cắt metric đủ nhỏ: theo phiên bản ứng dụng, prompt, model snapshot, loại phiên. Metric tổng hợp che nhóm đang tệ đi.</p>
+<div class="verdict"><b>Điểm cần nhớ:</b> chi phí là một attribute của span, tính theo model thực trả lời và đối soát hằng tháng. Drift không có field báo trước: phải so với chính lịch sử của mình, ở mức cắt đủ nhỏ.</div>`,
+    why: {
+      c: 'Chi phí tính trên mỗi span theo <code>gen_ai.response.model</code> và usage đã chuẩn hoá, query theo tenant từ span store, đối soát hoá đơn hằng tháng. Drift: alert giá trị mới của response model, canary theo lịch có baseline dao động, metric cắt theo snapshot và loại phiên.',
+      s: 'Chia hoá đơn theo tỉ lệ request: tenant gọi tính năng đắt bị tính như tenant gọi tính năng rẻ. Đặt tenant lên metric: backend metric quá tải. Chọn prompt theo tỉ lệ thumbs up: thưởng cho câu trả lời chiều lòng. Chỉ nhìn metric tổng hợp: nhóm nhỏ đang hỏng bị pha loãng.',
+      p: 'Bảng giá phải bảo trì, có ngày hiệu lực. Span store phải query tổng hợp được (ClickHouse, BigQuery). Canary tốn tiền mỗi lần chạy, và muốn nhạy hơn thì tốn hơn. Bộ phát hiện baseline luôn đánh đổi giữa phát hiện sớm và báo động giả.'
+    },
+    deep: [
+      {
+        q: 'Gọi claude-sonnet-5-5 thì tính giá Sonnet. Sao phải lấy model ở response?',
+        a: `<p>Vì model bạn yêu cầu không chắc là model trả lời (README §3.3). Gọi alias có thể nhận về một snapshot có tên dài hơn; gọi qua gateway có fallback thì model trả lời có thể là model khác hẳn. ShopViet đi qua gateway: khi Sonnet quá tải, gateway chuyển sang gpt-6.1-terra. Kéo tỉ lệ fallback để xem tính theo model yêu cầu lệch bao nhiêu trên một ngày tư vấn (3.000 câu hỏi, token giả định, giá Cost Optimization §2.1).</p>`,
+        viz(box) {
+          const st = { fb: 0.05 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const n = 3000, f = Math.round(n * st.fb), s = PRICE['claude-sonnet-5-5'], t = PRICE['gpt-6.1-terra'];
+            const sc = costOf(s, 9000, 6000, 0, 350), tc = costOf(t, 9000, 0, 0, 350), wrongT = costOf(s, 9000, 0, 0, 350);
+            const right = (n - f) * sc + f * tc, wrong = (n - f) * sc + f * wrongT;
+            out.innerHTML = '<div class="tbl"><table><tr><th></th><th>Lượt</th><th>Mỗi lượt</th><th>Cộng</th></tr><tr><td>Sonnet trả lời (cache hit 6.000)</td><td class="mono">' + int(n - f) + '</td><td class="mono">' + usd(sc) + '</td><td class="mono">' + usd((n - f) * sc) + '</td></tr><tr><td>terra trả lời, tính giá terra</td><td class="mono">' + int(f) + '</td><td class="mono">' + usd(tc) + '</td><td class="mono">' + usd(f * tc) + '</td></tr><tr><td>terra trả lời, tính nhầm giá Sonnet</td><td class="mono">' + int(f) + '</td><td class="mono bad">' + usd(wrongT) + '</td><td class="mono bad">' + usd(f * wrongT) + '</td></tr></table></div><div class="stat"><span>Đúng <b>' + usd(right) + '</b></span><span>Theo model yêu cầu <b class="' + (Math.abs(wrong - right) / right > 0.05 ? 'bad' : '') + '">' + usd(wrong) + '</b></span><span>Lệch <b>' + pct((wrong - right) / right) + '</b></span></div>';
+            cap.innerHTML = 'Lượt fallback không có cache (cache nằm ở provider cũ), nên giá Sonnet không cache cho nó đắt gấp ' + dec(wrongT / tc, 1) + ' lần giá thật. Lệch hướng nào tuỳ cặp model: fallback từ Haiku sang terra thì tính theo model yêu cầu lại thấp hơn thật. Không có nghĩa fallback là xấu; nó giữ trợ lý sống khi Sonnet quá tải. Trong hệ thống thật: <code>find_price(prices, rec.response_model or request_model)</code> như wrapper README §2.6, và đếm phân phối response model trên dashboard.';
+          }
+          box.append(slider('Tỉ lệ fallback sang terra', 0, 0.5, 0.01, st.fb, (v) => { st.fb = v; draw(); }, (v) => pct(v, 0)).node, out, cap);
+          draw();
+        },
+        take: 'Giá đi theo model đã trả lời. Model yêu cầu chỉ là ý định.'
+      },
+      {
+        q: 'Claude trả input_tokens 500 mà cache hit rate trên dashboard là 1.800%. Chuyện gì vậy?',
+        a: `<p>Claude báo <code>input_tokens</code> <b>chỉ</b> là phần sau cache breakpoint cuối; tổng input = <code>input_tokens + cache_read_input_tokens + cache_creation_input_tokens</code> (README §1.3). Ghi thẳng <code>input_tokens</code> làm tổng input thì cache hit rate = cache read / input vượt 100%, và chi phí lệch. Lưu ý: trên một lượt gọi thì vượt 100% rõ ràng, nhưng trên dashboard tổng thì chưa chắc. Bật "Ghi thẳng input_tokens" ở hình chính: ở cấu hình mặc định hit rate tổng chỉ khoảng 74% (đúng là 40%) vì được gộp với các lượt không cache; phải cắt theo feature mới thấy dòng vượt 100%. Hit rate dưới 100% không chứng minh usage đã chuẩn hoá. Số mặc định dưới là đúng ví dụ trong README (500 / 9.000 / 500); giá Sonnet 5.5 theo Cost Optimization §2.1, ghi cache 1,25 × input.</p>`,
+        viz(box) {
+          const st = { inp: 500, cr: 9000, cw: 500, out: 400 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const p = PRICE['claude-sonnet-5-5'], tot = st.inp + st.cr + st.cw;
+            const right = costOf(p, tot, st.cr, st.cw, st.out), naive = (st.inp * p.in + st.out * p.out) / 1e6;
+            out.innerHTML = '<div class="tbl"><table><tr><th></th><th>gen_ai.usage.input_tokens</th><th>Cache hit rate</th><th>Chi phí</th></tr><tr><td>Ghi thẳng input_tokens</td><td class="mono">' + int(st.inp) + '</td><td class="mono ' + (st.cr / st.inp > 1 ? 'bad' : '') + '">' + pct(st.cr / Math.max(1, st.inp), 0) + '</td><td class="mono bad">' + usd(naive) + '</td></tr><tr><td>Chuẩn hoá (normalize_usage)</td><td class="mono">' + int(tot) + '</td><td class="mono ok">' + pct(st.cr / tot, 0) + '</td><td class="mono ok">' + usd(right) + '</td></tr></table></div>';
+            cap.innerHTML = (st.cr / st.inp > 1 ? '<span class="bad">Hit rate ' + pct(st.cr / st.inp, 0) + ' là dấu hiệu chắc chắn của lỗi chuẩn hoá</span> (README §3.8). ' : '') + 'Chi phí ghi thẳng bỏ mất ' + int(st.cr) + ' token đọc cache và ' + int(st.cw) + ' token ghi cache: ' + usd(right - naive) + ' mỗi lượt, ' + pct((right - naive) / right, 0) + ' chi phí thật. Không có nghĩa Claude báo sai: OpenAI và Claude chỉ dùng quy ước khác nhau. Trong hệ thống thật: chuẩn hoá về quy ước OTel (input gồm cache) ngay trong wrapper.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('input_tokens', 0, 5000, 100, st.inp, (v) => { st.inp = v; draw(); }, int).node,
+            slider('cache_read_input_tokens', 0, 20000, 500, st.cr, (v) => { st.cr = v; draw(); }, int).node,
+            slider('cache_creation_input_tokens', 0, 10000, 500, st.cw, (v) => { st.cw = v; draw(); }, int).node]), out, cap);
+          draw();
+        },
+        take: 'Chuẩn hoá usage trước khi tính bất cứ thứ gì. Hit rate trên 100% là chuông báo lỗi chuẩn hoá.'
+      },
+      {
+        q: 'Còn Gemini? Có cộng reasoning hai lần không?',
+        a: `<p>Ngược lại, dễ bỏ sót. Gemini báo <code>candidatesTokenCount</code> <b>không</b> gồm <code>thoughtsTokenCount</code>; Google tính tiền output là tổng hai phần (README §1.3). Sau khi chuẩn hoá theo quy ước OTel, reasoning là tập con của output, và <code>output_tokens × giá output</code> đã gồm phần suy luận (README §3.3). Số mặc định là ví dụ README (400 / 1.600); giá Gemini 3.5 Flash-Lite 0,30 / 2,50 USD mỗi 1M token theo Cost Optimization §2.1.</p>`,
+        viz(box) {
+          const st = { cand: 400, th: 1600 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const po = 2.5, a = st.cand * po / 1e6, b = (st.cand + st.th) * po / 1e6, c = (st.cand + 2 * st.th) * po / 1e6;
+            out.innerHTML = '<div class="tbl"><table><tr><th>Cách ghi output</th><th>Token</th><th>Chi phí output</th></tr><tr><td>Chỉ candidatesTokenCount</td><td class="mono">' + int(st.cand) + '</td><td class="mono bad">' + usd(a) + '</td></tr><tr><td>Chuẩn hoá: candidates + thoughts</td><td class="mono">' + int(st.cand + st.th) + '</td><td class="mono ok">' + usd(b) + '</td></tr><tr><td>Cộng thêm reasoning lần nữa</td><td class="mono">' + int(st.cand + 2 * st.th) + '</td><td class="mono bad">' + usd(c) + '</td></tr></table></div>';
+            cap.innerHTML = 'Ghi thiếu bỏ mất ' + pct(st.th / Math.max(1, st.cand + st.th), 0) + ' chi phí output; cộng hai lần thì thừa đúng chừng đó. Với Gemini, phần sửa là cộng thoughts vào output một lần trong normalize_usage; với Claude và OpenAI, output đã gồm reasoning sẵn.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('candidatesTokenCount', 50, 3000, 50, st.cand, (v) => { st.cand = v; draw(); }, int).node,
+            slider('thoughtsTokenCount', 0, 8000, 100, st.th, (v) => { st.th = v; draw(); }, int).node]), out, cap);
+          draw();
+        },
+        take: 'Mỗi provider một quy ước; sau chuẩn hoá chỉ còn một: input gồm cache, output gồm reasoning.'
+      },
+      {
+        q: 'Tài chính muốn biểu đồ chi phí theo tenant. Sao không gắn tenant lên metric cho nhanh?',
+        a: `<p>README §2.6: mỗi giá trị attribute khác nhau trên metric tạo một time series riêng. 50.000 tenant nhân với số model, số provider sẽ làm backend metric quá tải. Chi phí theo tenant tính từ span (§3.3): span store như ClickHouse, BigQuery, hoặc bảng sự kiện mỗi lượt gọi một dòng. Trên metric chỉ đặt chiều có ít giá trị (feature, gói dịch vụ).</p>`,
+        viz(box) {
+          const st = { ten: 6, models: 3, feat: 5, err: 4 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const metrics = 7, without = metrics * st.models * st.feat * st.err, withT = without * st.ten;
+            out.innerHTML = '<div class="stat"><span>Series không có tenant <b>' + int(without) + '</b></span><span>Có tenant <b class="' + (withT > 1e6 ? 'bad' : '') + '">' + int(withT) + '</b></span><span>Gấp <b>' + int(st.ten) + ' lần</b></span></div>';
+            cap.innerHTML = (withT > 1e6 ? '<span class="bad">Hơn một triệu time series</span> chỉ cho ' + metrics + ' metric LLM. ' : '') + 'Tính: ' + metrics + ' metric (duration, TTFT, năm counter token) × ' + st.models + ' model × ' + st.feat + ' feature × ' + st.err + ' giá trị error.type × ' + int(st.ten) + ' tenant. Số metric là đếm từ bảng §1.3, phần còn lại giả định. Trong hệ thống thật: tenant trên span, query tổng hợp từ span store.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Số tenant', 1, 50000, 1, st.ten, (v) => { st.ten = v; draw(); }, int).node,
+            slider('Số model', 1, 10, 1, st.models, (v) => { st.models = v; draw(); }).node,
+            slider('Số feature', 1, 20, 1, st.feat, (v) => { st.feat = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Chiều nhiều giá trị nằm trên span; metric giữ chiều ít giá trị.'
+      },
+      {
+        q: 'Khách bấm thumbs down. Làm sao tìm lại đúng trace của câu trả lời đó?',
+        a: `<p>README §3.4: feedback chỉ có ích khi tìm lại được trace. Thiết kế bốn bước:</p>
+<ol><li>Mỗi response trả về client mang một id: trace id, hoặc id nội bộ map tới trace id và <code>gen_ai.response.id</code>.</li>
+<li>Thumbs down gửi id đó kèm lý do (nếu có) và nguồn.</li>
+<li>Lưu như score gắn trace, hoặc bảng <code>(trace_id, response_id, source, value, reason, created_at)</code>.</li>
+<li>Feedback tiêu cực vào hàng đợi đọc trace; trace chỉ còn nếu đã lưu ngắn hạn 100% request (Lab 5).</li></ol>
+<p>Ba nguồn có độ phủ và độ tin rất khác nhau. Tỉ lệ dưới là giả định cho 3.000 câu hỏi một ngày của ShopViet.</p>`,
+        viz(box) {
+          const st = { exp: 0.02, imp: 0.15, staff: 0.01 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const n = 3000;
+            out.replaceChildren(hbars([['Explicit (thumbs)', n * st.exp, false], ['Implicit (tạo lại, hỏi lại, chuyển nhân viên)', n * st.imp, true], ['Từ nhân viên hỗ trợ', n * st.staff, false]], { max: n * 0.3, fmt: (v) => int(v) + ' lượt/ngày' }));
+            cap.innerHTML = 'Explicit rõ ràng nhưng chỉ ' + pct(st.exp) + ' lượt, và người bấm thường là người rất hài lòng hoặc rất bực. Implicit có nhiều nhất nhưng mỗi tín hiệu có nhiều cách hiểu (sao chép có thể là hài lòng, cũng có thể để sửa ở chỗ khác). Nhân viên ít nhất nhưng gần với nhãn. Lưu cột <code>source</code> để không trộn ba loại thành một con số.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Tỉ lệ bấm thumbs', 0.001, 0.1, 0.001, st.exp, (v) => { st.exp = v; draw(); }, (v) => pct(v)).node,
+            slider('Tỉ lệ có tín hiệu implicit', 0.01, 0.3, 0.01, st.imp, (v) => { st.imp = v; draw(); }, (v) => pct(v, 0)).node]), out, cap);
+          draw();
+        },
+        take: 'Id đi cùng response tới client và quay về cùng feedback. Không có id, feedback chỉ là một con số.'
+      },
+      {
+        q: 'Prompt B được nhiều thumbs up hơn prompt A. Chọn B luôn?',
+        a: `<p>README §3.4: đừng tối ưu thẳng theo thumbs. OpenAI thêm reward signal từ thumbs up/down vào bản cập nhật GPT-4o tháng 4/2025, và viết rằng feedback người dùng "can sometimes favor more agreeable responses", góp phần làm model nịnh hót. Cùng cơ chế đó có thể đẩy ShopViet tới prompt chiều khách hơn là prompt đúng hơn.</p>
+<p>Ví dụ giả định: prompt B hứa "đổi trả miễn phí" dễ dãi hơn chính sách thật. Kéo mức "chiều lòng" của B.</p>`,
+        viz(box) {
+          const st = { agree: 0.4 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const A = { correct: 0.9, up: 0.05 }, B = { correct: 0.9 - 0.25 * st.agree, up: 0.05 + 0.05 * st.agree };
+            out.innerHTML = '<div class="tbl"><table><tr><th></th><th>Tỉ lệ thumbs up</th><th>Đúng chính sách (eval có nhãn)</th></tr><tr><td>Prompt A</td><td class="mono">' + pct(A.up) + '</td><td class="mono ok">' + pct(A.correct) + '</td></tr><tr><td>Prompt B</td><td class="mono ' + (B.up > A.up ? 'ok' : '') + '">' + pct(B.up) + '</td><td class="mono ' + (B.correct < A.correct ? 'bad' : '') + '">' + pct(B.correct) + '</td></tr></table></div>';
+            cap.innerHTML = B.up > A.up && B.correct < A.correct ? '<span class="bad">Thumbs chọn B, eval chọn A.</span> B được thích hơn vì nói điều khách muốn nghe; ' + pct(A.correct - B.correct, 0) + ' câu trả lời thêm hứa sai chính sách, và cái giá đến sau ở bộ phận đổi trả. Trong hệ thống thật: dùng feedback để tìm trace cần đọc và làm ca eval; quyết định dựa trên eval có nhãn.' : 'Khi B không chiều lòng hơn, hai tín hiệu đồng ý.';
+          }
+          box.append(slider('Mức chiều lòng của B (giả định)', 0, 1, 0.05, st.agree, (v) => { st.agree = v; draw(); }, (v) => dec(v)).node, out, cap);
+          draw();
+        },
+        take: 'Thumbs chỉ chỗ cần đọc; eval có nhãn quyết định.'
+      },
+      {
+        q: 'Canary 50 câu, mỗi câu 3 lần, chạy mỗi ngày. Giảm bao nhiêu thì bắt được?',
+        a: `<p>README §3.5: dao động bình thường phải đo trước. 50 ca × 3 lần cho khoảng tin cậy rất rộng; cấu hình đó bắt được thay đổi lớn, không bắt được giảm 2%. Muốn nhạy hơn thì tăng mẫu, và trả thêm tiền cho mỗi lần chạy.</p>
+<p>Lab coi mỗi lần chạy là một phép thử độc lập (lạc quan: các lần chạy cùng một ca thường tương quan) và tính mức giảm nhỏ nhất thấy được giữa hai ngày với α = 0,05 hai phía, power 80%. Nói thường: khi không có gì đổi, bộ so sánh báo nhầm 5% số lần; khi pass rate thật sự giảm đúng bằng mức đó, nó bắt được 8 trên 10 lần. Giảm nhỏ hơn mức đó thì phần lớn thời gian lẫn vào dao động ngày thường. Chi phí mỗi lần chạy: Sonnet 5.5, 3.000 token vào, 300 ra (giả định), giá Cost Optimization §2.1.</p>`,
+        viz(box) {
+          const st = { cases: 50, runs: 3, p: 0.92 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const n = st.cases * st.runs, mde = 2.8 * Math.sqrt(2 * st.p * (1 - st.p) / n), cost = n * costOf(PRICE['claude-sonnet-5-5'], 3000, 0, 0, 300);
+            out.innerHTML = '<div class="stat"><span>Lượt kiểm mỗi ngày <b>' + int(n) + '</b></span><span>Giảm nhỏ nhất thấy được <b class="' + (mde > 0.02 ? 'bad' : 'ok') + '">' + dec(mde * 100, 1) + ' điểm</b></span><span>Chi phí mỗi lần chạy <b>' + usd(cost) + '</b></span><span>Mỗi tháng (chạy hằng ngày) <b>' + usd(cost * 30) + '</b></span></div>';
+            cap.innerHTML = mde > 0.02 ? '<span class="bad">' + st.cases + ' ca × ' + st.runs + ' lần chỉ thấy giảm từ ' + dec(mde * 100, 1) + ' điểm trở lên.</span> Giảm 2% sẽ chìm trong dao động ngày thường. Cần khoảng ' + int(Math.ceil(2 * st.p * (1 - st.p) * 7.84 / 0.0004)) + ' lượt kiểm mỗi ngày để thấy 2 điểm, tức ' + usd(Math.ceil(2 * st.p * (1 - st.p) * 7.84 / 0.0004) * costOf(PRICE['claude-sonnet-5-5'], 3000, 0, 0, 300)) + ' mỗi lần.' : '<span class="ok">Đủ nhạy để thấy giảm 2 điểm</span>, với giá ' + usd(cost) + ' mỗi lần chạy.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Số ca canary', 10, 1000, 10, st.cases, (v) => { st.cases = v; draw(); }, int).node,
+            slider('Lần chạy mỗi ca', 1, 10, 1, st.runs, (v) => { st.runs = v; draw(); }).node,
+            slider('Pass rate bình thường', 0.6, 0.99, 0.01, st.p, (v) => { st.p = v; draw(); }, (v) => pct(v, 0)).node]), out, cap);
+          draw();
+        },
+        take: 'Độ nhạy của canary mua bằng số lượt kiểm. Biết mình bắt được mức giảm nào trước khi tin "canary xanh".'
+      },
+      {
+        q: 'Canary tổng vẫn xanh, dashboard tổng vẫn phẳng. Sao khách vẫn kêu?',
+        a: `<p>README §3.5, bài học từ sự cố Claude Code tháng 3–4/2026 của Anthropic: ba thay đổi ảnh hưởng ba nhóm traffic khác nhau theo ba lịch khác nhau, và "the aggregate effect looked like broad, inconsistent degradation". Một lỗi chỉ xảy ra với phiên cũ đã lọt qua code review, unit test, end-to-end test và dogfooding. Metric tổng hợp không đủ; cần cắt theo phiên bản ứng dụng, prompt, model snapshot, loại phiên.</p>
+<p>Giả định: ShopViet có phiên mới và phiên cũ (hội thoại mở lại sau nhiều ngày). Chỉ phiên cũ bị hỏng.</p>`,
+        viz(box) {
+          const st = { share: 0.12, drop: 0.15 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const base = 0.9, n = 3000, agg = base - st.share * st.drop, seAgg = Math.sqrt(base * (1 - base) / n), seOld = Math.sqrt(base * (1 - base) / (n * st.share));
+            const zAgg = (base - agg) / (seAgg * Math.SQRT2), zOld = st.drop / (seOld * Math.SQRT2);
+            out.innerHTML = '<div class="tbl"><table><tr><th>Lát cắt</th><th>Trước</th><th>Sau</th><th>Lệch / độ lệch chuẩn của chênh</th></tr><tr><td>Tổng</td><td class="mono">' + pct(base) + '</td><td class="mono">' + pct(agg) + '</td><td class="mono ' + (zAgg > 3 ? 'bad' : '') + '">' + dec(zAgg, 1) + '</td></tr><tr><td>Phiên mới (' + pct(1 - st.share, 0) + ')</td><td class="mono">' + pct(base) + '</td><td class="mono">' + pct(base) + '</td><td class="mono">0,0</td></tr><tr><td>Phiên cũ (' + pct(st.share, 0) + ')</td><td class="mono">' + pct(base) + '</td><td class="mono bad">' + pct(base - st.drop) + '</td><td class="mono ' + (zOld > 3 ? 'bad' : '') + '">' + dec(zOld, 1) + '</td></tr></table></div>';
+            cap.innerHTML = zAgg <= 3 && zOld > 3 ? '<span class="bad">Tổng chỉ giảm ' + dec(st.share * st.drop * 100, 1) + ' điểm, chưa vượt 3 lần độ lệch chuẩn; phiên cũ giảm ' + dec(st.drop * 100, 0) + ' điểm, rõ ràng.</span> Tỉ lệ "đúng" dùng ở đây là một chỉ số chất lượng giả định trên 3.000 lượt/ngày. Trong hệ thống thật: dashboard chất lượng có sẵn các lát cắt theo loại phiên, prompt version, model snapshot.' : 'Ở cấu hình này cả tổng cũng thấy. Kéo tỉ lệ phiên cũ xuống để thấy nhóm nhỏ chìm trong tổng.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Tỉ lệ phiên cũ', 0.02, 0.5, 0.01, st.share, (v) => { st.share = v; draw(); }, (v) => pct(v, 0)).node,
+            slider('Mức giảm ở phiên cũ', 0.02, 0.5, 0.01, st.drop, (v) => { st.drop = v; draw(); }, (v) => dec(v * 100, 0) + ' điểm').node]), out, cap);
+          draw();
+        },
+        take: 'Nhóm nhỏ hỏng nặng trông như cả hệ thống hỏng nhẹ. Cắt metric theo loại phiên, prompt, snapshot.'
+      }
+    ],
+    poc: {
+      goal: "Log một tuần (22.050 lượt gọi) và chuỗi 60 ngày là <b>tổng hợp</b> (numpy seed cố định, cùng phân phối giả định với lab). Chi phí từng lượt tính bằng <code>normalize_usage</code>, <code>find_price</code>, <code>cost_usd</code> của README với giá Cost Optimization §2.1 (06/11/2026); \"hoá đơn\" = chi phí đúng + 6% job eval không qua wrapper. Phần B chạy bộ phát hiện baseline ± 3·sd trên 30 seed.",
+      file: "docs/llm-observability/pocs/06_cost_feedback_drift.py",
+      run: "uv run docs/llm-observability/pocs/06_cost_feedback_drift.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>numpy</code>, <code>opentelemetry-sdk</code> 1.45.2), chạy dưới 3 giây, miễn phí.",
+      output: "Log chi phí và chuỗi 60 ngày là TỔNG HỢP (numpy seed cố định, cùng phân phối giả định với lab 06; số khác lab\nvì khác bộ sinh số). Chạy thật: normalize_usage, find_price, cost_usd, traced_inference của README §2.6.\nGiá: docs/cost-optimization/README.md §2.1 (giá niêm yết 06/11/2026); ghi cache = 1,25 × input (Cost Optimization §2.2 TTL 5 phút; README §3.3 TTL 30 phút của OpenAI).\n\n== A1. Đối soát 7 ngày (22,050 lượt gọi TỔNG HỢP) với 'hoá đơn' = chi phí đúng + job eval 6% không qua wrapper ==\nCách tính                                                                 Tự tính (USD)  Lệch (+ = thấp hơn hoá đơn)  Lượt unpriced\n------------------------------------------------------------------------  -------------  ---------------------------  -------------\nREADME: giá theo response.model, usage chuẩn hoá, thiếu usage = unpriced  252.56         +7.2%                        395\n  + job eval cũng đi qua wrapper                                          267.97         +1.6%                        395\nGiá theo model YÊU CẦU (fallback terra tính giá Sonnet)                   274.89         -1.0%                        395\nGhi input_tokens thô của Claude, không cộng cache                         232.35         +14.7%                       395\nCache write tính như input thường                                         262.19         +3.7%                        395\nThiếu usage ghi 0 USD thay vì unpriced                                    267.97         +1.6%                        0\nHoá đơn: 272.23 USD. Phần lượt thiếu usage thật ra tốn 4.26 USD = 1.6% hoá đơn:\nghi 0 hay đánh dấu unpriced thì tổng như nhau, khác ở chỗ dashboard có biết mình đang thiếu không.\nCache hit Claude: input_tokens thô → 76%; chuẩn hoá → 40%.\n\n== A2. Chi phí theo tenant, feature (tính từ từng lượt, giống query trên span store) ==\ntenant        Lượt   USD    Phần   USD / lượt\n------------  -----  -----  -----  ----------\nshopviet      8,746  92.72  36.1%  0.01060\ngh-minhtam    3,902  63.24  24.6%  0.01621\ngh-anphat     3,429  36.32  14.1%  0.01059\ngh-hoanglong  2,390  25.33  9.9%   0.01060\ngh-phucloc    2,076  22.82  8.9%   0.01099\ngh-tanthanh   1,507  16.39  6.4%   0.01088\nfeature  Lượt   USD     Phần   USD / lượt\n-------  -----  ------  -----  ----------\ntu-van   8,005  110.92  43.2%  0.01386\nso-sanh  3,520  78.03   30.4%  0.02217\ndoi-tra  2,592  62.68   24.4%  0.02418\ntom-tat  1,635  3.76    1.5%   0.00230\ntra-don  6,298  1.42    0.6%   0.00023\nUser u_51c0 (hash) của gh-minhtam: 1,050 lượt, 32.60 USD = 52% chi phí của tenant đó. Không có user trên span thì không thấy.\n\n== A3. find_price + cost_usd của README trên span thật (khớp tiền tố dài nhất, không có giá thì unpriced) ==\ngen_ai.response.model         app.llm.cost_usd  app.llm.cost.unpriced\n----------------------------  ----------------  ---------------------\nclaude-sonnet-5-5             0.00870           -\nclaude-sonnet-5-5-2026-10-01  0.00870           -\ngpt-6.1-terra-2026-09-15      0.00435           -\nclaude-opus-5-5               -                 True\n\n== B1. 60 ngày TỔNG HỢP, hành vi đổi từ ngày 40 mà tên model không đổi; baseline ±3·sd, cửa sổ 14 ngày, seed 0 ==\nMetric                     Lần reo đầu sau khi đổi    Báo động giả trước đó\n-------------------------  -------------------------  ---------------------\noutput token               ngày 40                    1\nrefusal                    ngày 40                    0\ncanary pass                ngày 41                    0\ngen_ai.response.model mới  không bắt (tên không đổi)  0\n\n== B2. Lặp lại trên 30 seed: độ nhạy và báo động giả của từng metric ==\nMetric        Cửa sổ  Bắt đúng ngày đổi  Bắt trong 7 ngày  Báo động giả / 60 ngày (không đổi gì)\n------------  ------  -----------------  ----------------  -------------------------------------\noutput token  14      30/30              30/30             0.50\noutput token  10      30/30              30/30             0.93\nrefusal       14      28/30              30/30             0.53\nrefusal       10      29/30              30/30             0.90\ncanary pass   14      16/30              25/30             0.50\ncanary pass   10      19/30              26/30             0.83\nCanary 50 ca × 3 lần: sd ngày thường = 2.2 điểm; ngưỡng 3·sd = 6.6 điểm > mức giảm 6 điểm.\n\nRút ra: tính đúng theo README vẫn thấp hơn hoá đơn +7.2% (job eval ngoài wrapper + lượt thiếu usage); đưa\neval qua wrapper còn +1.6%, đúng bằng phần thiếu usage. Giá theo model yêu cầu làm tổng CAO hơn hoá đơn\n(fallback rẻ bị tính giá Sonnet), input_tokens thô của Claude làm thấp đi nhiều nhất. Drift không đổi tên: alert\n'model mới' im lặng; output token và refusal bắt đúng ngày đổi 30/30 và 28/30 seed, canary 50×3 chỉ 16/30\n(trong 7 ngày: 25/30) vì mức giảm 6 điểm nhỏ hơn 3·sd. Cửa sổ 10 ngày (không bội số 7) tăng báo động giả.",
+      measured: true,
+      read: ["A1: tính đúng theo README vẫn thấp hơn hoá đơn 7,2%; đưa job eval qua wrapper còn 1,6%, đúng bằng phần lượt thiếu usage (4,26 USD). Ghi 0 hay đánh dấu unpriced cho cùng tổng; khác ở chỗ dashboard biết mình đang thiếu 395 lượt.", "Ghi <code>input_tokens</code> thô của Claude thấp hơn hoá đơn 14,7%; tính cache write như input thường thêm khoảng 2 điểm; tính giá theo model yêu cầu thì <i>cao</i> hơn hoá đơn 1,0% (fallback gpt-6.1-terra rẻ hơn bị tính giá Sonnet). Cache hit Claude: thô 76%, chuẩn hoá 40%, không vượt 100% mà vẫn sai.", "A2: user <code>u_51c0</code> chiếm 52% chi phí của gh-minhtam; chỉ thấy khi user (đã hash) có trên span. A3: snapshot có hậu tố ngày khớp giá theo tiền tố; <code>claude-opus-5-5</code> chưa có giá thì span mang <code>app.llm.cost.unpriced</code>, không ghi 0.", "B: alert \"model mới\" im lặng vì tên không đổi. Output token bắt đúng ngày đổi 30/30 seed, refusal 28/30, canary 50 ca × 3 lần chỉ 16/30 (25/30 trong 7 ngày) vì sd ngày thường 2,2 điểm, 3·sd = 6,6 điểm lớn hơn mức giảm 6 điểm. Cửa sổ 10 ngày tăng báo động giả so với 14 ngày."]
+    },
+    mount(stage) {
+      const lg = { req: 3000, fb: 0.04, miss: 0.02, abuse: 150 };
+      const m = { reqModel: false, rawInput: false, noWrite: false, missZero: true, evalWrapped: false, group: 'tenant' };
+      const dr = { mode: 'silent', D: 39, len: 0.25, ref: 0.006, can: 0.06, win: 14, k: 3, cases: 50, runs: 3, seed: 0 };
+      const totBox = el('div'), tblBox = el('div'), flagsA = el('div'), capA = el('div', { class: 'cap' });
+      const chartBox = el('div'), drStat = el('div'), flagsB = el('div'), capB = el('div', { class: 'cap' });
+      let rows = null;
+      const EVAL_JOB = 0.06;
+
+      function renderA() {
+        if (!rows) rows = genLog(lg);
+        const P = priced(rows, m);
+        const trueSum = P.reduce((a, r) => a + r.trueC, 0), invoice = trueSum * (1 + EVAL_JOB);
+        const self = P.reduce((a, r) => a + (r.c || 0), 0) + (m.evalWrapped ? trueSum * EVAL_JOB : 0);
+        const gap = (invoice - self) / invoice, unpriced = P.filter((r) => r.c === null).length;
+        const recIn = P.reduce((a, r) => a + r.inRec, 0), crSum = P.reduce((a, r) => a + r.cr, 0), hit = crSum / recIn;
+        totBox.innerHTML = '<div class="stat"><span>Tự tính (7 ngày) <b>' + usd(self) + '</b></span><span>Hoá đơn provider <b>' + usd(invoice) + '</b></span><span>Chênh <b class="' + (Math.abs(gap) > 0.05 ? 'bad' : 'ok') + '">' + pct(gap) + '</b></span><span>Cache hit rate <b class="' + (hit > 1 ? 'bad' : '') + '">' + pct(hit, 0) + '</b></span><span>Lượt unpriced <b>' + int(unpriced) + '</b></span></div>';
+        const keyOf = (r) => (m.group === 'tenant' ? r.tenant : m.group === 'feature' ? FEATURES[r.fk].label : m.group === 'model' ? PRICE[r.resp].name : r.tenant + ' / ' + r.user);
+        const G = new Map();
+        P.forEach((r) => { const k = keyOf(r); const g = G.get(k) || { n: 0, c: 0, cr: 0, inp: 0, tenant: r.tenant }; g.n++; g.c += r.c || 0; g.cr += r.cr; g.inp += r.inRec; G.set(k, g); });
+        const list = [...G.entries()].sort((a, b) => b[1].c - a[1].c).slice(0, m.group === 'user' ? 8 : 10);
+        const tenantCost = new Map();
+        P.forEach((r) => tenantCost.set(r.tenant, (tenantCost.get(r.tenant) || 0) + (r.c || 0)));
+        const totalSelf = P.reduce((a, r) => a + (r.c || 0), 0) || 1;
+        const abuser = m.group === 'user' ? list.find(([, g]) => g.c / (tenantCost.get(g.tenant) || 1) > 0.2) : null;
+        const perReq = list.map(([, g]) => g.c / g.n), maxPer = Math.max(...perReq);
+        tblBox.innerHTML = '<div class="tbl"><table><tr><th>' + { tenant: 'Tenant', feature: 'Feature', model: 'gen_ai.response.model', user: 'Tenant / user (hash)' }[m.group] + '</th><th>Câu hỏi</th><th>Chi phí</th><th>Phần</th><th>Mỗi câu hỏi</th><th>Cache hit</th></tr>' + list.map(([k, g]) => {
+          const bad = abuser && abuser[0] === k;
+          const share = g.c / totalSelf;
+          return '<tr><td class="mono" style="font-size:12px' + (bad ? ';color:var(--bad)' : '') + '">' + k + '</td><td class="mono">' + int(g.n) + '</td><td class="mono">' + usd(g.c) + '</td><td><div style="display:flex;gap:6px;align-items:center"><div style="height:8px;border-radius:3px;background:var(--' + (bad ? 'bad' : 'accent') + ');width:' + Math.max(2, share * 120) + 'px"></div><span class="mono" style="font-size:11.5px">' + pct(share) + '</span></div></td><td class="mono ' + (g.c / g.n === maxPer && list.length > 1 ? 'bad' : '') + '">' + usd(g.c / g.n) + '</td><td class="mono ' + (g.cr / g.inp > 1 ? 'bad' : '') + '">' + pct(g.cr / Math.max(1, g.inp), 0) + '</td></tr>';
+        }).join('') + '</table></div>';
+
+        const abuseUser = P.filter((r) => r.user === 'u_51c0'), abuseCost = abuseUser.reduce((a, r) => a + r.trueC, 0), mtCost = P.filter((r) => r.tenant === 'gh-minhtam').reduce((a, r) => a + r.trueC, 0);
+        const fl = [];
+        if (Math.abs(gap) > 0.05) fl.push(['bad', 'Tự tính lệch hoá đơn ' + pct(gap) + ' (' + usd(invoice - self) + ' trong 7 ngày). README §3.3: lệch vài phần trăm là bình thường, lệch nhiều là có lỗi.']);
+        if (hit > 1) fl.push(['bad', 'Cache hit rate ' + pct(hit, 0) + ': ghi input_tokens của Claude (chỉ phần sau breakpoint) làm tổng input.']);
+        else if (m.rawInput) fl.push(['bad', 'Cache hit rate tổng ' + pct(hit, 0) + ' trông bình thường nhưng vẫn sai: input của Claude đang ghi thiếu phần cache. Con số tổng không vượt 100% vì được gộp với các lượt không dùng cache (tóm tắt đánh giá, fallback terra). Chọn "Cộng theo: Feature" để thấy dòng tư vấn vượt 100%.']);
+        if (m.reqModel) fl.push(['warn', int(P.filter((r) => r.req !== r.resp).length) + ' lượt fallback sang gpt-6.1-terra bị tính giá ' + PRICE['claude-sonnet-5-5'].name + '.']);
+        if (m.noWrite) fl.push(['warn', 'Cache write tính như input thường: bỏ sót phần 1,25× của ' + int(P.reduce((a, r) => a + r.cw, 0)) + ' token ghi cache.']);
+        if (m.missZero && unpriced === 0 && lg.miss > 0) fl.push(['warn', int(P.filter((r) => r.missing).length) + ' lượt stream thiếu usage bị ghi 0 USD; dashboard trông rẻ hơn thật.']);
+        if (!m.missZero) fl.push(['warn', int(unpriced) + ' lượt thiếu usage được đánh dấu, không ghi 0: biết ' + pct(unpriced / P.length) + ' lượt chưa có giá thay vì tưởng là miễn phí.']);
+        if (!m.evalWrapped) fl.push(['warn', 'Job eval hằng đêm gọi model không qua wrapper: khoảng ' + pct(EVAL_JOB / (1 + EVAL_JOB), 0) + ' hoá đơn không có span nào (giả định).']);
+        if (lg.abuse > 0 && abuseCost / mtCost > 0.2) fl.push(['bad', 'User u_51c0 của gh-minhtam tiêu ' + pct(abuseCost / mtCost, 0) + ' chi phí của tenant đó (' + usd(abuseCost) + '), ' + int(lg.abuse) + ' câu hỏi so sánh mỗi ngày với output dài. Chỉ thấy được khi user (đã hash) có trên span. Chọn "theo user" để xem.']);
+        flagsA.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [noFlag()]));
+        let c;
+        if (m.rawInput) c = { what: (hit > 1 ? 'Cache hit rate vượt 100%' : 'Cache hit rate ' + pct(hit, 0) + ' (đúng phải thấp hơn)') + ' và tổng tự tính thấp hơn hoá đơn ' + pct(gap) + '.', why: 'Claude báo input_tokens chỉ là phần sau cache breakpoint; ghi nó làm tổng input thì "tổng" thiếu phần cache, nên hit rate bị thổi lên (từng lượt tư vấn vượt 100%, tổng thì bị các lượt không cache kéo xuống) và token cache không được tính tiền.', not: 'Không có nghĩa cache đang hoạt động cực tốt hay ShopViet tiêu ít hơn hoá đơn.', real: 'Chuẩn hoá: input = input_tokens + cache_read + cache_creation (README §1.3, §3.8).' };
+        else if (Math.abs(gap) > 0.05) c = { what: 'Tổng tự tính lệch hoá đơn ' + pct(gap) + '.', why: [m.reqModel ? 'giá theo model yêu cầu' : '', m.noWrite ? 'bỏ sót hệ số cache write' : '', m.missZero ? 'lượt thiếu usage ghi 0' : '', !m.evalWrapped ? 'job eval không qua wrapper' : ''].filter(Boolean).join(', ') + '.', not: 'Không có nghĩa provider tính sai; hoá đơn ở đây là số đúng.', real: 'Đối soát hằng tháng; theo dõi app.llm.usage_missing; mọi code path gọi model (kể cả eval, batch) đi qua wrapper (README §3.3).' };
+        else if (lg.abuse > 0 && abuseCost / mtCost > 0.2) c = { what: 'Một user chiếm ' + pct(abuseCost / mtCost, 0) + ' chi phí của gh-minhtam.', why: 'u_51c0 gọi so sánh cấu hình ' + int(lg.abuse) + ' lần mỗi ngày, output khoảng 2.400 token mỗi lần, gấp gần ba lần bình thường.', not: 'Không chắc là lạm dụng: có thể là một nhân viên gian hàng dùng trợ lý làm công cụ nội bộ. Dữ liệu chỉ nói phải đi hỏi.', real: 'README §3.3: thêm user (đã hash) lên span nếu cần phát hiện lạm dụng; alert khi chi phí một user vượt một phần lớn của tenant.' };
+        else c = { what: 'Tổng tự tính khớp hoá đơn trong ' + pct(Math.abs(gap)) + '.', why: 'Giá theo response model, usage chuẩn hoá, cache write đúng hệ số, mọi code path qua wrapper.', not: 'Không có nghĩa từng tenant đúng: hai lỗi ngược chiều có thể triệt tiêu nhau ở tổng.', real: 'Đối soát cả theo model và theo ngày, không chỉ tổng tháng.' };
+        capA.innerHTML = capHtml(c);
+      }
+
+      function renderB() {
+        const S = drift(dr), from = dr.win;
+        const dO = detect(S.out, dr.win, dr.k, from), dR = detect(S.ref, dr.win, dr.k, from), dC = detect(S.can, dr.win, dr.k, from);
+        [dO, dR, dC].forEach((d) => d.forEach((r) => { if (r) r.k = dr.k; }));
+        const modelFlag = S.model.findIndex((v, i) => i > 0 && v !== S.model[i - 1]);
+        chartBox.replaceChildren(
+          el('div', { style: 'display:flex;gap:2px;margin:4px 0 6px;align-items:center;font-size:12px', html: '<span class="mute" style="width:120px">gen_ai.response.model</span>' + S.model.map((v, i) => '<span title="ngày ' + (i + 1) + '" style="flex:1;height:10px;border-radius:2px;background:var(--' + (v === 'mới' ? 'g4' : 'line') + ')' + (i === modelFlag ? ';outline:2px solid var(--ok)' : '') + '"></span>').join('') }),
+          chart(S.out, dO, dr.D, 'Output token trung bình (tư vấn)', (v) => int(v), 'g1'),
+          chart(S.ref, dR, dr.D, 'Tỉ lệ refusal', (v) => pct(v, 2), 'g2'),
+          chart(S.can, dC, dr.D, 'Canary pass rate (' + dr.cases + ' ca × ' + dr.runs + ')', (v) => pct(v, 0), 'g3'));
+        const sum = (d) => { const tp = d.findIndex((r, i) => r && r.flag && i >= dr.D); return { first: tp, delay: tp >= 0 ? tp - dr.D : null, fp: d.filter((r, i) => r && r.flag && i < dr.D).length }; };
+        const sO = sum(dO), sR = sum(dR), sC = sum(dC);
+        const cell = (s) => (s.first >= 0 ? '<b class="ok">ngày ' + (s.first + 1) + ' (+' + s.delay + ')</b>' : '<b class="bad">không</b>') + ' · báo giả <b class="' + (s.fp ? 'bad' : 'ok') + '">' + s.fp + '</b>';
+        drStat.innerHTML = '<div class="tbl"><table><tr><th>Bộ phát hiện</th><th>Phát hiện (trễ bao ngày) · báo động giả trước ngày đổi</th></tr><tr><td>Giá trị mới của response.model</td><td>' + (modelFlag >= 0 ? '<b class="ok">ngày ' + (modelFlag + 1) + ' (+0)</b>' : '<b class="bad">không có giá trị mới</b>') + '</td></tr><tr><td>Output token</td><td>' + cell(sO) + '</td></tr><tr><td>Tỉ lệ refusal</td><td>' + cell(sR) + '</td></tr><tr><td>Canary</td><td>' + cell(sC) + '</td></tr></table></div>';
+        const fl = [];
+        if (dr.mode === 'silent' && modelFlag < 0) fl.push(['warn', 'Hành vi đổi từ ngày ' + (dr.D + 1) + ' nhưng gen_ai.response.model không đổi: alert "giá trị mới" im lặng. Chỉ metric hành vi và canary bắt được.']);
+        if (dr.mode !== 'none' && sC.first < 0) fl.push(['bad', 'Canary ' + dr.cases + ' ca × ' + dr.runs + ' lần không bắt được mức giảm ' + dec(dr.can * 100, 0) + ' điểm: dao động ngày thường quá lớn so với mức giảm.']);
+        const fps = sO.fp + sR.fp + sC.fp;
+        if (fps > 0) fl.push(['bad', fps + ' báo động giả trước ngày đổi với k = ' + dec(dr.k, 1) + ', cửa sổ ' + dr.win + ' ngày.' + (dr.win % 7 && sO.fp ? ' Output dài hơn khoảng 6% vào cuối tuần (giả định); cửa sổ không phải bội số của 7 thì baseline lệch theo ngày trong tuần.' : '')]);
+        if (dr.mode === 'none' && fps === 0) fl.push(['ok', 'Không có thay đổi và không có báo động: đây là cách đo dao động bình thường trước khi chọn k (README §3.5).']);
+        if (dr.mode !== 'none' && sO.first >= 0 && sO.delay > 3) fl.push(['warn', 'Output token chỉ vượt ngưỡng sau ' + sO.delay + ' ngày: baseline đã bắt đầu "học" giá trị mới.']);
+        flagsB.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [noFlag()]));
+        let c;
+        if (dr.mode === 'silent') c = { what: 'Từ ngày ' + (dr.D + 1) + ', câu trả lời dài hơn ' + pct(dr.len, 0) + ', refusal tăng ' + dec(dr.ref * 100, 1) + ' điểm, canary giảm ' + dec(dr.can * 100, 0) + ' điểm. Tên model không đổi.', why: 'Provider đổi hành vi sau cùng một tên. README §3.5 dẫn hai loại: Chen, Zaharia, Zou (2023) đo cùng tên <code>gpt-4</code> mà độ chính xác một bài toán từ 84% (bản tháng 3/2023) xuống 51% (bản tháng 6/2023); và sự cố hạ tầng phía provider. Không field nào trong response cho thấy điều đó.', not: 'Không có nghĩa ShopViet deploy gì sai; và một metric lệch một ngày chưa chắc là drift.', real: 'Canary có đáp án kiểm bằng code, chạy theo lịch, ở nhiều đường đi (API trực tiếp, Bedrock, Vertex); metric hành vi cắt theo snapshot và loại phiên.' };
+        else if (dr.mode === 'alias') c = { what: 'gen_ai.response.model có giá trị mới đúng ngày ' + (dr.D + 1) + '; metric hành vi đổi theo.', why: 'Provider trỏ alias sang snapshot mới. Ghi response model trên mọi span là đủ để thấy ngay ngày đầu.', not: 'Không có nghĩa snapshot mới tệ hơn: phải chạy eval mới biết.', real: 'Alert khi response model có giá trị chưa thấy trong 30 ngày; pin snapshot cho tính năng quan trọng và đổi snapshot như một lần deploy có eval (README §3.5).' };
+        else c = { what: 'Không có thay đổi; ' + fps + ' báo động giả.', why: 'Mọi biến động là nhiễu ngày thường và chu kỳ cuối tuần.', not: 'Không có nghĩa bộ phát hiện tốt: một bộ không bao giờ báo cũng có 0 báo động giả.', real: 'Đo dao động trên vài tuần ổn định rồi mới chọn k và cửa sổ.' };
+        capB.innerHTML = capHtml(c);
+      }
+      const aLater = debounce(renderA, 120), bLater = debounce(renderB, 60);
+      const setL = (k) => (v) => { lg[k] = v; rows = null; aLater(); };
+      const setD = (k) => (v) => { dr[k] = v; bLater(); };
+      stage.append(
+        el('h4', { text: 'A. Chi phí một tuần theo tenant, feature, model, user', style: 'margin:0 0 4px' }),
+        el('div', { class: 'row' }, [
+          select('Cộng theo', [['tenant', 'Tenant'], ['feature', 'Feature'], ['model', 'Model trả lời'], ['user', 'User (hash)']], m.group, (v) => { m.group = v; renderA(); }).node,
+          slider('Câu hỏi mỗi ngày (giả định)', 500, 6000, 500, lg.req, setL('req'), int).node,
+          slider('Fallback Sonnet sang terra', 0, 0.3, 0.01, lg.fb, setL('fb'), (v) => pct(v, 0)).node,
+          slider('Stream thiếu usage', 0, 0.1, 0.005, lg.miss, setL('miss'), (v) => pct(v, 1)).node,
+          slider('Câu hỏi/ngày của u_51c0', 0, 1000, 50, lg.abuse, setL('abuse'), int).node]),
+        el('div', { class: 'row' }, [
+          select('Giá theo', [['resp', 'Model trả lời (đúng)'], ['req', 'Model yêu cầu']], 'resp', (v) => { m.reqModel = v === 'req'; renderA(); }).node,
+          select('input của Claude', [['norm', 'Chuẩn hoá (cộng cache)'], ['raw', 'Ghi thẳng input_tokens']], 'norm', (v) => { m.rawInput = v === 'raw'; renderA(); }).node,
+          select('Cache write', [['ok', 'Đúng hệ số 1,25×'], ['miss', 'Tính như input thường']], 'ok', (v) => { m.noWrite = v === 'miss'; renderA(); }).node,
+          select('Thiếu usage', [['zero', 'Ghi 0'], ['flag', 'Đánh dấu unpriced']], 'zero', (v) => { m.missZero = v === 'zero'; renderA(); }).node,
+          select('Job eval hằng đêm', [['no', 'Không qua wrapper'], ['yes', 'Qua wrapper']], 'no', (v) => { m.evalWrapped = v === 'yes'; renderA(); }).node]),
+        totBox, tblBox,
+        el('h4', { text: 'Phát hiện từ dữ liệu (chi phí)', style: 'margin:14px 0 4px' }), flagsA, capA,
+        el('h4', { text: 'B. Provider đổi model: bộ phát hiện tìm ra ngày nào?', style: 'margin:22px 0 4px' }),
+        el('div', { class: 'row' }, [
+          select('Kịch bản', [['silent', 'Hành vi đổi, tên không đổi'], ['alias', 'Alias trỏ sang snapshot mới'], ['none', 'Không đổi gì']], dr.mode, setD('mode')).node,
+          slider('Ngày đổi', 20, 55, 1, dr.D + 1, (v) => setD('D')(v - 1), (v) => 'ngày ' + v).node,
+          el('button', { text: 'Seed khác', onclick: () => { dr.seed++; renderB(); } })]),
+        el('div', { class: 'row' }, [
+          slider('Output dài thêm', 0, 0.6, 0.05, dr.len, setD('len'), (v) => '+' + pct(v, 0)).node,
+          slider('Refusal tăng', 0, 0.02, 0.001, dr.ref, setD('ref'), (v) => '+' + dec(v * 100, 1) + ' điểm').node,
+          slider('Canary giảm', 0, 0.2, 0.01, dr.can, setD('can'), (v) => '−' + dec(v * 100, 0) + ' điểm').node]),
+        el('div', { class: 'row' }, [
+          slider('Cửa sổ baseline (ngày)', 3, 19, 1, dr.win, setD('win')).node,
+          slider('k (số độ lệch chuẩn)', 1.5, 5, 0.1, dr.k, setD('k'), (v) => dec(v, 1)).node,
+          slider('Số ca canary', 10, 500, 10, dr.cases, setD('cases')).node,
+          slider('Lần chạy mỗi ca', 1, 10, 1, dr.runs, setD('runs')).node]),
+        chartBox, drStat,
+        el('h4', { text: 'Phát hiện từ dữ liệu (drift)', style: 'margin:14px 0 4px' }), flagsB, capB,
+        el('p', { class: 'hint', text: 'Giá USD mỗi 1M token từ docs/cost-optimization/README.md §2.1 (06/11/2026): Sonnet 5.5 2/10, đọc cache 0,10; Haiku 5.5 0,10/0,50, đọc cache 0,01 (prompt ≤ 100.000 token); gpt-6.1-terra 1/5, đọc cache 0,05. Ghi cache = 1,25 × giá input (Claude TTL 5 phút theo Cost Optimization; OpenAI TTL 30 phút theo README §3.3). Tenant, user, token mỗi feature, tỉ lệ cache hit 85%, job eval bằng 6% hoá đơn, chu kỳ cuối tuần, mức đổi hành vi đều là giả định; log sinh bằng seed cố định.' })
+      );
+      renderA();
+      renderB();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

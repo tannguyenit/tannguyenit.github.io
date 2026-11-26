@@ -1,0 +1,774 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LLM Observability Lab 05</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-tools.html">← Lab trước</a><a href="06-cost-feedback-drift.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/llm-observability/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const pct = (x, d = 1) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const dec = (x, d = 2) => x.toFixed(d).replace('.', ',');
+  const int = (x) => Math.round(x).toLocaleString('vi-VN');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flagBox = (l, t) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t });
+  const capHtml = (c) => '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + c.what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + c.why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + c.not + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + c.real + '</p></div>';
+  const noFlag = () => el('div', { class: 'ok', style: 'font-size:13px', text: 'Không phát hiện bất thường ở cấu hình này.' });
+  const fnv = (s) => { let h = 0x811c9dc5; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0'); };
+  const quantile = (arr, q) => { const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * a.length))]; };
+  const mb = (b) => b >= 1e9 ? dec(b / 1e9, 1) + ' GB' : b >= 1e6 ? dec(b / 1e6, 1) + ' MB' : int(b / 1e3) + ' KB';
+
+  const RULES = [
+    ['email', 'Email', '[EMAIL]', /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g],
+    ['card', 'Số thẻ', '[CARD]', /(?<!\d)(?:\d{4}[ -]?){3}\d{4}(?!\d)/g],
+    ['cccd', 'Số CCCD', '[CCCD]', /(?<![\d\w-])0\d{11}(?!\d)/g],
+    ['phone', 'Điện thoại VN', '[PHONE]', /(?<![\d\w-])(?:\+84|84|0)[\s.-]?[35789](?:[\s.-]?\d){8}(?!\d)/g],
+    ['address', 'Địa chỉ', '[ADDRESS]', /(?:(?:số|Số)\s+)?\d{1,4}[A-Za-z]?(?:\/\d{1,4}[A-Za-z]?)?\s+(?:(?:đường|Đường|phố|Phố)\s+)?\p{Lu}\p{Ll}*(?:\s+\p{Lu}\p{Ll}*){0,4}(?:\s*,\s*(?:phường|Phường|P\.|xã|Xã|quận|Quận|Q\.|huyện|Huyện|TP\.?|Thành phố|tỉnh|Tỉnh)\s*[\p{Lu}\d][\p{L}\d]*(?:\.[\p{L}\d]+)*(?:\s+[\p{Lu}\d][\p{L}\d]*(?:\.[\p{L}\d]+)*){0,3})*/gu]
+  ];
+  const NAIVE_PHONE = /\d[\d .-]{7,}\d/g;
+  function maskText(s, on, naive) {
+    let out = String(s);
+    for (const [k, , ph, rx] of RULES) {
+      if (!on[k]) continue;
+      out = out.replace(k === 'phone' && naive ? NAIVE_PHONE : rx, ph);
+    }
+    return out;
+  }
+
+  const USER_MSG = 'Em đặt đơn SV-4821 hôm 20/11, tổng 24.980.000 đ. Giao tới số 12 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM giúp em. SĐT 0912 345 678, hoặc +84 987.654.321. Email lan.nguyen@gmail.com. Em bị tiểu đường nên cần máy đo đường huyết gấp.';
+  const TOOL_RES = '{"order_id":"SV-4821","total":"24.980.000 đ","name":"Nguyễn Thị Lan","phone":"0912345678","cccd":"079203001234","card":"4111 1111 1111 1111","address":"12 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM"}';
+  const BOT_MSG = 'Dạ, đơn SV-4821 (24.980.000 đ) đang giao tới 12 Lê Lợi, Phường Bến Nghé, Quận 1. Shipper sẽ gọi 0912 345 678 trước khi tới. Hotline ShopViet: 1900 6035.';
+  const RECORD = [
+    ['gen_ai.request.model', 'claude-sonnet-5-5', 'own', false],
+    ['gen_ai.response.finish_reasons', '["end_turn"]', 'own', false],
+    ['gen_ai.usage.input_tokens', '6400', 'own', false],
+    ['app.tenant.id', 'shopviet', 'own', false],
+    ['user.id', 'lan.nguyen@gmail.com', 'own', 'hash'],
+    ['gen_ai.input.messages', USER_MSG, 'lib', true],
+    ['gen_ai.tool.call.arguments', '{"order_id":"SV-4821","phone":"0912 345 678"}', 'own', true],
+    ['gen_ai.tool.call.result', TOOL_RES, 'own', true],
+    ['gen_ai.output.messages', BOT_MSG, 'lib', true]
+  ];
+  const TRUTH = [
+    ['0912 345 678', 'phone'], ['+84 987.654.321', 'phone'], ['0912345678', 'phone'], ['lan.nguyen@gmail.com', 'email'], ['079203001234', 'cccd'], ['4111 1111 1111 1111', 'card'],
+    ['12 Lê Lợi', 'address'], ['Nguyễn Thị Lan', 'name'], ['tiểu đường', 'health']
+  ];
+  const KEEP = ['SV-4821', '24.980.000 đ', '1900 6035', '20/11'];
+  const LAYERS = [['code', '1. Trong code, trước khi đặt attribute', 'own'], ['sdk', '2. Lúc export trong SDK (mask_otel_spans)', 'all'], ['collector', '3. Ở Collector', 'all'], ['backend', '4. Ở backend (quét của Datadog)', 'all']];
+  const HOPS = ['Rời process, tới Collector', 'Collector gửi tới backend bên thứ ba', 'Lưu trong backend (sau lớp quét)'];
+
+  function buildTrace(o) {
+    const S = [];
+    let id = 0;
+    const add = (parent, name, kind, start, dur, attrs, trace) => { const s = { id: ++id, parent, name, kind, start, dur, attrs: attrs || {}, trace: trace || 'a3f9e1' }; S.push(s); return s; };
+    const loopN = o.loop ? 9 : 1;
+    const ten = (x) => (o.tenantAll ? Object.assign({ 'app.tenant.id': 'shopviet' }, x) : x);
+    const root = add(0, 'POST /chat', 'SERVER', 0, 0, { 'app.tenant.id': 'shopviet', 'http.route': '/chat' });
+    const ag = add(root.id, 'invoke_agent support-bot', 'INTERNAL', 10, 0, ten({ 'gen_ai.operation.name': 'invoke_agent', 'gen_ai.conversation.id': 'conv_91c2' }));
+    let t = 20;
+    add(ag.id, 'embeddings', 'CLIENT', t, 120, ten({ 'gen_ai.operation.name': 'embeddings' })); t += 130;
+    add(ag.id, 'retrieval policy-index', 'CLIENT', t, 80, ten({ 'app.retrieval.doc_ids': 'hoan-tien#2, giao-hang#5', 'app.retrieval.scores': '0,82, 0,71' })); t += 90;
+    for (let i = 0; i < loopN; i++) {
+      add(ag.id, 'chat claude-sonnet-5-5', 'CLIENT', t, 1400, ten({ 'gen_ai.response.finish_reasons': '["tool_use"]' })); t += 1410;
+      const tool = add(ag.id, 'execute_tool get_order', 'INTERNAL', t, 600, ten({ 'gen_ai.tool.name': 'get_order', 'gen_ai.tool.call.id': 'toolu_0' + (i + 1) }));
+      add(tool.id, 'HTTP GET order-service', 'CLIENT', t + 10, 570, ten({ 'http.request.header.traceparent': o.traceparent ? '00-a3f9e1...-01' : '(không gửi)' }));
+      add(o.traceparent ? S[S.length - 1].id : 0, 'GET /orders/SV-4821 (order-service)', 'SERVER', t + 30, 520, Object.assign({ 'service.name': 'order-service' }, o.tenantAll ? { 'app.tenant.id': 'shopviet' } : {}), o.traceparent ? 'a3f9e1' : '7c02b4');
+      t += 610;
+    }
+    if (o.refund) {
+      add(ag.id, 'chat claude-sonnet-5-5', 'CLIENT', t, 1300, ten({ 'gen_ai.response.finish_reasons': '["tool_use"]' })); t += 1310;
+      const wait = 20 * 60 * 1000;
+      if (o.approval) add(ag.id, 'approval create_refund (nhân viên duyệt)', 'INTERNAL', t, wait, ten({ 'app.approval.result': 'approved', 'app.approval.reviewer': 'cs_hash_4b1e' }));
+      t += wait + 10;
+      add(ag.id, 'execute_tool create_refund', 'INTERNAL', t, 400, ten({ 'gen_ai.tool.name': 'create_refund' })); t += 410;
+    }
+    add(ag.id, 'chat claude-sonnet-5-5', 'CLIENT', t, 1700, ten({ 'gen_ai.response.finish_reasons': '["end_turn"]' })); t += 1710;
+    ag.dur = t - ag.start; root.dur = t + 10;
+    return S;
+  }
+
+  const fmtMs = (ms) => ms >= 60000 ? dec(ms / 60000, 1) + ' phút' : ms >= 1000 ? dec(ms / 1000, 2) + ' s' : int(ms) + ' ms';
+
+  return {
+    id: 'logging-pii-agents', nav: '5. Log, PII, trace agent', ref: '§3.1–3.2',
+    title: 'Che PII ở backend là đã muộn: số điện thoại của khách đã đi qua ba hệ thống trước khi bị che, và trace agent đứt mất phần quan trọng nhất',
+    hook: 'Bật tắt từng luật che và từng lớp che: lab chạy regex thật trên bản ghi span của ShopViet, đánh dấu dữ liệu nào còn lộ và lộ ở chặng nào. Phần dưới dựng cây trace của một agent; tắt traceparent, bước duyệt hoặc gắn tenant để xem trace đứt ra sao.',
+    terms: [
+      ['PII', 'Thông tin định danh cá nhân: số điện thoại, email, địa chỉ, số CCCD, số thẻ. Ví dụ "0912 345 678" trong tin nhắn khách.'],
+      ['Metadata', 'Thông tin về lượt gọi, không chứa lời khách: model, token, thời gian, finish reason, tenant. Ví dụ gen_ai.usage.input_tokens = 6400.'],
+      ['Nội dung (content)', 'Prompt đã render, lịch sử hội thoại, tài liệu retriever trả về, tool arguments và result, output. Ví dụ gen_ai.input.messages chứa nguyên câu khách gõ.'],
+      ['Mask / che', 'Thay PII bằng placeholder trước khi lưu. "Gọi 0912 345 678" thành "Gọi [PHONE]".'],
+      ['Regex', 'Biểu thức mẫu để tìm chuỗi có cấu trúc. Ví dụ (?:\\+84|0)[35789]... bắt số di động Việt Nam 10 chữ số.'],
+      ['*_ref', 'Attribute OTel chứa URI trỏ tới object storage thay vì chứa nội dung. Span giữ con trỏ s3://..., nội dung nằm ở bucket có phân quyền riêng.'],
+      ['Head sampling', 'Quyết định giữ trace ngay lúc bắt đầu, thường theo trace id (giữ 5%). Rẻ, nhưng chưa biết trace nào sẽ lỗi.'],
+      ['Tail sampling', 'Collector chờ đủ span của một trace (decision_wait, ví dụ 30 giây) rồi mới quyết định. Giữ được 100% trace lỗi, nhưng tốn bộ nhớ.'],
+      ['invoke_agent', 'Span bọc toàn bộ một lần chạy agent. Bên trong là các span chat (gọi model) và execute_tool (chạy tool).'],
+      ['execute_tool', 'Span cho một lần chạy tool, ví dụ execute_tool get_order, có gen_ai.tool.call.id để khớp với tool call trong response của model.'],
+      ['Baggage', 'Cơ chế của OTel mang cặp khoá–giá trị (ví dụ tenant=shopviet) theo context: span con tạo sau đó đọc được, và nó đi qua header sang service khác. Dùng để gắn tenant lên mọi span mà không phải truyền tay.'],
+      ['traceparent', 'Header W3C Trace Context gửi kèm request HTTP để service bên kia nối span của nó vào cùng trace. Ví dụ 00-a3f9e1...-01.'],
+      ['gen_ai.conversation.id', 'Id hội thoại thật để nối các lượt. Spec không cho dùng trace id hay UUID tự sinh mỗi lượt để thay.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b>: khách hỏi về đơn SV-4821 và gõ luôn số điện thoại, địa chỉ, email. Agent <code>support-bot</code> gọi tool <code>get_order</code>; tool trả về cả số CCCD và số thẻ đã lưu. Đội vận hành bật capture nội dung để debug lỗi "hoàn tiền 3 ngày", và trace đi qua Collector tới Datadog, nơi có tính năng quét dữ liệu nhạy cảm.',
+      scenario: 'Bản ghi span gồm 9 attribute, 2 attribute nội dung do thư viện instrumentation bên thứ ba ghi (không qua code của ShopViet). Trong nội dung có 9 mẩu dữ liệu nhạy cảm đã biết trước và 4 chuỗi phải giữ nguyên (mã đơn, giá, hotline, ngày).',
+      ask: 'Che ở lớp nào thì PII không rời process? Regex bắt được gì, bỏ sót gì, che nhầm gì? Và trên trace agent, những gì hay bị thiếu khiến đội trực không đọc được chuyện đã xảy ra?',
+      solves: 'Lab chạy regex JavaScript thật (email, số thẻ, CCCD, điện thoại Việt Nam, địa chỉ) trên từng attribute, áp theo các lớp che của README §3.1, rồi đếm mẩu PII còn lộ ở từng chặng và chuỗi bị che nhầm. Phần B dựng cây span theo README §3.2 và tính các metric agent (thời lượng, số lượt gọi model, số lượt gọi tool), phát hiện trace đứt, khoảng trống và span thiếu tenant.',
+      read: [
+        'Bản ghi span: chữ đỏ là PII còn lộ trong attribute đó; chữ xanh là placeholder đã thay. Nhãn "thư viện" là attribute do instrumentation bên thứ ba ghi.',
+        'Dải ba chặng: mỗi ô đếm số mẩu PII còn ở dạng gốc khi dữ liệu tới chặng đó.',
+        'Bảng "Kiểm tra": mẩu nào bị lộ, mẩu nào được che, chuỗi nào bị che nhầm.',
+        'Phần B: cây span thụt lề theo cha con, thanh thời gian trên thang log (vì một span có thể dài 20 phút). Trace khác màu là trace bị đứt ra.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Hai lớp dữ liệu (§3.1)</h4>
+<div class="tbl"><table><tr><th>Lớp</th><th>Gồm</th><th>Lưu bao lâu</th><th>Ai xem</th></tr>
+<tr><td>Metadata</td><td>provider, model yêu cầu và thực trả về, token, chi phí, thời gian, finish reason, <code>error.type</code>, response id, tenant, feature, prompt version, số tool call</td><td>Vài tháng tới hơn một năm</td><td>Kỹ sư, product, tài chính</td></tr>
+<tr><td>Nội dung</td><td>prompt đã render, lịch sử hội thoại, tài liệu retriever, tool arguments và result, output</td><td>Vài ngày tới vài tuần</td><td>Nhóm nhỏ, có audit log</td></tr></table></div>
+<p>Tách nội dung ra khỏi span bằng <code>*_ref</code> trỏ tới bucket có phân quyền và lifecycle riêng; URI cũng có thể lộ tên bucket, tenant, id.</p>
+<h4>Thứ tự che an toàn</h4>
+<ol><li>Trong code, trước khi đặt attribute: chỗ duy nhất chắc dữ liệu chưa đi đâu.</li><li>Lúc export trong SDK (<code>mask_otel_spans</code> của Langfuse, chạy cả trên attribute của instrumentation bên thứ ba; ném lỗi thì cả batch bị bỏ).</li><li>Collector: lớp thứ hai, không thay lớp một.</li><li>Backend: dữ liệu đã ở hệ thống bên thứ ba.</li></ol>
+<p>Regex bắt định dạng có cấu trúc, không bắt "tôi bị tiểu đường". Nội dung loại đó: không ghi ở production, hoặc chỉ ghi mẫu nhỏ qua bộ phát hiện PII tốt hơn. Mẫu cho judge online lấy sau khi che.</p>
+<h4>Sampling</h4>
+<p>Giữ 100% trace lỗi, bị cắt, bị từ chối, thiếu usage (<code>app.llm.keep</code>), lấy mẫu phần còn lại. Tail sampling tốn bộ nhớ: số trace mới mỗi giây × <code>decision_wait</code> × kích thước trace; đặt <code>memory_limiter</code> đầu pipeline. Feedback tiêu cực đến sau quyết định: lưu ngắn hạn 100% (ví dụ 72 giờ) rồi chuyển sang lưu dài khi có feedback.</p>
+<h4>Trace RAG, tool, agent (§3.2)</h4>
+<ul><li>RAG: mỗi bước một span; span retrieval ghi số tài liệu, id, score.</li><li>Tool: <code>execute_tool {gen_ai.tool.name}</code>, có <code>gen_ai.tool.call.id</code>.</li><li>Agent: <code>invoke_agent</code>; alert trên <code>gen_ai.invoke_agent.duration</code>, <code>.inference_calls</code>, <code>.tool_calls</code>. p50 4 mà p99 60 là có run chạy vòng.</li><li>Hay thiếu: <code>traceparent</code> khi gọi tool qua mạng, span cho bước người duyệt, trace-level attribute trên mọi span, <code>gen_ai.conversation.id</code> thật.</li></ul>
+<div class="verdict"><b>Điểm cần nhớ:</b> metadata lưu lâu, nội dung lưu ngắn và che trong process. Một trace agent chỉ có ích khi nó liền một khối, giải thích được mọi khoảng thời gian, và lọc được theo tenant ở mọi span.</div>`,
+    why: {
+      c: 'Tách metadata và nội dung; nội dung mặc định tắt ở production hoặc đi ra bucket riêng qua <code>*_ref</code>. Che trong code cho attribute của mình, cộng hàm che ở SDK cho attribute của thư viện, có test. Trace agent: traceparent qua mọi lời gọi tool ngoài process, span cho bước duyệt, tenant trên mọi span.',
+      s: 'Ghi hết nội dung, giữ một năm "cho chắc": mỗi bản ghi là một rủi ro rò rỉ và một yêu cầu xoá khó làm. Tin vào lớp quét PII của backend: dữ liệu đã đi qua mạng và Collector. Regex đơn giản kiểu "chuỗi 9 chữ số trở lên": che luôn giá tiền, hotline, làm hỏng dữ liệu debug.',
+      p: 'Regex phải bảo trì và có test; vẫn sót dữ liệu không có cấu trúc. Tail sampling tốn bộ nhớ Collector và cần định tuyến theo trace id. Lưu ngắn hạn 100% request để bắt feedback muộn là thêm một bucket và một chính sách xoá.'
+    },
+    deep: [
+      {
+        q: 'Ổ cứng rẻ. Sao không ghi hết prompt và output, giữ một năm cho chắc?',
+        a: `<p>Vì metadata và nội dung khác nhau về rủi ro, không phải về dung lượng (README §3.1). Metadata đủ trả lời phần lớn câu hỏi vận hành: cái gì chậm, cái gì tốn, cái gì lỗi, bắt đầu từ khi nào. Nội dung cần cho debug từng trường hợp và xây eval dataset, nhưng mỗi bản ghi nội dung là lời của khách, và khi khách yêu cầu xoá dữ liệu, bạn phải tìm được và xoá được nó.</p>
+<p>Kéo các con số (đều là giả định) để so hai cách. Cột "bản ghi chứa lời khách" là số thứ phải xoá được khi có yêu cầu.</p>`,
+        viz(box) {
+          const st = { req: 3000, kb: 24, metaDays: 400, contentDays: 14 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const meta = st.req * st.metaDays * 1.5e3, allIn = st.req * 365 * (1.5e3 + st.kb * 1e3), split = meta + st.req * st.contentDays * st.kb * 1e3;
+            out.innerHTML = '<div class="tbl"><table><tr><th>Chính sách</th><th>Dung lượng</th><th>Bản ghi chứa lời khách tại một thời điểm</th></tr><tr><td>Ghi hết, giữ 365 ngày</td><td class="mono">' + mb(allIn) + '</td><td class="mono bad">' + int(st.req * 365) + '</td></tr><tr><td>Metadata ' + st.metaDays + ' ngày + nội dung ' + st.contentDays + ' ngày</td><td class="mono">' + mb(split) + '</td><td class="mono ok">' + int(st.req * st.contentDays) + '</td></tr></table></div>';
+            cap.innerHTML = 'Tách hai lớp giảm số bản ghi chứa lời khách ' + dec(365 / st.contentDays, 0) + ' lần, trong khi metadata vẫn giữ ' + st.metaDays + ' ngày để so xu hướng. Dung lượng không phải lý do chính: lý do là ai xem được, bao lâu, và xoá được không. Với <code>*_ref</code>, xoá dữ liệu của một khách là xoá object trong bucket, không phải tìm trong backend trace.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Câu hỏi mỗi ngày', 500, 50000, 500, st.req, (v) => { st.req = v; draw(); }, int).node,
+            slider('Nội dung mỗi câu hỏi (KB, giả định)', 2, 200, 2, st.kb, (v) => { st.kb = v; draw(); }).node,
+            slider('Giữ nội dung (ngày)', 1, 90, 1, st.contentDays, (v) => { st.contentDays = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Metadata lưu lâu cho mọi người; nội dung lưu ngắn, cho nhóm nhỏ, ở nơi xoá được.'
+      },
+      {
+        q: 'Datadog có quét và che dữ liệu nhạy cảm. Sao vẫn phải che trong code?',
+        a: `<p>Vì "đã che" ở backend nghĩa là dữ liệu gốc đã đi qua mạng, qua Collector, và tới hệ thống của bên thứ ba rồi mới bị thay (README §3.1, lớp 4). Hình chính ở trên đếm đúng chuyện đó: chỉ bật lớp 4 thì cả ba chặng đều thấy PII gốc.</p>
+<p>Lớp 1 (trong code) là chỗ duy nhất bạn chắc dữ liệu chưa đi đâu. Nhưng lớp 1 chỉ chạy trên attribute do code của bạn đặt. Attribute do thư viện instrumentation ghi (ví dụ <code>gen_ai.input.messages</code> khi bật capture) không đi qua hàm của bạn; lớp 2 (lúc export trong SDK) mới bắt được chúng. Vì thế cấu hình hợp lý là lớp 1 + lớp 2, lớp 3 làm lưới thứ hai. Thử trong hình chính: chỉ bật lớp 1 và xem hai attribute "thư viện" vẫn lộ.</p>
+<p>Một bẫy của lớp 2 trong Langfuse: nếu hàm mask ném lỗi, <b>cả batch</b> bị bỏ (README §2.1). Hàm mask phải xử lý mọi kiểu attribute (chuỗi, số, mảng) và có test như code production.</p>`,
+        take: 'Che càng gần nơi sinh dữ liệu càng tốt. Lớp sau là lưới, không phải lớp chính.'
+      },
+      {
+        q: 'Regex có bắt được mọi PII không? Thử gõ xem.',
+        a: `<p>Không. README §3.1: regex bắt được định dạng có cấu trúc (email, số thẻ) nhưng không bắt được "tôi bị tiểu đường, đang dùng thuốc X". Gõ hoặc chọn một câu bên dưới; lab chạy đúng năm regex của hình chính (bản chặt cho điện thoại) ngay trên trình duyệt.</p>
+<p>Regex cũng có thể che <b>thừa</b>. Bản đầu của regex địa chỉ trong lab cho phép dấu chấm nằm trong một "từ" của địa chỉ (để bắt <code>TP.HCM</code>). Với câu <code>...Quận 1. Shipper sẽ gọi...</code>, nó đọc <code>1.</code> là một từ, rồi coi <code>Shipper</code> viết hoa là từ tiếp theo của địa chỉ, nên câu trả lời thành <code>[ADDRESS] sẽ gọi</code>. POC phát hiện lỗi này; bản hiện tại chỉ cho dấu chấm nằm <b>giữa</b> hai chữ (TP.HCM), dấu chấm cuối câu thì dừng. Bài học: test hàm che bằng câu thật có dấu câu, không chỉ bằng địa chỉ đứng một mình.</p>`,
+        viz(box) {
+          const PRE = [
+            ['Số viết bằng chữ', 'Anh gọi em số không chín một hai, ba bốn năm, sáu bảy tám nhé.'],
+            ['Sức khoẻ', 'Mẹ em bị tiểu đường, đang dùng insulin, cần máy đo đường huyết.'],
+            ['Số bị chèn chữ', 'SĐT em 09I2 345 678 (gõ nhầm chữ I).'],
+            ['Địa chỉ viết thường', 'giao tới 45 nguyễn huệ quận 1 giúp em'],
+            ['Đủ định dạng', 'Gọi +84 912 345 678, mail lan@shopviet.vn, giao 45 Nguyễn Huệ, Phường Bến Nghé, Quận 1.']
+          ];
+          const ta = el('textarea', { rows: 3, style: 'width:100%;font:13px var(--mono);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' });
+          ta.value = PRE[0][1];
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const on = { email: true, card: true, cccd: true, phone: true, address: true };
+          function draw() {
+            const src = ta.value || '', m = maskText(src, on, false), hits = (m.match(/\[(EMAIL|CARD|CCCD|PHONE|ADDRESS)\]/g) || []).length, digits = (m.match(/\d/g) || []).length;
+            out.innerHTML = '<p class="mono" style="font-size:12.5px;margin:6px 0;white-space:pre-wrap">' + esc(m).replace(/\[(EMAIL|CARD|CCCD|PHONE|ADDRESS)\]/g, '<b class="ok">[$1]</b>') + '</p><div class="stat"><span>Placeholder <b>' + hits + '</b></span><span>Chữ số còn lại <b>' + digits + '</b></span></div>';
+            const health = /tiểu đường|insulin|ung thư|thuốc|bệnh/i.test(src);
+            cap.innerHTML = (hits === 0 && src ? '<span class="bad">Không regex nào khớp.</span> ' : '') + (health ? '<span class="bad">Câu có thông tin sức khoẻ nhưng regex không có khái niệm "sức khoẻ".</span> ' : '') + 'Regex chỉ thấy hình dạng chuỗi. Số viết bằng chữ, gõ nhầm, địa chỉ không viết hoa đều lọt. Không có nghĩa regex vô dụng: nó bắt được phần lớn định dạng chuẩn với chi phí gần bằng 0. Trong hệ thống thật: nếu ứng dụng nhận loại nội dung không cấu trúc, không ghi nội dung ở production, hoặc chỉ ghi mẫu nhỏ qua bộ phát hiện PII tốt hơn, có người duyệt quyền truy cập (README §3.1).';
+          }
+          ta.addEventListener('input', draw);
+          box.append(el('div', { class: 'row' }, PRE.map(([t, s]) => el('button', { text: t, onclick: () => { ta.value = s; draw(); } }))), ta, out, cap);
+          draw();
+        },
+        take: 'Regex là lớp rẻ cho dữ liệu có cấu trúc. Nội dung tự do nhạy cảm thì giải pháp là không ghi.'
+      },
+      {
+        q: 'Tool get_order chỉ trả dữ liệu nội bộ của ShopViet. Ghi result vào span thì có sao?',
+        a: `<p>Dữ liệu nội bộ của ShopViet chính là dữ liệu của khách. README §3.1: tool arguments và result cũng là nội dung; spec để chúng opt-in vì có thể chứa thông tin nhạy cảm. Một tool <code>get_customer</code> trả về địa chỉ, số điện thoại; ghi result vào span là ghi những thứ đó.</p>
+<p>Result của <code>get_order</code> trong hình chính:</p>
+<pre class="mono" style="font-size:12px;white-space:pre-wrap;background:var(--panel);padding:8px;border-radius:6px">{"order_id":"SV-4821","name":"Nguyễn Thị Lan","phone":"0912345678","cccd":"079203001234","card":"4111 1111 1111 1111", ...}</pre>
+<p>Khách không hề gõ số CCCD hay số thẻ, nhưng chúng nằm trong trace vì tool trả về. Tên "Nguyễn Thị Lan" không regex nào trong lab bắt được: tên người Việt không có định dạng riêng. Cách bền hơn regex: tool chỉ trả về các trường mà model cần (trạng thái đơn, ngày giao), không trả cả bản ghi khách hàng.</p>
+<p>Thêm một hệ quả (README §3.1): mẫu trace gửi cho judge online phải lấy <b>sau khi che</b>, vì judge là một lượt gọi model khác, có thể ở provider khác.</p>`,
+        take: 'Tool result là nội dung. Thu nhỏ thứ tool trả về hiệu quả hơn che thứ đã trả.'
+      },
+      {
+        q: 'Giữ 5% trace là đủ thống kê. Sao lại cần tail sampling phức tạp?',
+        a: `<p>Vì 5% ngẫu nhiên giữ được 5% của mọi thứ, kể cả trace lỗi. README §3.1: head sampling quyết định ở đầu trace nên không biết trace nào sẽ lỗi; tail sampling quyết định sau khi thấy các span nên giữ được mọi trace lỗi, chậm, hoặc có cờ. Với LLM nên giữ 100% trace có lỗi, bị cắt, bị từ chối, thiếu usage, và lấy mẫu phần còn lại.</p>
+<p>Mô phỏng 20.000 trace một ngày của ShopViet, tỉ lệ từng loại là giả định. Policy tail theo đúng cấu hình README: errors, flagged (<code>app.llm.keep</code>), slow &gt; 30 giây, baseline 5%.</p>`,
+        viz(box) {
+          const st = { head: 5 };
+          const rnd = seeded(5051), N = 20000, TYPES = [['Lỗi (ERROR)', 0.004], ['Bị cắt (max_tokens)', 0.01], ['Refusal', 0.003], ['Thiếu usage', 0.002], ['Chậm > 30 s', 0.005]];
+          const rows = [];
+          for (let i = 0; i < N; i++) { const r = rnd(); let acc = 0, ty = -1; for (let j = 0; j < TYPES.length; j++) { acc += TYPES[j][1]; if (r < acc) { ty = j; break; } } rows.push({ ty, u: rnd() }); }
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const p = st.head / 100;
+            const tb = TYPES.map(([name], j) => { const all = rows.filter((x) => x.ty === j), h = all.filter((x) => x.u < p).length; return '<tr><td>' + name + '</td><td class="mono">' + all.length + '</td><td class="mono ' + (h < all.length * 0.5 ? 'bad' : '') + '">' + h + '</td><td class="mono ok">' + all.length + '</td></tr>'; }).join('');
+            const normal = rows.filter((x) => x.ty < 0), hk = rows.filter((x) => x.u < p).length, tk = rows.filter((x) => x.ty >= 0 || x.u < 0.05).length;
+            out.innerHTML = '<div class="tbl"><table><tr><th>Loại trace</th><th>Có trong ngày</th><th>Head ' + st.head + '% giữ</th><th>Tail (README) giữ</th></tr>' + tb + '<tr><td>Bình thường</td><td class="mono">' + normal.length + '</td><td class="mono">' + normal.filter((x) => x.u < p).length + '</td><td class="mono">' + normal.filter((x) => x.u < 0.05).length + '</td></tr></table></div><div class="stat"><span>Tổng giữ (head) <b>' + int(hk) + '</b></span><span>Tổng giữ (tail) <b>' + int(tk) + '</b></span></div>';
+            const bad = rows.filter((x) => x.ty >= 0), lost = bad.filter((x) => x.u >= p).length;
+            cap.innerHTML = '<span class="bad">Head ' + st.head + '% bỏ ' + lost + '/' + bad.length + ' trace có vấn đề</span>, đúng loại đội trực cần đọc. Tail giữ đủ ' + bad.length + ' trace đó với tổng dung lượng gần bằng. Không có nghĩa head sampling sai: nó rẻ, và đủ cho metric (metric tính trên 100% request trước khi lấy mẫu). Trong hệ thống thật: wrapper đặt <code>app.llm.keep</code> trong lúc request chạy để Collector chỉ cần một policy (README §3.1).';
+          }
+          box.append(slider('Head sampling giữ', 1, 50, 1, st.head, (v) => { st.head = v; draw(); }, (v) => v + '%').node, out, cap);
+          draw();
+        },
+        take: 'Lấy mẫu trace bình thường, giữ trọn trace bất thường. Metric thì tính trên toàn bộ.'
+      },
+      {
+        q: 'Tail sampling chờ 30 giây mới quyết định. Collector phải giữ bao nhiêu thứ trong bộ nhớ?',
+        a: `<p>README §3.1: <code>num_traces</code> giới hạn số trace, không giới hạn byte. Bộ nhớ cần ≈ số trace mới mỗi giây × <code>decision_wait</code> × kích thước trung bình một trace. Trace LLM có thể rất lớn khi capture nội dung: vài chục span, mỗi span mang prompt và tool result dài. Kích thước phải đo trên traffic thật; các số dưới là giả định.</p>
+<p>Ba tên cấu hình của tail sampling trong Collector, nói thường: <code>decision_wait</code> là số giây Collector chờ gom span của một trace trước khi quyết định giữ hay bỏ; <code>num_traces</code> là số trace tối đa được giữ trong lúc chờ; <code>memory_limiter</code> là bộ phận đứng đầu pipeline, từ chối nhận thêm span khi bộ nhớ gần đầy. Không có nó, hệ điều hành giết process khi hết RAM (OOM kill) và mọi trace đang chờ mất theo. Ví dụ: 40 trace mới mỗi giây × chờ 30 giây = 1.200 trace nằm trong RAM cùng lúc; mỗi trace 60 KB thì cần khoảng 72 MB.</p>`,
+        viz(box) {
+          const st = { tps: 40, wait: 30, kb: 60, num: 50000, cap: 2 };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const inflight = st.tps * st.wait, bytes = inflight * st.kb * 1e3, limit = st.cap * 1e9;
+            out.innerHTML = '<div class="stat"><span>Trace đang chờ quyết định <b>' + int(inflight) + '</b></span><span>Bộ nhớ cần <b class="' + (bytes > limit ? 'bad' : 'ok') + '">' + mb(bytes) + '</b></span><span>num_traces <b class="' + (inflight > st.num ? 'bad' : 'ok') + '">' + int(st.num) + '</b></span><span>Giới hạn bộ nhớ Collector (giả định) <b>' + st.cap + ' GB</b></span></div>';
+            const fl = [];
+            if (inflight > st.num) fl.push('<span class="bad">Số trace đang chờ (' + int(inflight) + ') vượt num_traces</span>: trace cũ bị đẩy ra trước khi kịp quyết định.');
+            if (bytes > limit) fl.push('<span class="bad">Cần ' + mb(bytes) + ', vượt ' + st.cap + ' GB</span>: không có memory_limiter thì Collector bị OOM kill và mất mọi trace đang chờ. README khuyên đặt memory_limiter là processor đầu tiên.');
+            cap.innerHTML = (fl.length ? fl.join(' ') : '<span class="ok">Vừa bộ nhớ.</span>') + ' Agent chạy lâu cần tăng decision_wait, làm bộ nhớ tăng theo. maximum_trace_size_bytes bỏ trace quá lớn để bảo vệ Collector, nhưng trace bị bỏ thường là agent run dài nhất, đúng loại muốn xem; đẩy nội dung ra <code>*_ref</code> để trace nhỏ lại thay vì mất cả trace.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Trace mới mỗi giây', 1, 400, 1, st.tps, (v) => { st.tps = v; draw(); }).node,
+            slider('decision_wait (giây)', 5, 120, 5, st.wait, (v) => { st.wait = v; draw(); }).node,
+            slider('Kích thước trace (KB, giả định)', 2, 500, 2, st.kb, (v) => { st.kb = v; draw(); }).node,
+            slider('num_traces', 1000, 100000, 1000, st.num, (v) => { st.num = v; draw(); }, int).node]), out, cap);
+          draw();
+        },
+        take: 'Tính bộ nhớ tail sampling bằng byte, không bằng số trace; capture nội dung nhân kích thước trace lên nhiều lần.'
+      },
+      {
+        q: 'Khách bấm "không hài lòng" ba giờ sau. Trace của câu trả lời đó còn không?',
+        a: `<p>Thường là không. Tail sampling quyết định trong vài chục giây; feedback tiêu cực đến sau đó, khi trace bình thường đã rơi ngoài mẫu 5% (README §3.1). Wrapper không biết trước câu trả lời nào sẽ bị chê nên không đặt được <code>app.llm.keep</code>.</p>
+<p>Cách README: lưu nội dung ngắn hạn cho 100% request (ví dụ 72 giờ, ở bucket riêng), khi có feedback thì chuyển bản ghi đó sang vùng lưu dài hơn. Phân phối độ trễ của feedback dưới đây là giả định: đa số đến sau vài giờ, một số ít đến sau vài ngày (dạng log-normal; trung vị kéo được, trung vị 3 giờ nghĩa là một nửa số feedback đến trong 3 giờ đầu).</p>`,
+        viz(box) {
+          const st = { med: 3, buf: 72 };
+          const rnd = seeded(733), Z = Array.from({ length: 2000 }, () => randn(rnd));
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const delays = Z.map((z) => st.med * Math.exp(1.2 * z));
+            const inBuf = delays.filter((d) => d <= st.buf).length / delays.length, tail = 0.05;
+            out.replaceChildren(hbars([['Chỉ tail sampling (mẫu 5%)', tail * 100, false], ['Bộ đệm 100% ' + st.buf + ' giờ', inBuf * 100, true]], { max: 100, fmt: (v) => dec(v, 1) + '% tìm lại được' }));
+            cap.innerHTML = 'Trung vị feedback đến sau ' + dec(st.med, 1) + ' giờ; ' + pct(1 - inBuf) + ' đến sau khi bộ đệm ' + st.buf + ' giờ đã xoá. ' + (st.buf < st.med * 3 ? '<span class="bad">Bộ đệm quá ngắn so với độ trễ của feedback.</span> ' : '') + 'Đổi lại: thêm một bucket chứa 100% nội dung trong ' + st.buf + ' giờ, nên che PII và phân quyền ở đó cũng phải chặt như vùng lưu dài.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Trung vị độ trễ feedback (giờ, giả định)', 0.5, 48, 0.5, st.med, (v) => { st.med = v; draw(); }, (v) => dec(v, 1)).node,
+            slider('Bộ đệm lưu 100% (giờ)', 6, 168, 6, st.buf, (v) => { st.buf = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Thứ đến sau quyết định sampling cần một kho ngắn hạn chứa tất cả, không phải một policy sampling.'
+      },
+      {
+        q: 'Câu trả lời nói "hoàn tiền 3 ngày". Đọc trace thế nào để biết lỗi ở retriever hay ở model?',
+        a: `<p>README §3.2: khi câu trả lời sai, câu hỏi đầu tiên là retriever có lấy đúng tài liệu không, và id tài liệu trên span trả lời được câu đó mà không cần nội dung. Ở ShopViet, chính sách cũ (bản v3) ghi 3 ngày, bản hiện hành (v4) ghi 14 ngày. Chọn thứ được ghi trên span retrieval để xem đội trực trả lời được tới đâu.</p>`,
+        viz(box) {
+          const st = { rec: 'ids' };
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const LV = { none: ['(không ghi gì ngoài thời gian)', 0], count: ['app.retrieval.doc_count = 2', 1], ids: ['app.retrieval.doc_ids = ["hoan-tien#2", "giao-hang#5"], scores = [0,82, 0,71]', 2], ver: ['doc_ids = ["hoan-tien@v3#2", "giao-hang@v4#5"], index_version = 2026-06-01', 3], content: ['doc_ids có version + nội dung đoạn văn (cần capture nội dung)', 4] };
+          function draw() {
+            const [txt, lv] = LV[st.rec];
+            const qs = [['Retriever có chạy, mất bao lâu?', 0], ['Có tìm được tài liệu nào không?', 1], ['Tài liệu nào được đưa cho model?', 2], ['Tài liệu đó có phải bản hiện hành không?', 3], ['Đoạn văn cụ thể nói gì?', 4]];
+            out.innerHTML = '<p class="mono" style="font-size:12.5px;margin:6px 0">' + esc(txt) + '</p><div class="tbl"><table><tr><th>Câu hỏi khi debug</th><th>Trả lời được?</th></tr>' + qs.map(([q, need]) => '<tr><td>' + q + '</td><td class="' + (lv >= need ? 'ok' : 'bad') + '">' + (lv >= need ? 'được' : 'không') + '</td></tr>').join('') + '</table></div>';
+            cap.innerHTML = lv === 3 ? '<span class="ok">Có version trên id: thấy ngay retriever lấy bản v3 (3 ngày) từ index cũ, mà không cần đọc nội dung.</span> Lỗi ở index, không ở model. Câu này còn cần cho bước tạo ca eval (Lab 7): thiếu version, ca eval không tái hiện được lỗi.' : lv === 4 ? 'Đủ mọi thứ, nhưng phải bật capture nội dung, với mọi chi phí ở phần A. Version trên id đã đủ trả lời câu hỏi quan trọng nhất.' : lv === 2 ? '<span class="bad">Có id nhưng không có version: thấy "hoan-tien#2" nhưng không biết là bản cũ hay mới.</span> Nếu index đã được build lại từ hôm đó, id hôm nay trỏ tới đoạn văn khác.' : '<span class="bad">Không đủ để biết lỗi ở đâu.</span> Đội trực phải đoán, hoặc bật capture nội dung cho toàn bộ traffic chỉ để debug một ca.';
+          }
+          box.append(select('Span retrieval ghi', [['none', 'Không gì'], ['count', 'Số tài liệu'], ['ids', 'Id + score'], ['ver', 'Id có version + index version'], ['content', 'Cả nội dung']], st.rec, (v) => { st.rec = v; draw(); }).node, out, cap);
+          draw();
+        },
+        take: 'Id tài liệu kèm version trên span retrieval trả lời "lỗi ở retriever hay model" mà không cần nội dung.'
+      },
+      {
+        q: 'p50 số lượt gọi model mỗi agent run là 4, ổn định cả tuần. Có cần alert gì thêm?',
+        a: `<p>Có, trên p99. README §3.2: phân phối của <code>gen_ai.invoke_agent.inference_calls</code> và <code>.tool_calls</code> là cách rẻ nhất để phát hiện agent lặp; p50 là 4 lượt gọi model mà p99 lên 60 thì có những run đang chạy vòng. Mô phỏng 1.000 run giả định giống hình trong README: đa số 2 đến 10 lượt, một phần nhỏ chạy vòng tới giới hạn cứng.</p>`,
+        viz(box) {
+          const st = { loop: 2, cap: 60 };
+          const rnd = seeded(4242), base = Array.from({ length: 1000 }, () => Math.max(2, Math.min(10, Math.round(4 + 1.6 * randn(rnd))))), us = Array.from({ length: 1000 }, () => rnd());
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          function draw() {
+            const runs = base.map((b, i) => (us[i] < st.loop / 100 ? st.cap : b));
+            const p50 = quantile(runs, 0.5), p99 = quantile(runs, 0.99), p50c = quantile(base, 0.5), p99c = quantile(base, 0.99), hit = runs.filter((x) => x >= st.cap).length;
+            const bins = [[2, 4], [5, 7], [8, 10], [11, st.cap - 1], [st.cap, st.cap]];
+            out.replaceChildren(hbars(bins.map(([a, b]) => [a === b ? '= ' + a + ' (chạm giới hạn)' : a + '–' + b + ' lượt', runs.filter((x) => x >= a && x <= b).length, a === st.cap]), { fmt: (v) => int(v) + ' run' }), el('div', { class: 'stat', html: '<span>p50 <b>' + p50 + '</b></span><span>p99 <b class="' + (p99 >= st.cap ? 'bad' : 'ok') + '">' + p99 + '</b></span><span>Không có vòng lặp: p50 <b>' + p50c + '</b>, p99 <b>' + p99c + '</b></span><span>Run chạm giới hạn <b>' + hit + '</b></span>' }));
+            cap.innerHTML = p99 >= st.cap ? '<span class="bad">' + pct(hit / 1000) + ' run chạy vòng đẩy p99 lên ' + p99 + ', p50 vẫn là ' + p50 + '.</span> Dashboard chỉ có p50 hay trung bình sẽ không thấy gì. Không có nghĩa agent hỏng hết: 98% run bình thường. Trong hệ thống thật: giới hạn cứng trong code, alert khi tỉ lệ run chạm giới hạn tăng (README §3.2), và mỗi run chạy vòng là ' + st.cap + ' lượt gọi tính tiền.' : 'Tỉ lệ vòng lặp nhỏ hơn 1%: p99 chưa chạm giới hạn, nhưng run chạm giới hạn vẫn đếm được. Alert trên tỉ lệ chạm giới hạn bắt sớm hơn p99.';
+          }
+          box.append(el('div', { class: 'row' }, [
+            slider('Run chạy vòng (giả định)', 0, 10, 0.5, st.loop, (v) => { st.loop = v; draw(); }, (v) => dec(v, 1) + '%').node,
+            slider('Giới hạn cứng lượt gọi model', 15, 100, 5, st.cap, (v) => { st.cap = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Vòng lặp agent sống ở đuôi phân phối. Alert trên p99 và tỉ lệ chạm giới hạn, không trên p50.'
+      }
+    ],
+    poc: {
+      goal: "Tin nhắn, tool result, câu trả lời là <b>viết tay</b> như lab. Regex của lab (email, thẻ, CCCD, điện thoại Việt Nam chặt và lỏng, địa chỉ) được port sang Python và chạy thật trên span thật; một hàm giả làm thư viện instrumentation ghi <code>gen_ai.input/output.messages</code> thẳng lên span như util-genai. Phần B dựng trace agent hoàn tiền bằng span thật (timestamp đặt tay), có/không truyền <code>traceparent</code>, baggage tenant và span duyệt. <b>Thật</b>: regex, OpenTelemetry SDK, exporter in-memory, propagator. <b>Không thật</b>: không có model, không có thư viện instrumentation thật (một hàm giả ghi messages), lớp 3–4 không chạy Collector hay Datadog thật mà áp cùng hàm che sau khi dữ liệu rời process; thời lượng span và 1.000 agent run là giả định.",
+      file: "docs/llm-observability/pocs/05_logging_pii_tracing_agents.py",
+      run: "uv run docs/llm-observability/pocs/05_logging_pii_tracing_agents.py",
+      needs: "chỉ <code>uv</code>, CPU và thư viện nhẹ (<code>opentelemetry-sdk</code> 1.45.2, <code>regex</code>), chạy dưới 3 giây, miễn phí.",
+      output: "Tin nhắn, tool result, câu trả lời là VIẾT TAY (giống lab 05). Regex chạy thật (gói regex của Python, port từ\nlab). Span, exporter, propagator, baggage là OpenTelemetry SDK 1.45.2 thật. Không gọi model.\n\n== A1. Cùng một span, che ở lớp nào thì PII nào rời process (exporter in-memory thật) ==\nCách che                                     PII rời process  Còn lộ                                                        Che nhầm\n-------------------------------------------  ---------------  ------------------------------------------------------------  -----------------------\nKhông che                                    9/9              sđt, sđt +84, sđt tool, email, CCCD, thẻ, địa chỉ, tên, bệnh  -\nLớp 1: trong code (chỉ attribute của mình)   6/9              sđt, sđt +84, email, địa chỉ, tên, bệnh                       -\nLớp 2: lúc export trong SDK                  2/9              tên, bệnh                                                     -\nLớp 2, regex điện thoại kiểu 'chuỗi số dài'  2/9              tên, bệnh                                                     24.980.000 đ, 1900 6035\nLớp 1, attribute do thư viện ghi (json.dumps mặc định, giống util-genai):\n  gen_ai.output.messages = [{\"role\": \"assistant\", \"parts\": [{\"type\": \"text\", \"content\": \"D\\u1ea1, \\u0111\\u01a1n SV-4821 (24.980.000 \\u0111) \\u0111a…\nLớp 2, cùng attribute sau MaskingExporter:\n  gen_ai.output.messages = [{\"role\": \"assistant\", \"parts\": [{\"type\": \"text\", \"content\": \"Dạ, đơn SV-4821 (24.980.000 đ) đang giao tới [ADDRESS] sẽ gọi [PHONE] trước khi tới. Hot…\n\n== A2. Bốn lớp che README §3.1: PII còn lại ở từng chặng (lớp 3–4 áp cùng hàm che, sau khi đã rời process) ==\nLớp che              Rời process tới Collector  Collector gửi bên thứ ba  Lưu ở backend\n-------------------  -------------------------  ------------------------  -------------\n1. Trong code        6                          6                         6\n2. Export trong SDK  2                          2                         2\n3. Ở Collector       9                          2                         2\n4. Ở backend         9                          9                         2\n\n== B1. Trace agent hoàn tiền (span thật, timestamp đặt tay; order-service là TracerProvider thứ hai) ==\nCách làm                                     Số trace  Span mồ côi          Span thiếu tenant  Khoảng trống lớn nhất  inference_calls  tool_calls  Thời lượng\n-------------------------------------------  --------  -------------------  -----------------  ---------------------  ---------------  ----------  ----------\ntraceparent + baggage + span duyệt           1         -                    0                  0.00 s                 3                2           20.1 phút\nKhông truyền context, tenant chỉ ở span gốc  2         GET /orders/SV-4821  8                  20.0 phút              3                2           20.1 phút\n\n== B2. Phân phối inference_calls của 1.000 agent run GIẢ ĐỊNH (2% chạy vòng tới giới hạn 60) ==\n                     p50  p95  p99  Trung bình\n-------------------  ---  ---  ---  ----------\nMọi run              4    8    60   5.5\nBỏ 20 run chạy vòng  4    7    9    4.4\n\nRút ra: che trong code vẫn để 6/9 mẩu PII rời process: messages do thư viện ghi không đi qua code của mình.\nChe lúc export còn 2/9 (tên, bệnh: regex không có mẫu); regex 'chuỗi số dài' che nhầm 24.980.000 đ, 1900 6035; regex địa chỉ\năn luôn chữ 'Shipper' sau 'Quận 1.'. Lớp 3–4 không giúp chặng đầu: PII đã rời process. Thiếu traceparent thì\norder-service thành trace mồ côi; thiếu span duyệt thì trống 20.0 phút; tenant chỉ ở span gốc thì 8 span không lọc được.",
+      measured: true,
+      read: ["A1: che trong code (lớp 1) vẫn để 6/9 mẩu PII rời process, vì messages do thư viện ghi không đi qua code của bạn. Che lúc export (lớp 2, kiểu <code>mask_otel_spans</code>) còn 2/9: tên và bệnh, regex không có mẫu cho chúng.", "Regex điện thoại lỏng (<code>\\d[\\d .-]{7,}\\d</code>) che nhầm giá <code>24.980.000 đ</code> và hotline <code>1900 6035</code>. Regex địa chỉ khi chạy POC còn ăn luôn chữ <code>Shipper</code> sau <code>Quận 1.</code> (thấy trong dòng MaskingExporter: <code>[ADDRESS] sẽ gọi</code>). Lab đã sửa regex sau đó (xem câu hỏi 3); output POC ở trên là của bản cũ.", "A2: che ở Collector hay backend thì cả 9 mẩu đã rời process ở chặng đầu (lớp 3–4 ở đây là cùng hàm che áp sau, không chạy Collector thật).", "B1: không truyền context thì 2 trace và <code>GET /orders/SV-4821</code> mồ côi; không có span duyệt thì trống 20 phút; tenant chỉ ở span gốc thì 8 span không lọc được theo tenant. Có baggage thì tenant đi theo sang cả order-service. B2: 2% run chạy vòng không đổi p50 (4) nhưng đẩy p99 từ 9 lên 60."]
+    },
+    mount(stage) {
+      const on = { email: true, card: true, cccd: true, phone: true, address: true };
+      const lay = { code: true, sdk: false, collector: false, backend: true };
+      const st = { naive: false, throwMask: false, capture: true };
+      const tr = { traceparent: false, approval: false, tenantAll: false, loop: false, refund: true };
+      const ruleRow = el('div', { class: 'row' }), layRow = el('div', { class: 'row' });
+      const recBox = el('div'), hopBox = el('div'), checkBox = el('div'), flagsA = el('div'), capA = el('div', { class: 'cap' });
+      const treeBox = el('div'), metBox = el('div'), flagsB = el('div'), capB = el('div', { class: 'cap' }), trRow = el('div', { class: 'row' });
+
+      function maskedAt(hop) {
+        return RECORD.map(([k, v, who, content]) => {
+          if (content === true && !st.capture) return [k, '(capture nội dung tắt)', who, content, false];
+          if (content === 'hash') { const done = LAYERS.slice(0, hop + 1).some(([id]) => lay[id]); return [k, done ? 'u_' + fnv(v) : v, who, content, done]; }
+          if (!content) return [k, v, who, content, false];
+          const layersHere = LAYERS.slice(0, hop + 1).filter(([id, , scope]) => lay[id] && (scope === 'all' || who === 'own'));
+          return [k, layersHere.length ? maskText(v, on, st.naive) : v, who, content, layersHere.length > 0];
+        });
+      }
+      const recText = (rec) => rec.map((r) => r[1]).join('\n');
+      const leaks = (text) => TRUTH.filter(([s]) => text.includes(s));
+      const overMasked = (text) => KEEP.filter((s) => !text.includes(s));
+
+      function renderA() {
+        ruleRow.replaceChildren(...RULES.map(([k, name]) => el('button', { class: on[k] ? 'on' : '', text: name, onclick: () => { on[k] = !on[k]; renderA(); } })));
+        layRow.replaceChildren(...LAYERS.map(([id, name]) => el('button', { class: lay[id] ? 'on' : '', text: name, onclick: () => { lay[id] = !lay[id]; renderA(); } })));
+        const dropped = st.throwMask && lay.sdk && st.capture;
+        const hopsRec = [0, 1, 2, 3].map((h) => maskedAt(h));
+        const final = hopsRec[3];
+        recBox.innerHTML = '<div class="tbl"><table><tr><th>Attribute</th><th>Giá trị lưu trong backend</th></tr>' + (dropped ? '<tr><td colspan="2" class="bad">Batch bị bỏ: hàm mask ném lỗi khi gặp attribute kiểu mảng (gen_ai.response.finish_reasons). Không span nào trong batch tới backend.</td></tr>' : final.map(([k, v, who, content]) => {
+          let h = esc(v);
+          TRUTH.forEach(([s]) => { h = h.split(esc(s)).join('<b class="bad">' + esc(s) + '</b>'); });
+          h = h.replace(/\[(EMAIL|CARD|CCCD|PHONE|ADDRESS)\]/g, '<b class="ok">[$1]</b>');
+          if (content === 'hash' && v.startsWith('u_')) h = '<b class="ok">' + h + '</b> <span class="hint">(FNV-1a minh hoạ)</span>';
+          return '<tr><td class="mono" style="font-size:12px">' + k + (who === 'lib' ? ' <span style="color:var(--warn)">[thư viện]</span>' : '') + '</td><td class="mono" style="font-size:12px;word-break:break-word">' + h + '</td></tr>';
+        }).join('')) + '</table></div>';
+        const counts = [1, 2, 3].map((h) => dropped && h >= 1 ? 0 : leaks(recText(hopsRec[h])).length);
+        hopBox.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0">' + HOPS.map((n, i) => '<div style="border:1px solid var(--line);border-top:4px solid var(--' + (counts[i] ? 'bad' : 'ok') + ');border-radius:6px;padding:6px 8px;background:var(--bg);font-size:12.5px"><div>' + n + '</div><b class="mono ' + (counts[i] ? 'bad' : 'ok') + '" style="font-size:18px">' + counts[i] + '</b> <span class="hint">mẩu PII gốc</span></div>').join('') + '</div>';
+        const fText = dropped ? '' : recText(final), lk = dropped ? [] : leaks(fText), om = dropped ? [] : overMasked(fText);
+        checkBox.innerHTML = '<div class="tbl"><table><tr><th>Chuỗi</th><th>Loại</th><th>Ở backend</th></tr>' + TRUTH.map(([s, ty]) => { const l = lk.some((x) => x[0] === s); return '<tr><td class="mono" style="font-size:12px">' + esc(s) + '</td><td>' + ty + '</td><td class="' + (l ? 'bad' : 'ok') + '">' + (dropped ? 'mất cùng batch' : l ? 'lộ' : 'đã che / không ghi') + '</td></tr>'; }).join('') + KEEP.map((s) => { const m = om.includes(s); return '<tr><td class="mono" style="font-size:12px">' + esc(s) + '</td><td>phải giữ</td><td class="' + (m ? 'bad' : 'ok') + '">' + (dropped ? 'mất cùng batch' : m ? 'bị che nhầm' : 'còn nguyên') + '</td></tr>'; }).join('') + '</table></div>';
+
+        const fl = [];
+        if (dropped) fl.push(['bad', 'Hàm mask ở SDK ném lỗi: cả batch bị bỏ (README §2.1, Langfuse). Không lộ gì, nhưng cũng không còn trace nào để debug.']);
+        if (!dropped && counts[0] > 0) fl.push(['bad', counts[0] + ' mẩu PII gốc rời process. ' + (lay.code && !lay.sdk ? 'Lớp 1 đang bật nhưng chỉ che attribute do code ShopViet đặt; hai attribute [thư viện] đi thẳng ra ngoài.' : 'Lớp che sớm nhất đang bật nằm sau process.')]);
+        if (!dropped && lay.backend && !lay.code && !lay.sdk && !lay.collector) fl.push(['bad', 'Chỉ che ở backend: dữ liệu gốc đã đi qua mạng, Collector và tới hệ thống bên thứ ba rồi mới bị thay.']);
+        if (om.length) fl.push(['bad', 'Che nhầm: ' + om.map(esc).join(', ') + '. Regex "chuỗi 9 chữ số trở lên" bắt luôn giá tiền và hotline; dữ liệu debug bị hỏng mà không bảo vệ thêm ai.']);
+        const unc = lk.filter(([, ty]) => ty === 'name' || ty === 'health');
+        if (unc.length && st.capture) fl.push(['warn', 'Regex không bắt được ' + unc.map(([s]) => '"' + esc(s) + '"').join(', ') + ': tên người và thông tin sức khoẻ không có định dạng.']);
+        if (!st.capture) fl.push(['warn', 'Capture nội dung tắt (mặc định của spec): không lộ gì, nhưng debug lỗi "hoàn tiền 3 ngày" chỉ còn metadata và id tài liệu.']);
+        flagsA.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [noFlag()]));
+        let c;
+        if (dropped) c = { what: 'Không span nào tới backend.', why: 'Hàm mask_otel_spans gặp một attribute kiểu mảng, ném lỗi; Langfuse bỏ cả batch khi hàm mask ném lỗi.', not: 'Không có nghĩa che ở SDK là sai. Lớp 2 là chỗ duy nhất bắt được attribute của thư viện trước khi rời process.', real: 'Hàm mask xử lý mọi kiểu dữ liệu attribute (chuỗi, số, mảng), bọc try/except từng attribute, và có test như code production (README §3.8).' };
+        else if (counts[0] > 0) c = { what: counts[0] + ' mẩu PII gốc đi ra khỏi process, ' + counts[1] + ' mẩu tới backend bên thứ ba, ' + counts[2] + ' mẩu còn lại sau lớp quét.', why: lay.code && !lay.sdk ? 'Lớp 1 chỉ chạy trên attribute ShopViet tự đặt. gen_ai.input.messages và gen_ai.output.messages do thư viện instrumentation ghi, không qua hàm che.' : 'Lớp che sớm nhất đang bật là ' + (LAYERS.find(([id]) => lay[id]) || ['', 'không có'])[1] + ', nằm sau chặng mạng.', not: 'Không có nghĩa backend lộ dữ liệu ra ngoài: nó vẫn có phân quyền. Vấn đề là dữ liệu đã nằm ở nơi ShopViet không kiểm soát vòng đời.', real: 'Bật lớp 1 + lớp 2, giữ lớp 3 làm lưới; hoặc tắt capture nội dung ở production, đẩy nội dung ra bucket riêng qua <code>*_ref</code>.' };
+        else if (om.length) c = { what: 'Không lộ PII có cấu trúc, nhưng ' + om.length + ' chuỗi cần giữ bị che nhầm.', why: 'Regex điện thoại đơn giản bắt mọi chuỗi từ 9 ký tự số trở lên, gồm cả giá 24.980.000 đ và hotline 1900 6035.', not: 'Không có nghĩa nên nới che: đổi sang regex chặt (đầu số di động Việt Nam, đúng 10 chữ số) giữ được cả hai.', real: 'Test hàm che với cả ca phải che và ca phải giữ; mã đơn SV-4821, giá, ngày là thứ đội debug cần.' };
+        else c = { what: 'PII có cấu trúc được che trước khi rời process; chuỗi cần giữ còn nguyên.', why: 'Lớp ' + LAYERS.filter(([id]) => lay[id]).map(([id]) => id).join(' + ') + ' chạy trước chặng mạng và phủ cả attribute của thư viện.', not: 'Không có nghĩa đã an toàn: ' + (unc.length ? unc.length + ' mẩu không có định dạng (tên, sức khoẻ) vẫn lộ.' : 'regex vẫn sót số viết bằng chữ, gõ nhầm.'), real: 'Với nội dung tự do nhạy cảm, không ghi nội dung ở production, hoặc chỉ ghi mẫu nhỏ qua bộ phát hiện PII tốt hơn (README §3.1).' };
+        capA.innerHTML = capHtml(c);
+      }
+
+      function renderB() {
+        trRow.replaceChildren(...[['traceparent', 'Gửi traceparent khi gọi order-service'], ['approval', 'Span cho bước nhân viên duyệt'], ['tenantAll', 'app.tenant.id trên mọi span'], ['refund', 'Kịch bản có hoàn tiền'], ['loop', 'Agent chạy vòng']].map(([k, t]) => el('button', { class: tr[k] ? 'on' : '', text: t, onclick: () => { tr[k] = !tr[k]; renderB(); } })));
+        const S = buildTrace(tr), byId = new Map(S.map((s) => [s.id, s]));
+        const depth = (s) => { let d = 0, p = s.parent; while (p) { d++; p = byId.get(p).parent; } return d; };
+        const maxMs = Math.max(...S.map((s) => s.dur)), lx = (ms) => Math.max(2, 100 * Math.log10(1 + ms) / Math.log10(1 + maxMs));
+        const order = [];
+        const walk = (pid) => S.filter((s) => s.parent === pid).forEach((s) => { order.push(s); walk(s.id); });
+        walk(0);
+        treeBox.innerHTML = '<div class="tbl"><table><tr><th>Span</th><th>Trace</th><th>Bắt đầu</th><th>Thời lượng (thang log)</th></tr>' + order.map((s) => {
+          const orphan = s.trace !== 'a3f9e1', d = depth(s);
+          return '<tr><td class="mono" style="font-size:12px;padding-left:' + (8 + d * 16) + 'px' + (orphan ? ';color:var(--bad)' : '') + '">' + esc(s.name) + (s.attrs['app.tenant.id'] ? '' : ' <span style="color:var(--warn)">[thiếu tenant]</span>') + '</td><td class="mono" style="font-size:12px' + (orphan ? ';color:var(--bad)' : '') + '">' + s.trace + '</td><td class="mono" style="font-size:12px">' + fmtMs(s.start) + '</td><td><div style="display:flex;align-items:center;gap:6px"><div style="height:8px;border-radius:3px;width:' + lx(s.dur) + '%;background:var(--' + (orphan ? 'bad' : s.name.startsWith('approval') ? 'warn' : s.kind === 'CLIENT' ? 'g1' : 'accent') + ')"></div><span class="mono" style="font-size:11.5px">' + fmtMs(s.dur) + '</span></div></td></tr>';
+        }).join('') + '</table></div>';
+        const ag = S.find((s) => s.name.startsWith('invoke_agent')), kids = S.filter((s) => s.parent === ag.id).sort((a, b) => a.start - b.start);
+        let gap = 0;
+        for (let i = 1; i < kids.length; i++) gap = Math.max(gap, kids[i].start - (kids[i - 1].start + kids[i - 1].dur));
+        const inf = S.filter((s) => s.name.startsWith('chat ')).length, tools = S.filter((s) => s.name.startsWith('execute_tool')).length, orph = S.filter((s) => s.trace !== 'a3f9e1').length, withTen = S.filter((s) => s.attrs['app.tenant.id']).length;
+        metBox.innerHTML = '<div class="stat"><span>invoke_agent.duration <b>' + fmtMs(ag.dur) + '</b></span><span>inference_calls <b class="' + (inf > 10 ? 'bad' : '') + '">' + inf + '</b></span><span>tool_calls <b>' + tools + '</b></span><span>Span ở trace khác <b class="' + (orph ? 'bad' : 'ok') + '">' + orph + '</b></span><span>Lọc tenant=shopviet thấy <b class="' + (withTen < S.length ? 'bad' : 'ok') + '">' + withTen + '/' + S.length + ' span</b></span><span>Khoảng trống dài nhất giữa hai bước <b class="' + (gap > 60000 ? 'bad' : '') + '">' + fmtMs(gap) + '</b></span></div>';
+        const fl = [];
+        if (orph) fl.push(['bad', orph + ' span của order-service nằm ở trace 7c02b4, tách khỏi trace của agent. Khi get_order chậm, trace agent chỉ thấy span HTTP client chờ ' + fmtMs(570) + ', không thấy order-service làm gì.']);
+        if (gap > 60000) fl.push(['bad', 'Khoảng trống ' + fmtMs(gap) + ' giữa hai bước không có span nào giải thích. Đó là lúc chờ nhân viên duyệt hoàn tiền, nhưng trace không ghi.']);
+        if (withTen < S.length) fl.push(['warn', 'Chỉ ' + withTen + '/' + S.length + ' span có app.tenant.id. Backend chỉ lọc theo attribute có trên span đó (Langfuse là một ví dụ): lọc tenant=shopviet sẽ không thấy span chat và execute_tool.']);
+        if (inf > 10) fl.push(['bad', 'Run này gọi model ' + inf + ' lần (get_order lặp lại ' + (tr.loop ? 9 : 1) + ' lần với cùng tham số). Mỗi lượt là một span tính phí và một lượt trả tiền token.']);
+        flagsB.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [noFlag()]));
+        let c;
+        if (orph) c = { what: 'Trace agent bị đứt làm hai: span của order-service thành trace riêng.', why: 'Agent gọi order-service qua HTTP mà không gửi header traceparent, nên order-service bắt đầu một trace mới.', not: 'Không có nghĩa order-service không có instrumentation: span của nó vẫn có, chỉ không nối được.', real: 'Dùng W3C Trace Context khi gọi qua HTTP, queue, MCP; kiểm tra trên một trace thật rằng span phía service có cha là execute_tool (README §3.2).' };
+        else if (gap > 60000) c = { what: 'Agent run dài ' + fmtMs(ag.dur) + ', trong đó ' + fmtMs(gap) + ' không có span nào.', why: 'Tool create_refund cần nhân viên xác nhận; bước chờ không được ghi thành span hay event.', not: 'Không có nghĩa agent treo hay provider chậm, dù dashboard duration sẽ trông như vậy.', real: 'Bước chờ duyệt là một span (hoặc event) có kết quả duyệt/từ chối/hết hạn (README §3.2). Có nó, có thể tách thời gian chờ người ra khỏi thời gian hệ thống.' };
+        else if (withTen < S.length) c = { what: 'Lọc theo tenant chỉ thấy ' + withTen + '/' + S.length + ' span.', why: 'app.tenant.id chỉ được gắn ở span HTTP gốc.', not: 'Không có nghĩa dữ liệu mất: span vẫn ở đó, chỉ không lọc ra.', real: 'Gắn tenant, user, session lên mọi span con bằng Baggage hoặc trong wrapper (README §3.2).' };
+        else c = { what: 'Trace liền một khối, mọi khoảng thời gian có span giải thích, lọc tenant thấy đủ.', why: 'traceparent được truyền, bước duyệt có span, tenant có trên mọi span.', not: 'Không có nghĩa trace chứa nội dung: các span này chỉ có metadata, id tài liệu, id tool call.', real: 'Kiểm tra bằng một trace thật mỗi khi thêm tool hoặc service mới.' };
+        capB.innerHTML = capHtml(c);
+      }
+
+      stage.append(
+        el('h4', { text: 'A. Bản ghi span đi qua các lớp che', style: 'margin:0 0 4px' }),
+        el('div', { class: 'hint', text: 'Luật regex đang bật:' }), ruleRow,
+        el('div', { class: 'hint', text: 'Lớp che đang bật (README §3.1):' }), layRow,
+        el('div', { class: 'row' }, [
+          select('Regex điện thoại', [['strict', 'Chặt: đầu số di động VN, 10 chữ số'], ['naive', 'Đơn giản: chuỗi số từ 9 ký tự']], 'strict', (v) => { st.naive = v === 'naive'; renderA(); }).node,
+          select('Capture nội dung', [['on', 'Bật (đang debug)'], ['off', 'Tắt (mặc định)']], 'on', (v) => { st.capture = v === 'on'; renderA(); }).node,
+          select('Hàm mask ở SDK', [['ok', 'Xử lý mọi kiểu attribute'], ['throw', 'Ném lỗi với attribute kiểu mảng']], 'ok', (v) => { st.throwMask = v === 'throw'; renderA(); }).node]),
+        hopBox, recBox, el('h4', { text: 'Kiểm tra', style: 'margin:12px 0 4px' }), checkBox,
+        el('h4', { text: 'Phát hiện từ dữ liệu (PII)', style: 'margin:14px 0 4px' }), flagsA, capA,
+        el('h4', { text: 'B. Trace của một agent run: đơn SV-4821 giao trễ, khách xin hoàn tiền', style: 'margin:22px 0 4px' }),
+        trRow, metBox, treeBox,
+        el('h4', { text: 'Phát hiện từ dữ liệu (trace)', style: 'margin:14px 0 4px' }), flagsB, capB,
+        el('p', { class: 'hint', text: 'Regex là JavaScript thật chạy trong trình duyệt, viết cho lab, không phải bộ phát hiện PII đầy đủ. Số điện thoại, CCCD, số thẻ (số thẻ test 4111...), địa chỉ, tên trong bản ghi là dữ liệu bịa. Hash user.id dùng FNV-1a chỉ để minh hoạ; production dùng HMAC có khoá. Thời lượng span, 20 phút chờ duyệt và số vòng lặp là giả định. Tên span và metric agent theo README §3.2.' })
+      );
+      renderA();
+      renderB();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
