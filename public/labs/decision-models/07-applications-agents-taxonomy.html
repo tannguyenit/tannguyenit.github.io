@@ -1,0 +1,666 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Models Lab 07</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="06-applications-routing-guardrails.html">← Lab trước</a><a href="08-design-ops.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/decision-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson({
+  id: 'agents-taxonomy', nav: '7. Tool, router, taxonomy', ref: '§3.9–3.16',
+  title: 'Một decision model 100 ms chọn model cho từng câu hỏi: rẻ hơn bao nhiêu, và hỏng ở ca nào?',
+  hook: 'Kéo các ngưỡng của router. Trình duyệt chạy pick_model của README trên 12 câu hỏi ShopViet, tính chi phí và số ca bị gửi xuống model yếu hơn mức cần.',
+  terms: [
+    ['Router', 'Bước đứng trước LLM, quyết định câu hỏi đi model nào. Ví dụ "Cảm ơn shop" đi model rẻ, "trả góp 0% mỗi tháng bao nhiêu" đi reasoning model.'],
+    ['Tier model', 'Ba mức trong lab: cheap-model (rẻ, nhanh), strong-model (mạnh), reasoning-model (suy luận nhiều bước, đắt nhất). Tên lấy từ code README, không phải model cụ thể.'],
+    ['Under-route', 'Gửi câu hỏi xuống tier yếu hơn mức nó cần. Ví dụ câu tính trả góp đi cheap-model và tính sai. Đây là lỗi chất lượng.'],
+    ['Over-route', 'Gửi câu hỏi lên tier mạnh hơn mức cần. Ví dụ "Cảm ơn shop" đi reasoning-model. Đây là lỗi tiền, không phải lỗi chất lượng.'],
+    ['Score confidence', 'Số tóm tắt hình dạng phân phối của câu Score. Ví dụ ba mức (0.5, 0, 0.5) có confidence 0 vì model phân vân giữa hai đầu thang.'],
+    ['Câu stated', 'Câu yes/no "câu lệnh có nói gì về tham số này không". Nếu không, bỏ tham số để hàm dùng mặc định thay vì để Choice đoán.'],
+    ['Beam search', 'Đi xuống cây phân loại, mỗi tầng giữ K đường tốt nhất thay vì chỉ một. K = 1 là greedy.'],
+    ['Composite scoring', 'Mỗi tiêu chí một câu Score, chuẩn hoá về 0–1, cộng có trọng số trong code. Đổi trọng số không cần gọi lại model.']
+  ],
+  problem: {
+    example: '<b>ShopViet</b> có trợ lý chat trả lời khách về sản phẩm, đơn hàng, bảo hành, trả góp. Một phần câu hỏi là chào hỏi, một phần là tra cứu, một phần cần tính toán hoặc có rủi ro tài chính, sức khoẻ. ShopViet dùng decision model để chọn: model nào trả lời, hàm nào được gọi, sản phẩm thuộc danh mục nào, hai sản phẩm có trùng nhau không.',
+    scenario: 'Hiện mọi câu hỏi đều đi model mạnh nhất cho chắc. Hoá đơn lớn, và "Cảm ơn shop nhiều nha" cũng chờ vài giây như câu hỏi tính trả góp.',
+    ask: 'Một router decision model hỏi bốn câu (miền, độ khó, cần tool, rủi ro cao) rồi chọn model. Tiết kiệm được bao nhiêu so với luôn dùng model lớn, và đổi lại có bao nhiêu câu bị gửi xuống model yếu hơn mức cần?',
+    solves: 'Lab chạy đúng hàm pick_model của README §3.11 trên 12 câu hỏi mẫu, tính confidence của câu Score độ khó bằng công thức README, rồi so tổng chi phí và số ca under-route với hai chiến lược luôn-dùng-một-model.',
+    read: [
+      'Bảng: mỗi dòng một câu hỏi của khách. Các cột xác suất là đáp án giả định của router. Cột <b>Cần</b> là tier mà câu đó thật sự cần (nhãn giả định).',
+      'Kéo ba ngưỡng. Cột <b>Router chọn</b> đổi ngay. Màu đỏ là under-route, màu cam là over-route.',
+      'Thanh ngang so chi phí mỗi ngày của router với luôn-strong và luôn-reasoning ở số request/ngày bạn chọn.',
+      'Khung viền cam xuất hiện khi một ca rủi ro cao bị gửi xuống model yếu, hoặc khi độ khó phân vân giữa hai đầu thang.'
+    ]
+  },
+  summary: `<h3>Tóm tắt bài</h3>
+<p>Tám ứng dụng trong §3.9–3.16 có chung một ý: decision model <b>chọn trong tập đóng</b>, còn code làm phần còn lại (gọi hàm, gọi model, ráp đường đi trong cây, cộng điểm).</p>
+<div class="tbl"><table>
+<tr><th>Bài toán</th><th>Loại câu hỏi chính</th><th>Pattern</th><th>Mục</th></tr>
+<tr><td>Function calling</td><td>Choice + yes/no</td><td>Tham số miền đóng, câu <code>stated</code></td><td>§3.9</td></tr>
+<tr><td>Chọn skill cho agent</td><td>Choice + yes/no</td><td>Hai tầng: xếp hạng rồi kiểm lại</td><td>§3.10</td></tr>
+<tr class="cur"><td>Routing LLM</td><td>Choice + Score</td><td>Routing theo xác suất</td><td>§3.11</td></tr>
+<tr><td>Taxonomy lớn</td><td>Choice theo tầng</td><td>Beam search, lùi lên tầng cha</td><td>§3.12</td></tr>
+<tr><td>Ghép thực thể</td><td>Score + yes/no</td><td>Làm tròn về mức</td><td>§3.13</td></tr>
+<tr><td>Chấm điểm đa tiêu chí</td><td>Nhiều Score</td><td>Composite scoring</td><td>§3.14</td></tr>
+<tr><td>Feature cho ML</td><td>Score + yes/no</td><td>Autoresearch loop</td><td>§3.15</td></tr>
+<tr><td>Ảnh, tài liệu scan</td><td>Box + yes/no</td><td>Kiểm tra hai lần: trang và vùng cắt</td><td>§3.16</td></tr>
+</table></div>
+<h4>Những điều cần nhớ</h4>
+<ul>
+<li>Confidence của một lời gọi hàm là confidence <b>thấp nhất</b> trong các phán đoán, không phải tích.</li>
+<li>Router đo bằng chất lượng và chi phí của <b>cả hệ thống</b>, và ngưỡng <code>high_stakes</code> nên thấp hơn các ngưỡng khác.</li>
+<li>Khi không chắc ở taxonomy, lùi lên tầng cha thay vì bỏ hay chuyển người.</li>
+<li>Score có điểm cắt: viết mô tả mức trước khi nhìn score, làm tròn với điểm cắt 0.5 và 1.5.</li>
+<li>Ảnh và Box trên Jev đang thử nghiệm, cần header <code>TypeSafe-Danger-Zone-Images: true</code>.</li>
+</ul>
+<div class="verdict"><b>Lưu ý:</b> README ghi router ở §3.11 là ví dụ thiết kế, chưa có cookbook hay số liệu công bố. Mọi số chi phí và nhãn "Cần" trong lab là giả định; giá decision model lấy từ README.</div>`,
+  why: {
+    c: 'Một request decision model với Choice về miền, Score về độ khó và yes/no về rủi ro, rồi một hàm vài dòng chọn tier. Router chỉ tốn tiền input (state vài trăm token, $0.042/1M trên Jev) và khoảng 100 ms, nên nhỏ hơn nhiều so với khoản tiết kiệm.',
+    s: 'Luôn dùng model mạnh nhất: chắc chất lượng nhưng trả giá reasoning cho cả câu chào hỏi. Luôn dùng model rẻ: hỏng các ca khó và rủi ro. Dùng một LLM làm router: router tự nó tốn một lượt sinh đầy đủ, README ghi "với một LLM làm router thì chưa chắc" rẻ hơn khoản tiết kiệm.',
+    p: 'Mỗi ca under-route là một câu trả lời kém, và ca rủi ro cao bị under-route là đắt nhất. Bạn phải gán nhãn tier cần thiết cho một tập câu hỏi thật, chạy cả router lẫn model mạnh nhất qua tập đó, và so điểm LLM-judge hoặc người chấm cùng tổng chi phí.'
+  },
+  deep: [
+    {
+      q: 'Function calling: Choice đã chọn tham số rồi, sao còn cần thêm câu "stated"?',
+      a: `<p>Vì <b>Choice luôn chọn một đáp án</b>, kể cả khi câu lệnh không nói gì về tham số đó. Khách gõ "giá iPhone 15 dạo này thế nào" để gọi <code>price_history(product, window)</code>. "Dạo này" không nói 7 ngày hay 30 ngày. Choice trên <code>window</code> vẫn trả một giá trị, và README §3.9 ghi: chọn một cách tự tin.</p>
+<p>Câu yes/no <code>stated</code> hỏi riêng: câu lệnh có nói gì về <code>window</code> không? Nếu không, bỏ tham số để hàm dùng mặc định. Ví dụ cookbook: "is amd tracking nvidia lately" bỏ <code>window</code> và <code>resolution</code> vì "lately" không nói bao xa.</p>
+<p>Kéo xác suất <code>stated</code>. Choice vẫn trả <code>30d</code> với xác suất cao ở mọi trường hợp; chỉ <code>stated</code> quyết định có dùng nó không.</p>`,
+      viz(box) {
+        const S = { st: 0.12, pc: 0.83 }, out = el('div');
+        const draw = () => {
+          const use = S.st >= 0.5;
+          out.innerHTML = `<div class="stat"><span>Choice window = <b>30d</b> (P = ${S.pc.toFixed(2)})</span><span>stated::window = <b>${S.st.toFixed(2)}</b></span></div><div class="stat"><span>Lời gọi: <b class="mono">price_history(product="iphone_15"${use ? ', window="30d"' : ''})</b></span><span>${use ? 'dùng giá trị Choice' : '<b class="ok">bỏ tham số, hàm dùng mặc định</b>'}</span></div>` +
+            (!use && S.pc >= 0.8 ? '<p class="hint" style="color:var(--warn)">Bất thường: Choice tự tin ' + S.pc.toFixed(2) + ' cho một tham số câu lệnh không hề nhắc. Vì sao: Choice phải chọn một option. Không có nghĩa model hiểu sai câu lệnh. Trong hệ thống thật: mỗi tham số tuỳ chọn kèm một câu stated (README §3.9).</p>' : '');
+        };
+        box.append(el('div', { class: 'row' }, [slider('stated::window', 0, 1, 0.01, S.st, (v) => { S.st = v; draw(); }, (v) => v.toFixed(2)).node, slider('P(window = 30d)', 0.34, 1, 0.01, S.pc, (v) => { S.pc = v; draw(); }, (v) => v.toFixed(2)).node]), out,
+          el('div', { class: 'cap', text: 'Hàm và số là giả định cho ShopViet. Ngưỡng 0.5 cho stated là minh hoạ.' }));
+        draw();
+      },
+      take: 'Choice trả lời "nếu phải chọn thì chọn gì". stated trả lời "có cần chọn không". Hai câu khác nhau.'
+    },
+    {
+      q: 'Confidence của cả lời gọi hàm: sao lấy min mà không nhân các confidence lại?',
+      a: `<p>Một lời gọi đúng khi <b>mọi</b> tham số đúng. Nghe như phải nhân xác suất. Nhưng README §3.9 chọn <b>min</b>, vì hai lý do:</p>
+<ul><li>Một tham số sai là đủ hỏng lời gọi. Min chỉ thẳng vào phán đoán yếu nhất, đó là chỗ cần hỏi lại khách.</li>
+<li>Tích giảm dần khi hàm có nhiều tham số, dù không phán đoán nào yếu. Hàm 8 tham số đều 0.95 cho tích 0.66, sẽ bị chuyển người chỉ vì nhiều tham số.</li></ul>
+<p>Kéo số tham số và confidence. Ngưỡng 0.7 là giả định.</p>`,
+      viz(box) {
+        const S = { n: 4, c: 0.95, w: 0.95 }, out = el('div');
+        const draw = () => {
+          const cs = Array.from({ length: S.n }, (_, i) => (i === 0 ? S.w : S.c)), pr = cs.reduce((a, b) => a * b, 1), mn = Math.min(...cs);
+          out.replaceChildren(hbars([['min', mn, true], ['tích', pr]], { max: 1, fmt: (v) => v.toFixed(3) }),
+            el('div', { class: 'stat', html: `<span>min ${mn >= 0.7 ? '≥' : '&lt;'} 0.7: <b class="${mn >= 0.7 ? 'ok' : 'bad'}">${mn >= 0.7 ? 'gọi hàm' : 'hỏi lại'}</b></span><span>tích ${pr >= 0.7 ? '≥' : '&lt;'} 0.7: <b class="${pr >= 0.7 ? 'ok' : 'bad'}">${pr >= 0.7 ? 'gọi hàm' : 'hỏi lại'}</b></span>` }));
+        };
+        box.append(el('div', { class: 'row' }, [slider('Số tham số', 1, 10, 1, S.n, (v) => { S.n = v; draw(); }).node, slider('Confidence các tham số', 0.5, 1, 0.01, S.c, (v) => { S.c = v; draw(); }, (v) => v.toFixed(2)).node, slider('Tham số yếu nhất', 0.3, 1, 0.01, S.w, (v) => { S.w = v; draw(); }, (v) => v.toFixed(2)).node]), out,
+          el('div', { class: 'cap', text: 'Đặt 8 tham số đều 0.95: tích dưới 0.7 dù không tham số nào yếu. Hạ tham số yếu nhất xuống 0.5: min bắt được ngay.' }));
+        draw();
+      },
+      take: 'Min trả lời "phán đoán nào yếu nhất". Tích phạt hàm nhiều tham số một cách vô cớ.'
+    },
+    {
+      q: 'Chọn skill cho agent: agent tự đọc roster được, sao phải nhờ decision model gợi ý?',
+      a: `<p>Agent thấy skill qua một <b>index</b>: mỗi skill một dòng, description bị cắt ngắn. Hermes cắt ở 60 ký tự. Ở độ dài đó, skill <b>sửa</b> file <code>.pptx</code> và skill <b>tạo</b> slide tài chính đều đọc như "công cụ PowerPoint". Khi không skill nào hợp, danh sách tên vẫn kích thích agent đoán.</p>
+<p>README §3.10 làm hai tầng: (1) một câu Choice trên cả 194 skill bằng description ngắn, cộng ba câu "có muốn thực hiện hành động không" và một câu <code>named</code>; (2) kiểm lại top 3 với description đầy đủ, mỗi ứng viên một câu <code>fits</code>. Kết quả tối đa một tên skill, đưa vào system prompt như gợi ý <b>có thể bỏ qua</b>, nằm sau roster để giữ prefix cache.</p>
+<p>Số đo README (<code>jev-1.14.0</code> và <code>claude-haiku-4-5-20251001</code>, 452 request):</p>`,
+      viz(box) {
+        box.append(el('div', { class: 'cols' }, [
+          el('div', {}, [el('h4', { text: 'Load sai skill' }), hbars([['Agent tự chọn', 15.7], ['Có gợi ý từ Jev', 7.9, true], ['Cho sẵn đáp án (sàn)', 3.2]], { max: 16, fmt: (v) => v + '%' })]),
+          el('div', {}, [el('h4', { text: 'Load skill khi không cần' }), hbars([['Agent tự chọn', 14.0], ['Có gợi ý từ Jev', 5.2, true], ['Cho sẵn đáp án (sàn)', 4.1]], { max: 16, fmt: (v) => v + '%' })])]),
+          el('div', { class: 'cap', text: 'Gợi ý sửa đúng 29 request và làm hỏng 7 request agent tự làm đúng: một gợi ý sai nhưng tự tin kéo agent khỏi đáp án đúng của nó.' }));
+      },
+      take: 'Decision model thấy toàn bộ roster cùng lúc và cho xác suất. Nhưng gợi ý phải nói rõ là có thể bỏ qua, vì gợi ý sai cũng có sức kéo.'
+    },
+    {
+      q: 'Router tốn thêm một request. Có khi nào router đắt hơn khoản nó tiết kiệm không?',
+      a: `<p>Có, nếu router là một LLM. README §3.11 ghi: router phải rẻ và nhanh hơn nhiều so với khoản tiết kiệm; với decision model thường là vậy, với một LLM làm router thì chưa chắc.</p>
+<p>Tính thử: router decision model đọc khoảng 400 token (câu hỏi của khách cộng bốn câu hỏi), trả $0.042/1M trên Jev, tức khoảng $0.0000168 mỗi lần. Router LLM phải đọc cùng prompt và <b>sinh</b> JSON, giá giả định bằng một lượt cheap-model. Kéo tỉ lệ câu dễ: router chỉ lời khi đủ nhiều câu được chuyển xuống tier rẻ.</p>`,
+      viz(box) {
+        const T = { cheap: 0.0004, strong: 0.004 }, S = { easy: 0.6, kind: 'dm' }, out = el('div');
+        const draw = () => {
+          const r = S.kind === 'dm' ? (400 * 0.042) / 1e6 : T.cheap, routed = S.easy * T.cheap + (1 - S.easy) * T.strong + r;
+          out.replaceChildren(hbars([['Luôn strong-model', T.strong], ['Router + tier', routed, true]], { max: T.strong * 1.15, fmt: (v) => '$' + v.toFixed(5) }),
+            el('div', { class: 'stat', html: `<span>Router mỗi lần: <b>$${r.toFixed(7)}</b></span><span>Hoà vốn khi câu dễ ≥ <b>${((r / (T.strong - T.cheap)) * 100).toFixed(2)}%</b></span>` }));
+        };
+        box.append(el('div', { class: 'row' }, [select('Router', [['dm', 'Decision model (Jev, giá README)'], ['llm', 'LLM nhỏ (giá giả định)']], 'dm', (v) => { S.kind = v; draw(); }).node, slider('Tỉ lệ câu dễ đi cheap', 0, 1, 0.01, S.easy, (v) => { S.easy = v; draw(); }, (v) => (v * 100).toFixed(0) + '%').node]), out,
+          el('div', { class: 'cap', text: 'Giá cheap $0.0004 và strong $0.004 mỗi request là giả định. Chưa tính độ trễ: router LLM thêm cỡ một lượt sinh, router decision khoảng 100 ms.' }));
+        draw();
+      },
+      take: 'Router decision model gần như miễn phí so với một lượt LLM. Router LLM ăn mất phần lớn khoản tiết kiệm.'
+    },
+    {
+      q: '"Tai nghe này có chống nước không?" có 60% xác suất là câu dễ. Sao router vẫn gửi nó lên strong-model?',
+      a: `<p>Vì nhánh thứ hai của <code>pick_model</code> đọc <b>confidence</b> của câu Score độ khó, không đọc xác suất mức dễ: <code>if d["confidence"] &lt; 0.5 ... return "strong-model"</code>.</p>
+<p>Confidence của Score (README §1.5) phạt xác suất nằm <b>xa</b> mức cao nhất. Với độ khó (0.6, 0.1, 0.3): mức cao nhất là mức 0; spread = 0.1×1 + 0.3×2 = 0.7. Phân phối đều trên 3 mức có MAD_unif = 0.67. Spread lớn hơn cả phân phối đều, nên confidence = max(0, 1 − 0.7/0.67) = <b>0</b>. Kết quả: câu dễ đi strong-model, đắt gấp 10 lần cheap-model với giá giả định của lab.</p>
+<p>Đây là over-route, lỗi tiền chứ không phải lỗi chất lượng. Nhưng nó cho thấy confidence không phải "độ chắc câu này dễ". README §1.5 khuyên: khi quyết định là "bên nào của một ranh giới", cộng xác suất các mức ở phía đó. Kéo ba thanh để so hai cách đọc.</p>`,
+      viz(box) {
+        const S = [0.6, 0.1, 0.3], out = el('div');
+        const draw = () => {
+          const t = S.reduce((a, b) => a + b, 0) || 1, p = S.map((x) => x / t), m = p.indexOf(Math.max(...p)), sp = p.reduce((s, x, i) => s + x * Math.abs(i - m), 0), c = Math.max(0, 1 - sp / (2 / 3)), up = p[1] + p[2];
+          const viaConf = p[2] > 0.5 ? 'reasoning-model' : c < 0.5 ? 'strong-model' : 'cheap-model', viaSum = p[2] > 0.5 ? 'reasoning-model' : up >= 0.5 ? 'strong-model' : 'cheap-model';
+          out.innerHTML = `<div class="stat">${p.map((x, i) => `<span>mức ${i}: <b>${x.toFixed(2)}</b></span>`).join('')}</div>` +
+            `<div class="stat"><span>spread = <b>${sp.toFixed(2)}</b> so với MAD_unif 0.67</span><span>confidence = <b>${c.toFixed(2)}</b></span><span>P(mức ≥ 1) = <b>${up.toFixed(2)}</b></span></div>` +
+            `<div class="stat"><span>pick_model (README, conf &lt; 0.5 → strong): <b>${viaConf}</b></span><span>Cộng xác suất (P(mức ≥ 1) ≥ 0.5 → strong): <b>${viaSum}</b></span></div>` +
+            (viaConf !== viaSum && p[0] >= 0.5 ? `<p class="hint" style="color:var(--warn)">Bất thường: ${(p[0] * 100).toFixed(0)}% xác suất ở mức dễ nhất mà confidence chỉ ${c.toFixed(2)}, nên pick_model chọn ${viaConf}. Vì sao: ${(p[2] * 100).toFixed(0)}% ở mức xa nhất bị nhân khoảng cách 2 trong spread. Không có nghĩa model nghĩ câu này khó. Trong hệ thống thật: với ranh giới "dễ hay không", đặt ngưỡng trên P(mức ≥ 1) (README §1.5, §4.4), và đo trên prompt có nhãn xem over-route tốn bao nhiêu.</p>` : '');
+        };
+        box.append(el('div', { class: 'row' }, ['Mức 0: một bước', 'Mức 1: vài bước', 'Mức 2: nhiều bước'].map((l, i) => slider(l, 0, 1, 0.01, S[i], (v) => { S[i] = v; draw(); }, (v) => v.toFixed(2)).node)), out,
+          el('div', { class: 'cap', text: 'Ba thanh được chuẩn hoá cho tổng bằng 1. Mặc định (0.6, 0.1, 0.3) là đáp án giả định cho câu chống nước trong bảng bên dưới. Thử (0.6, 0.3, 0.1): cùng 60% dễ, confidence lên 0.25 vì xác suất dư nằm ở mức kề, nhưng vẫn dưới 0.5. Luật "cộng xác suất" là cách đọc README khuyên ở §1.5, không phải code §3.11.' }));
+        draw();
+      },
+      take: 'Confidence của Score đo hình dạng phân phối, không đo "câu này dễ đến đâu". Quyết định quanh một ranh giới thì cộng xác suất các mức ở phía đó.'
+    },
+    {
+      q: 'Taxonomy 75 nhóm: khi model không chắc, sao không chuyển người luôn cho an toàn?',
+      a: `<p>Vì phần lớn giá trị vẫn lấy được ở <b>tầng cha</b>. README §3.12 phân loại báo cáo SEC vào 75 nhóm SIC. Confidence ≥ 0.9 thì báo cáo nhóm; dưới 0.9 thì báo cáo <b>division</b> cha, suy ra từ nhóm mà không cần gọi thêm.</p>
+<p>Kết quả (<code>jev-1.12</code>, 60 báo cáo): ngưỡng 0.9 chia đôi tập. Nửa tự tin đúng 90%. Nửa còn lại chỉ đúng 40% ở cấp nhóm, nhưng đúng 70% ở cấp division.</p>
+<p>Với ShopViet: sản phẩm mới không chắc là "Đế tản nhiệt laptop" hay "Giá đỡ laptop" thì vẫn gắn chắc "Phụ kiện laptop", đủ để hiện trên trang danh mục. Trình duyệt tính tỉ lệ đúng của ba chiến lược từ số README:</p>`,
+      viz(box) {
+        const a = 0.5 * 0.9 + 0.5 * 0.4, b = 0.5 * 0.9 + 0.5 * 0.7, c = 0.5 * 0.9;
+        box.append(hbars([['Luôn báo cấp nhóm', a * 100], ['Lùi lên division khi < 0.9', b * 100, true], ['Chỉ giữ nửa tự tin, nửa kia chuyển người', c * 100]], { max: 100, fmt: (v) => v.toFixed(0) + '%' }),
+          el('div', { class: 'cap', text: 'Hàng 3: 45% đúng tự động, 50% tốn công người. Hàng 2: 80% có nhãn đúng, nửa sau ở cấp thô hơn. Nếu tầng cha quá thô để hành động, đó mới là chỗ chuyển người.' }));
+      },
+      take: 'Khi không chắc, lùi một tầng thay vì bỏ. Mọi văn bản vẫn có nhãn dùng được.'
+    },
+    {
+      q: 'Taxonomy sâu: greedy đi theo nhánh xác suất cao nhất mỗi tầng, sao lại sai?',
+      a: `<p>Vì một lựa chọn sai ở tầng đầu <b>không sửa được</b>. Sản phẩm "Đế tản nhiệt laptop có quạt" có chữ "tản nhiệt", "quạt" nên tầng 1 nghiêng nhẹ về "Thiết bị làm mát gia dụng" (0.55). Greedy đi vào đó và chỉ còn chọn giữa các loại quạt.</p>
+<p>Beam search giữ K đường tốt nhất mỗi tầng. K câu hỏi của một tầng chạy song song, nên số vòng gọi vẫn bằng số tầng. Điểm đường đi là <b>trung bình nhân</b> xác suất các cạnh (README §3.12), để lá sâu không bị phạt vì cần nhiều quyết định hơn. README còn báo <code>separation</code> = điểm đường 1 / điểm đường 2.</p>
+<p>Ca tương tự trong README: "Cat Window Beds &amp; Perches", greedy ra "Pet Chairs", beam K=3 đúng. Xác suất trong cây dưới đây là giả định.</p>`,
+      viz(box) {
+        const T = { root: [['A', 'Thiết bị làm mát gia dụng', 0.55], ['B', 'Phụ kiện laptop', 0.45]], A: [['A1', 'Quạt bàn', 0.6], ['A2', 'Quạt hơi nước', 0.3], ['A3', 'Máy lạnh mini', 0.1]], B: [['B1', 'Đế tản nhiệt laptop', 0.92], ['B2', 'Túi chống sốc', 0.05], ['B3', 'Bàn phím rời', 0.03]] };
+        const name = Object.fromEntries(Object.values(T).flat().map(([id, n]) => [id, n]));
+        const gm = (ps) => Math.exp(ps.reduce((s, p) => s + Math.log(Math.max(p, 1e-12)), 0) / ps.length);
+        const out = el('div');
+        const draw = (K) => {
+          let beams = [[['root'], []]];
+          const steps = [];
+          while (beams.some(([p]) => T[p[p.length - 1]])) {
+            const fr = [];
+            beams.forEach(([p, ps]) => { const kids = T[p[p.length - 1]]; if (!kids) fr.push([p, ps]); else kids.forEach(([id, , pr]) => fr.push([p.concat(id), ps.concat(pr)])); });
+            beams = fr.sort((a, b) => gm(b[1]) - gm(a[1])).slice(0, K);
+            steps.push(beams.map(([p, ps]) => p.slice(1).map((i) => name[i]).join(' › ') + ' = ' + gm(ps).toFixed(3)));
+          }
+          const best = beams[0], ok = best[0][best[0].length - 1] === 'B1', sep = beams[1] ? gm(best[1]) / gm(beams[1][1]) : null;
+          out.innerHTML = steps.map((s, i) => `<div class="hint" style="margin:0 0 4px"><b>Tầng ${i + 1}</b> giữ: ${s.join(' | ')}</div>`).join('') +
+            `<div class="stat"><span>Lá chọn: <b class="${ok ? 'ok' : 'bad'}">${name[best[0][best[0].length - 1]]}</b></span><span>separation: <b>${sep ? sep.toFixed(2) + '×' : 'chỉ một đường'}</b></span><span>Số request: <b>${1 + Math.min(K, 2)}</b>, số vòng: <b>2</b></span></div>`;
+        };
+        box.append(el('div', { class: 'row' }, [slider('K (beam)', 1, 3, 1, 1, draw).node]), out,
+          el('div', { class: 'cap', text: 'K = 1 là greedy: điểm 0.574 cho Quạt bàn. K = 2: đường Phụ kiện laptop › Đế tản nhiệt có điểm 0.643 và thắng.' }));
+        draw(1);
+      },
+      take: 'Greedy khoá lỗi ở tầng đầu. Beam giữ vài đường dự phòng mà không tăng số vòng gọi.'
+    },
+    {
+      q: 'Ghép sản phẩm trùng giữa hai nhà cung cấp: sao dùng Score ba mức mà không dùng yes/no "có trùng không"?',
+      a: `<p>Vì có <b>ba</b> kết quả, không phải hai: để riêng, chuyển người xem, gộp. README §3.13: Score giữ được thứ tự ba kết quả và mô tả rõ mức giữa; Choice làm mất thứ tự; yes/no chỉ tới mức giữa gián tiếp qua ngưỡng.</p>
+<p>Code làm tròn score về mức gần nhất với điểm cắt 0.5 và 1.5. Viết mô tả mức <b>trước</b> khi nhìn score, để điểm cắt đến từ quy tắc làm tròn chứ không phải fit vào dữ liệu. Score ở đây là vị trí trung bình theo xác suất các mức, ví dụ (0.5, 0, 0.5) cho 1.0.</p>
+<p>README có ca sai thật: <i>Justin Lo</i> và <i>側田</i> (cùng ca sĩ, hai hệ chữ) chỉ được 0.44, ngay dưới điểm cắt. Với ShopViet, rủi ro tương tự là tên có dấu và không dấu: "Tai nghe Sony WH-1000XM5 Đen" và "tai nghe sony wh1000xm5 den".</p>`,
+      viz(box) {
+        const S = [0.2, 0.3, 0.5], out = el('div'), sls = [];
+        const LV = ['Khác sản phẩm', 'Cần người xem: bản khác màu, bản quốc tế, combo', 'Cùng sản phẩm'];
+        const draw = () => {
+          const t = S.reduce((a, b) => a + b, 0) || 1, p = S.map((x) => x / t), sc = p[1] + 2 * p[2];
+          const m = p.indexOf(Math.max(...p)), spread = p.reduce((s, x, i) => s + x * Math.abs(i - m), 0), conf = Math.max(0, 1 - spread / (2 / 3));
+          const r = sc < 0.5 ? 'unlinked' : sc < 1.5 ? 'review' : 'assert_same_as';
+          out.innerHTML = `<div class="stat">${p.map((x, i) => `<span>mức ${i}: <b>${x.toFixed(2)}</b></span>`).join('')}</div><div class="stat"><span>score = <b>${sc.toFixed(2)}</b></span><span>confidence = <b>${conf.toFixed(2)}</b></span><span>route_pair: <b>${r}</b></span></div>` +
+            (r === 'review' && conf < 0.2 && p[0] > 0.3 && p[2] > 0.3 ? '<p class="hint" style="color:var(--warn)">Bất thường: score rơi vào mức giữa nhưng model không hề nghĩ là "cần người xem"; nó phân vân giữa hai đầu thang. Vì sao: score là trung bình vị trí. Không có nghĩa kết quả review sai, vì người xem vẫn là lựa chọn an toàn. Trong hệ thống thật: log confidence cùng score để người xem biết đây là ca hai đầu, và thêm câu yes/no cùng tên, cùng hãng để thấy lệch ở đâu.</p>' : '');
+        };
+        LV.forEach((l, i) => sls.push(slider(`Mức ${i}: ${l}`, 0, 1, 0.01, S[i], (v) => { S[i] = v; draw(); }, (v) => v.toFixed(2)).node));
+        box.append(el('div', { class: 'row' }, sls), out, el('div', { class: 'cap', text: 'Ba thanh được chuẩn hoá cho tổng bằng 1. Thử 0.5, 0, 0.5: score 1.0, confidence 0. Confidence theo công thức Score của README §1.5.' }));
+        draw();
+      },
+      take: 'Ba kết quả có thứ tự thì dùng Score và làm tròn. Đọc kèm confidence để phân biệt "ở giữa thật" và "phân vân hai đầu".'
+    },
+    {
+      q: 'Xếp hạng ticket ưu tiên: sao không hỏi một câu Score "ticket này ưu tiên mức nào"?',
+      a: `<p>Vì "ưu tiên" giấu ba phán đoán độc lập: lỗi nặng đến đâu, khách bực đến đâu, báo cáo đủ chi tiết chưa (README, Tra cứu nhanh mục 2). Một ticket lỗi nặng mà khách bình tĩnh không đặt vào đâu được trên một thang, nên confidence giảm.</p>
+<p>Composite scoring (README §3.14): mỗi chiều một câu Score, chia cho mức cao nhất để về 0–1, cộng có trọng số trong code. Đáp án giữ nguyên; đổi trọng số chỉ chạy lại phép cộng. Kéo trọng số và xem thứ hạng ba ticket ShopViet đổi mà không có request nào.</p>`,
+      viz(box) {
+        const T = [['Màn hình laptop chớp tắt, khách bình tĩnh, gửi đủ video', [4, 1, 4]], ['Không đăng nhập được, khách doạ bỏ shop, mô tả sơ sài', [2, 4, 1]], ['Hỏi màu ốp lưng còn không, rất lịch sự', [0, 0, 3]]];
+        const W = [0.5, 0.3, 0.2], out = el('div');
+        const draw = () => {
+          const sum = W.reduce((a, b) => a + b, 0) || 1;
+          const r = T.map(([n, s]) => [n, s.reduce((a, x, i) => a + (W[i] / sum) * (x / 4), 0)]).sort((a, b) => b[1] - a[1]);
+          out.replaceChildren(hbars(r.map(([n, v], i) => [(i + 1) + '. ' + n, v, i === 0]), { max: 1, fmt: (v) => v.toFixed(2) }));
+        };
+        box.append(el('div', { class: 'row' }, ['Mức nghiêm trọng của lỗi', 'Mức bực bội', 'Độ chi tiết của báo cáo'].map((l, i) => slider(l, 0, 1, 0.05, W[i], (v) => { W[i] = v; draw(); }, (v) => v.toFixed(2)).node)), out,
+          el('div', { class: 'cap', text: 'Mỗi chiều 5 mức (0–4), chia 4 như code README. Điểm từng chiều là giả định. Trọng số được chuẩn hoá cho tổng bằng 1.' }));
+        draw();
+      },
+      take: 'Tách chiều thì thấy được điểm tổng đến từ đâu, và chỉnh thứ hạng bằng trọng số trong code thay vì viết lại prompt.'
+    },
+    {
+      q: 'Ảnh hoá đơn nhà cung cấp: kiểm tra trên cả trang chưa đủ sao còn cắt vùng kiểm tra lần nữa?',
+      a: `<p>Vì mỗi lần kiểm tra mù ở một chỗ khác nhau. README §3.16 (<code>jev-1.14.0</code>, 15/10/2026, hai hoá đơn nhàu và có bóng đổ): <b>page check</b> hỏi trên toàn trang "giá trị trích ra có phải field này không", <b>crop check</b> cắt vùng quanh box rồi hỏi "vùng này có hiện giá trị đã trích không". Field có một trong hai check dưới 0.25 thì chuyển người.</p>
+<p>Kéo ngưỡng để xem mỗi check một mình bắt được bao nhiêu lỗi. Ba dòng là ba giá trị trích sai trong README.</p>
+<p>Cùng tinh thần, §3.15 dùng câu hỏi làm cột feature cho ML: 38 câu sau năm vòng đưa RMSE dự đoán điểm rượu vang từ 3,09 xuống 1,77. Phần lớn cải thiện đến từ lần đề xuất câu hỏi đầu tiên.</p>`,
+      viz(box) {
+        const R = [['Số hoá đơn AN400074 (thật: IN400074)', 0.88, 0.18], ['Số hoá đơn INV03070 (thật: INV03079)', 0.02, 0.04], ['Ngày 16/09/2028 (thật: 16/09/2026)', 0.17, 0.66]], out = el('div');
+        const draw = (t) => {
+          const pg = R.filter((r) => r[1] < t).length, cr = R.filter((r) => r[2] < t).length, both = R.filter((r) => r[1] < t || r[2] < t).length;
+          out.innerHTML = '<div class="sum tbl" style="border:0;margin:0;padding:0"><table><tr><th>Giá trị sai</th><th>Page</th><th>Crop</th><th>Bắt bởi</th></tr>' +
+            R.map(([n, p, c]) => `<tr><td>${n}</td><td class="mono ${p < t ? 'ok' : ''}">${p}</td><td class="mono ${c < t ? 'ok' : ''}">${c}</td><td>${p < t && c < t ? 'cả hai' : p < t ? 'page' : c < t ? 'crop' : '<b class="bad">lọt</b>'}</td></tr>`).join('') + '</table></div>' +
+            `<div class="stat"><span>Chỉ page: <b>${pg}/3</b></span><span>Chỉ crop: <b>${cr}/3</b></span><span>Page hoặc crop: <b>${both}/3</b></span></div>`;
+        };
+        box.append(el('div', { class: 'row' }, [slider('Ngưỡng chuyển người', 0.05, 0.6, 0.01, 0.25, draw, (v) => v.toFixed(2)).node]), out,
+          el('div', { class: 'cap', text: 'Số từ README. Mọi giá trị đúng qua cả hai check (thấp nhất 0.35 và 0.31), nên ngưỡng trên 0.31 bắt đầu chuyển nhầm giá trị đúng sang người.' }));
+        draw(0.25);
+      },
+      take: 'Không check nào một mình bắt đủ. Hai góc nhìn khác nhau trên cùng một field, gộp bằng "một trong hai thấp là chuyển người".'
+    }
+  ],
+  poc: {
+    goal: "<b>POC này không gọi model nào.</b> Đáp án của router là số viết tay, không phải output thật của decision model. <code>pick_model</code> của README §3.11 chạy thật trên 12 câu hỏi ShopViet với đáp án router, nhãn \"tier cần\" và giá mỗi tier <b>viết tay / giả định</b> như lab; token của request router đếm thật. Kèm phép tính min hay tích (§3.9) và <code>beam_classify</code> của §3.12 trên cây 2 tầng.",
+    file: "docs/decision-models/pocs/07_applications_agents_taxonomy.py",
+    run: "uv run docs/decision-models/pocs/07_applications_agents_taxonomy.py",
+    needs: "chỉ <code>uv</code> và CPU, miễn phí. Lần chạy đầu <code>tiktoken</code> tải file từ vựng vài MB.",
+    output: "1. §3.11 pick_model của README trên 12 câu hỏi ShopViet\n   Đáp án router, nhãn 'tier cần' và giá mỗi tier ($0.0004/$0.004/$0.02) là VIẾT TAY / GIẢ ĐỊNH như lab.\n   Token router đếm thật (o200k) × $0.042/1M.\n\nPrompt                                        conf độ khó  p(khó)  high_stakes  Router chọn      Cần\n--------------------------------------------  -----------  ------  -----------  ---------------  ---------------  --\nChào shop, hôm nay mở cửa mấy giờ?            0.91         0.01    0.03         cheap-model      cheap-model\nViết giúp mô tả ngắn cho tai nghe Sony WH-10  0.50         0.03    0.04         cheap-model      cheap-model\nSo sánh MacBook Air M3 và Dell XPS 13 cho dâ  0.40         0.20    0.10         strong-model     strong-model\nTrả góp 0% 12 tháng, trả trước 30% máy 32.99  0.17         0.45    0.62         reasoning-model  reasoning-model\nĐơn DH-20931 của tôi tới đâu rồi?             0.82         0.02    0.10         cheap-model      cheap-model\nScript Python tính doanh thu từ file CSV đơn  0.33         0.15    0.05         strong-model     strong-model\nLaptop không sạc sau khi cập nhật BIOS, có m  0.25         0.20    0.55         reasoning-model  strong-model     dư\nCảm ơn shop nhiều nha                         0.97         0.00    0.01         cheap-model      cheap-model\nTôi có máy tạo nhịp tim, đo điện tâm đồ bằng  0.10         0.25    0.88         reasoning-model  reasoning-model\nBuild PC 25 triệu chơi game 2K, chọn linh ki  0.40         0.65    0.20         reasoning-model  reasoning-model\nDịch sang tiếng Anh: Sản phẩm được bảo hành   0.83         0.01    0.05         cheap-model      cheap-model\nTai nghe này có chống nước không?             0.00         0.30    0.05         strong-model     cheap-model      dư\n\n   Router: $0.0941 cho 12 câu (trong đó router $0.000128); luôn strong $0.0480; luôn reasoning $0.2400\n   Under-route 0/12, over-route 2/12. Luôn strong under-route 3/12.\n\nNgưỡng             Chi phí LLM  Under-route\n-----------------  -----------  -----------\nhigh_stakes > 0.3  $0.0940      0\nhigh_stakes > 0.5  $0.0940      0\nhigh_stakes > 0.7  $0.0620      1\n\n2. §3.9 confidence của cả lời gọi hàm: min hay tích (mỗi phán đoán 0.95)\nSố phán đoán  Tích   Min\n------------  -----  -----\n1             0.950  0.950\n2             0.902  0.950\n4             0.815  0.950\n8             0.663  0.950\n\n3. §3.12 beam_classify (code README) trên cây 2 tầng, sản phẩm 'Đế tản nhiệt laptop có quạt' (xác suất cạnh VIẾT TAY)\nBeam          Đường đi                               Điểm (TB nhân)  separation  Kết quả\n------------  -------------------------------------  --------------  ----------  -------\nK=1 (greedy)  Thiết bị làm mát gia dụng → Quạt bàn   0.574           -           SAI\nK=2           Phụ kiện laptop → Đế tản nhiệt laptop  0.643           1.12×       đúng\nK=3           Phụ kiện laptop → Đế tản nhiệt laptop  0.643           1.12×       đúng\n\nRút ra: bản thân router gần như miễn phí; tổng tiền do ngưỡng quyết định bao nhiêu câu lên reasoning. Ở đây router đắt\nhơn luôn-strong nhưng không gửi thiếu ca nào (luôn-strong thiếu 3/12). Beam giữ được nhánh mà greedy bỏ ở tầng đầu.",
+    measured: true,
+    read: ["Bảng router: không câu nào bị gửi thiếu, hai câu bị gửi dư. \"Tai nghe này có chống nước không?\" có p(dễ) 0.6 nhưng confidence 0.00 vì 0.3 nằm ở mức xa nhất, nên lên strong.", "Dòng chi phí: router tự nó tốn $0.00013 cho 12 câu; tổng $0.094 đắt hơn luôn-strong $0.048, nhưng luôn-strong gửi thiếu 3/12 câu.", "Bảng min hay tích: 8 phán đoán đều 0.95 cho tích 0.663; min giữ 0.95 vì không phán đoán nào yếu.", "Bảng beam: greedy (K=1) chọn \"Quạt bàn\" vì tầng đầu 0.55 > 0.45; K=2 giữ nhánh \"Phụ kiện laptop\" và ra đúng \"Đế tản nhiệt laptop\" (0.643 so với 0.574)."]
+  },
+  mount(stage) {
+    const TIERS = ['cheap-model', 'strong-model', 'reasoning-model'], COST = [0.0004, 0.004, 0.02];
+    const P = [
+      ['Chào shop, hôm nay mở cửa mấy giờ?', 'chitchat', [0.95, 0.04, 0.01], 0.6, 0.03, 0],
+      ['Viết giúp mô tả ngắn cho tai nghe Sony WH-1000XM5', 'writing', [0.7, 0.27, 0.03], 0.05, 0.04, 0],
+      ['So sánh MacBook Air M3 và Dell XPS 13 cho dân lập trình', 'writing', [0.2, 0.6, 0.2], 0.3, 0.1, 1],
+      ['Trả góp 0% 12 tháng, trả trước 30% máy 32.990.000đ thì mỗi tháng trả bao nhiêu?', 'math', [0.1, 0.45, 0.45], 0.05, 0.62, 2],
+      ['Đơn DH-20931 của tôi tới đâu rồi?', 'lookup', [0.9, 0.08, 0.02], 0.95, 0.1, 0],
+      ['Script Python tính doanh thu từ file CSV đơn hàng bị KeyError, sửa giúp', 'coding', [0.3, 0.55, 0.15], 0.05, 0.05, 1],
+      ['Laptop không sạc sau khi cập nhật BIOS, có mất bảo hành không?', 'lookup', [0.3, 0.5, 0.2], 0.4, 0.55, 1],
+      ['Cảm ơn shop nhiều nha', 'chitchat', [0.98, 0.02, 0], 0.01, 0.01, 0],
+      ['Tôi có máy tạo nhịp tim, đo điện tâm đồ bằng Apple Watch có an toàn không?', 'lookup', [0.35, 0.4, 0.25], 0.2, 0.88, 2],
+      ['Build PC 25 triệu chơi game 2K, chọn linh kiện tương thích nhau', 'lookup', [0.05, 0.3, 0.65], 0.4, 0.2, 2],
+      ['Dịch sang tiếng Anh: Sản phẩm được bảo hành 24 tháng chính hãng', 'writing', [0.9, 0.09, 0.01], 0.02, 0.05, 0],
+      ['Tai nghe này có chống nước không?', 'lookup', [0.6, 0.1, 0.3], 0.3, 0.05, 0]
+    ];
+    const conf = (p) => { const m = p.indexOf(Math.max(...p)), sp = p.reduce((s, x, i) => s + x * Math.abs(i - m), 0); return Math.max(0, 1 - sp / (2 / 3)); };
+    const routerCost = (txt) => ((Math.ceil(txt.length / 4) + 300) * 0.042) / 1e6;
+    const S = { hs: 0.5, ph: 0.5, cf: 0.5, n: 100000 };
+    const tbl = el('div', { class: 'sum tbl', style: 'border:0;margin:0;padding:0' }), bars = el('div'), stat = el('div', { class: 'stat' }), flagHost = el('div');
+    const flagBox = (f) => el('div', { style: 'border-left:3px solid var(--warn);background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:13.5px;line-height:1.55', html: `<b style="color:var(--warn)">Bất thường:</b> ${f.what}<br><b>Vì sao:</b> ${f.why}<br><b>Không có nghĩa là:</b> ${f.not}<br><b>Trong hệ thống thật:</b> ${f.real}` });
+    function pick(r) {
+      const [, dom, dp, , hs] = r;
+      if (hs > S.hs || dp[2] > S.ph) return 2;
+      if (conf(dp) < S.cf || dom === 'coding') return 1;
+      return 0;
+    }
+    function render() {
+      let cost = 0, rc = 0, under = 0, over = 0;
+      const risky = [], split = [];
+      const rows = P.map((r) => {
+        const t = pick(r), need = r[5], c = conf(r[2]);
+        cost += COST[t]; rc += routerCost(r[0]);
+        if (t < need) { under++; if (r[4] >= 0.5) risky.push(r[0]); }
+        if (t > need) over++;
+        if (t === 1 && r[1] !== 'coding' && r[2][0] >= 0.3 && r[2][2] >= 0.25 && c < S.cf) split.push(r[0]);
+        const cls = t < need ? 'bad' : t > need ? '' : 'ok', sty = t > need ? ' style="color:var(--warn)"' : '';
+        return `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td class="mono">${r[2][2].toFixed(2)}</td><td class="mono">${c.toFixed(2)}</td><td class="mono">${r[3].toFixed(2)}</td><td class="mono">${r[4].toFixed(2)}</td><td><b class="${cls}"${sty}>${TIERS[t]}</b></td><td class="mono">${TIERS[need]}</td></tr>`;
+      });
+      tbl.innerHTML = '<table><tr><th>Câu hỏi của khách</th><th>domain</th><th>P(khó nhất)</th><th>conf độ khó</th><th>needs_tools</th><th>high_stakes</th><th>Router chọn</th><th>Cần (giả định)</th></tr>' + rows.join('') + '</table>';
+      const k = S.n / P.length, day = (v) => v * k;
+      const allR = COST[2] * P.length, allS = COST[1] * P.length, strongUnder = P.filter((r) => r[5] > 1).length;
+      bars.replaceChildren(hbars([['Luôn reasoning-model', day(allR)], ['Luôn strong-model', day(allS)], ['Router + tier đã chọn', day(cost + rc), true]], { max: day(allR), fmt: (v) => '$' + Math.round(v).toLocaleString('en-US') }));
+      stat.innerHTML = `<span>Router tiết kiệm so với luôn reasoning: <b class="ok">${((1 - (cost + rc) / allR) * 100).toFixed(0)}%</b></span><span>Under-route: <b class="${under ? 'bad' : 'ok'}">${under}/12</b></span><span>Over-route: <b>${over}/12</b></span><span>Luôn strong under-route: <b>${strongUnder}/12</b></span><span>Tiền router/ngày: <b>$${day(rc).toFixed(2)}</b></span>`;
+      let f = null;
+      if (risky.length) f = { what: `Câu rủi ro cao "${risky[0]}" bị gửi xuống tier yếu hơn mức cần.`, why: `high_stakes của câu này dưới ngưỡng ${S.hs.toFixed(2)} bạn đặt, và độ khó không đủ dồn vào mức cao nhất để kích hoạt nhánh reasoning.`, not: 'Không có nghĩa router kém trung bình: tổng chi phí vẫn giảm mạnh và phần lớn câu đi đúng tier.', real: 'README §3.11: ngưỡng high_stakes nên thấp hơn các ngưỡng khác, vì bỏ sót một ca rủi ro đắt hơn gửi nhầm một ca dễ cho model mạnh.' };
+      else if (split.length && S.cf > 0) {
+        const r = P.find((x) => x[0] === split[0]), p = r[2], m = p.indexOf(Math.max(...p)), sp = p.reduce((s, x, i) => s + x * Math.abs(i - m), 0);
+        f = { what: `"${split[0]}" có ${(p[0] * 100).toFixed(0)}% xác suất ở mức dễ nhất (độ khó = (${p.join(', ')})), confidence ${conf(p).toFixed(2)}, và router gửi nó lên strong-model.`, why: `Công thức Score của README §1.5: spread = Σ p_i·|i − m| = ${p.map((x, i) => x + '×' + Math.abs(i - m)).join(' + ')} = ${sp.toFixed(2)}; với 3 mức, MAD_unif = 0.67. spread lớn hơn MAD_unif nên confidence = max(0, 1 − ${sp.toFixed(2)}/0.67) = ${conf(p).toFixed(2)}. ${(p[2] * 100).toFixed(0)}% ở mức xa nhất bị tính gấp đôi, nặng hơn cả một phân phối đều. Mọi ngưỡng confidence trên 0 đều đẩy câu này lên strong.`, not: 'Không có nghĩa model nghĩ câu này khó: phần lớn xác suất vẫn ở mức dễ. Confidence đo hình dạng phân phối, không đo độ khó.', real: 'README §1.5 và §4.4: khi quyết định là "bên nào của ranh giới", cộng xác suất các mức ở phía đó thay vì dựa vào confidence. Ở đây P(mức ≥ 1) = ' + (p[1] + p[2]).toFixed(2) + ', dưới 0.5. Router §3.11 là ví dụ thiết kế; đo trên prompt thật xem over-route kiểu này tốn bao nhiêu.' };
+      }
+      flagHost.replaceChildren(f ? flagBox(f) : el('span'));
+    }
+    stage.append(
+      el('pre', { class: 'mono', style: 'font-size:12px;white-space:pre-wrap;margin:0 0 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px', text: 'if high_stakes > ngưỡng_hs or P(khó nhất) > ngưỡng_khó:  return "reasoning-model"\nif confidence(độ khó) < ngưỡng_conf or domain == "coding":  return "strong-model"\nreturn "cheap-model"' }),
+      el('div', { class: 'row' }, [
+        slider('Ngưỡng high_stakes', 0.1, 0.95, 0.01, S.hs, (v) => { S.hs = v; render(); }, (v) => v.toFixed(2)).node,
+        slider('Ngưỡng P(khó nhất)', 0.1, 0.95, 0.01, S.ph, (v) => { S.ph = v; render(); }, (v) => v.toFixed(2)).node,
+        slider('Ngưỡng confidence độ khó', 0, 1, 0.01, S.cf, (v) => { S.cf = v; render(); }, (v) => v.toFixed(2)).node,
+        select('Request/ngày', [[10000, '10k'], [100000, '100k'], [1000000, '1M']], S.n, (v) => { S.n = +v; render(); }).node]),
+      tbl, el('h4', { text: 'Chi phí mỗi ngày (12 câu mẫu lặp lại cho đủ số request)', style: 'margin:16px 0 6px' }), bars, stat, flagHost,
+      el('p', { class: 'hint', text: 'Giả định: cheap $0.0004, strong $0.004, reasoning $0.02 mỗi request; nhãn "Cần" và mọi xác suất của router. Từ README: hàm pick_model, công thức confidence của Score, giá Jev $0.042/1M token input. Token router ước lượng = số ký tự / 4 + 300 token câu hỏi (ước lượng thô). needs_tools có trong request nhưng hàm README không dùng nó để chọn tier; ShopViet dùng nó để bật tool tra đơn.' }));
+    render();
+  }
+});
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

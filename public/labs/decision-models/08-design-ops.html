@@ -1,0 +1,618 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Models Lab 08</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="07-applications-agents-taxonomy.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/decision-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson({
+  id: 'design-ops', nav: '8. Thiết kế & vận hành', ref: 'Phần 4',
+  title: 'Ngưỡng cho độ chính xác 95% trên trung bình vẫn có thể để lọt đúng loại ticket nguy hiểm nhất',
+  hook: 'Kéo ngưỡng trên 800 ticket có nhãn sinh trong trình duyệt. Xem coverage, precision, chi phí và tỉ lệ đúng của từng lớp đổi theo, rồi thử ngưỡng riêng từng lớp và câu yes/no sàng lọc.',
+  terms: [
+    ['Tập có nhãn', 'Request thật đã biết đáp án đúng. Ví dụ 800 ticket ShopViet, mỗi ticket có đội xử lý đúng do người gán.'],
+    ['Coverage', 'Tỉ lệ ticket được xử lý tự động (xác suất vượt ngưỡng). Ví dụ 600/800 = 75%; 200 ticket còn lại cho người xem.'],
+    ['Precision', 'Trong số ticket tự động, tỉ lệ đi đúng đội. Ví dụ 570/600 = 95%.'],
+    ['Recall theo lớp', 'Trong số ticket thật sự thuộc một lớp, tỉ lệ được tự động chuyển đúng. Ví dụ 40 ticket lừa đảo, 10 được tự động gắn đúng: recall 25%.'],
+    ['Calibration', 'Đáp án được gán 0.8 thì đúng khoảng 80% số lần. Tính chất trên nhóm, đo theo từng khoảng xác suất.'],
+    ['Lớp critical', 'Lớp mà một lần sai đắt hơn nhiều lần sai khác. Ví dụ ticket lừa đảo bị chuyển như ticket billing thường.'],
+    ['Ngưỡng theo lớp', 'Mỗi option của câu Choice một ngưỡng riêng. Ví dụ billing ≥ 0.80, fraud ≥ 0.95. Áp lên lớp model chọn, không phải lớp thật.'],
+    ['Pin version', 'Gửi đúng ID model, ví dụ jev-1.14.0, thay vì alias jev-latest có thể trỏ sang bản mới.']
+  ],
+  problem: {
+    example: '<b>ShopViet</b> phân loại ticket hỗ trợ vào bốn đội bằng một câu Choice: <code>billing</code>, <code>orders</code>, <code>account</code>, <code>fraud</code>. Ticket lừa đảo chỉ khoảng 5% nhưng mỗi lần lọt (bị chuyển cho billing như ticket thường) có thể mất tiền thật. Đội đã gán nhãn 800 ticket để đặt ngưỡng. (Trong lab, 800 ticket và xác suất của model đều do trình duyệt sinh giả lập, không gọi model nào.)',
+    scenario: 'Kỹ sư chọn một ngưỡng duy nhất: P(option được chọn) ≥ t thì tự động chuyển, dưới t thì cho người xem. Họ kéo t đến khi precision tổng đạt 95% và lên production.',
+    ask: 'Precision 95% trên trung bình có nói gì về lớp fraud không? Ngưỡng riêng từng lớp có sửa được không, và cần thêm gì?',
+    solves: 'Lab sinh tập có nhãn trong trình duyệt (model calibrate tốt với ba lớp thường, tự tin quá mức với lớp fraud), tính coverage, precision, recall và chi phí ở mọi ngưỡng, rồi tự đánh dấu khi một ngưỡng đạt mục tiêu trên trung bình nhưng trượt ở lớp critical.',
+    read: [
+      'Biểu đồ: trục ngang là ngưỡng. Ba đường là coverage, precision tổng và tỉ lệ đúng của lớp fraud trong số ticket fraud được tự động. Vạch dọc là ngưỡng hiện tại.',
+      'Bảng theo lớp: số ticket, tự động bao nhiêu, đúng bao nhiêu, recall. Hàng đỏ là lớp không đạt mục tiêu.',
+      'Bật <b>Ngưỡng riêng từng lớp</b> để có bốn thanh trượt. Bật <b>Câu yes/no sàng lọc fraud</b> để thêm câu <code>possible_fraud</code> chặn trước khi tự động.',
+      'Khung viền cam xuất hiện khi ngưỡng trông tốt trên trung bình nhưng hỏng ở lớp fraud, hoặc khi ngưỡng riêng không chạm được lỗi thật.'
+    ]
+  },
+  summary: `<h3>Tóm tắt bài</h3>
+<p>Phần 4 của README là những việc biến một decision model thành hệ thống chạy được: viết state, viết câu hỏi, kết hợp câu hỏi, đặt ngưỡng, eval, chi phí, version, bảo mật.</p>
+<div class="tbl"><table>
+<tr><th>Mục</th><th>Quy tắc chính</th></tr>
+<tr><td>4.1 State</td><td>Chỉ gửi những gì câu hỏi cần; dùng object; trỏ câu hỏi bằng đường dẫn có backtick; quy tắc tất định để code làm.</td></tr>
+<tr><td>4.2 Câu hỏi</td><td>Một câu một phán đoán quan sát được; giá trị cao nghĩa là "có"; ranh giới rõ; option name có nghĩa.</td></tr>
+<tr><td>4.3 Pattern</td><td>Speculative fan-out, screen bằng yes/no trước, companion yes/no, routing theo confidence, routing theo xác suất.</td></tr>
+<tr class="cur"><td>4.4 Ngưỡng</td><td>Quyết định về rủi ro, đặt từ dữ liệu có nhãn; ba vùng (yes/no bắt đầu với 0.7 và 0.3); Score có ranh giới thì cộng xác suất các mức.</td></tr>
+<tr><td>4.5 Eval</td><td>Tập có nhãn có phần giữ riêng; độ chính xác, calibration, self-consistency (gửi lại cùng request nhiều lần, xem đáp án dao động bao nhiêu), độ nhạy thứ tự option, ca đối kháng, p50/p95 và chi phí.</td></tr>
+<tr><td>4.6 Chi phí</td><td>Gần như chỉ là input; gộp câu hỏi; rút gọn state; cache theo (version, state, questions); retry 429/529 với backoff.</td></tr>
+<tr><td>4.7 Version</td><td>Pin version ID, log field <code>model</code>; chạy lại eval khi đổi version hay provider.</td></tr>
+<tr><td>4.8 Bảo mật</td><td>State là dữ liệu không tin cậy; decision model không phải ranh giới bảo mật; hành động có tác dụng phụ cần xác nhận.</td></tr>
+</table></div>
+<h4>Checklist trước khi lên production (README §4.10, rút gọn)</h4>
+<ul>
+<li><b>Thiết kế:</b> mỗi câu một phán đoán; mọi câu về cùng state chung request; toán và ngày trong code; Choice không phủ hết input có companion yes/no; mức Score mô tả tình huống.</li>
+<li><b>Ngưỡng:</b> đặt từ dữ liệu có nhãn theo rủi ro từng hành động; vùng không chắc có đường riêng; hành động có tác dụng phụ cần xác nhận; lưu đáp án.</li>
+<li><b>Eval:</b> tập có nhãn từ traffic thật có phần giữ riêng; đo cả calibration, self-consistency, thứ tự option, ca đối kháng; đo trên tiếng Việt.</li>
+<li><b>Vận hành:</b> pin version và log <code>model</code>; retry có backoff; cache kết quả; đo p50, p95, chi phí từ vị trí deploy; xử lý <code>refusal</code> nếu dùng OpenAI; loại dữ liệu cá nhân khỏi state.</li>
+</ul>
+<div class="verdict"><b>Bài học của lab:</b> mọi metric phải tính <b>theo từng lớp</b>, nhất là lớp hiếm mà sai thì đắt. Không có tài liệu chính thức nào nói về chất lượng decision model trên tiếng Việt (README ghi chưa xác minh), nên tập có nhãn của chính bạn là nguồn duy nhất đáng tin.</div>`,
+  why: {
+    c: 'Đặt ngưỡng từ tập có nhãn, đọc metric theo từng lớp, dùng ngưỡng riêng cho lớp rủi ro và thêm một câu yes/no sàng lọc ngưỡng thấp cho lớp critical. Lý do: xác suất của decision model được calibrate trên nhóm, nhưng calibration của nhà cung cấp chưa chắc giữ trên miền của bạn, và lỗi của lớp hiếm bị trung bình nuốt mất.',
+    s: 'Một ngưỡng chung chọn theo precision tổng: lớp 5% đóng góp quá ít vào trung bình. Ngưỡng chọn theo cảm giác hoặc fit sát vào vài ca test: README nói rõ đừng làm. Thêm option other thay cho câu sàng lọc: other tranh xác suất với option thật.',
+    p: 'Cần gán nhãn vài trăm ticket thật, giữ riêng một phần, và chạy lại eval mỗi khi đổi câu hỏi, version hay provider. Ngưỡng chặt cho lớp critical làm giảm coverage, nghĩa là nhiều ticket hơn cho người xem.'
+  },
+  gen(seed, shift) {
+    const rnd = seeded(seed), C = ['billing', 'orders', 'account', 'fraud'], prior = [0.35, 0.40, 0.20, 0.05];
+    return Array.from({ length: 800 }, () => {
+      let u = rnd(), y = 0;
+      while (y < 3 && u > prior[y]) { u -= prior[y]; y++; }
+      const p0 = 1 - 0.6 * Math.pow(rnd(), 3), p = Math.min(0.999, p0 + (shift || 0));
+      const ok = rnd() < (C[y] === 'fraud' ? Math.max(0.05, p0 - 0.3) : p0);
+      let pred = y;
+      if (!ok) pred = C[y] === 'fraud' ? (rnd() < 0.8 ? 0 : 2) : rnd() < 0.1 ? 3 : [0, 1, 2].filter((c) => c !== y)[rnd() < 0.5 ? 0 : 1];
+      const fz = C[y] === 'fraud' ? 0.15 + 0.8 * rnd() : 0.25 * rnd() * rnd() + (rnd() < 0.05 ? 0.3 * rnd() : 0);
+      return { y: C[y], pred: C[pred], p, fz };
+    });
+  },
+  deep: [
+    {
+      q: 'Viết state: gửi nguyên hồ sơ khách cho model "biết đủ" không tốt hơn sao?',
+      a: `<p>Không. README §4.1: độ chính xác <b>giảm</b> khi state chứa nhiều nội dung không liên quan, và state lớn khiến khó biết phần nào gây ra đáp án sai. Lọc và retrieve trong code trước, chỉ gửi những gì câu hỏi cần.</p>
+<p>Còn có lý do tiền: chi phí decision model gần như chỉ là input. Bên dưới, trình duyệt dựng hai state cho cùng một ticket: state gọn (tin nhắn, đơn đang mở, chính sách liên quan) và state "cho chắc" (thêm toàn bộ lịch sử đơn và ticket cũ). Token ước lượng bằng số ký tự / 4 (ước lượng thô, tiếng Việt có dấu thường tốn hơn).</p>`,
+      viz(box) {
+        const lean = { ticket: { message: 'Tôi bị trừ tiền hai lần cho đơn DH-1042, hoàn lại giúp.' }, order: { id: 'DH-1042', charges: [{ amount_vnd: 7490000, status: 'captured' }, { amount_vnd: 7490000, status: 'captured' }] }, refund_policy: 'Trừ tiền trùng được hoàn trong 3 ngày làm việc.' };
+        const out = el('div');
+        const draw = (k) => {
+          const full = Object.assign({}, lean, { order_history: Array.from({ length: k }, (_, i) => ({ id: 'DH-' + (900 + i), item: 'Phụ kiện #' + i, amount_vnd: 290000 + i * 1000, status: 'delivered' })), past_tickets: Array.from({ length: Math.round(k / 2) }, (_, i) => ({ id: 'T-' + i, text: 'Hỏi tình trạng giao hàng của đơn cũ số ' + i })) });
+          const t1 = Math.ceil(JSON.stringify(lean).length / 4), t2 = Math.ceil(JSON.stringify(full).length / 4), c = (t) => (t * 0.042 * 1e6) / 1e6;
+          out.replaceChildren(hbars([['State gọn', t1, true], ['State "cho chắc"', t2]], { max: t2, fmt: (v) => v + ' tok' }),
+            el('div', { class: 'stat', html: `<span>1 triệu quyết định, state gọn: <b>$${c(t1).toFixed(2)}</b></span><span>state đầy đủ: <b>$${c(t2).toFixed(2)}</b></span><span>gấp <b>${(t2 / t1).toFixed(1)}×</b></span>` }));
+        };
+        box.append(el('div', { class: 'row' }, [slider('Số đơn cũ đưa vào state', 0, 200, 10, 40, draw).node]), out,
+          el('div', { class: 'cap', text: 'Giá Jev $0.042/1M token input lấy từ README. Phần mất độ chính xác do state thừa không tính được ở đây; README chỉ nói nó giảm, phải đo trên dữ liệu của bạn.' }));
+        draw(40);
+      },
+      take: 'State gọn vừa rẻ hơn vừa chính xác hơn. Lọc trong code trước khi gửi.'
+    },
+    {
+      q: 'Viết câu hỏi: sao phải viết sao cho "giá trị cao nghĩa là có"?',
+      a: `<p>Vì code đọc xác suất sau này thường do người khác viết, và họ mặc định số cao là "có điều đáng lo". README §4.2: "Tin có chứa dữ liệu cá nhân không?" rõ; "Tin có <b>sạch</b> dữ liệu cá nhân không?" đảo nghĩa, code đọc sau sẽ hiểu ngược.</p>
+<p>Bên dưới, câu hỏi bị viết ngược (<code>pii_clean</code>) nhưng code vẫn viết như câu thuận: <code>if p ≥ 0.7: che_thông_tin()</code>. Trình duyệt chạy code trên bốn tin ShopViet.</p>`,
+      viz(box) {
+        const M = [['Giao giúp tới 12 Lê Lợi, Q1, SĐT 0912345678', 0.04], ['Đơn của tôi tới đâu rồi?', 0.97], ['Số thẻ tôi là 4111 1111 1111 1111, trừ tiền lại giúp', 0.02], ['Cảm ơn shop', 0.98]];
+        box.append(el('div', { class: 'sum tbl', style: 'border:0;margin:0;padding:0' }, [el('table', { html: '<tr><th>Tin</th><th>pii_clean</th><th>Code làm</th><th>Đúng ra</th></tr>' +
+          M.map(([t, p]) => { const act = p >= 0.7 ? 'che thông tin' : 'giữ nguyên', want = p < 0.3 ? 'che thông tin' : 'giữ nguyên'; return `<tr><td>${t}</td><td class="mono">${p}</td><td><b class="${act === want ? 'ok' : 'bad'}">${act}</b></td><td>${want}</td></tr>`; }).join('') })]),
+          el('div', { class: 'cap', text: 'Xác suất giả định. Model trả lời đúng câu nó được hỏi; mọi lỗi nằm ở chỗ câu hỏi và code hiểu ngược nhau.' }));
+      },
+      take: 'Viết câu hỏi theo chiều "có vấn đề không". Một câu một phán đoán: "khách có giận và đòi hoàn tiền không" là hai câu.'
+    },
+    {
+      q: 'Choice luôn chọn một option. Sao không thêm option "other" cho các tin không thuộc đội nào?',
+      a: `<p>README §4.3: <code>other</code> <b>tranh xác suất</b> với option thật. Một tin nửa về sản phẩm nửa về chuyện khác chia xác suất giữa <code>other</code> và sản phẩm đó, và không con số nào cho code biết phải làm gì. TypeSafe cho biết cách sau thường tốt hơn: kèm câu Choice một câu yes/no "có option nào phù hợp không" (companion).</p>
+<p>Code đọc companion trước: rõ là không thì bỏ qua Choice; rõ là có thì kiểm tra thêm xác suất option được chọn; ở giữa thì chuyển người với Choice làm gợi ý. Bảng dưới là ví dụ README (shop bàn ghế); trình duyệt chạy logic đó với ngưỡng 0.3 / 0.7.</p>`,
+      viz(box) {
+        const R = [['Motor bàn đứng 140 cm kêu rè rè', 'desk_pro', 1.00, 0.98], ['Ghế đến rồi mà tay đỡ màn hình chưa thấy', 'monitor_arm', 1.00, 0.99], ['Đèn bàn hỏng sau hai tuần', 'desk_pro', 0.96, 0.02], ['Recruiter hỏi trưởng bộ phận vận hành có rảnh không', 'desk_pro', 0.81, 0.02]];
+        const route = (pm, c) => c < 0.3 ? 'bỏ qua Choice: không thuộc sản phẩm nào' : c > 0.7 ? (pm >= 0.75 ? 'chuyển theo Choice' : 'người xem') : 'người xem, Choice làm gợi ý';
+        box.append(el('div', { class: 'sum tbl', style: 'border:0;margin:0;padding:0' }, [el('table', { html: '<tr><th>Tin nhắn</th><th>Choice</th><th>p_max</th><th>Companion</th><th>Kết quả</th></tr>' +
+          R.map(([t, ch, pm, c]) => `<tr><td>${t}</td><td class="mono">${ch}</td><td class="mono">${pm.toFixed(2)}</td><td class="mono">${c.toFixed(2)}</td><td>${pm >= 0.8 && c < 0.3 ? '<b style="color:var(--warn)">' + route(pm, c) + '</b>' : route(pm, c)}</td></tr>`).join('') })]),
+          el('div', { class: 'cap', text: 'Số từ README §4.3. Hai dòng cam: Choice tự tin 0.96 và 0.81 cho tin không liên quan sản phẩm; chỉ companion cứu được. Ngưỡng p_max 0.75 là giả định.' }));
+      },
+      take: 'Xác suất cao của Choice chỉ nói option đó hơn các option khác, không nói nó đúng. Hỏi riêng "có option nào hợp không".'
+    },
+    {
+      q: 'Score về mức nghiêm trọng: "từ mức 3 trở lên thì gọi người trực". Sao không so thẳng score ≥ 3?',
+      a: `<p>Vì score là <b>vị trí trung bình</b>, còn quyết định của bạn là "bên nào của ranh giới". README §4.4: một đáp án chia đều giữa mức 2 và 3 có score 2.5 và confidence tương đối cao (hai mức kề nhau), nhưng thực chất là 50/50 về quyết định. Cách đúng: cộng xác suất các mức ở phía quan trọng, <code>sum(p for level ≥ 3)</code>.</p>
+<p>Kéo xác suất năm mức. Trình duyệt tính score, confidence theo công thức README §1.5, và P(mức ≥ 3).</p>`,
+      viz(box) {
+        const S = [0, 0, 0.5, 0.5, 0], out = el('div');
+        const draw = () => {
+          const t = S.reduce((a, b) => a + b, 0) || 1, p = S.map((x) => x / t), n = p.length, sc = p.reduce((s, x, i) => s + i * x, 0);
+          const m = p.indexOf(Math.max(...p)), sp = p.reduce((s, x, i) => s + x * Math.abs(i - m), 0), mad = Array.from({ length: n }, (_, i) => Math.abs(i - (n - 1) / 2)).reduce((a, b) => a + b, 0) / n, conf = Math.max(0, 1 - sp / mad), hi = p[3] + p[4];
+          const a = sc >= 3, b = hi >= 0.5;
+          out.innerHTML = `<div class="stat"><span>score = <b>${sc.toFixed(2)}</b></span><span>confidence = <b>${conf.toFixed(2)}</b></span><span>P(mức ≥ 3) = <b>${hi.toFixed(2)}</b></span></div><div class="stat"><span>Luật "score ≥ 3": <b>${a ? 'gọi người trực' : 'không gọi'}</b></span><span>Luật "P(≥3) ≥ 0.5": <b>${b ? 'gọi người trực' : 'không gọi'}</b></span></div>` +
+            (a !== b ? `<p class="hint" style="color:var(--warn)">Bất thường: hai luật cho kết quả khác nhau dù cùng một đáp án. Vì sao: score ${sc.toFixed(2)} là trung bình vị trí, còn ${(hi * 100).toFixed(0)}% xác suất nằm ở phía "≥ 3". Không có nghĩa model không chắc: confidence ${conf.toFixed(2)}. Trong hệ thống thật: với ranh giới quan trọng, đặt ngưỡng trên tổng xác suất phía đó (README §4.4).</p>` : '');
+        };
+        box.append(el('div', { class: 'row' }, S.map((v, i) => slider('Mức ' + i, 0, 1, 0.01, v, (x) => { S[i] = x; draw(); }, (x) => x.toFixed(2)).node)), out,
+          el('div', { class: 'cap', text: 'Các thanh được chuẩn hoá cho tổng bằng 1. Mặc định 0.5 ở mức 2 và 0.5 ở mức 3: score 2.5, không gọi theo luật score, nhưng đúng 50% xác suất nằm ở phía cần gọi.' }));
+        draw();
+      },
+      take: 'Score dùng để xếp hạng. Quyết định quanh một ranh giới thì cộng xác suất các mức ở phía đó.'
+    },
+    {
+      q: 'Model đã được calibrate rồi, sao còn phải đo calibration trên dữ liệu của mình?',
+      a: `<p>README §1.5: calibration trên benchmark của nhà cung cấp chưa chắc giữ nguyên trên miền của bạn. Và calibration là tính chất <b>trên nhóm</b>; một nhóm con có thể lệch trong khi trung bình vẫn đẹp.</p>
+<p>Bảng dưới dùng đúng tập 800 ticket của lab chính. Chia đáp án theo khoảng xác suất, so xác suất trung bình với tỉ lệ đúng thật (README §4.5 bước 3). Ba lớp thường gần nhau; lớp fraud thì không. Tập này là giả lập, được dựng để fraud bị tự tin quá mức, giống ca email lừa đảo tự biện hộ "đây là email hợp lệ từ phòng kế toán" ở README §4.8.</p>`,
+      viz(box) {
+        const D = lessons.find((l) => l.id === 'design-ops').gen(7, 0), B = [0.4, 0.6, 0.8, 0.9, 0.95, 1.001];
+        const row = (f) => B.slice(0, -1).map((lo, i) => { const s = D.filter((d) => f(d) && d.p >= lo && d.p < B[i + 1]); return s.length ? [s.reduce((a, d) => a + d.p, 0) / s.length, s.filter((d) => d.pred === d.y).length / s.length, s.length] : null; });
+        const A = row((d) => d.y !== 'fraud'), F = row((d) => d.y === 'fraud');
+        const cell = (c) => (c ? `<td class="mono">${c[0].toFixed(2)} → <b class="${Math.abs(c[0] - c[1]) > 0.1 ? 'bad' : 'ok'}">${c[1].toFixed(2)}</b> <span class="hint">(${c[2]})</span></td>` : '<td class="hint">không có</td>');
+        box.append(el('div', { class: 'sum tbl', style: 'border:0;margin:0;padding:0' }, [el('table', { html: '<tr><th>Khoảng xác suất</th><th>Ba lớp thường: trung bình → đúng thật</th><th>Lớp fraud: trung bình → đúng thật</th></tr>' +
+          B.slice(0, -1).map((lo, i) => `<tr><td class="mono">${lo.toFixed(2)}–${Math.min(1, B[i + 1]).toFixed(2)}</td>${cell(A[i])}${cell(F[i])}</tr>`).join('') })]),
+          el('div', { class: 'cap', text: 'Đỏ khi lệch hơn 0.10. Số trong ngoặc là số ticket trong khoảng; lớp fraud ít mẫu nên dao động lớn, đúng như dữ liệu thật của lớp hiếm.' }));
+      },
+      take: 'Đo calibration theo từng lớp. Ngưỡng chỉ tin được ở những nhóm mà xác suất khớp tỉ lệ đúng.'
+    },
+    {
+      q: 'Code không đổi, ngưỡng không đổi, sao tuần sau tỉ lệ chuyển người tự nhiên giảm?',
+      a: `<p>Rất có thể model đã đổi. README §4.7: alias như <code>jev-latest</code> dịch chuyển khi có bản mới, và đáp án có thể đổi mà code không đổi. Nếu bản mới trả xác suất cao hơn một chút cho cùng input, ngưỡng bạn tune cho bản cũ giờ cho qua nhiều ticket hơn, kể cả ticket sai.</p>
+<p>Giả lập: cùng 800 ticket, cùng độ đúng, nhưng "bản mới" cộng thêm một lượng vào mọi xác suất. Kéo lượng dịch và xem coverage, precision ở ngưỡng 0.90 thay đổi.</p>`,
+      viz(box) {
+        const out = el('div'), t = 0.9;
+        const m = (D) => { const a = D.filter((d) => d.p >= t); return [a.length / D.length, a.filter((d) => d.pred === d.y).length / Math.max(1, a.length)]; };
+        const base = m(lessons.find((l) => l.id === 'design-ops').gen(7, 0));
+        const draw = (s) => {
+          const n = m(lessons.find((l) => l.id === 'design-ops').gen(7, s));
+          out.innerHTML = `<div class="sum tbl" style="border:0;margin:0;padding:0"><table><tr><th></th><th>Coverage</th><th>Precision</th></tr><tr><td>jev-1.14.0 (đã tune)</td><td class="mono">${(base[0] * 100).toFixed(1)}%</td><td class="mono">${(base[1] * 100).toFixed(1)}%</td></tr><tr class="cur"><td>jev-latest sau khi đổi bản</td><td class="mono">${(n[0] * 100).toFixed(1)}%</td><td class="mono"><b class="${n[1] < base[1] - 0.01 ? 'bad' : 'ok'}">${(n[1] * 100).toFixed(1)}%</b></td></tr></table></div>`;
+        };
+        box.append(el('div', { class: 'row' }, [slider('Bản mới cộng thêm vào xác suất', 0, 0.15, 0.01, 0.05, draw, (v) => '+' + v.toFixed(2)).node]), out,
+          el('div', { class: 'cap', text: 'Lượng dịch là giả định để thấy cơ chế. Coverage tăng trông như "tốt hơn", trong khi precision giảm. README: pin version ID, log field model của response, và chạy lại eval trước khi chuyển bản.' }));
+        draw(0.05);
+      },
+      take: 'Ngưỡng được tune cho một version cụ thể. Pin version và log model cho mọi quyết định.'
+    },
+    {
+      q: 'Hỏi mười câu về cùng một ticket: gửi mười request cho gọn code, hay gộp một request?',
+      a: `<p>Gộp. README §1.6 và §4.6: các câu trong một request thấy cùng state nhưng được đánh giá độc lập, nên gộp không đổi đáp án; state chỉ bị gửi và tính tiền <b>một lần</b>. Thử nghiệm GDPR của TypeSafe (13 câu, bài khoảng 54.000 ký tự): gộp rẻ hơn 12,2 lần và nhanh hơn 10 lần.</p>
+<p>Kéo kích thước state và số câu. Trình duyệt tính token và tiền cho một triệu quyết định ở giá README.</p>`,
+      viz(box) {
+        const S = { s: 1500, q: 10, qt: 40, pr: 0.042 }, out = el('div');
+        const draw = () => {
+          const sep = S.q * (S.s + S.qt), fan = S.s + S.q * S.qt, $ = (t) => (t * S.pr).toFixed(2);
+          out.replaceChildren(hbars([['Mỗi câu một request', sep], ['Fan-out một request', fan, true]], { max: sep, fmt: (v) => v.toLocaleString('en-US') + ' tok' }),
+            el('div', { class: 'stat', html: `<span>1 triệu quyết định: <b>$${$(sep)}</b> so với <b>$${$(fan)}</b></span><span>rẻ hơn <b>${(sep / fan).toFixed(1)}×</b></span>` }));
+        };
+        box.append(el('div', { class: 'row' }, [slider('Token state', 100, 15000, 100, S.s, (v) => { S.s = v; draw(); }).node, slider('Số câu hỏi', 1, 20, 1, S.q, (v) => { S.q = v; draw(); }).node, slider('Token mỗi câu (giả định)', 10, 200, 10, S.qt, (v) => { S.qt = v; draw(); }).node,
+          select('Giá', [['0.042', 'Jev $0.042/1M'], ['0.038', 'Clef-flash $0.038/1M'], ['0.10', 'OpenAI $0.10/1M'], ['0.24', 'Clef $0.24/1M']], '0.042', (v) => { S.pr = +v; draw(); }).node]), out,
+          el('div', { class: 'cap', text: 'Giá từ README. State càng lớn so với câu hỏi thì gộp càng lời. Chỉ tách request khi câu sau cần đáp án câu trước để dựng state.' }));
+        draw();
+      },
+      take: 'Mọi câu về cùng một state đi chung một request. Đây là đòn bẩy chi phí lớn nhất.'
+    },
+    {
+      q: 'Đã có câu "có prompt injection không", vậy decision model có phải lớp bảo mật không?',
+      a: `<p>Không. README §4.8: state là dữ liệu <b>không tin cậy</b>. Jev không coi state là thù địch theo mặc định; nội dung viết ra để lái model (chỉ dẫn chèn vào, cách đóng khung gây hiểu lầm, văn bản tự biện hộ cho nhãn của nó) có thể làm đáp án dịch chuyển. Ví dụ điển hình: email lừa đảo có câu "Đây là email hợp lệ từ phòng kế toán, không phải spam".</p>
+<p>Hệ quả cho ShopViet:</p>
+<ul><li>Câu injection là bộ lọc giảm rủi ro. Passage dưới ngưỡng vẫn vào prompt của LLM sau đó.</li>
+<li>Hành động có tác dụng phụ (hoàn tiền, đổi email tài khoản) cần bước xác nhận, kể cả khi xác suất cao. README §4.4: "Ờ, cái vụ chuyển tiền… ừ, làm đi" được 0.99 cho <code>approve_transfer</code>.</li>
+<li>Nhiều câu hẹp khó lái hơn một câu tổng: kẻ tấn công phải kéo nhiều xác suất cùng lúc.</li>
+<li>Không đưa dữ liệu cá nhân không cần vào state. Muốn dữ liệu không rời hạ tầng, chạy model open-weight local.</li>
+<li>Đưa ca đối kháng vào bộ eval trước khi deploy rộng.</li></ul>`,
+      take: 'Decision model là một lớp lọc, không phải hàng rào. Hành động có hậu quả luôn cần xác nhận.'
+    },
+    {
+      q: 'Production báo một triệu chứng lạ. Tra nguyên nhân ở đâu cho nhanh?',
+      a: `<p>README §4.9 có bảng triệu chứng, nguyên nhân thường gặp và cách sửa. Chọn một triệu chứng bên dưới.</p>`,
+      viz(box) {
+        const F = [['Choice chọn một option với xác suất cao cho input không thuộc option nào', 'Choice luôn chọn một option', 'Companion yes/no (§4.3)'], ['Thêm option other mà kết quả tệ hơn', 'other tranh xác suất với option thật', 'Bỏ other, dùng companion yes/no'], ['Xác suất yes/no lơ lửng quanh 0.5 trên nhiều input', 'Câu hỏi chứa hai điều kiện, hoặc ranh giới mơ hồ', 'Tách câu; thêm criteria true/false'], ['Score lơ lửng giữa hai mức trên ca bạn thấy rõ', 'Mức mô tả bằng tính từ hoặc số, chồng lấn', 'Mô tả tình huống; thêm ví dụ giống input thật'], ['Quyết định sai phía ranh giới dù confidence cao', 'Đáp án chia giữa hai mức kề nhau quanh ngưỡng', 'Cộng xác suất các mức ở phía quan trọng (§4.4)'], ['Đếm, cộng, so sánh ngày sai', 'Model không tính toán', 'Làm trong code; hỏi từng phần tử hoặc thành phần'], ['Độ chính xác giảm khi thêm ngữ cảnh', 'State có nhiều chi tiết thừa', 'Lọc trước; trỏ câu hỏi vào đúng field'], ['Đáp án đổi khi đảo thứ tự option', 'Thiên vị option đứng đầu', 'Đảo thứ tự khi eval; nếu vẫn lệch, ngẫu nhiên hoá thứ tự và lấy trung bình'], ['Đáp án đổi sau một ngày mà code không đổi', 'Dùng alias, model đã lên version', 'Pin version ID; log model'], ['400 max_tokens_exceeded', 'State cộng câu hỏi vượt context per-request hoặc per-question', 'Rút gọn state; chia câu hỏi sang nhiều request cùng state; long context nếu thật cần'], ['422', 'Câu hỏi sai cấu trúc, ví dụ Score hơn 10 mức', 'Đọc field lỗi trong body'], ['Chi phí cao bất thường', 'Mỗi câu hỏi một request, state bị gửi lại nhiều lần', 'Gộp câu hỏi về cùng state (fan-out)'], ['Gặp 429 khi chạy batch', 'Quá nhiều worker song song', 'Giảm worker, backoff, cache kết quả'], ['Code đọc answer["choice"] bị lỗi với OpenAI', 'Gặp đáp án refusal', 'Kiểm tra type trước khi đọc giá trị'], ['Input đối kháng kéo được đáp án', 'State không được coi là thù địch', 'Nhiều câu hẹp; xác nhận cho hành động; không coi là ranh giới bảo mật']];
+        const out = el('div', { class: 'stat' });
+        const draw = (i) => { const [, c, f] = F[+i]; out.innerHTML = `<span>Nguyên nhân: <b style="font:inherit">${c}</b></span><span>Cách sửa: <b style="font:inherit">${f}</b></span>`; };
+        box.append(el('div', { class: 'row' }, [select('Triệu chứng', F.map((r, i) => [i, r[0]]), 0, draw).node]), out, el('div', { class: 'cap', text: 'Trích từ README §4.9 (rút gọn một số dòng về ảnh và Box).' }));
+        draw(0);
+      },
+      take: 'Phần lớn lỗi đến từ cách đặt câu hỏi, state và ngưỡng, không phải từ model.'
+    }
+  ],
+  poc: {
+    goal: "<b>POC này không gọi model nào.</b> Cả nhãn lẫn xác suất \"model trả về\" đều là số <b>tổng hợp</b> sinh bằng numpy, không phải đáp án thật của decision model. Tập 4.000 ticket (seed cố định; cùng cách sinh với lab, khác bộ số ngẫu nhiên): ba lớp thường calibrate tốt, lớp fraud 5% tự tin quá mức và hay bị đoán là billing. Code thật quét ngưỡng, tính precision theo lớp, ngưỡng theo lớp, câu sàng lọc, drift và chi phí; chi phí mỗi loại lỗi là giả định.",
+    file: "docs/decision-models/pocs/08_design_ops.py",
+    run: "uv run docs/decision-models/pocs/08_design_ops.py",
+    needs: "chỉ <code>uv</code>, <code>numpy</code> và CPU, miễn phí. Lần chạy đầu <code>tiktoken</code> tải file từ vựng vài MB.",
+    output: "Tập có nhãn TỔNG HỢP (numpy, seed 7): 4000 ticket, fraud 5%. Ba lớp thường calibrate tốt;\nlớp fraud bị tự tin quá mức và hay bị đoán là billing (cùng cách sinh với lab, khác bộ số ngẫu nhiên).\nChi phí giả định: người xem $0.5, chuyển sai $2, fraud lọt $50.\n\n1. Ngưỡng nào đạt mục tiêu precision 95%? (cột lớp = tỉ lệ đúng của ticket tự động có nhãn thật thuộc lớp đó)\nCấu hình                             Coverage  Precision  billing  orders  account  fraud  Fraud lọt  Chi phí\n-----------------------------------  --------  ---------  -------  ------  -------  -----  ---------  -------\nNgưỡng chung 0.70                    79.2%     91.3%      93%      93%     91%      67%    52         $3,461\nNgưỡng chung 0.85 (precision ≥ 95%)  62.3%     95.1%      97%      97%     95%      69%    36         $2,729\nNgưỡng theo lớp dự đoán              61.7%     95.1%      95%      99%     93%      32%    32         $2,542\nChung 0.85 + sàng fraud fz<0.3       59.0%     96.0%      97%      97%     95%      55%    9          $1,442\nTheo lớp + sàng fraud fz<0.3         59.9%     96.1%      95%      99%     93%      12%    7          $1,326\n   Ngưỡng theo lớp dự đoán: {'billing': 0.875, 'orders': 0.71, 'account': 0.92}, fraud dự đoán → luôn người xem\n   Fraud bị đoán thành billing nên ngưỡng riêng của lớp fraud không chạm tới; chỉ câu yes/no sàng lọc mới bắt.\n\n2. Drift: version mới tự tin hơn 0.05 ở mọi đáp án, độ đúng không đổi, ngưỡng giữ nguyên\nCấu hình                Coverage  Precision  billing  orders  account  fraud  Fraud lọt  Chi phí\n----------------------  --------  ---------  -------  ------  -------  -----  ---------  -------\nTrước, ngưỡng 0.85      62.3%     95.1%      97%      97%     95%      69%    36         $2,729\nSau drift, ngưỡng 0.85  69.3%     93.5%      95%      95%     94%      66%    46         $3,184\n   Coverage tăng, precision giảm mà code không đổi dòng nào: chạy lại eval khi đổi version.\n\n3. Chi phí fan-out (state 1.500 token, 10 câu hỏi × 40 token, $0.042/1M)\nCách gửi                         Token/ticket  Chi phí / 1M ticket\n-------------------------------  ------------  -------------------\n10 request, mỗi câu một request  15400         $646.80\n1 request gộp 10 câu             1900          $79.80\n   State gọn 97 token vs state 'cho chắc' (40 đơn cũ, 20 ticket cũ) 1987 token (o200k): 20.5× tiền mỗi request.\n   Độ dài JSON: 285 vs 5152 ký tự.\n\nRút ra: precision trung bình 95% vẫn để fraud lọt vì lớp 5% đóng góp ít vào trung bình và bị đoán thành billing;\nđo theo từng lớp, thêm câu yes/no sàng lọc cho lớp nguy hiểm, và chạy lại eval khi version đổi.",
+    measured: true,
+    read: ["Bảng 1: ngưỡng chung 0.85 đạt precision 95.1% trung bình, nhưng ticket fraud tự động chỉ đúng 69% và 36 ca fraud lọt.", "Ngưỡng theo lớp dự đoán vẫn để 32 ca lọt, vì fraud bị đoán thành billing và không bao giờ chạm ngưỡng của lớp fraud. Thêm câu yes/no sàng lọc giảm còn 7–9 ca.", "Bảng drift: model tự tin hơn 0.05, độ đúng không đổi, cùng ngưỡng 0.85: coverage tăng lên 69%, precision giảm còn 93.5%, fraud lọt tăng lên 46.", "Bảng fan-out: gộp 10 câu rẻ hơn 8 lần ($79.80 so với $646.80 mỗi 1M ticket); state \"cho chắc\" đắt gấp 20 lần state gọn."]
+  },
+  mount(stage) {
+    const C = ['billing', 'orders', 'account', 'fraud'], D = this.gen(7, 0), N = D.length;
+    const S = { t: 0.85, per: false, th: { billing: 0.85, orders: 0.85, account: 0.85, fraud: 0.85 }, scr: false, tf: 0.3, target: 0.95 };
+    const COST = { human: 0.5, wrong: 2, fraud: 50 };
+    const flagBox = (f) => el('div', { style: 'border-left:3px solid var(--warn);background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:10px;font-size:13.5px;line-height:1.55', html: `<b style="color:var(--warn)">Bất thường:</b> ${f.what}<br><b>Vì sao:</b> ${f.why}<br><b>Không có nghĩa là:</b> ${f.not}<br><b>Trong hệ thống thật:</b> ${f.real}` });
+    const thr = (d) => (S.per ? S.th[d.pred] : S.t);
+    function metrics(th) {
+      const auto = D.filter((d) => d.p >= th(d) && !(S.scr && d.fz >= S.tf)), ok = auto.filter((d) => d.pred === d.y);
+      const cls = C.map((c) => { const n = D.filter((d) => d.y === c).length, a = auto.filter((d) => d.y === c), g = a.filter((d) => d.pred === d.y).length; return { c, n, a: a.length, g, acc: a.length ? g / a.length : null, rec: n ? g / n : 0 }; });
+      const missF = auto.filter((d) => d.y === 'fraud' && d.pred !== 'fraud').length, wrong = auto.length - ok.length - missF;
+      const cost = (N - auto.length) * COST.human + wrong * COST.wrong + missF * COST.fraud + (N * 800 * 0.042) / 1e6;
+      return { cov: auto.length / N, prec: auto.length ? ok.length / auto.length : 1, cls, missF, wrong, cost, human: N - auto.length };
+    }
+    const W = 560, H = 190, P = 34, svg = el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 26}`, role: 'img', 'aria-label': 'Coverage, precision và độ đúng lớp fraud theo ngưỡng' });
+    const x = (t) => P + ((t - 0.4) / 0.59) * (W - 2 * P), y = (v) => H - 6 - v * (H - 16);
+    const sweep = Array.from({ length: 60 }, (_, i) => 0.4 + i * 0.01).map((t) => { const m = metrics(() => t), f = m.cls[3]; return [t, m.cov, m.prec, f.acc]; });
+    const line = (k, col) => el('path', { d: sweep.filter((s) => s[k] !== null).map((s, i) => (i ? 'L' : 'M') + x(s[0]).toFixed(1) + ' ' + y(s[k]).toFixed(1)).join(' '), stroke: col, 'stroke-width': 2.5, fill: 'none' });
+    const tbl = el('div', { class: 'sum tbl', style: 'border:0;margin:0;padding:0' }), stat = el('div', { class: 'stat' }), flagHost = el('div'), perBox = el('div', { class: 'row' });
+    function render() {
+      const m = metrics(thr), f = m.cls[3];
+      svg.replaceChildren(
+        el('line', { x1: P, x2: W - P, y1: y(0), y2: y(0), stroke: 'var(--line)' }),
+        el('line', { x1: P, x2: W - P, y1: y(S.target), y2: y(S.target), stroke: 'var(--line)', 'stroke-dasharray': '4 3' }),
+        el('text', { x: P + 2, y: y(S.target) - 4, class: 'mute', text: 'mục tiêu ' + S.target.toFixed(2) }),
+        line(1, 'var(--g1)'), line(2, 'var(--accent)'), line(3, 'var(--bad)'),
+        S.per ? el('g') : el('line', { x1: x(S.t), x2: x(S.t), y1: 6, y2: H - 6, stroke: 'var(--ink)', 'stroke-width': 1.5 }),
+        ...[0.4, 0.6, 0.8, 0.99].map((t) => el('text', { x: x(t) - 10, y: H + 16, class: 'mute', text: String(t) })),
+        ...[0, 0.5, 1].map((v) => el('text', { x: 2, y: y(v) + 4, class: 'mute', text: String(v) })));
+      tbl.innerHTML = '<table><tr><th>Lớp thật</th><th>Số ticket</th><th>Tự động</th><th>Đúng đội / tự động</th><th>Recall (đúng tự động / tổng)</th></tr>' +
+        m.cls.map((c) => { const bad = c.acc !== null && c.acc < S.target; return `<tr${bad ? ' style="color:var(--bad)"' : ''}><td><b>${c.c}</b></td><td class="mono">${c.n}</td><td class="mono">${c.a}</td><td class="mono">${c.acc === null ? 'không có' : (c.acc * 100).toFixed(1) + '%'}</td><td class="mono">${(c.rec * 100).toFixed(1)}%</td></tr>`; }).join('') +
+        `<tr class="cur"><td><b>Tổng</b></td><td class="mono">${N}</td><td class="mono">${N - m.human}</td><td class="mono"><b>${(m.prec * 100).toFixed(1)}%</b></td><td class="mono">coverage ${(m.cov * 100).toFixed(1)}%</td></tr></table>`;
+      stat.innerHTML = `<span>Người xem: <b>${m.human}</b></span><span>Chuyển sai đội: <b>${m.wrong}</b></span><span>Lừa đảo lọt: <b class="${m.missF ? 'bad' : 'ok'}">${m.missF}</b></span><span>Chi phí ước tính: <b>$${m.cost.toFixed(0)}</b> / 800 ticket</span><span>Trong đó decision model: <b>$${((N * 800 * 0.042) / 1e6).toFixed(4)}</b></span>`;
+      let fl = null;
+      if (m.prec >= S.target && f.acc !== null && f.acc < S.target) fl = { what: `Precision tổng ${(m.prec * 100).toFixed(1)}% đạt mục tiêu, nhưng trong ${f.a} ticket fraud được tự động chỉ ${(f.acc * 100).toFixed(0)}% đi đúng đội: ${m.missF} vụ lừa đảo bị chuyển như ticket thường.`, why: 'Fraud chỉ khoảng 5% tập nên lỗi của nó gần như không kéo trung bình. Và trên lớp này model tự tin quá mức: xác suất 0.9 nhưng đúng ít hơn nhiều (xem câu hỏi 5 về calibration).', not: 'Không có nghĩa ngưỡng hay model vô dụng. Ba lớp còn lại vẫn đúng như số xác suất nói.', real: 'Tính metric theo từng lớp và gán chi phí riêng cho lỗi lớp critical. Bật câu yes/no sàng lọc fraud với ngưỡng thấp (README §4.3 screen trước, §4.4 hạ ngưỡng khi bỏ sót đắt).' };
+      else if (S.per && S.th.fraud > S.t && m.missF > 0 && !S.scr) fl = { what: `Đã nâng ngưỡng lớp fraud lên ${S.th.fraud.toFixed(2)} mà vẫn còn ${m.missF} vụ lừa đảo lọt.`, why: 'Ngưỡng áp lên lớp model chọn, không phải lớp thật. Vụ lọt là ticket lừa đảo mà model chọn billing hoặc account, nên chỉ ngưỡng của billing và account chạm tới chúng.', not: 'Không có nghĩa ngưỡng riêng vô ích: ngưỡng fraud kiểm soát ticket thường bị gắn nhầm là lừa đảo.', real: 'Thêm một câu yes/no hẹp "có dấu hiệu lừa đảo không" chạy cho mọi ticket, ngưỡng thấp, trên ngưỡng thì không tự động (bật ô sàng lọc).' };
+      flagHost.replaceChildren(fl ? flagBox(fl) : el('span'));
+    }
+    const gT = slider('Ngưỡng chung P(option được chọn)', 0.4, 0.99, 0.01, S.t, (v) => { S.t = v; if (!S.per) C.forEach((c) => (S.th[c] = v)); buildPer(); render(); }, (v) => v.toFixed(2));
+    function buildPer() {
+      perBox.replaceChildren(...(S.per ? C.map((c) => slider('Ngưỡng ' + c, 0.4, 0.99, 0.01, S.th[c], (v) => { S.th[c] = v; render(); }, (v) => v.toFixed(2)).node) : []));
+    }
+    const perCb = el('input', { type: 'checkbox' }), scrCb = el('input', { type: 'checkbox' });
+    perCb.addEventListener('change', () => { S.per = perCb.checked; buildPer(); render(); });
+    scrCb.addEventListener('change', () => { S.scr = scrCb.checked; render(); });
+    stage.append(
+      el('div', { class: 'row' }, [gT.node, slider('Mục tiêu precision', 0.8, 0.99, 0.01, S.target, (v) => { S.target = v; render(); }, (v) => v.toFixed(2)).node]),
+      el('div', { class: 'row' }, [el('label', { class: 'ctl' }, [perCb, ' Ngưỡng riêng từng lớp']), el('label', { class: 'ctl' }, [scrCb, ' Câu yes/no sàng lọc possible_fraud']), slider('Ngưỡng possible_fraud', 0.05, 0.9, 0.01, S.tf, (v) => { S.tf = v; render(); }, (v) => v.toFixed(2)).node]),
+      perBox, svg,
+      el('div', { class: 'legend', html: '<span><i style="background:var(--g1)"></i>Coverage</span><span><i style="background:var(--accent)"></i>Precision tổng</span><span><i style="background:var(--bad)"></i>Fraud: đúng đội / tự động</span><span>Vạch đen: ngưỡng chung hiện tại</span>' }),
+      tbl, stat, flagHost,
+      el('p', { class: 'hint', text: 'Dữ liệu giả lập, sinh trong trình duyệt với seed cố định: 800 ticket, tỉ lệ billing 35%, orders 40%, account 20%, fraud 5% (giả định). Ba lớp thường được calibrate tốt; lớp fraud tự tin quá mức 0.3. Các đường cong luôn tính với ngưỡng chung và không có sàng lọc. Chi phí giả định: người xem $0.5/ticket, chuyển sai đội $2, lừa đảo lọt $50. Chi phí decision model: 800 token/ticket × $0.042/1M (giá Jev từ README).' }));
+    render();
+  }
+});
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,710 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Models Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-prefill-scoring.html">← Lab trước</a><a href="04-limits-vs-alternatives.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/decision-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const K = 4, TEAMS = ['billing', 'technical', 'shipping', 'returns'];
+  const softmax = (z, T = 1) => { const m = Math.max(...z), e = z.map((x) => Math.exp((x - m) / T)), s = e.reduce((a, b) => a + b, 0); return e.map((x) => x / s); };
+  const pc = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  function makeSet(N, seed) {
+    const rnd = seeded(seed), out = [];
+    for (let i = 0; i < N; i++) {
+      const z = Array.from({ length: K }, () => 0.9 * randn(rnd));
+      z[Math.floor(rnd() * K)] += 1 + 4.5 * rnd();
+      const p = softmax(z), u = rnd();
+      let y = 0, acc = p[0];
+      while (u > acc && y < K - 1) { y++; acc += p[y]; }
+      const pred = z.indexOf(Math.max(...z));
+      out.push({ z, y, pred, ok: pred === y });
+    }
+    return out;
+  }
+  const reported = (set, T) => set.map((r) => ({ p: softmax(r.z, T)[r.pred], ok: r.ok }));
+  function binsOf(rows, B) {
+    const bs = Array.from({ length: B }, (_, i) => ({ lo: i / B, hi: (i + 1) / B, n: 0, sp: 0, sk: 0 }));
+    rows.forEach((r) => { const b = bs[Math.min(B - 1, Math.floor(r.p * B))]; b.n++; b.sp += r.p; b.sk += r.ok ? 1 : 0; });
+    bs.forEach((b) => { b.conf = b.n ? b.sp / b.n : 0; b.acc = b.n ? b.sk / b.n : 0; });
+    return bs;
+  }
+  const eceOf = (bs) => { const N = bs.reduce((s, b) => s + b.n, 0); return N ? bs.reduce((s, b) => s + (b.n / N) * Math.abs(b.acc - b.conf), 0) : 0; };
+  const meanP = (rows) => rows.reduce((s, r) => s + r.p, 0) / Math.max(1, rows.length);
+  const accOf = (rows) => rows.filter((r) => r.ok).length / Math.max(1, rows.length);
+  function cut(rows, t) {
+    const r = rows.filter((x) => x.p >= t), k = r.filter((x) => x.ok).length;
+    return { n: r.length, cov: r.length / rows.length, prec: r.length ? k / r.length : null, prom: r.length ? meanP(r) : null, err: r.length - k };
+  }
+  function flag(kind, html) {
+    return el('div', { style: `border-left:3px solid var(--${kind});background:var(--bg);border-radius:6px;padding:8px 12px;margin-top:10px;font-size:13.5px`, html });
+  }
+  function tableBox(html) { return el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }, [el('table', { html })]); }
+  function reliability(bs, aria) {
+    const W = 540, H = 250, P = 40, pw = W - P - 12, ph = H - 20, HH = 46;
+    const x = (v) => P + v * pw, y = (v) => 10 + (1 - v) * ph, mx = Math.max(1, ...bs.map((b) => b.n));
+    const kids = [];
+    [0, 0.25, 0.5, 0.75, 1].forEach((v) => {
+      kids.push(el('line', { x1: P, x2: W - 12, y1: y(v), y2: y(v), stroke: 'var(--line)' }));
+      kids.push(el('text', { x: 4, y: y(v) + 4, class: 'mute', text: v.toFixed(2) }));
+      kids.push(el('text', { x: x(v) - 10, y: H + 24, class: 'mute', text: v.toFixed(2) }));
+    });
+    kids.push(el('line', { x1: x(0), y1: y(0), x2: x(1), y2: y(1), stroke: 'var(--mute)', 'stroke-dasharray': '4 4' }));
+    bs.forEach((b) => {
+      if (!b.n) return;
+      const x0 = x(b.lo) + 1, w = x(b.hi) - x(b.lo) - 2;
+      kids.push(el('rect', { x: x0, y: y(b.acc), width: w, height: y(0) - y(b.acc), fill: 'var(--g1)', opacity: 0.5 }));
+      const top = Math.min(y(b.acc), y(b.conf)), hgt = Math.abs(y(b.acc) - y(b.conf));
+      kids.push(el('rect', { x: x0, y: top, width: w, height: hgt, fill: b.conf > b.acc ? 'var(--bad)' : 'var(--g3)', opacity: 0.55 }, [el('title', { text: `${b.lo.toFixed(2)}–${b.hi.toFixed(2)}: ${b.n} đáp án, p trung bình ${b.conf.toFixed(3)}, đúng ${pc(b.acc)}` })]));
+      kids.push(el('circle', { cx: x(b.conf), cy: y(b.acc), r: 3.5, fill: 'var(--accent)' }));
+      kids.push(el('rect', { x: x0, y: H + 30 + HH - (b.n / mx) * HH, width: w, height: (b.n / mx) * HH, fill: 'var(--g2)', opacity: 0.7 }));
+    });
+    kids.push(el('text', { x: P + 4, y: 22, class: 'mute', text: 'tỉ lệ đúng thật' }));
+    kids.push(el('text', { x: W - 200, y: H + 30 + HH + 16, class: 'mute', text: 'p_max model báo · cột dưới: số đáp án' }));
+    return el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 30 + HH + 22}`, role: 'img', 'aria-label': aria }, kids);
+  }
+  return {
+    id: 'calibration', nav: '3. Calibration', ref: '§1.5–1.6',
+    title: 'Model nói 0.9 thì có thật đúng 9 trên 10 lần không?',
+    hook: 'Kéo nhiệt độ T để làm model tự tin quá mức hoặc rụt rè. Biểu đồ, ECE và ngưỡng chuyển ticket tự động được tính lại từ 1.000 ticket có nhãn giả định.',
+    terms: [
+      ['Xác suất (probability)', 'Con số model trả cho từng đáp án, cộng lại bằng 1. Ví dụ Jev trả {"shipping": 0.04, "billing": 0.35, "returns": 0.61} cho câu "đội nào xử lý ticket này".'],
+      ['p_max', 'Xác suất của đáp án được chọn, tức số lớn nhất trong phân phối. Ở ví dụ trên p_max = 0.61 (returns).'],
+      ['Calibration', 'Xác suất khớp với tần suất đúng thật. Lấy 1.000 đáp án được báo 0.8, nếu khoảng 800 cái đúng thì model calibrate tốt ở mức 0.8.'],
+      ['Tập có nhãn', 'Các ticket thật mà người đã ghi đáp án đúng, ví dụ 500 ticket kèm đội đúng. Không có tập này thì không đo được calibration.'],
+      ['Reliability diagram', 'Biểu đồ chia đáp án theo khoảng xác suất (0.8–0.9, 0.9–1.0...), mỗi khoảng vẽ tỉ lệ đúng thật. Model calibrate tốt thì các điểm nằm trên đường chéo.'],
+      ['ECE', 'Expected Calibration Error: trung bình có trọng số của khoảng cách giữa xác suất trung bình và tỉ lệ đúng ở mỗi khoảng. Ví dụ 1.000 đáp án chia hai khoảng: 800 đáp án báo trung bình 0.90 nhưng đúng 85% (lệch 0.05), 200 đáp án báo 0.60 nhưng đúng 50% (lệch 0.10). ECE = 0.8 × 0.05 + 0.2 × 0.10 = 0.06, tức trung bình con số lệch 6 điểm phần trăm.'],
+      ['Overconfident', 'Tự tin quá mức: báo 0.95 nhưng chỉ đúng 80%. Nguy hiểm nhất vì ngưỡng 0.9 không còn nghĩa là "sai dưới 10%".'],
+      ['confidence', 'Số Jev trả kèm Choice và Score, tóm tắt hình dạng phân phối, không phải xác suất đúng. Với Choice: (p_max − 1/n) / (1 − 1/n).'],
+      ['Ngưỡng, coverage, precision', 'Ngưỡng 0.9: chỉ tự động chuyển ticket khi p_max ≥ 0.9. Coverage là tỉ lệ ticket được tự động. Precision là tỉ lệ đúng trong số được tự động.'],
+      ['Nhiệt độ T', 'Núm vặn làm phân phối nhọn hơn (T < 1) hoặc phẳng hơn (T > 1) mà không đổi đáp án được chọn. Ví dụ (0.6, 0.3, 0.1): ở T = 0.5 thành khoảng (0.78, 0.20, 0.02), ở T = 2 thành khoảng (0.47, 0.33, 0.19); đáp án vẫn là option đầu, chỉ con số đổi. Lab dùng T để giả lập model lệch calibration; đây không phải field bạn gửi trong request.'],
+      ['Log loss (NLL)', 'Điểm phạt cho xác suất model gán vào đáp án đúng: −log(p). Gán 0.9 cho đáp án đúng bị phạt 0.11, gán 0.1 bị phạt 2.30. Lấy trung bình trên cả tập; càng nhỏ càng tốt. Model nói quá chắc mà sai bị phạt rất nặng.'],
+      ['Brier loss', 'Một điểm phạt khác: bình phương khoảng cách giữa xác suất và kết quả (1 nếu đúng, 0 nếu sai). Báo 0.9 mà sai bị phạt 0.81, báo 0.6 mà sai bị phạt 0.36. Huấn luyện với điểm phạt này đẩy con số về gần tần suất đúng.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> bán đồ điện tử online. Mỗi ticket hỗ trợ đi qua một câu Choice: đội nào xử lý, chọn trong <code>billing</code>, <code>technical</code>, <code>shipping</code>, <code>returns</code>. Code tự động chuyển ticket khi xác suất của đội được chọn từ 0.9 trở lên, còn lại vào hàng chờ của nhân viên điều phối.',
+      scenario: 'Ngưỡng 0.9 được đặt vì "chấp nhận sai dưới 10%". Nhưng con số 0.9 chỉ có nghĩa đó nếu model calibrate tốt trên ticket tiếng Việt của ShopViet, điều mà benchmark của nhà cung cấp không đảm bảo.',
+      ask: 'Làm sao biết 0.9 của model có thật là 90%? Nếu lệch, ngưỡng 0.9 thực ra cho bao nhiêu ticket chuyển sai?',
+      solves: 'Chạy model trên tập có nhãn, chia đáp án theo khoảng xác suất, so tỉ lệ đúng thật với xác suất trung bình (reliability diagram và ECE). Rồi đặt ngưỡng theo precision đo được, không theo con số model báo.',
+      read: [
+        'Dữ liệu là 1.000 ticket có nhãn <b>giả định</b>, sinh trong trình duyệt. Với mỗi ticket, lab tung xúc xắc theo đúng xác suất "model" báo để chọn đội đúng: ticket báo returns 0.61 thì 61% khả năng đội đúng là returns. Vì dữ liệu sinh theo cách đó, ở T = 1 model calibrate đúng; kéo T khỏi 1 là làm con số lệch khỏi sự thật.',
+        'Đường chéo đứt là calibrate hoàn hảo. Điểm xanh là (p trung bình, tỉ lệ đúng) của mỗi khoảng. Phần đỏ là model báo cao hơn thực tế (overconfident), phần tím là báo thấp hơn.',
+        'Cột dưới cùng là số đáp án trong mỗi khoảng. Khoảng ít đáp án thì tỉ lệ đúng dao động mạnh.',
+        'Phần dưới: kéo ngưỡng, xem coverage và precision. Đường thứ hai là cùng dữ liệu ở T = 1 để so: model lệch calibration làm con số ngưỡng nói sai, không làm thứ tự xếp hạng tệ đi.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Decision model trả <b>phân phối xác suất trên đúng các đáp án bạn đưa</b>, được huấn luyện để khớp với tần suất đúng. Calibration là tính chất trên <b>nhóm</b> đáp án: lấy 1.000 đáp án 0.95, khoảng 50 cái sẽ sai. Calibration trên benchmark của nhà cung cấp chưa chắc giữ nguyên trên miền của bạn, nên phải đo.</p>
+<div class="tbl"><table>
+<tr><th>Loại câu hỏi</th><th>Trả về</th><th>Đặt ngưỡng trên</th><th>Lưu ý</th></tr>
+<tr><td>Yes/no (<code>noul</code> / <code>predicate</code>)</td><td>Một xác suất 0–1</td><td>Chính xác suất. Khởi đầu: trên 0.7 là có, dưới 0.3 là không</td><td>Không có <code>confidence</code> riêng; muốn cùng thang dùng |2p − 1|</td></tr>
+<tr class="cur"><td>Choice</td><td>Đáp án, xác suất từng option, <code>confidence</code></td><td>Xác suất của option code sắp hành động theo</td><td>Với số option cố định, confidence chỉ là biến đổi của p_max. Muốn biết option thứ hai sát không, dùng p_max / p_second</td></tr>
+<tr><td>Score</td><td>Vị trí (có thể lẻ), xác suất từng mức, <code>confidence</code></td><td>Confidence trước, rồi score. Có ranh giới quan trọng thì cộng xác suất các mức phía đó</td><td>Chia đều hai mức kề nhau vẫn có confidence khá cao</td></tr>
+</table></div>
+<h4>Câu hỏi độc lập, chạy song song (§1.6)</h4>
+<ul><li>Các câu hỏi trong một request cùng thấy state nhưng được đánh giá độc lập. Thêm hay bớt câu không đổi đáp án câu khác.</li>
+<li>TypeSafe đo trên bài Wikipedia GDPR (khoảng 54.000 ký tự, 13 câu hỏi): gộp một request rẻ hơn 12,2 lần và nhanh hơn 10 lần so với 13 request.</li>
+<li>Speculative fan-out: hỏi luôn câu có thể không cần (mức nghiêm trọng của bug), code bỏ qua nếu không dùng.</li>
+<li>Chỉ tách request khi code không thể dựng request sau nếu chưa có đáp án trước.</li></ul>
+<div class="verdict"><b>Quy trình tối thiểu:</b> vài trăm ticket thật có nhãn, chạy model, chia 10 khoảng xác suất, so tỉ lệ đúng với xác suất trung bình, rồi chọn ngưỡng theo chi phí của chuyển sai và bỏ sót. Lưu đáp án để đổi ngưỡng không phải gọi lại model. Đo lại khi đổi version model.</div>`,
+    why: {
+      c: 'Dùng xác suất của decision model làm ngưỡng, nhưng kiểm tra calibration trên tập có nhãn của chính bạn trước khi tin con số. Model được huấn luyện cho calibration (Cloudflare dùng Brier loss và RLCD, đều phạt khi con số lệch khỏi tần suất đúng), nên xác suất là tín hiệu có nghĩa. Đo reliability diagram cho biết ngưỡng 0.9 thực ra cho precision bao nhiêu.',
+      s: 'Tin thẳng con số model báo: benchmark nhà cung cấp bằng tiếng Anh, ticket tiếng Việt có thể lệch. Dùng confidence do LLM tự viết: đó là văn bản, không phải xác suất, nên 0.9 cho cả tin rõ ràng lẫn tin mơ hồ. Dùng confidence của Jev thay cho xác suất khi đặt ngưỡng Choice: chỉ là biến đổi của p_max, không thêm thông tin.',
+      p: 'Cần vài trăm ticket có nhãn và người gán nhãn. Tập nhỏ làm ECE dao động do nhiễu. Mỗi lần đổi version model, câu hỏi hoặc criteria phải đo lại. Calibration là tính chất trên nhóm: một ticket 0.95 vẫn có thể sai, nên hành động đắt vẫn cần bước xác nhận.'
+    },
+    deep: [
+      {
+        q: 'Model nói 0.8 cho một ticket. Vậy ticket đó đúng 80%?',
+        a: `<p>Không theo nghĩa đó. Một ticket chỉ có hai kết cục: chuyển đúng đội hoặc sai đội. Không có "đúng 80%" cho một ticket.</p>
+<p>Calibration là lời hứa trên <b>nhóm</b>: lấy rất nhiều đáp án được báo 0.8, khoảng 80% trong số đó đúng. README viết: một đáp án 0.95 vẫn có thể sai; điều calibration hứa là nếu bạn lấy 1.000 đáp án 0.95, khoảng 50 cái sẽ sai.</p>
+<p>Lưới dưới là 100 ticket, mỗi ticket model báo cùng một xác suất p, và giả sử model calibrate hoàn hảo. Bấm lấy mẫu lại nhiều lần: số ô sai đổi mỗi lần, nhưng quanh 100 × (1 − p).</p>`,
+        viz(box) {
+          let seed = 3, p = 0.8;
+          const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(20,1fr);gap:3px;max-width:420px' }), stat = el('div', { class: 'stat' });
+          function draw() {
+            const rnd = seeded(seed), cells = Array.from({ length: 100 }, () => rnd() < p);
+            let big = 0; for (let i = 0; i < 1000; i++) if (rnd() >= p) big++;
+            grid.replaceChildren(...cells.map((ok) => el('span', { title: ok ? 'đúng' : 'sai', style: `height:16px;border-radius:3px;background:${ok ? 'var(--g1)' : 'var(--bad)'}` })));
+            const wrong = cells.filter((c) => !c).length;
+            stat.innerHTML = `<span>100 ticket: sai <b>${wrong}</b> (kỳ vọng ${(100 * (1 - p)).toFixed(0)})</span><span>1.000 ticket: sai <b>${big}</b> (kỳ vọng ${(1000 * (1 - p)).toFixed(0)})</span>`;
+          }
+          const sl = slider('p model báo', 0.5, 0.99, 0.01, p, (v) => { p = v; draw(); }, (v) => v.toFixed(2));
+          box.append(el('div', { class: 'row' }, [sl.node, el('button', { text: 'Lấy mẫu lại', onclick: () => { seed++; draw(); } })]), grid, stat,
+            el('div', { class: 'cap', text: 'Xanh là đúng, đỏ là sai. Mô phỏng một model calibrate hoàn hảo. Với 100 đáp án, số sai có thể lệch vài đơn vị so với kỳ vọng; với 1.000 đáp án thì sát hơn nhiều.' }));
+          draw();
+        },
+        take: 'Xác suất nói về tần suất trên nhiều đáp án. Đừng đọc 0.95 thành "chắc chắn đúng"; đọc thành "100 cái như vậy thì sai khoảng 5".'
+      },
+      {
+        q: 'Vậy làm sao kiểm tra 0.8 của model có thật là 80%?',
+        a: `<p>Không thể kiểm tra trên một đáp án, nên phải gom nhóm. README (§4.4, §4.5) mô tả cách làm:</p>
+<ol><li>Lấy vài trăm ticket thật, đã ẩn danh, người gán đội đúng cho từng ticket.</li>
+<li>Chạy model, ghi lại p_max và đáp án.</li>
+<li>Chia đáp án vào 10 khoảng theo p_max: 0.0–0.1, 0.1–0.2... 0.9–1.0.</li>
+<li>Mỗi khoảng tính hai số: <b>p trung bình</b> (model hứa) và <b>tỉ lệ đúng</b> (thực tế). Hai số gần nhau là calibrate tốt.</li></ol>
+<p>Bảng dưới tính đúng các bước đó trên 1.000 ticket giả định. Chọn kiểu model để thấy cột "lệch" đổi dấu.</p>`,
+        viz(box) {
+          const set = makeSet(1000, 7), out = el('div');
+          function draw(T) {
+            const bs = binsOf(reported(set, T), 10).filter((b) => b.n);
+            out.replaceChildren(tableBox('<tr><th>Khoảng p_max</th><th>Số ticket</th><th>p trung bình</th><th>Tỉ lệ đúng</th><th>Lệch</th></tr>' + bs.map((b) => {
+              const g = b.conf - b.acc, cls = Math.abs(g) > 0.05 && b.n >= 20 ? (g > 0 ? 'bad' : 'ok') : '';
+              return `<tr><td class="mono">${b.lo.toFixed(1)}–${b.hi.toFixed(1)}</td><td class="mono">${b.n}</td><td class="mono">${b.conf.toFixed(3)}</td><td class="mono">${pc(b.acc)}</td><td class="mono ${cls}">${g >= 0 ? '+' : ''}${(g * 100).toFixed(1)} điểm</td></tr>`;
+            }).join('')));
+          }
+          box.append(el('div', { class: 'row' }, [select('Model', [['1', 'Calibrate tốt (T = 1)'], ['0.5', 'Tự tin quá mức (T = 0.5)'], ['1.8', 'Rụt rè (T = 1.8)']], '1', (v) => draw(+v)).node]), out,
+            el('div', { class: 'cap', text: 'Lệch dương là model báo cao hơn thực tế. Khoảng 0.0–0.2 không có ticket vì với 4 đội, p_max luôn từ 0.25 trở lên. Nhãn giả định, sinh trong trình duyệt.' }));
+          draw(1);
+        },
+        take: 'Calibration đo bằng cách so "hứa" với "thực tế" trên từng khoảng xác suất. Không có tập có nhãn thì không có calibration.'
+      },
+      {
+        q: 'ECE là một con số duy nhất. Nó tính thế nào, và có tin được không?',
+        a: `<p>ECE (Expected Calibration Error) gom bảng trên thành một số: mỗi khoảng lấy |p trung bình − tỉ lệ đúng|, nhân với tỉ lệ đáp án rơi vào khoảng đó, rồi cộng lại. Khoảng đông ticket nặng ký hơn khoảng thưa.</p>
+<p>ECE là thước đo phổ biến trong nghiên cứu, README không dùng tên này nhưng mô tả đúng phép so đó. Hai điểm cần biết:</p>
+<ul><li>ECE <b>không có dấu</b>. 0.08 có thể là tự tin quá mức hoặc rụt rè. Phải nhìn biểu đồ để biết hướng.</li>
+<li>ECE <b>phụ thuộc số mẫu và số khoảng</b>. Tập nhỏ chia nhiều khoảng thì mỗi khoảng ít ticket, tỉ lệ đúng dao động, ECE tăng dù model calibrate hoàn hảo.</li></ul>
+<p>Bảng dưới tính ECE của một model <b>calibrate hoàn hảo</b> (T = 1) với số ticket và số khoảng khác nhau. Lẽ ra phải bằng 0.</p>`,
+        viz(box) {
+          const Ns = [100, 200, 1000, 5000], Bs = [5, 10, 20], rows = Ns.map((N) => [N, Bs.map((B) => { let s = 0; for (let k = 0; k < 5; k++) s += eceOf(binsOf(reported(makeSet(N, 100 + k), 1), B)); return s / 5; })]);
+          box.append(tableBox('<tr><th>Số ticket có nhãn</th>' + Bs.map((B) => `<th>${B} khoảng</th>`).join('') + '</tr>' + rows.map(([N, es]) => `<tr><td class="mono">${N}</td>${es.map((e) => `<td class="mono ${e > 0.04 ? 'bad' : 'ok'}">${e.toFixed(3)}</td>`).join('')}</tr>`).join('')),
+            el('div', { class: 'cap', text: 'Mỗi ô là ECE trung bình của 5 tập giả định khác nhau, tính thật trong trình duyệt. Đỏ khi ECE > 0.04: con số trông như model lệch calibration, nhưng thực ra chỉ là nhiễu do ít mẫu.' }));
+        },
+        take: 'Đọc ECE kèm số mẫu và biểu đồ. Với vài trăm ticket, ECE khoảng 0.03–0.05 có thể chỉ là nhiễu; dùng 10 khoảng như README gợi ý, đừng chia quá mịn.'
+      },
+      {
+        q: 'LLM với structured output cũng trả được field confidence. Sao không dùng nó?',
+        a: `<p>README kể đúng tình huống này: bạn thêm field <code>confidence</code> vào JSON Schema. Model ghi 0.9 cho tin rõ ràng và cũng ghi 0.9 cho tin mơ hồ, vì <b>con số đó là văn bản model viết ra, không phải xác suất model tính</b>.</p>
+<p>Decision model thì khác: nó không viết chữ nào, mà đọc input một lượt (prefill) rồi chấm điểm mọi option cùng lúc, và phần chấm điểm được huấn luyện cho calibration. Cloudflare mô tả Clef dùng Brier loss (phạt khi con số xa kết quả thật, xem mục thuật ngữ) và mục tiêu RLCD (Reinforcement Learning for Calibrated Decisions: thưởng khi xác suất cao đi kèm khả năng đúng cao).</p>
+<p>Còn LLM chat thường được tinh chỉnh bằng RLHF: huấn luyện theo đánh giá của người chấm. TypeSafe nói họ không dùng RLHF vì nó dạy model nói điều người thích nghe, có thể thưởng cho câu bịa nghe tự tin, và dồn xác suất vào một kiểu output. Không bước nào trong đó dạy model rằng "0.9" phải đúng 9 trên 10 lần.</p>
+<p>Mô phỏng dưới cùng 1.000 ticket: "LLM" ghi 0.9 cho phần lớn ticket bất kể đúng sai (giả định), decision model báo p_max calibrate. Cùng ngưỡng 0.85:</p>`,
+        viz(box) {
+          const set = makeSet(1000, 7), dm = reported(set, 1), rnd = seeded(91);
+          const llm = set.map((r) => ({ p: rnd() < 0.85 ? 0.9 : 0.7, ok: r.ok }));
+          const a = cut(dm, 0.85), b = cut(llm, 0.85), e1 = eceOf(binsOf(dm, 10)), e2 = eceOf(binsOf(llm, 10));
+          box.append(tableBox('<tr><th></th><th>Coverage (tự động)</th><th>Precision (đúng trong số tự động)</th><th>ECE</th></tr>' +
+            `<tr><td>Decision model (p_max)</td><td class="mono">${pc(a.cov)}</td><td class="mono ok">${pc(a.prec)}</td><td class="mono">${e1.toFixed(3)}</td></tr>` +
+            `<tr><td>LLM tự ghi confidence</td><td class="mono">${pc(b.cov)}</td><td class="mono bad">${pc(b.prec)}</td><td class="mono">${e2.toFixed(3)}</td></tr>`),
+            el('div', { class: 'cap', text: `Với "LLM", ticket vượt ngưỡng có precision ${pc(b.prec)}, gần bằng tỉ lệ đúng chung ${pc(accOf(dm))}: con số 0.9 không tách được ticket dễ khỏi ticket khó. Hành vi LLM ở đây là giả định để minh hoạ điều README mô tả, không phải số đo.` }));
+        },
+        take: 'Ngưỡng chỉ có tác dụng khi con số cao thật sự đi kèm tỉ lệ đúng cao. Confidence do LLM tự viết không có tính chất đó.'
+      },
+      {
+        q: 'Jev trả cả probabilities lẫn confidence. Hai số khác nhau thế nào?',
+        a: `<p><code>confidence</code> tóm tắt <b>hình dạng</b> phân phối, không phải xác suất đáp án đúng. Với Choice có n option, Jev công bố:</p>
+<p><code>confidence = (p_max − 1/n) / (1 − 1/n)</code></p>
+<p>Phân phối đều cho 0, dồn hết vào một option cho 1. Vì chỉ phụ thuộc p_max, cùng confidence 0.5 ứng với p_max khác nhau tuỳ số option: 2 option cần 0.75, 10 option chỉ cần 0.55. Đặt ngưỡng "confidence ≥ 0.5" nghĩa là chấp nhận tới 45% rủi ro sai khi có 10 option.</p>
+<p>Với Score, confidence tính thêm khoảng cách giữa các mức: <code>spread = Σ p_i · |i − m|</code>, <code>MAD_unif = (1/n) · Σ |i − (n−1)/2|</code>, <code>confidence = max(0, 1 − spread / MAD_unif)</code>, với m là mức có xác suất cao nhất.</p>`,
+        viz(box) {
+          const out = el('div', { class: 'stat' }), sc = el('div', { class: 'stat' });
+          let n = 4, pm = 0.7;
+          const draw = () => {
+            const p = Math.max(pm, 1 / n), c = (p - 1 / n) / (1 - 1 / n);
+            out.innerHTML = `<span>n = <b>${n}</b></span><span>p_max = <b>${p.toFixed(2)}</b></span><span>confidence = <b>${c.toFixed(3)}</b></span><span>rủi ro chọn sai ≈ <b>${pc(1 - p, 0)}</b></span>`;
+          };
+          const scoreConf = (ps) => { const N = ps.length, m = ps.indexOf(Math.max(...ps)), spread = ps.reduce((s, p, i) => s + p * Math.abs(i - m), 0), mad = ps.reduce((s, _, i) => s + Math.abs(i - (N - 1) / 2), 0) / N; return { score: ps.reduce((s, p, i) => s + p * i, 0), conf: Math.max(0, 1 - spread / mad) }; };
+          const presets = [['1,0,0', [0, 1, 0]], ['0,.5,.5', [0, 0.5, 0.5]], ['.5,0,.5', [0.5, 0, 0.5]]];
+          const drawS = (k) => { const ps = presets[k][1], r = scoreConf(ps); sc.innerHTML = `<span>Score 3 mức, xác suất (${ps.join(', ')})</span><span>score = <b>${r.score.toFixed(2)}</b></span><span>confidence = <b>${r.conf.toFixed(2)}</b></span>`; };
+          box.append(el('div', { class: 'row' }, [slider('Số option n', 2, 10, 1, n, (v) => { n = v; draw(); }).node, slider('p_max', 0.1, 1, 0.01, pm, (v) => { pm = v; draw(); }, (v) => v.toFixed(2)).node]), out,
+            el('div', { class: 'row', style: 'margin-top:12px' }, [select('Phân phối Score', presets.map(([t], i) => [i, t]), 1, (v) => drawS(+v)).node]), sc,
+            el('div', { class: 'cap', text: 'Công thức từ docs Jev, tính trực tiếp. p_max nhỏ hơn 1/n được nâng lên 1/n vì không thể xảy ra. (0, .5, .5) cho 0.25 vì phân vân giữa hai mức kề; (.5, 0, .5) cho 0 vì phân vân giữa hai đầu thang, dù score cùng bằng 1.0 với (0, 1, 0).' }));
+          draw(); drawS(1);
+        },
+        take: 'Với Choice, đặt ngưỡng trên xác suất của option sắp hành động, không trên confidence. Confidence hữu ích nhất ở Score để biết đáp án đã "ổn định" chưa.'
+      },
+      {
+        q: 'Score có confidence cao thì yên tâm rẽ nhánh theo score được chưa?',
+        a: `<p>Chưa, nếu quyết định của bạn phụ thuộc vào một <b>ranh giới</b>. README (§1.5, §4.4) cảnh báo: một đáp án chia đều giữa hai mức kề nhau có score lẻ và confidence khá cao, vì hai mức kề nhau chỉ làm confidence giảm ít. Nhưng về quyết định "có gọi người trực không", đó là 50/50.</p>
+<p>ShopViet dùng thang 4 mức cho tác động lên khách: Không ảnh hưởng, Nhẹ, Nặng, Nghiêm trọng (giống ví dụ của Cloudflare). Quy tắc: từ mức 2 (Nặng) trở lên thì gọi kỹ sư trực. Cách đúng là cộng xác suất các mức từ 2 trở lên, không làm tròn score.</p>`,
+        viz(box) {
+          const L = ['Không ảnh hưởng', 'Nhẹ', 'Nặng', 'Nghiêm trọng'];
+          const P = [[0, 0.05, 0.9, 0.05], [0, 0.5, 0.5, 0], [0.05, 0.45, 0.5, 0], [0.5, 0, 0, 0.5], [0.1, 0.6, 0.25, 0.05]];
+          const out = el('div');
+          function draw(k) {
+            const ps = P[k], m = ps.indexOf(Math.max(...ps)), sp = ps.reduce((s, p, i) => s + p * Math.abs(i - m), 0), mad = ps.reduce((s, _, i) => s + Math.abs(i - 1.5), 0) / 4;
+            const conf = Math.max(0, 1 - sp / mad), score = ps.reduce((s, p, i) => s + p * i, 0), up = ps[2] + ps[3], round = Math.round(score) >= 2;
+            const risky = conf >= 0.4 && up > 0.35 && up < 0.65;
+            out.replaceChildren(hbars(ps.map((p, i) => [`${i} · ${L[i]}`, p, i >= 2]), { max: 1, fmt: (v) => v.toFixed(2) }),
+              el('div', { class: 'stat', html: `<span>score = <b>${score.toFixed(2)}</b></span><span>confidence = <b>${conf.toFixed(2)}</b></span><span>P(mức ≥ 2) = <b>${up.toFixed(2)}</b></span><span>làm tròn score: <b>${round ? 'gọi người trực' : 'không gọi'}</b></span>` }),
+              risky ? flag('warn', `<b>Confidence ${conf.toFixed(2)} trông ổn, nhưng quyết định là ${pc(up, 0)} / ${pc(1 - up, 0)}.</b> Score ${score.toFixed(2)} đứng ngay ranh giới; làm tròn thành "${round ? 'gọi' : 'không gọi'}" là tung đồng xu. Điều này không có nghĩa model kém: nó báo đúng là đang phân vân giữa hai mức kề. Trong hệ thống thật: rẽ nhánh theo P(mức ≥ 2) với ngưỡng riêng, và cho vùng giữa một đường xử lý riêng.`) : el('span'));
+          }
+          box.append(el('div', { class: 'row' }, [select('Đáp án', P.map((p, i) => [i, p.join(' / ')]), 1, (v) => draw(+v)).node]), out,
+            el('div', { class: 'cap', text: 'Score và confidence tính bằng công thức Jev. Thanh đậm là các mức từ 2 trở lên. Phân phối là ví dụ giả định.' }));
+          draw(1);
+        },
+        take: 'Ranh giới quan trọng thì cộng xác suất các mức phía đó. Score lẻ cộng confidence cao không có nghĩa là quyết định chắc chắn.'
+      },
+      {
+        q: 'Nếu đo xong thấy model tự tin quá mức thì sửa thế nào? Đổi model?',
+        a: `<p>Chưa cần. Nếu model xếp thứ tự đúng (ticket dễ có p cao hơn ticket khó) nhưng con số bị phóng đại, có hai cách rẻ:</p>
+<ol><li><b>Đặt ngưỡng theo precision đo được</b> thay vì theo con số. Muốn sai dưới 10% thì tìm ngưỡng mà precision trên tập có nhãn ≥ 90%, dù ngưỡng đó là 0.97.</li>
+<li><b>Hiệu chỉnh lại xác suất</b> bằng temperature scaling: nâng mỗi xác suất lên luỹ thừa 1/T rồi chuẩn hoá lại, chọn T làm khớp nhất với tập có nhãn. Đây là kỹ thuật chung, không phải tính năng của provider nào.</li></ol>
+<p>README có một ví dụ thật về nhiệt độ: Bespoke Nimble 9B v2 dùng temperature 2.179 <b>lấy lại từ v1, chưa fit cho v2</b>. Hệ số hiệu chỉnh gắn với một version model; đổi version mà giữ hệ số cũ là mất calibration âm thầm.</p>
+<p>Chọn T bằng cách nào? Thử nhiều T, mỗi T tính <b>log loss</b> trên tập có nhãn: trung bình của −log(xác suất gán cho đội đúng). Gán 0.9 cho đội đúng bị phạt 0.11; nói 0.99 cho một đội sai (nên đội đúng chỉ còn khoảng 0.003) bị phạt khoảng 5.8. Model nói quá chắc mà sai bị phạt nặng, nên T có log loss nhỏ nhất là T làm con số vừa đúng mức tự tin.</p>
+<p>Dưới đây: model giả định tự tin quá mức (nhiệt độ nội tại 0.55). Trình duyệt thử các T từ 0.5 đến 3, chọn T có log loss nhỏ nhất trên 1.000 ticket.</p>`,
+        viz(box) {
+          const set = makeSet(1000, 21), raw = set.map((r) => softmax(r.z, 0.55));
+          const resc = (q, T) => { const e = q.map((x) => Math.pow(Math.max(x, 1e-12), 1 / T)), s = e.reduce((a, b) => a + b, 0); return e.map((x) => x / s); };
+          let best = 1, bestL = Infinity; const curve = [];
+          for (let T = 0.5; T <= 3.0001; T += 0.05) { let L = 0; raw.forEach((q, i) => { L -= Math.log(Math.max(resc(q, T)[set[i].y], 1e-12)); }); L /= raw.length; curve.push([T, L]); if (L < bestL) { bestL = L; best = T; } }
+          const rowsAt = (T) => raw.map((q, i) => ({ p: resc(q, T)[set[i].pred], ok: set[i].ok }));
+          const before = rowsAt(1), after = rowsAt(best), cb = cut(before, 0.9), ca = cut(after, 0.9);
+          const W = 520, H = 120, mn = Math.min(...curve.map((c) => c[1])), mx = Math.max(...curve.map((c) => c[1]));
+          const x = (T) => 30 + ((T - 0.5) / 2.5) * (W - 40), y = (L) => 10 + (1 - (L - mn) / (mx - mn || 1)) * (H - 20);
+          box.append(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 20}`, role: 'img', 'aria-label': 'Log loss theo T' }, [
+            el('path', { d: curve.map(([T, L], i) => (i ? 'L' : 'M') + x(T).toFixed(1) + ' ' + y(L).toFixed(1)).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 }),
+            el('circle', { cx: x(best), cy: y(bestL), r: 5, fill: 'var(--ok)' }),
+            el('text', { x: Math.min(W - 120, x(best) + 8), y: y(bestL) - 6, text: `T tốt nhất ≈ ${best.toFixed(2)}` }),
+            ...[0.5, 1, 1.5, 2, 2.5, 3].map((t) => el('text', { x: x(t) - 8, y: H + 16, class: 'mute', text: String(t) }))]),
+            tableBox('<tr><th></th><th>ECE</th><th>Ngưỡng 0.9: coverage</th><th>Ngưỡng 0.9: model hứa</th><th>Ngưỡng 0.9: precision thật</th></tr>' +
+              `<tr><td>Trước hiệu chỉnh</td><td class="mono bad">${eceOf(binsOf(before, 10)).toFixed(3)}</td><td class="mono">${pc(cb.cov)}</td><td class="mono">${cb.prom === null ? '—' : pc(cb.prom)}</td><td class="mono bad">${cb.prec === null ? '—' : pc(cb.prec)}</td></tr>` +
+              `<tr><td>Sau hiệu chỉnh (T = ${best.toFixed(2)})</td><td class="mono ok">${eceOf(binsOf(after, 10)).toFixed(3)}</td><td class="mono">${pc(ca.cov)}</td><td class="mono">${ca.prom === null ? '—' : pc(ca.prom)}</td><td class="mono ok">${ca.prec === null ? '—' : pc(ca.prec)}</td></tr>`),
+            el('div', { class: 'cap', text: 'T tìm được gần 1 / 0.55 ≈ 1.8, đúng lượng phóng đại đã cài. Sau hiệu chỉnh, ít ticket vượt 0.9 hơn nhưng precision của chúng khớp với lời hứa. Dữ liệu và độ lệch là giả định.' }));
+        },
+        take: 'Lệch calibration thường sửa được bằng một tham số fit trên tập có nhãn. Nhưng tham số đó thuộc về một version model; pin version và fit lại khi đổi.'
+      },
+      {
+        q: 'Gửi ba câu hỏi về cùng một ticket trong một request: câu này có làm lệch câu kia?',
+        a: `<p>Không. README §1.6: các câu hỏi cùng thấy một state nhưng được đánh giá độc lập; đáp án câu này không thành ngữ cảnh ẩn cho câu khác. TypeSafe kiểm tra trên 13 câu về bài Wikipedia GDPR (khoảng 54.000 ký tự): gửi chung một request và gửi 13 request riêng, mỗi cách lặp 5 lần. Phần lớn đáp án giống hệt nhau (độ lệch chuẩn bằng 0); hai câu dao động nhỏ, và dao động đó như nhau ở cả hai cách.</p>
+<p>Còn tiền thì khác hẳn. State bị tính tiền một lần cho mỗi request. 13 request là trả 13 lần cho cùng bài viết. TypeSafe đo: gộp rẻ hơn 12,2 lần và nhanh hơn 10 lần.</p>
+<p>Provider tính tiền theo <b>token</b>: mẩu chữ model đọc, tiếng Anh trung bình khoảng 4 ký tự một token. Máy tính dưới đếm token thuần (không tính overhead), giá Jev $0.042 / 1M token input từ README, output miễn phí.</p>`,
+        viz(box) {
+          const S = { s: 13500, n: 13, q: 60 }, out = el('div', { class: 'stat' });
+          const draw = () => {
+            const one = S.s + S.n * S.q, sep = S.n * (S.s + S.q), r = sep / one;
+            out.innerHTML = `<span>1 request: <b>${fmtNum(one)}</b> token = $${((one / 1e6) * 0.042).toFixed(6)}</span><span>${S.n} request: <b>${fmtNum(sep)}</b> token = $${((sep / 1e6) * 0.042).toFixed(6)}</span><span>Gộp rẻ hơn <b>${r.toFixed(1)} lần</b></span><span>1 triệu ticket gộp: <b>$${((one / 1e6) * 0.042 * 1e6).toFixed(0)}</b>, tách: <b>$${((sep / 1e6) * 0.042 * 1e6).toFixed(0)}</b></span>`;
+          };
+          box.append(el('div', { class: 'row' }, [
+            slider('Token của state', 200, 30000, 100, S.s, (v) => { S.s = v; draw(); }, fmtNum).node,
+            slider('Số câu hỏi', 1, 20, 1, S.n, (v) => { S.n = v; draw(); }).node,
+            slider('Token mỗi câu hỏi (giả định)', 20, 300, 10, S.q, (v) => { S.q = v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Mặc định 13.500 token ≈ 54.000 ký tự / 4 (ước lượng thô cho tiếng Anh) và 13 câu như thử nghiệm GDPR. Tỉ lệ tính ra gần 13 lần; TypeSafe đo thật 12,2 lần. State càng lớn so với câu hỏi, tỉ lệ càng tiến về số câu hỏi.' }));
+          draw();
+        },
+        take: 'Mọi câu hỏi về cùng một state đi chung một request. Độc lập về đáp án, nhưng chung tiền state.'
+      },
+      {
+        q: 'Hỏi luôn mức nghiêm trọng cho cả ticket không phải bug có phí không? Khi nào bắt buộc tách request?',
+        a: `<p>TypeSafe gọi việc hỏi trước câu có thể không cần là <b>speculative fan-out</b>: hỏi loại ticket, đồng thời hỏi luôn mức nghiêm trọng của bug; nếu ticket không phải bug, code bỏ qua đáp án đó. Tốn vài token câu hỏi khi không cần, tiết kiệm một round trip khi cần.</p>
+<p>Cách tuần tự: hỏi loại ticket trước, nếu là bug thì gửi request thứ hai, trả tiền state lần nữa và chờ thêm một lượt. Máy tính dưới so hai cách. Độ trễ mỗi call lấy 100 ms theo con số TypeSafe nêu (phần lớn call khoảng 100 ms); token của state và câu hỏi là giả định.</p>
+<p>Chỉ tách thành request thứ hai khi code <b>thật sự không dựng được</b> request đó nếu chưa có đáp án đầu: cần đáp án để lấy thêm dữ liệu vào state, để quyết định state gồm gì, hoặc để chọn option cho câu tiếp theo (ví dụ README §3.10 chọn 3 skill rồi đọc kỹ 3 skill đó, §3.12 đi từng tầng của cây taxonomy).</p>`,
+        viz(box) {
+          const S = { f: 0.2, s: 400, q: 50 }, out = el('div', { class: 'stat' }), note = el('div');
+          const draw = () => {
+            const seqT = S.s + 40 + S.f * (S.s + S.q), fanT = S.s + 40 + S.q, seqL = 100 * (1 + S.f), fanL = 100, be = S.q / (S.s + S.q);
+            out.innerHTML = `<span>Tuần tự: <b>${seqT.toFixed(0)}</b> token, <b>${seqL.toFixed(0)} ms</b> trung bình</span><span>Fan-out: <b>${fanT.toFixed(0)}</b> token, <b>${fanL} ms</b></span><span>Hoà vốn token khi tỉ lệ bug = <b>${pc(be)}</b></span>`;
+            note.replaceChildren(S.f < be ? flag('warn', `Với ${pc(S.f, 0)} ticket là bug, fan-out tốn thêm ${(fanT - seqT).toFixed(0)} token mỗi ticket. Nhưng ticket bug vẫn nhanh hơn một round trip. Trong hệ thống thật: chênh vài chục token gần như không đáng kể ở giá $0.042 / 1M; độ trễ của khách thường đáng giá hơn.`) : flag('ok', `Với ${pc(S.f, 0)} ticket là bug, fan-out rẻ hơn cả về token lẫn độ trễ, vì gửi lại state cho mỗi ticket bug đắt hơn vài token câu hỏi thêm.`));
+          };
+          box.append(el('div', { class: 'row' }, [
+            slider('Tỉ lệ ticket là bug', 0, 1, 0.01, S.f, (v) => { S.f = v; draw(); }, (v) => pc(v, 0)).node,
+            slider('Token state', 100, 3000, 50, S.s, (v) => { S.s = v; draw(); }).node,
+            slider('Token câu mức nghiêm trọng', 10, 300, 10, S.q, (v) => { S.q = v; draw(); }).node]), out, note,
+            el('div', { class: 'cap', text: 'Câu "loại ticket" giả định 40 token. Độ trễ coi như không phụ thuộc số câu hỏi, đúng với README §1.3: độ trễ chủ yếu phụ thuộc độ dài state.' }));
+          draw();
+        },
+        take: 'Mặc định hỏi hết trong một request. Request thứ hai chỉ dành cho câu phụ thuộc thật sự vào đáp án trước.'
+      }
+    ],
+    poc: {
+      goal: "Tập 4.000 ticket có nhãn <b>tổng hợp</b> (numpy, có seed): \"model\" báo xác suất tự tin quá mức. Phần thật là đo reliability, ECE, fit temperature scaling bằng tối ưu NLL và đọc coverage/precision ở từng ngưỡng trên nửa tập giữ riêng.",
+      file: "docs/decision-models/pocs/03_calibration.py",
+      run: "uv run docs/decision-models/pocs/03_calibration.py",
+      needs: "chỉ <code>uv</code>, <code>numpy</code> và CPU, chạy dưới một giây, miễn phí.",
+      output: "Tập có nhãn TỔNG HỢP (numpy, seed 7): 4000 ticket, 4 đội. Nhãn thật rút từ softmax(z);\n'model' báo softmax(z / 0.55) nên tự tin quá mức. Không có model thật; mọi phép tính bên dưới là thật.\nChia 2000 để fit nhiệt độ, 2000 để đo.\n\nFit temperature scaling (golden-section trên NLL): T* = 1.858  (lý thuyết ≈ 1.818)\nNLL tập đo: trước 0.6616 → sau 0.5532\n\nReliability Trước (model báo): ECE = 0.1027, độ chính xác chung 0.804\nKhoảng p_max  Số đáp án  p trung bình  Tỉ lệ đúng  Lệch\n------------  ---------  ------------  ----------  ------\n0.3-0.4       14         0.360         0.286       +0.074\n0.4-0.5       46         0.456         0.391       +0.065\n0.5-0.6       94         0.551         0.426       +0.125\n0.6-0.7       91         0.654         0.451       +0.204\n0.7-0.8       107        0.749         0.617       +0.132\n0.8-0.9       202        0.857         0.639       +0.218\n0.9-1.0       1446       0.984         0.906       +0.078\n\nReliability Sau scaling T=1.86: ECE = 0.0151, độ chính xác chung 0.804\nKhoảng p_max  Số đáp án  p trung bình  Tỉ lệ đúng  Lệch\n------------  ---------  ------------  ----------  ------\n0.2-0.3       4          0.289         0.000       +0.289\n0.3-0.4       58         0.366         0.397       -0.030\n0.4-0.5       152        0.454         0.434       +0.020\n0.5-0.6       153        0.549         0.556       -0.007\n0.6-0.7       197        0.652         0.629       +0.022\n0.7-0.8       222        0.752         0.766       -0.014\n0.8-0.9       371        0.856         0.865       -0.009\n0.9-1.0       843        0.957         0.972       -0.015\n\nNgưỡng tự động chuyển đội trên tập đo:\nNgưỡng    Xác suất  Coverage  p trung bình báo  Precision đo được  Số chuyển sai\n--------  --------  --------  ----------------  -----------------  -------------\np ≥ 0.7   trước     87.8%     95.5%             85.8%              250\np ≥ 0.7   sau       71.8%     89.9%             91.2%              126\np ≥ 0.8   trước     82.4%     96.8%             87.3%              209\np ≥ 0.8   sau       60.7%     92.6%             93.9%              74\np ≥ 0.9   trước     72.3%     98.4%             90.6%              136\np ≥ 0.9   sau       42.1%     95.7%             97.2%              24\np ≥ 0.95  trước     64.6%     99.0%             92.8%              93\np ≥ 0.95  sau       25.9%     97.6%             98.5%              8\n\nSo sánh: nếu mọi đáp án ghi 'confidence 0.9' (kiểu LLM tự viết), ECE = |0.804 - 0.9| = 0.096 và ngưỡng 0.9 giữ 100% hoặc 0% ticket: không phân biệt được ca dễ và khó.\n\nRút ra: model tự tin quá mức hứa ~98% cho nhóm qua ngưỡng 0.9 nhưng chỉ đúng ~91%. Sau khi fit nhiệt độ trên\ntập có nhãn, 'p trung bình báo' khớp 'precision đo được', và lúc đó con số ngưỡng mới đọc được thành rủi ro.",
+      measured: true,
+      read: ["Dòng <b>T*</b>: nhiệt độ fit được 1.86, gần giá trị lý thuyết 1.82, và NLL giảm trên tập đo.", "Hai bảng reliability: trước scaling cột Lệch dương ở mọi khoảng (tự tin quá mức), ECE 0.103; sau scaling ECE 0.015.", "Bảng ngưỡng: trước scaling, nhóm qua ngưỡng 0.9 được báo trung bình 98.4% nhưng chỉ đúng 90.6%. Sau scaling hai cột này khớp nhau, đổi lại coverage giảm từ 72% xuống 42%.", "Số liệu là dữ liệu tổng hợp để thấy cơ chế, không phải calibration của Jev hay Clef."]
+    },
+    mount(stage) {
+      const S = { N: 1000, B: 10, T: 1, t: 0.9 }, sets = {};
+      const getSet = (N) => sets[N] || (sets[N] = makeSet(N, 7));
+      const relBox = el('div'), stat = el('div', { class: 'stat' }), relFlag = el('div'), thStat = el('div', { class: 'stat' }), curveBox = el('div'), thFlag = el('div');
+      function curveSvg(rows, base) {
+        const W = 540, H = 200, P = 40, x = (c) => P + c * (W - P - 12), y = (p) => 10 + (1 - (p - 0.5) / 0.5) * (H - 20);
+        const path = (rs) => { const pts = []; for (let t = 0.25; t <= 0.995; t += 0.005) { const c = cut(rs, t); if (c.n >= 10) pts.push([c.cov, Math.max(0.5, c.prec)]); } return pts.map(([c, p], i) => (i ? 'L' : 'M') + x(c).toFixed(1) + ' ' + y(p).toFixed(1)).join(' '); };
+        const cur = cut(rows, S.t), ghost = cut(base, S.t), kids = [];
+        [0.5, 0.75, 1].forEach((v) => { kids.push(el('line', { x1: P, x2: W - 12, y1: y(v), y2: y(v), stroke: 'var(--line)' })); kids.push(el('text', { x: 4, y: y(v) + 4, class: 'mute', text: v.toFixed(2) })); });
+        [0, 0.5, 1].forEach((v) => kids.push(el('text', { x: x(v) - 10, y: H + 16, class: 'mute', text: pc(v, 0) })));
+        kids.push(el('line', { x1: P, x2: W - 12, y1: y(S.t), y2: y(S.t), stroke: 'var(--warn)', 'stroke-dasharray': '3 4' }));
+        kids.push(el('text', { x: W - 150, y: y(S.t) - 4, fill: 'var(--warn)', text: `precision ngưỡng hứa ${S.t.toFixed(2)}` }));
+        kids.push(el('path', { d: path(base), fill: 'none', stroke: 'var(--g2)', 'stroke-width': 2, 'stroke-dasharray': '6 4' }));
+        kids.push(el('path', { d: path(rows), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }));
+        if (ghost.n) kids.push(el('circle', { cx: x(ghost.cov), cy: y(Math.max(0.5, ghost.prec)), r: 5, fill: 'var(--g2)' }));
+        if (cur.n) kids.push(el('circle', { cx: x(cur.cov), cy: y(Math.max(0.5, cur.prec)), r: 6, fill: 'var(--accent)' }));
+        kids.push(el('text', { x: P + 6, y: H - 8, class: 'mute', text: 'trục ngang: coverage · trục dọc: precision' }));
+        return el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 22}`, role: 'img', 'aria-label': 'Precision theo coverage khi kéo ngưỡng' }, kids);
+      }
+      function render() {
+        const set = getSet(S.N), rows = reported(set, S.T), base = reported(set, 1), bs = binsOf(rows, S.B), E = eceOf(bs);
+        const mp = meanP(rows), ac = accOf(rows), gap = mp - ac;
+        relBox.replaceChildren(reliability(bs, 'Reliability diagram của ' + S.N + ' ticket'));
+        stat.innerHTML = `<span>ECE = <b class="${E > 0.04 ? 'bad' : 'ok'}">${E.toFixed(3)}</b></span><span>p_max trung bình = <b>${mp.toFixed(3)}</b></span><span>Tỉ lệ đúng thật = <b>${pc(ac)}</b></span><span>Lệch chung = <b>${gap >= 0 ? '+' : ''}${(gap * 100).toFixed(1)} điểm</b></span>`;
+        if (S.N <= 200 && Math.abs(S.T - 1) < 0.1 && E > 0.03) relFlag.replaceChildren(flag('warn', `<b>ECE = ${E.toFixed(3)} dù model calibrate đúng (T ≈ 1).</b> Với ${S.N} ticket chia ${S.B} khoảng, mỗi khoảng chỉ có vài chục ticket hoặc ít hơn, tỉ lệ đúng dao động ngẫu nhiên. Điều này không có nghĩa model lệch calibration. Trong hệ thống thật: dùng vài trăm ticket trở lên, chia 10 khoảng, và đừng kết luận từ một khoảng thưa.`));
+        else if (E > 0.03 && gap > 0) relFlag.replaceChildren(flag('bad', `<b>Overconfident: model báo trung bình ${mp.toFixed(2)} nhưng chỉ đúng ${pc(ac)}.</b> Với T = ${S.T.toFixed(2)} &lt; 1, phân phối bị ép nhọn hơn: ticket thật ra chỉ chắc khoảng 0.7 được báo thành 0.9. Đáp án được chọn không đổi, nên độ chính xác tổng giữ nguyên; chỉ con số nói quá. Trong hệ thống thật: đây là kiểu lệch nguy hiểm nhất cho ngưỡng tự động; xem phần ngưỡng bên dưới, và đo lại mỗi khi đổi version model.`));
+        else if (E > 0.03 && gap < 0) relFlag.replaceChildren(flag('warn', `<b>Underconfident: model báo trung bình ${mp.toFixed(2)} nhưng đúng ${pc(ac)}.</b> Với T = ${S.T.toFixed(2)} &gt; 1, phân phối bị làm phẳng. Không gây chuyển sai, nhưng ngưỡng 0.9 sẽ đẩy quá nhiều ticket đúng sang người. Trong hệ thống thật: hạ ngưỡng theo precision đo được để lấy lại coverage.`));
+        else relFlag.replaceChildren(flag('ok', `Các điểm nằm sát đường chéo: con số model báo khớp tỉ lệ đúng (ECE ${E.toFixed(3)}). Ngưỡng đặt trên p_max đọc được trực tiếp thành rủi ro.`));
+        const c = cut(rows, S.t), g = cut(base, S.t);
+        thStat.innerHTML = c.n ? `<span>Tự động: <b>${c.n}</b> / ${S.N} ticket (coverage <b>${pc(c.cov)}</b>)</span><span>Precision = <b>${pc(c.prec)}</b></span><span>Model hứa (p trung bình) = <b>${c.prom.toFixed(3)}</b></span><span>Chuyển sai: <b>${c.err}</b> ticket</span>` : `<span>Không ticket nào có p_max ≥ ${S.t.toFixed(2)}: mọi ticket vào hàng chờ của người.</span>`;
+        curveBox.replaceChildren(curveSvg(rows, base));
+        if (c.n >= 20 && c.prom - c.prec > 0.03) thFlag.replaceChildren(flag('bad', `<b>${c.n} ticket vượt ngưỡng được model hứa đúng trung bình ${pc(c.prom)}, thực tế chỉ đúng ${pc(c.prec)}: ${c.err} ticket bị chuyển sai.</b>${c.prec < S.t ? ` Ngưỡng ${S.t.toFixed(2)} được đọc là "chấp nhận sai dưới ${pc(1 - S.t, 0)}", nhưng thực tế sai ${pc(1 - c.prec)}.` : ''} Vì sao: model tự tin quá mức đẩy nhiều ticket khó qua ngưỡng. Điều này không có nghĩa model xếp hạng kém: đường đứt (cùng dữ liệu ở T = 1) gần như trùng; cùng ngưỡng ${S.t.toFixed(2)} ở đó tự động ${pc(g.cov)} với precision ${g.prec === null ? '—' : pc(g.prec)}. Trong hệ thống thật: chọn ngưỡng theo precision đo trên tập có nhãn, hoặc hiệu chỉnh xác suất trước (câu 7).`));
+        else if (c.n >= 20 && c.prec - c.prom > 0.03) thFlag.replaceChildren(flag('warn', `<b>Model hứa ${pc(c.prom)} nhưng thực tế đúng ${pc(c.prec)}: con số thấp hơn sự thật.</b> Model rụt rè nên ngưỡng ${S.t.toFixed(2)} quá chặt: chỉ tự động ${pc(c.cov)} ticket. Ở T = 1, cùng ngưỡng tự động được ${pc(g.cov)}. Trong hệ thống thật: hạ ngưỡng đến mức precision đo được còn đạt yêu cầu, đỡ việc cho người điều phối.`));
+        else thFlag.replaceChildren(el('span'));
+      }
+      const nS = select('Số ticket có nhãn', [[200, '200'], [1000, '1.000'], [5000, '5.000']], S.N, (v) => { S.N = +v; render(); });
+      const bS = select('Số khoảng', [[5, '5'], [10, '10'], [20, '20']], S.B, (v) => { S.B = +v; render(); });
+      const tS = slider('Nhiệt độ T', 0.3, 2.5, 0.05, S.T, (v) => { S.T = v; render(); }, (v) => v.toFixed(2) + (v < 0.95 ? ' tự tin quá' : v > 1.05 ? ' rụt rè' : ' chuẩn'));
+      const thS = slider('Ngưỡng tự động chuyển', 0.3, 0.99, 0.01, S.t, (v) => { S.t = v; render(); }, (v) => 'p_max ≥ ' + v.toFixed(2));
+      stage.append(el('div', { class: 'row' }, [nS.node, bS.node, tS.node]), relBox, stat,
+        el('div', { class: 'legend', html: '<span><i style="background:var(--g1)"></i>tỉ lệ đúng mỗi khoảng</span><span><i style="background:var(--bad)"></i>báo cao hơn thực tế</span><span><i style="background:var(--g3)"></i>báo thấp hơn thực tế</span><span><i style="background:var(--g2)"></i>số đáp án</span>' }),
+        relFlag,
+        el('h4', { text: 'Ngưỡng tự động chuyển ticket: coverage và precision', style: 'margin:20px 0 4px' }),
+        el('p', { class: 'hint', style: 'margin:0 0 8px', text: `Ticket có p_max ≥ ngưỡng được chuyển thẳng cho đội (${TEAMS.join(', ')}); còn lại vào hàng chờ của người. Đường xanh là model hiện tại, đường đứt tím là cùng dữ liệu ở T = 1.` }),
+        el('div', { class: 'row' }, [thS.node]), thStat, curveBox, thFlag,
+        el('p', { class: 'hint', text: 'Toàn bộ số liệu trong hình là giả định: 4 đội, nhãn sinh ngẫu nhiên theo phân phối thật, model lệch calibration bằng nhiệt độ T. Hình dạng và cách đọc giống hệt khi bạn chạy trên ticket thật có nhãn.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

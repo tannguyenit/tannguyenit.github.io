@@ -26,6 +26,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Để LLM gọi code của bạn: vòng lặp tool call trên API stateless, tool definition là prompt, tool choice, gọi song song, provider, thiết kế tool, lỗi, side effect và eval.',
     parts: ['Workflow tổng hợp', 'Model sinh yêu cầu gọi tool', 'Tool choice và gọi song song', 'Client, server, MCP và reasoning', 'Tool use theo provider', 'Thiết kế tool', 'Lỗi, vòng lặp và chi phí', 'Side effect và bảo mật', 'Eval và observability']
   },
+  'decision-models': {
+    title: 'LLM - 05 - Decision Models',
+    description: 'Khi AI chỉ cần chọn, không cần viết: model trả về lựa chọn kèm xác suất, calibration, đặt ngưỡng, provider và các ứng dụng như routing ticket, guardrail, chọn model.',
+    parts: ['Workflow tổng hợp', 'System One và hợp đồng vào ra', 'Prefill rồi chấm điểm lựa chọn', 'Xác suất và calibration', 'Giới hạn và lựa chọn thay thế', 'Decision model theo provider', 'Ứng dụng: routing và guardrail', 'Ứng dụng: agent, router và taxonomy', 'Thiết kế, ngưỡng và vận hành']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

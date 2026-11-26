@@ -1,0 +1,718 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Models Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-system-one-contract.html">← Lab trước</a><a href="03-calibration.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/decision-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const OPTS = ['doi_tra', 'bao_hanh', 'van_chuyen', 'thanh_toan', 'tu_van'];
+  const BASE_LOGITS = [4.0, 1.94, -0.45, -0.45, -0.45];
+  const MSG = 'Tai nghe Pro X đơn SV-4821 bị rè, muốn đổi';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const tokCount = (s) => (String(s).match(/[\p{L}\p{M}\p{N}_]+|[^\s\p{L}\p{M}\p{N}_]/gu) || []).length;
+  const softmax = (z) => { const m = Math.max(...z), e = z.map((x) => Math.exp(x - m)), s = e.reduce((a, b) => a + b, 0); return e.map((x) => x / s); };
+  const norm = (v) => { const s = v.reduce((a, b) => a + b, 0); return s > 0 ? v.map((x) => x / s) : v.map(() => 1 / v.length); };
+  const choiceConf = (pmax, n) => (pmax - 1 / n) / (1 - 1 / n);
+  function scoreStats(p) {
+    const n = p.length, score = p.reduce((a, x, i) => a + i * x, 0);
+    const m = p.indexOf(Math.max(...p)), spread = p.reduce((a, x, i) => a + x * Math.abs(i - m), 0);
+    const mad = p.reduce((a, _, i) => a + Math.abs(i - (n - 1) / 2), 0) / n;
+    return { score, m, spread, mad, conf: Math.max(0, 1 - spread / mad) };
+  }
+  const pre = (txt) => el('pre', { class: 'mono', style: 'font-size:11.5px;line-height:1.45;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;margin:0;white-space:pre-wrap;word-break:break-word', text: txt });
+  const note = (color, html) => el('div', { style: `border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+  const SHARE = {
+    swap: { msg: 'Tai nghe Pro X đơn SV-4821 bị rè, muốn đổi', want: 'doi_tra', first: { doi: 3.2, bao: 1.4, van: -1, thanh: -1 }, tra: 0.55, chi: 0.9, head: [0.84, 0.03, 0.10, 0.02, 0.01] },
+    addr: { msg: 'Cho mình đổi địa chỉ giao đơn SV-5120 sang Quận 3 nhé', want: 'doi_dia_chi', first: { doi: 3.0, bao: -2, van: 1.2, thanh: -2 }, tra: 0.45, chi: 0.6, head: [0.06, 0.81, 0.01, 0.11, 0.01] }
+  };
+  const SOPTS = [['doi_tra', ['doi', '_tra']], ['doi_dia_chi', ['doi', '_dia', '_chi']], ['bao_hanh', ['bao', '_hanh']], ['van_chuyen', ['van', '_chuyen']], ['thanh_toan', ['thanh', '_toan']]];
+
+  return {
+    id: 'prefill-scoring', nav: '2. Prefill & chấm điểm', ref: '§1.3–1.4',
+    title: 'Đọc một lần, chấm mọi option cùng lúc: xác suất 0.86 từ đâu ra',
+    hook: 'Kéo điểm (logit) của từng option và xem softmax tính lại xác suất. Rồi xem điều gì xảy ra khi tự làm bằng logprob của LLM với hai option cùng bắt đầu bằng "doi". Cuối cùng thử bốn loại câu hỏi.',
+    terms: [
+      ['Token', 'Mảnh chữ model đọc và sinh. Tokenizer thật của OpenAI (o200k) tách "doi_tra" thành 3 token "doi", "_", "tra" và "doi_dia_chi" thành 5 token "doi", "_d", "ia", "_ch", "i" (đo bằng POC). Hình chính tách gọn hơn, ở dấu gạch dưới, để dễ kéo thanh.'],
+      ['Prefill', 'Bước model đọc toàn bộ input một lượt, mọi token xử lý song song. Ví dụ đọc cả state và câu hỏi của ticket trong một lần.'],
+      ['Decode', 'Bước LLM sinh output từng token một, token sau phải chờ token trước. Viết {"intent": "doi_tra"} là khoảng chục bước nối tiếp.'],
+      ['Forward pass', 'Một lần chạy dữ liệu qua mạng nơ-ron từ đầu đến cuối. Prefill là một forward pass trên cả input.'],
+      ['Logit', 'Điểm thô model gán cho một lựa chọn, có thể âm hoặc dương, chưa phải xác suất. Ví dụ doi_tra 4.0, bao_hanh 1.94.'],
+      ['Softmax', 'Hàm biến danh sách logit thành xác suất: p_i = e^(z_i) / tổng e^(z_j). Logit 4.0 và 1.94 thành 0.86 và 0.11.'],
+      ['Logprob', 'Logarit của xác suất một token. LLM thường trả logprob của token kế tiếp; log(0.86) ≈ −0.15.'],
+      ['Backbone', 'LLM có sẵn làm phần "đọc hiểu" bên dưới. Clef dùng Qwen3.8-27B làm backbone rồi gắn thêm phần chấm điểm lên trên.'],
+      ['Routing head', 'Phần mạng gắn thêm trên backbone của Clef, mỗi option một đầu chấm điểm trích phần ngữ cảnh liên quan đến option đó. Hình dung: 5 option là 5 giám khảo, cùng đọc một bản prefill và mỗi người cho một điểm (logit).'],
+      ['Calibration', 'Xác suất khớp tần suất đúng: các đáp án gán 0.8 đúng khoảng 80% số lần.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> gửi ticket <i>"Tai nghe Pro X đơn SV-4821 bị rè, muốn đổi"</i> và nhận {doi_tra: 0.86, bao_hanh: 0.11, van_chuyen: 0.01, thanh_toan: 0.01, tu_van: 0.01}. Nhóm kỹ sư muốn hiểu con số đó được tính thế nào trước khi đặt ngưỡng lên nó.',
+      scenario: 'Một kỹ sư đề xuất tự làm: hỏi LLM có sẵn rồi đọc logprob token đầu tiên của từng option, khỏi trả tiền decision model. Danh sách đội vừa thêm doi_dia_chi (đổi địa chỉ giao hàng), cùng bắt đầu bằng "doi" như doi_tra.',
+      ask: 'Decision model làm gì bên trong để ra xác suất trong một lượt, và vì sao tự đọc logprob của LLM thường không thay được?',
+      solves: 'Model chỉ prefill (đọc một lần), rồi chấm điểm song song mọi option hợp lệ và chuẩn hoá thành xác suất. Không sinh token, nên không phụ thuộc cách option bị tách token. Bốn loại câu hỏi (yes/no, choice, score, box) là bốn cách đóng gói kết quả đó.',
+      read: [
+        'Phần 1: kéo logit của từng option. Bảng tính e^z, tổng, rồi p = e^z / tổng. Bấm "Cộng 3 vào mọi logit" để thấy xác suất không đổi.',
+        'Phần 2: chọn ticket. Ba cột là ba cách chấm: chỉ đọc token đầu, nhân xác suất cả chuỗi token, và một điểm cho mỗi option như decision model. Kéo các thanh để đổi xác suất token.',
+        'Phần 3: bấm từng loại câu hỏi. Mỗi loại có request mẫu, response mẫu và con số được tính ngay trong trình duyệt.',
+        'Khung cảnh báo tự hiện khi hai option hoà nhau, khi option dài bị phạt vì nhiều token, hoặc khi hai phân phối có cùng score nhưng khác confidence.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Bên trong (theo mô tả của Cloudflare về Clef; TypeSafe không công bố kiến trúc Jev)</h4>
+<ol><li><b>Backbone là một LLM có sẵn.</b> Clef dùng Qwen3.8-27B, Clef-flash dùng Qwen3.5-9B.</li>
+<li><b>Chỉ chạy prefill.</b> Đọc state và câu hỏi một lần, không sinh token nào. Vì vậy output miễn phí và độ trễ thấp.</li>
+<li><b>Chấm điểm song song mọi lựa chọn hợp lệ</b> bằng routing head cho mỗi option. Bước quyết định không autoregressive, tức không sinh lần lượt từng token.</li>
+<li><b>Huấn luyện cho calibration</b>: LoRA rank 256 (huấn luyện thêm vài ma trận nhỏ thay vì sửa cả model), cross-entropy có label smoothing, Brier loss (deep dive 6), và RLCD (Reinforcement Learning for Calibrated Decisions) cho điểm một phần khi chọn mức liền kề.</li></ol>
+<p>Hệ quả: độ trễ chủ yếu phụ thuộc độ dài state; thêm option tốn vài token mỗi option, không thêm bước decode; model không có "chỗ để suy nghĩ".</p>
+<h4>Bốn loại câu hỏi</h4>
+<div class="tbl"><table>
+<tr><th>Loại</th><th>Jev / Clef</th><th>OpenAI</th><th>Trả về</th><th>Giới hạn</th></tr>
+<tr><td>Yes/no</td><td><code>noul</code></td><td><code>predicate</code></td><td>Một xác suất 0–1</td><td>Không có confidence riêng; dùng |2p − 1| nếu cần</td></tr>
+<tr class="cur"><td>Chọn một</td><td><code>choice</code></td><td><code>choice</code></td><td>Option, xác suất từng option, confidence</td><td>Jev tối đa 255 option; cookbook ghi ổn định đến khoảng 240</td></tr>
+<tr><td>Thang mức</td><td><code>score</code></td><td><code>score</code></td><td>Vị trí (có thể lẻ), xác suất từng mức, confidence</td><td>Jev tối đa 10 mức; OpenAI 2–10</td></tr>
+<tr><td>Vùng trên ảnh</td><td><code>box</code></td><td>Không có</td><td>top, bottom, left, right (tỉ lệ 0–1), confidence</td><td>Chỉ Jev 1.14; cần header TypeSafe-Danger-Zone-Images: true</td></tr>
+</table></div>
+<div class="verdict"><b>Nhớ:</b> Choice và Box luôn trả một đáp án, kể cả khi không đáp án nào đúng, nên cần câu yes/no đi kèm. Score là một vị trí, không phải đại lượng đo được; luôn đọc probabilities và confidence cùng với score.</div>`,
+    why: {
+      c: 'Một lượt prefill rồi chấm điểm mọi option song song, chuẩn hoá bằng softmax thành phân phối đã được huấn luyện cho calibration. Một điểm cho mỗi option, nên tên option dài hay ngắn, chung tiền tố hay không đều không ảnh hưởng cách chấm.',
+      s: 'Đọc logprob token đầu của LLM thường: option chung token đầu bị gộp làm một. Nhân logprob cả chuỗi: option nhiều token bị phạt. Cả hai dựa trên logprob của LLM đã qua RLHF (huấn luyện theo đánh giá của người chấm), vốn không được tối ưu để khớp tần suất đúng và hay dồn xác suất vào một đáp án (mode dropping).',
+      p: 'Không có bước suy nghĩ: câu hỏi cần nhiều bước suy luận nhận câu trả lời "trực giác" của một lần prefill. Không sinh được giá trị mới. Kiến trúc Jev không công bố, nên hình dung bên trong dựa trên mô tả của Cloudflare về Clef.'
+    },
+    deep: [
+      {
+        q: 'Prefill với decode khác nhau thế nào mà decision model nhanh hơn?',
+        a: `<p>LLM làm việc theo hai pha. <b>Prefill</b>: đọc toàn bộ input. Mọi token của input đã có sẵn nên GPU xử lý song song trong một forward pass. <b>Decode</b>: sinh output. Token thứ hai phụ thuộc token thứ nhất, nên phải chạy lần lượt, mỗi token một forward pass.</p>
+<p>Để viết <code>{"intent": "doi_tra", "confidence": 0.9}</code>, LLM chạy khoảng chục forward pass nối tiếp. Decision model dừng sau prefill: nó đọc state và câu hỏi một lần rồi chấm điểm các option. README gọi đây là lý do output miễn phí và độ trễ thấp: phần đắt nhất của LLM là decode từng token, và decision model bỏ hẳn bước đó.</p>
+<p>Hình dưới đếm số bước nối tiếp từ chính các chuỗi (ước lượng token thô).</p>`,
+        viz(box) {
+          const outs = [['Chỉ một nhãn', '"doi_tra"'], ['JSON có confidence', '{"intent": "doi_tra", "confidence": 0.9}'], ['JSON kèm lý do', '{"intent": "doi_tra", "reason": "Khách báo tai nghe bị rè và muốn đổi sản phẩm khác", "confidence": 0.9}']];
+          const S = { o: 1 };
+          const grid = el('div'), stat = el('div', { class: 'stat' });
+          const so = select('LLM sinh ra', outs.map(([n], i) => [i, n]), S.o, (v) => { S.o = +v; draw(); });
+          function draw() {
+            const inTok = tokCount('Phân loại tin nhắn hỗ trợ ShopViet ' + MSG + ' doi_tra bao_hanh van_chuyen thanh_toan tu_van'), outTok = tokCount(outs[S.o][1]);
+            const cell = (c) => el('span', { style: `display:inline-block;width:12px;height:12px;border-radius:2px;margin:1px;background:${c}` });
+            grid.replaceChildren(
+              el('div', { class: 'hint', text: 'LLM: 1 bước prefill (' + inTok + ' token song song) + ' + outTok + ' bước decode nối tiếp' }),
+              el('div', {}, [cell('var(--accent)'), ...Array.from({ length: outTok }, () => cell('var(--warn)'))]),
+              el('div', { class: 'hint', text: 'Decision model: 1 bước prefill + chấm 5 option song song, 0 bước decode' }),
+              el('div', {}, [cell('var(--accent)'), cell('var(--ok)')]));
+            stat.innerHTML = `<span>Bước nối tiếp, LLM: <b>${1 + outTok}</b></span><span>Decision model: <b>2</b></span><span>Output tính phí (Jev): <b>0</b> token</span>`;
+          }
+          box.append(el('div', { class: 'row' }, [so.node]), grid, stat, el('div', { class: 'legend', html: '<span><i style="background:var(--accent)"></i>prefill</span><span><i style="background:var(--warn)"></i>một token decode</span><span><i style="background:var(--ok)"></i>chấm điểm option</span>' }),
+            el('div', { class: 'cap', text: 'Đếm số bước, không phải mili giây. Một bước prefill dài hơn một bước decode, nhưng các bước decode không chạy song song được. Số đo thực tế ở README: 103 ms cho Jev so với 1,9–13,5 giây cho LLM (thử nghiệm của TypeSafe).' }));
+          draw();
+        },
+        take: 'Càng bắt model viết dài, càng nhiều bước nối tiếp. Decision model không viết, nên không có bước nào như vậy.'
+      },
+      {
+        q: 'Logit là gì? Sao phải đi qua e mũ rồi mới chia, không chia thẳng?',
+        a: `<p>Logit là điểm thô model gán cho mỗi option. Nó có thể âm, có thể lớn hơn 1, nên chưa phải xác suất. <b>Softmax</b> biến chúng thành xác suất: lấy e mũ từng logit (luôn dương), rồi chia cho tổng.</p>
+<p>Vì sao không chia thẳng? Logit âm sẽ cho "xác suất" âm. e mũ giải quyết chuyện đó, và còn có một tính chất quan trọng: <b>chỉ hiệu số giữa các logit mới quan trọng</b>. Cộng cùng một số vào mọi logit, xác suất không đổi. Với hai option, hiệu số d cho p = 1 / (1 + e<sup>−d</sup>).</p>
+<p>Kéo hiệu số bên dưới. Để từ 0.5 lên 0.9 cần hiệu khoảng 2.2; từ 0.9 lên 0.99 cần thêm khoảng 2.4 nữa.</p>`,
+        viz(box) {
+          const out = el('div', { class: 'stat' });
+          const sd = slider('Hiệu logit d = z₁ − z₂', -6, 6, 0.1, 2.06, draw, (v) => v.toFixed(1));
+          const bar = el('div');
+          function draw() {
+            const d = sd.get(), p = 1 / (1 + Math.exp(-d));
+            bar.replaceChildren(hbars([['option 1', p, true], ['option 2', 1 - p, false]], { max: 1, fmt: (v) => v.toFixed(3) }));
+            out.innerHTML = `<span>p₁ = 1 / (1 + e<sup>−${d.toFixed(1)}</sup>) = <b>${p.toFixed(3)}</b></span><span>p₁ / p₂ = e<sup>d</sup> = <b>${Math.exp(d).toFixed(2)}</b></span>`;
+          }
+          box.append(el('div', { class: 'row' }, [sd.node]), bar, out, el('div', { class: 'cap', text: 'Tỉ lệ p₁ / p₂ README dùng để xem option thứ hai có sát không chính là e mũ hiệu logit.' }));
+          draw();
+        },
+        take: 'Xác suất chỉ phụ thuộc hiệu số giữa các logit. Tỉ lệ hai xác suất là e mũ hiệu số đó.'
+      },
+      {
+        q: 'Vậy thêm option vào danh sách thì chậm thêm bao nhiêu?',
+        a: `<p>Gần như không. README ghi: thêm option vào một câu Choice tốn vài token mỗi option, không tốn thêm bước decode. Option chỉ làm input dài thêm một chút; việc chấm điểm diễn ra song song.</p>
+<p>Hệ quả mà README nêu: độ trễ chủ yếu phụ thuộc độ dài state, gần như không phụ thuộc số câu hỏi. Jev nhận tối đa 255 option mỗi câu Choice; cookbook của TypeSafe ghi hoạt động ổn định đến khoảng 240 option.</p>
+<p>Kéo số option bên dưới. Trình duyệt đếm token của phần mô tả option (ước lượng thô) và so với state.</p>`,
+        viz(box) {
+          const desc = 'Đổi hoặc trả sản phẩm bị lỗi, giao sai, không ưng trong thời hạn đổi trả';
+          const out = el('div', { class: 'stat' }), cap = el('div', { class: 'cap' }), bars = el('div');
+          const sn = slider('Số option', 2, 255, 1, 5, draw), ss = slider('Token state', 50, 5000, 50, 400, draw);
+          function draw() {
+            const n = sn.get(), per = tokCount('doi_tra: ' + desc), optTok = n * per, st = ss.get();
+            bars.replaceChildren(hbars([['state', st, false], ['mô tả ' + n + ' option', optTok, true]], { max: Math.max(st, optTok), fmt: (v) => v.toLocaleString('vi-VN') + ' tk' }));
+            out.innerHTML = `<span>≈ <b>${per}</b> token mỗi option (có mô tả)</span><span>Bước decode thêm: <b>0</b></span><span>Chi phí thêm/1M ticket: <b>$${((optTok / 1e6) * 0.042 * 1e6).toFixed(0)}</b> (Jev)</span>`;
+            cap.innerHTML = n > 240 ? '<span class="bad">Vượt khoảng 240 option cookbook TypeSafe ghi là ổn định.</span> Jev vẫn nhận đến 255, nhưng README gợi ý taxonomy lớn hơn nên đi từng tầng (§3.12).' : optTok > st ? 'Mô tả option đã dài hơn state: lúc này phần lớn tiền là trả cho danh sách option, không phải cho ticket. Rút gọn mô tả hoặc chia taxonomy theo tầng.' : 'Thêm option chỉ thêm token input, không thêm bước nối tiếp nào.';
+          }
+          box.append(el('div', { class: 'row' }, [sn.node, ss.node]), bars, out, cap);
+          draw();
+        },
+        take: 'Danh sách option dài chủ yếu tốn tiền input, không tốn độ trễ decode. Đến vài trăm option thì nên chia tầng.'
+      },
+      {
+        q: 'Sao tự làm bằng LLM thường lại phải chấm từng token? Hỏi thẳng xác suất của cả chữ "doi_dia_chi" không được à?',
+        a: `<p>Không được trực tiếp. LLM thường chỉ trả một thứ: <b>xác suất của token kế tiếp</b>. Nó không có con số cho cả chữ "doi_dia_chi". Muốn có, bạn phải ghép: P(token 1) × P(token 2 | token 1) × P(token 3 | token 1, 2) × …</p>
+<p>Và tên option bị tách thành bao nhiêu token là do tokenizer quyết định, không phải bạn. POC chạy tokenizer thật của OpenAI (o200k_base):</p>
+<div class="tbl"><table><tr><th>Option</th><th>Token thật</th><th>Số token</th></tr>
+<tr><td class="mono">doi_tra</td><td class="mono">doi | _ | tra</td><td class="mono">3</td></tr>
+<tr><td class="mono">doi_dia_chi</td><td class="mono">doi | _d | ia | _ch | i</td><td class="mono">5</td></tr>
+<tr><td class="mono">đổi trả</td><td class="mono">đ | ổi | ␣trả</td><td class="mono">3</td></tr>
+<tr><td class="mono">đổi địa chỉ</td><td class="mono">đ | ổi | ␣địa | ␣chỉ</td><td class="mono">4</td></tr></table></div>
+<p>Từ đó ra hai lỗi cơ học, đều thấy trong POC với tin <i>"Cho mình đổi địa chỉ giao đơn SV-5120 sang Quận 3 nhé"</i> (logit là giả định, cách tách token là thật):</p>
+<ol><li><b>Chỉ đọc token đầu:</b> doi_tra và doi_dia_chi cùng bắt đầu bằng "doi", nên nhận đúng một số: 0.848 và 0.848. Không tách được. Viết tiếng Việt có dấu cũng không thoát: "đổi trả" và "đổi địa chỉ" chung tới hai token đầu.</li>
+<li><b>Nhân cả chuỗi:</b> doi_dia_chi dài hơn doi_tra 2 token, tức bị nhân thêm hai thừa số nhỏ hơn 1. Với mỗi token sau giả định 0.9, đó là 0.9 × 0.9 = 0.81. Kết quả: doi_tra 0.3436, doi_dia_chi 0.3401, chọn doi_tra dù nhánh "đổi địa chỉ" được model ưa hơn (0.55 so với 0.45).</li></ol>
+<p>Không có nghĩa LLM hiểu sai tin nhắn. Điểm của nó bị bóp méo bởi cách tên option bị cắt. Trong hệ thống thật: decision model chấm một điểm cho cả option, nên tên dài hay ngắn, chung tiền tố hay không đều không ảnh hưởng. Phần 2 của hình chính cho bạn kéo các xác suất này (lab tách token đơn giản hơn, ở dấu gạch dưới).</p>`,
+        take: 'Xác suất của LLM thường là theo token. Tên option dài hơn hoặc chung tiền tố là đủ để làm lệch kết quả, dù model hiểu đúng.'
+      },
+      {
+        q: 'Thế sao không tự hỏi LLM rồi đọc logprob của token đầu? Cũng ra xác suất mà.',
+        a: `<p>README gọi đây là "decision model nghèo", và Cloudflare đã thử hướng này trước Clef (đọc logprob DiffusionGemma sinh ra cho từng lựa chọn). Có hai vấn đề.</p>
+<p><b>Một là cơ học</b>: câu hỏi ngay trên. Option chung token đầu bị gộp; nhân xác suất cả chuỗi thì option dài bị phạt.</p>
+<p><b>Hai là xác suất không được huấn luyện để khớp tần suất đúng.</b> LLM chat thường đã qua RLHF: người chấm chọn câu trả lời họ thích hơn, model học theo. TypeSafe giải thích vì sao họ không dùng RLHF: RLHF dạy model nói điều người thích nghe, có thể thưởng cho câu bịa nghe tự tin, và gây <b>mode dropping</b>: dồn xác suất vào một kiểu output, bỏ các khả năng khác.</p>
+<p>Hình dưới minh hoạ mode dropping bằng một phép tính đơn giản: lấy phân phối calibrate của ticket "giao thiếu sạc, bị trừ tiền" rồi nâng lũy thừa k và chuẩn hoá lại. k càng lớn càng "tự tin". Đây là minh hoạ khái niệm, không phải cách RLHF thật sự làm.</p>`,
+        viz(box) {
+          const base = [0.52, 0.41, 0.04, 0.02, 0.01], names = ['van_chuyen', 'thanh_toan', 'doi_tra', 'tu_van', 'bao_hanh'];
+          const out = el('div'), stat = el('div', { class: 'stat' }), cap = el('div', { class: 'cap' });
+          const sk = slider('Độ "dồn" k', 1, 8, 0.5, 1, draw, (v) => v.toFixed(1));
+          function draw() {
+            const k = sk.get(), q = norm(base.map((p) => Math.pow(p, k)));
+            out.replaceChildren(hbars(names.map((n, i) => [n, q[i], i === 0]), { max: 1, fmt: (v) => v.toFixed(3) }));
+            const wrongPerK = Math.round((1 - base[0]) * 1000);
+            stat.innerHTML = `<span>Model nói van_chuyen: <b>${q[0].toFixed(2)}</b></span><span>Tần suất đúng thật (giả định = phân phối gốc): <b>${base[0].toFixed(2)}</b></span><span>1.000 ticket như vậy: sai thật khoảng <b>${wrongPerK}</b>, model hứa sai <b>${Math.round((1 - q[0]) * 1000)}</b></span>`;
+            cap.innerHTML = q[0] > 0.9 ? '<span class="bad">Phân phối đã "dồn": model nói hơn 0.9 cho một ticket thật ra chia đôi.</span> Ngưỡng 0.8 sẽ cho ticket này tự động, và gần một nửa số ticket như vậy đi nhầm đội. Không có nghĩa logprob vô dụng: thứ tự option vẫn đúng. Trong hệ thống thật: kiểm tra calibration trước khi đặt ngưỡng lên bất kỳ xác suất nào.' : 'k = 1 là phân phối gốc. Kéo k lên để xem xác suất bị dồn vào một option.';
+          }
+          box.append(el('div', { class: 'row' }, [sk.node]), out, stat, cap);
+          draw();
+        },
+        take: 'Thứ tự đúng chưa đủ. Để đặt ngưỡng, độ lớn của xác suất cũng phải đúng, và điều đó cần huấn luyện riêng.'
+      },
+      {
+        q: 'Huấn luyện "cho calibration" là làm gì? Brier loss là gì?',
+        a: `<p>Theo blog Cloudflare mà README dẫn, Clef được huấn luyện với cross-entropy có label smoothing cho output hợp lệ, cộng <b>Brier loss</b> để tinh chỉnh calibration, trên dữ liệu tổng hợp hoán vị thứ tự field, prompt và schema. Thêm mục tiêu RL tên RLCD, cho điểm một phần khi chọn mức liền kề trên thang có thứ tự.</p>
+<p><b>Brier score</b> đo khoảng cách giữa phân phối dự đoán và đáp án đúng: tổng (p<sub>i</sub> − y<sub>i</sub>)², với y = 1 ở option đúng, 0 ở các option khác. Thấp hơn là tốt hơn. Nó phạt cả việc tự tin sai lẫn việc rụt rè khi đúng.</p>
+<p>Chọn đáp án đúng bên dưới. Trình duyệt tính Brier và log loss cho hai model: một model calibrate (0.52 / 0.41) và một model tự tin thái quá (0.95 / 0.03). Dòng cuối là giá trị trung bình nếu đáp án đúng xuất hiện với tần suất 0.52 / 0.41 / ...</p>`,
+        viz(box) {
+          const names = ['van_chuyen', 'thanh_toan', 'doi_tra', 'tu_van', 'bao_hanh'], cal = [0.52, 0.41, 0.04, 0.02, 0.01], over = [0.95, 0.03, 0.01, 0.005, 0.005];
+          const S = { t: 0 }, out = el('div'), cap = el('div', { class: 'cap' });
+          const brier = (p, t) => p.reduce((a, x, i) => a + Math.pow(x - (i === t ? 1 : 0), 2), 0), logl = (p, t) => -Math.log(p[t]);
+          const exp = (p, f) => cal.reduce((a, w, t) => a + w * f(p, t), 0);
+          const st = select('Đáp án đúng', names.map((n, i) => [i, n]), 0, (v) => { S.t = +v; draw(); });
+          function draw() {
+            const t = S.t;
+            out.innerHTML = `<table><tr><th></th><th>Brier (ticket này)</th><th>Log loss (ticket này)</th><th>Brier trung bình</th><th>Log loss trung bình</th></tr>
+<tr><td>Calibrate (0.52 / 0.41 / …)</td><td class="mono">${brier(cal, t).toFixed(3)}</td><td class="mono">${logl(cal, t).toFixed(2)}</td><td class="mono ok">${exp(cal, brier).toFixed(3)}</td><td class="mono ok">${exp(cal, logl).toFixed(2)}</td></tr>
+<tr><td>Tự tin thái quá (0.95 / 0.03 / …)</td><td class="mono">${brier(over, t).toFixed(3)}</td><td class="mono">${logl(over, t).toFixed(2)}</td><td class="mono bad">${exp(over, brier).toFixed(3)}</td><td class="mono bad">${exp(over, logl).toFixed(2)}</td></tr></table>`;
+            cap.innerHTML = t === 0 ? 'Khi model tự tin đoán trúng, nó được điểm tốt hơn trên ticket này. Nhưng nhìn cột trung bình: trên nhiều ticket, model calibrate thắng.' : `<span class="bad">Đáp án là ${names[t]}: model tự tin thái quá bị phạt nặng</span> (log loss ${logl(over, t).toFixed(2)}). Loss trung bình là thứ huấn luyện tối ưu, nên model bị đẩy về phía nói đúng độ bất định thật.`;
+          }
+          box.append(el('div', { class: 'row' }, [st.node]), out, cap, el('div', { class: 'cap', text: 'Phân phối là ví dụ dựng sẵn. Công thức Brier và log loss là chuẩn; README không công bố trọng số các loss của Clef.' }));
+          draw();
+        },
+        take: 'Loss đúng thưởng cho việc nói thật độ bất định. Đó là thứ biến điểm số của model thành con số đặt ngưỡng được.'
+      },
+      {
+        q: 'Dùng yes/no "Khách có bực không?" rồi so 0.81 với 0.92 để biết ai bực hơn được không?',
+        a: `<p>Không. README dùng ví dụ "Ứng viên có giỏi Python không?": người dùng Python hằng ngày hai năm được 0.81, người dùng tám năm được 0.92. Con số đó là <b>xác suất mệnh đề "giỏi" đúng</b>, không phải thang đo kinh nghiệm. Khoảng cách 0.11 giữa hai người không có nghĩa gì.</p>
+<p>Với ShopViet: "Khách có bực không?" cho 0.81 và 0.92 chỉ nói model khá chắc cả hai đều bực. Muốn biết bực đến mức nào, dùng <b>Score</b> với các mức mô tả tình huống cụ thể. Bấm "Score" ở phần 3 của hình chính.</p>
+<p>Một lưu ý khác của README về yes/no: viết sao cho giá trị cao nghĩa là "có". "Tin có chứa dữ liệu cá nhân không?" rõ; "Tin có sạch dữ liệu cá nhân không?" đảo nghĩa, và code đọc sau sẽ hiểu ngược.</p>`,
+        take: 'Yes/no đo độ chắc của một mệnh đề. Muốn đo mức, dùng Score.'
+      },
+      {
+        q: 'Score 1.0 có phải lúc nào cũng nghĩa là "mức giữa"?',
+        a: `<p>Không. <code>score</code> là trung bình có trọng số của số thứ tự mức: với xác suất (0, 0.57, 0.43), score = 0×0 + 1×0.57 + 2×0.43 = 1.43. Hai phân phối rất khác nhau có thể cùng score. Với ba mức, 1.0 có thể là toàn bộ xác suất ở mức 1, hoặc một nửa ở mức 0 và một nửa ở mức 2.</p>
+<p>Vì vậy Jev trả thêm <code>confidence</code>, tính theo khoảng cách giữa các mức (công thức đầy đủ ở README §1.5). Phần 3 của hình chính có ba nút ứng với ba hình trong README: (0, 1, 0) cho score 1.0 confidence 1.0; (0.5, 0, 0.5) cho score 1.0 confidence 0; (0, 0.5, 0.5) cho score 1.5 confidence 0.25.</p>
+<p>Còn một điều README nhấn mạnh: <b>mỗi mức được đánh giá riêng với state</b>. Model không thấy số thứ tự hay mức bên cạnh, nên mô tả kiểu "nặng hơn mức trước" vô nghĩa với nó. Docs Jev cho thấy: cùng báo cáo "nút export lệch vài pixel", ba mức có mô tả tình huống cho score 0.0 confidence 1.0; ba mức chỉ ghi số thì xác suất chia giữa mức 0 và 1.</p>`,
+        take: 'Luôn đọc probabilities và confidence cùng với score. Mô tả mỗi mức bằng một tình huống tự đứng được.'
+      },
+      {
+        q: 'Choice luôn chọn một option. Thứ tự option có ảnh hưởng không?',
+        a: `<p>Có thể. Trang "model jaggedness" của TypeSafe mà README dẫn ghi: có trường hợp model nghiêng về option đứng đầu. Cách xử lý: khi eval, đảo thứ tự option và kiểm tra đáp án có giữ nguyên không; nếu vẫn lệch, ngẫu nhiên hoá thứ tự và lấy trung bình.</p>
+<p>Điều này cũng giải thích vì sao Cloudflare huấn luyện Clef trên dữ liệu <b>hoán vị thứ tự field, prompt và schema</b>: để model học rằng thứ tự không mang nghĩa.</p>
+<p>Và vì Choice luôn chọn, một tin không thuộc option nào vẫn nhận xác suất cao cho option gần nhất. README ví dụ: tin về chiếc đèn bàn, ba option bàn, ghế, tay đỡ màn hình, model chọn "bàn" 0.96. Lab 0 đã cho thấy cách sửa: companion yes/no.</p>`,
+        take: 'Đưa việc đảo thứ tự option vào bộ eval. Một đáp án đổi khi chỉ đổi thứ tự là đáp án chưa đáng tin.'
+      },
+      {
+        q: 'Box trả bốn cạnh dạng tỉ lệ. ShopViet dùng vào việc gì, có lên production được chưa?',
+        a: `<p>Ví dụ: khách gửi ảnh hộp tai nghe, cần biết tem bảo hành nằm đâu để cắt vùng đó ra kiểm tra. Box trả <code>top</code>, <code>bottom</code>, <code>left</code>, <code>right</code>, mỗi cạnh là tỉ lệ 0–1 của chiều cao hoặc rộng ảnh. Code nhân với kích thước ảnh để ra pixel. Phần 3 của hình chính làm phép nhân đó.</p>
+<p>README ghi ba điều cần biết:</p>
+<ul><li>Chỉ Jev 1.14 có Box. OpenAI Decisions API không có.</li>
+<li>Ảnh và Box đang ở trạng thái "dreamer-ready": TypeSafe ghi rõ chưa đủ chuẩn production, format và kết quả có thể đổi giữa các bản. Mọi request có ảnh phải gửi header <code>TypeSafe-Danger-Zone-Images: true</code>; ảnh PNG hoặc JPEG, mỗi cạnh 280–1568 px.</li>
+<li>Giống Choice, <b>Box luôn trả một vị trí</b>, kể cả khi ảnh không có tem. Cần kèm câu yes/no "trong ảnh có tem bảo hành không".</li></ul>`,
+        take: 'Box hợp để thử nghiệm, chưa hợp cho luồng tự động. Luôn đi kèm câu yes/no hỏi vật có trong ảnh không.'
+      }
+    ],
+    poc: {
+      goal: "<b>Không gọi model nào.</b> Logit, xác suất token và cột \"Head chấm cả option\" là <b>số viết tay</b>, không phải output của LLM hay decision model thật. Phần thật: tokenizer thật (tiktoken) tách tên option, và mọi phép tính (softmax, nhân xác suất, công thức confidence của README). Kết quả chính: tokenizer thật cho doi_tra và doi_dia_chi cùng token đầu <code>doi</code>, và nhân xác suất từng token phạt option có tên dài hơn.",
+      file: "docs/decision-models/pocs/02_prefill_scoring.py",
+      run: "uv run docs/decision-models/pocs/02_prefill_scoring.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí. Lần chạy đầu <code>tiktoken</code> tải file từ vựng vài MB.",
+      output: "\n== 1. Softmax trên điểm (logit) của 5 option, tin 'Tai nghe Pro X đơn SV-4821 bị rè, muốn đổi'\nOption      Logit (giả định)  Xác suất\n----------  ----------------  --------\ndoi_tra     +4.00             0.860\nbao_hanh    +1.94             0.110\nvan_chuyen  -0.45             0.010\nthanh_toan  -0.45             0.010\ntu_van      -0.45             0.010\nTổng = 1.000; p_max = 0.860; confidence (n=5) = 0.825\n\n== 2. Tokenizer thật (tiktoken): option nào chung token đầu?\nTokenizer    Option       Các token                   Số token\n-----------  -----------  --------------------------  --------\no200k_base   doi_tra      doi | _ | tra               3\no200k_base   doi_dia_chi  doi | _d | ia | _ch | i     5\no200k_base   bao_hanh     bao | _h | anh              3\no200k_base   van_chuyen   van | _ch | uyen            3\no200k_base   thanh_toan   th | anh | _to | an         4\no200k_base   đổi trả      đ | ổi |  trả               3\no200k_base   đổi địa chỉ  đ | ổi |  địa |  chỉ        4\ncl100k_base  doi_tra      doi | _tra                  2\ncl100k_base  doi_dia_chi  doi | _d | ia | _chi        4\ncl100k_base  bao_hanh     bao | _h | anh              3\ncl100k_base  van_chuyen   van | _ch | uyen            3\ncl100k_base  thanh_toan   th | anh | _to | an         4\ncl100k_base  đổi trả      đ | ổi |  tr | ả            4\ncl100k_base  đổi địa chỉ  đ | ổi |  đ | ị | a |  chỉ  6\n\n== 3. 'Decision model nghèo': đọc logprob của LLM, tin 'Cho mình đổi địa chỉ giao đơn SV-5120 sang Quận 3 nhé'\nGiả định: logit token đầu {'doi': 3.0, 'bao': -2.0, 'van': 1.2, 'th': -2.0}; sau 'doi' rẽ nhánh {'doi_tra': 0.45, 'doi_dia_chi': 0.55};\nmỗi token tiếp theo có xác suất 0.9. Tách token là thật (o200k_base).\nOption       Token  P(token đầu)  Tích cả chuỗi  Chuẩn hoá  Head chấm cả option (giả định)\n-----------  -----  ------------  -------------  ---------  ------------------------------\ndoi_tra      3      0.848         0.3436         0.426      0.06\ndoi_dia_chi  5      0.848         0.3401         0.422      0.81\nbao_hanh     3      0.006         0.0046         0.006      0.01\nvan_chuyen   3      0.140         0.1136         0.141      0.11\nthanh_toan   4      0.006         0.0042         0.005      0.01\nChỉ token đầu: 'doi_tra' và 'doi_dia_chi' cùng 0.848, không phân biệt được.\nTích chuỗi chọn 'doi_tra': doi_dia_chi dài hơn 2 token nên bị nhân thêm 0.9^2 = 0.81 dù nhánh của nó cao hơn.\n\n== 4. Công thức README tính lại (thật)\nCa                                      Tính ra                 README ghi\n--------------------------------------  ----------------------  ---------------------\nChoice, README §1.2 (0.04, 0.35, 0.61)  0.415                   0.42\nChoice, OpenAI §2.4 p_max 0.95, n=4     0.933                   0.93\nChoice, resolution refund 0.40, n=4     0.200                   0.20\nChoice n=2, p_max 0.75                  0.500                   0.5\nChoice n=3, p_max 0.67                  0.505                   0.5\nChoice n=10, p_max 0.55                 0.500                   0.5\nScore (0, 0.57, 0.43)                   score 1.43, conf 0.355  score 1.43, conf 0.35\nScore (0, 1, 0)                         score 1.00, conf 1.000  1.0 / 1.0\nScore (0.5, 0, 0.5)                     score 1.00, conf 0.000  1.0 / 0\nScore (0, 0.5, 0.5)                     score 1.50, conf 0.250  1.5 / 0.25\nScore (0, 0, 0.5, 0.5, 0)               score 2.50, conf 0.583  2.5 / 'khá cao'\nYes/no p=0.99                           |2p-1| = 0.98           -\nYes/no p=0.84                           |2p-1| = 0.68           -\nYes/no p=0.4                            |2p-1| = 0.20           -\nYes/no p=0.07                           |2p-1| = 0.86           -\nBox {'top': 0.12, 'bottom': 0.18, 'left': 0.55, 'right': 0.91} trên ảnh 1568x1176 → pixel (x1,y1,x2,y2) = (862, 141, 1427, 212) (box giả định; chỉ là phép nhân tỉ lệ)\n\nRút ra: tokenizer thật tách 'doi_tra' và 'doi_dia_chi' cùng token đầu 'doi', nên đọc logprob token đầu không tách được;\ntích chuỗi lại phạt option nhiều token. Head chấm cả option (cách README mô tả Clef) tránh cả hai; công thức confidence khớp README.",
+      measured: true,
+      read: ["Bảng tokenizer (đo thật): <code>doi_tra</code> và <code>doi_dia_chi</code> cùng token đầu <code>doi</code> ở cả o200k và cl100k; tiếng Việt có dấu \"đổi trả\" / \"đổi địa chỉ\" chung tới hai token đầu.", "Bảng logprob (số giả định, phép tính thật): chỉ token đầu thì hai option cùng 0.848; tích cả chuỗi phạt <code>doi_dia_chi</code> vì dài hơn 2 token (thêm 0.9² = 0.81), nên chọn sai dù nhánh của nó cao hơn. Cột head 0.81 là số viết tay để minh hoạ cách chấm một điểm mỗi option, không phải đo được decision model đúng.", "Bảng công thức: confidence 0.415, 0.933, 0.200 khớp ví dụ trong README; Score (0, 0.57, 0.43) ra 0.355, README làm tròn thành 0.35.", "Score (0, 0, 0.5, 0.5, 0): score 2.5 với confidence 0.583, đúng ca README cảnh báo: confidence khá cao mà quyết định 50/50."]
+    },
+    mount(stage) {
+      const z = BASE_LOGITS.slice();
+      const sA = el('div'), tblA = el('div', { class: 'tbl sum', style: 'border:0;margin:8px 0 0;padding:0' }), statA = el('div', { class: 'stat' }), flagA = el('div');
+      let lastProbs = null, shifted = false;
+      const sliders = OPTS.map((o, i) => slider(o, -4, 8, 0.01, z[i], (v) => { z[i] = v; shifted = false; drawA(); }, (v) => v.toFixed(2)));
+      const setAll = () => sliders.forEach((s, i) => { s.input.value = z[i]; s.node.lastChild.textContent = z[i].toFixed(2); });
+      const bShift = el('button', { text: 'Cộng 3 vào mọi logit', onclick: () => { lastProbs = softmax(z); for (let i = 0; i < z.length; i++) z[i] = Math.min(8, z[i] + 3); shifted = true; setAll(); drawA(); } });
+      const bTie = el('button', { text: 'Cho bao_hanh bằng doi_tra', onclick: () => { z[1] = z[0]; shifted = false; setAll(); drawA(); } });
+      const bReset = el('button', { text: 'Về 0.86 / 0.11', onclick: () => { BASE_LOGITS.forEach((v, i) => { z[i] = v; }); shifted = false; setAll(); drawA(); } });
+      function drawA() {
+        const m = Math.max(...z), e = z.map((x) => Math.exp(x - m)), s = e.reduce((a, b) => a + b, 0), p = e.map((x) => x / s);
+        const order = p.map((x, i) => [x, i]).sort((a, b) => b[0] - a[0]), top = order[0], sec = order[1];
+        tblA.innerHTML = '<table><tr><th>Option</th><th>Logit z</th><th>e<sup>z − max</sup></th><th>p = e / tổng</th><th></th></tr>' + OPTS.map((o, i) => `<tr class="${i === top[1] ? 'cur' : ''}"><td class="mono">${o}</td><td class="mono">${z[i].toFixed(2)}</td><td class="mono">${e[i].toFixed(4)}</td><td class="mono"><b>${p[i].toFixed(3)}</b></td><td style="width:40%"><div style="height:10px;border-radius:3px;background:var(--accent);width:${(p[i] * 100).toFixed(1)}%"></div></td></tr>`).join('') + `<tr><td colspan="2">Tổng</td><td class="mono">${s.toFixed(4)}</td><td class="mono">${p.reduce((a, b) => a + b, 0).toFixed(3)}</td><td></td></tr></table>`;
+        statA.innerHTML = `<span>choice: <b>${OPTS[top[1]]}</b></span><span>confidence = (p<sub>max</sub> − 1/5)/(1 − 1/5) = <b>${choiceConf(top[0], 5).toFixed(2)}</b></span><span>p<sub>max</sub>/p<sub>second</sub> = <b>${(top[0] / sec[0]).toFixed(2)}</b> = e<sup>${(z[top[1]] - z[sec[1]]).toFixed(2)}</sup></span>`;
+        const f = [];
+        if (shifted && lastProbs) {
+          const diff = Math.max(...p.map((x, i) => Math.abs(x - lastProbs[i])));
+          f.push(note(diff < 1e-6 ? 'var(--ok)' : 'var(--warn)', diff < 1e-6 ? '<b>Mọi logit tăng 3 mà xác suất không đổi một chữ số nào.</b> Softmax chỉ nhìn hiệu số giữa các logit; cộng cùng một số vào tất cả thì e<sup>3</sup> xuất hiện ở cả tử và mẫu rồi triệt tiêu. Không có nghĩa logit vô nghĩa: hiệu số giữa chúng chính là thứ quyết định. <br>Trong hệ thống thật: đừng so logit thô giữa hai request khác nhau; so xác suất.' : '<b>Xác suất đổi một chút vì một logit đã chạm trần 8 của thanh trượt.</b> Khi không bị chặn, cộng cùng một số vào mọi logit không làm đổi xác suất.'));
+        }
+        if (top[0] - sec[0] < 0.02) f.push(note('var(--warn)', `<b>Hai option hoà nhau: ${OPTS[top[1]]} và ${OPTS[sec[1]]} cùng khoảng ${top[0].toFixed(2)}.</b> Choice vẫn trả một option (cái được xếp trước), nhưng confidence chỉ ${choiceConf(top[0], 5).toFixed(2)}. <br>Trong hệ thống thật: ngưỡng trên xác suất của option được chọn sẽ đưa ca này vào vùng thận trọng.`));
+        flagA.replaceChildren(...f);
+      }
+
+      const S = { t: 'swap' };
+      const tB = { first: {}, tra: 0, chi: 0 };
+      const tickB = el('div', { class: 'row' }), msgB = el('div', { style: 'background:var(--accent-soft);border-radius:6px;padding:8px 12px;font-size:14px;margin-bottom:10px' });
+      const ctlB = el('div', { class: 'row' }), colsB = el('div', { class: 'cols' }), flagB = el('div');
+      function loadB() {
+        const c = SHARE[S.t]; tB.first = Object.assign({}, c.first); tB.tra = c.tra; tB.chi = c.chi;
+        ctlB.replaceChildren(...Object.keys(tB.first).map((k) => slider('logit "' + k + '"', -4, 6, 0.1, tB.first[k], (v) => { tB.first[k] = v; drawB(); }, (v) => v.toFixed(1)).node),
+          slider('P("_tra" | "doi")', 0.01, 0.99, 0.01, tB.tra, (v) => { tB.tra = v; drawB(); }, (v) => v.toFixed(2)).node,
+          slider('P("_chi" | "doi _dia")', 0.05, 1, 0.01, tB.chi, (v) => { tB.chi = v; drawB(); }, (v) => v.toFixed(2)).node);
+        drawB();
+      }
+      function drawB() {
+        const c = SHARE[S.t];
+        tickB.replaceChildren(...Object.keys(SHARE).map((k) => el('button', { class: k === S.t ? 'on' : '', text: k === 'swap' ? 'Ticket muốn đổi tai nghe' : 'Ticket muốn đổi địa chỉ', onclick: () => { S.t = k; loadB(); } })));
+        msgB.innerHTML = `<b>Tin:</b> ${esc(c.msg)} <span class="hint">(đáp án đúng: <b class="mono">${c.want}</b>)</span>`;
+        const fk = Object.keys(tB.first), fp = softmax(fk.map((k) => tB.first[k])), P1 = Object.fromEntries(fk.map((k, i) => [k, fp[i]]));
+        const cond = { _tra: tB.tra, _dia: 1 - tB.tra, _chi: tB.chi, _hanh: 0.98, _chuyen: 0.98, _toan: 0.98 };
+        const firstOnly = norm(SOPTS.map(([, t]) => P1[t[0]]));
+        const seqRaw = SOPTS.map(([, t]) => t.reduce((a, tok, i) => a * (i === 0 ? P1[tok] : cond[tok]), 1)), seq = norm(seqRaw);
+        const head = c.head;
+        const names = SOPTS.map((o) => o[0]);
+        const col = (title, sub, ps) => { const top = ps.indexOf(Math.max(...ps)); return el('div', {}, [el('h4', { html: title + ' <small>' + sub + '</small>' }), hbars(names.map((n, i) => [n, ps[i], i === top]), { max: 1, fmt: (v) => v.toFixed(2) })]); };
+        colsB.replaceChildren(
+          col('Chỉ token đầu', 'P(token đầu), chuẩn hoá', firstOnly),
+          col('Cả chuỗi token', 'tích P từng token', seq),
+          col('Một điểm mỗi option', 'decision model (số dựng sẵn)', head));
+        const toks = SOPTS.map(([n, t]) => `${n} = ${t.map((x) => '[' + x + ']').join('')}`).join('   ');
+        const f = [note('var(--line)', `<span class="mono" style="font-size:12px">${toks}</span><br><span class="hint">Lab tách gọn ở dấu gạch dưới để có ít thanh kéo. Tokenizer thật (POC, o200k) còn tách vụn hơn: doi_tra 3 token, doi_dia_chi 5 token, vẫn chung token đầu "doi". Chênh 2 token thay vì 1 nên ở hệ thật option dài bị phạt nặng hơn trong hình. Token khác của các option khác lấy P = 0.98 cố định.</span>`)];
+        f.push(note('var(--warn)', `<b>Chỉ đọc token đầu: doi_tra và doi_dia_chi cùng ${firstOnly[0].toFixed(2)}.</b> Cả hai bắt đầu bằng "doi", nên token đầu không chứa thông tin nào để tách chúng. Không có nghĩa LLM không hiểu tin: nó chưa được hỏi tới token thứ hai. <br>Trong hệ thống thật: cách "decision model nghèo" này chỉ chạy được khi mọi option có token đầu khác nhau, ví dụ đánh nhãn A, B, C.`));
+        const want = names.indexOf(c.want), seqTop = seq.indexOf(Math.max(...seq));
+        if (seqTop !== want) f.push(note('var(--bad)', `<b>Nhân cả chuỗi chọn sai: ${names[seqTop]} ${seq[seqTop].toFixed(2)}, trong khi đáp án là ${c.want} ${seq[want].toFixed(2)}.</b> ${c.want === 'doi_dia_chi' ? 'doi_dia_chi có 3 token nên phải nhân thêm P("_chi") = ' + tB.chi.toFixed(2) + '. Mỗi token thêm là một thừa số nhỏ hơn 1, nên option dài bị phạt chỉ vì tên dài.' : 'Xác suất token thứ hai đang nghiêng về option kia.'} Không có nghĩa model sai về nghĩa: điểm của nó bị bóp méo bởi cách tách token. <br>Trong hệ thống thật: decision model chấm một điểm cho mỗi option qua routing head, nên độ dài tên option không ảnh hưởng.`));
+        else if (c.want === 'doi_dia_chi') f.push(note('var(--ok)', `Nhân cả chuỗi đang chọn đúng doi_dia_chi. Kéo P("_chi" | "doi _dia") xuống thấp để thấy option dài bị phạt đến mức nào thì đổi kết quả.`));
+        flagB.replaceChildren(...f);
+      }
+
+      const types = [['noul', 'Yes/no'], ['choice', 'Choice'], ['score', 'Score'], ['box', 'Box']];
+      const T = { k: 'noul', np: 0.88, sp: [0.0, 0.57, 0.43], bx: { top: 0.62, bottom: 0.78, left: 0.55, right: 0.80 } };
+      const tBtns = el('div', { class: 'row' }), tBody = el('div');
+      function drawT() {
+        tBtns.replaceChildren(...types.map(([k, n]) => el('button', { class: k === T.k ? 'on' : '', text: n, onclick: () => { T.k = k; drawT(); } })));
+        const kids = [];
+        if (T.k === 'noul') {
+          const out = el('div', { class: 'stat' }), cap = el('div'), resPre = pre('');
+          const s = slider('noul', 0, 1, 0.01, T.np, (v) => { T.np = v; upd(); }, (v) => v.toFixed(2));
+          const upd = () => { const p = T.np, z = p >= 0.7 ? ['ok', 'có: gắn cờ hoàn tiền, chờ xác nhận'] : p < 0.3 ? ['', 'không'] : ['bad', 'vùng giữa: hỏi lại khách']; resPre.textContent = JSON.stringify({ refund_requested: { type: 'noul', noul: +p.toFixed(2) } }, null, 1); out.innerHTML = `<span>Vùng (0.3 / 0.7): <b class="${z[0]}">${z[1]}</b></span><span>|2p − 1| = <b>${Math.abs(2 * p - 1).toFixed(2)}</b> (số cùng thang với confidence)</span>`; cap.replaceChildren(...(Math.abs(p - 0.5) < 0.1 ? [note('var(--warn)', '<b>Xác suất quanh 0.5.</b> README: lơ lửng quanh 0.5 trên nhiều input thường do câu hỏi chứa hai điều kiện hoặc ranh giới mơ hồ. Không có nghĩa model hỏng. <br>Trong hệ thống thật: tách câu; thêm criteria true/false.')] : [])); };
+          kids.push(el('div', { class: 'cols' }, [pre(JSON.stringify({ refund_requested: { type: 'noul', instructions: 'Khách có yêu cầu rõ ràng được hoàn tiền không?', criteria: { true: 'Ví dụ: Hoàn tiền cho mình', false: 'Phàn nàn bị trừ tiền nhưng không nói muốn gì' } } }, null, 1)), resPre]), el('div', { class: 'row' }, [s.node]), out, cap);
+          upd();
+        } else if (T.k === 'choice') {
+          const p = softmax(z), top = p.indexOf(Math.max(...p));
+          kids.push(el('div', { class: 'cols' }, [pre(JSON.stringify({ intent: { type: 'choice', instructions: 'Khách đang cần đội nào xử lý `ticket.message`?', criteria: { doi_tra: '...', bao_hanh: '...', van_chuyen: '...', thanh_toan: '...', tu_van: '...' } } }, null, 1)),
+            pre(JSON.stringify({ intent: { type: 'choice', choice: OPTS[top], confidence: +choiceConf(p[top], 5).toFixed(2), probabilities: Object.fromEntries(OPTS.map((o, i) => [o, +p[i].toFixed(3)])) } }, null, 1))]),
+            el('p', { class: 'hint', text: 'Response lấy từ logit ở phần 1. Jev nhận tối đa 255 option; OpenAI dùng mảng choices có value và description. Choice luôn chọn một option, kể cả khi không option nào đúng.' }));
+        } else if (T.k === 'score') {
+          const levels = ['Bình tĩnh, chỉ nêu sự việc', 'Bực nhưng vẫn lịch sự', 'Rất giận, doạ bỏ đi hoặc đăng lên mạng'];
+          const out = el('div'), stat = el('div', { class: 'stat' }), cap = el('div');
+          const raw = T.sp.slice();
+          const ss = levels.map((_, i) => slider('mức ' + i, 0, 1, 0.01, raw[i], (v) => { raw[i] = v; upd(); }, (v) => v.toFixed(2)));
+          const preset = (v) => el('button', { text: '(' + v.join(', ') + ')', onclick: () => { v.forEach((x, i) => { raw[i] = x; ss[i].input.value = x; ss[i].node.lastChild.textContent = x.toFixed(2); }); upd(); } });
+          const upd = () => {
+            const p = norm(raw); T.sp = raw.slice(); const r = scoreStats(p);
+            out.replaceChildren(hbars(levels.map((l, i) => [i + ': ' + l, p[i], i === r.m]), { max: 1, fmt: (v) => v.toFixed(2) }));
+            stat.innerHTML = `<span>score = Σ i·p<sub>i</sub> = <b>${r.score.toFixed(2)}</b></span><span>spread = <b>${r.spread.toFixed(2)}</b>, MAD<sub>unif</sub> = <b>${r.mad.toFixed(3)}</b></span><span>confidence = max(0, 1 − spread/MAD) = <b>${r.conf.toFixed(2)}</b></span><span>P(mức ≥ 2) = <b>${p[2].toFixed(2)}</b></span>`;
+            const msgs = [];
+            if (Math.abs(r.score - 1) < 0.05 && r.conf < 0.2) msgs.push(note('var(--bad)', '<b>Score khoảng 1.0 nhưng confidence gần 0.</b> Xác suất dồn ở hai đầu thang: hoặc rất bình tĩnh, hoặc rất giận. Score là trung bình nên rơi vào "bực nhưng lịch sự", mức không ai chọn. Không có nghĩa khách bực vừa phải. <br>Trong hệ thống thật: kiểm tra confidence trước rồi mới rẽ nhánh theo score.'));
+            if (p[2] > 0.35 && p[2] < 0.65 && r.conf >= 0.2) msgs.push(note('var(--warn)', `<b>Confidence ${r.conf.toFixed(2)} trông ổn, nhưng P(mức 2) = ${p[2].toFixed(2)}.</b> Phân phối chia giữa hai mức kề nhau nên confidence không thấp, nhưng nếu code "từ mức 2 thì gọi trưởng ca" thì đây thực chất là gần 50/50. <br>Trong hệ thống thật: với ranh giới quan trọng, cộng xác suất các mức ở phía đó thay vì dùng score.`));
+            cap.replaceChildren(...msgs);
+          };
+          kids.push(el('div', { class: 'row' }, ss.map((s) => s.node)), el('div', { class: 'row' }, [el('span', { class: 'hint', style: 'margin:0', text: 'Ba hình trong README:' }), preset([0, 1, 0]), preset([0.5, 0, 0.5]), preset([0, 0.5, 0.5])]), out, stat, cap,
+            el('p', { class: 'hint', text: 'Thanh trượt nhập trọng số thô, trình duyệt chuẩn hoá về tổng 1. Công thức confidence là công thức Jev công bố (README §1.5).' }));
+          upd();
+        } else {
+          const W = 1200, H = 800, sv = el('div'), stat = el('div', { class: 'stat' }), cap = el('div'), resPre = pre('');
+          const keys = ['top', 'bottom', 'left', 'right'];
+          const ss = keys.map((k) => slider(k, 0, 1, 0.01, T.bx[k], (v) => { T.bx[k] = v; upd(); }, (v) => v.toFixed(2)));
+          const upd = () => {
+            resPre.textContent = JSON.stringify({ warranty_seal: Object.assign({ type: 'box' }, T.bx, { confidence: 0.7 }) }, null, 1);
+            const b = T.bx, x = b.left * W, y = b.top * H, w = (b.right - b.left) * W, h = (b.bottom - b.top) * H, bad = w <= 0 || h <= 0;
+            sv.replaceChildren(el('svg', { class: 'canvas', viewBox: '0 0 600 400', role: 'img', 'aria-label': 'Vùng box trên ảnh' }, [
+              el('rect', { x: 1, y: 1, width: 598, height: 398, rx: 6, fill: 'var(--bg)', stroke: 'var(--line)' }),
+              el('rect', { x: 120, y: 80, width: 360, height: 260, rx: 10, fill: 'var(--panel)', stroke: 'var(--dim)' }),
+              el('text', { x: 140, y: 110, class: 'mute', text: 'Hộp tai nghe Pro X (ảnh minh hoạ)' }),
+              el('rect', { x: Math.min(b.left, b.right) * 600, y: Math.min(b.top, b.bottom) * 400, width: Math.abs(w) / 2, height: Math.abs(h) / 2, fill: 'none', stroke: bad ? 'var(--bad)' : 'var(--accent)', 'stroke-width': 3, 'stroke-dasharray': bad ? '6 4' : '' })]));
+            stat.innerHTML = `<span>Ảnh ${W}×${H} px (giả định)</span><span>x = left×W = <b>${Math.round(x)}</b></span><span>y = top×H = <b>${Math.round(y)}</b></span><span>rộng = <b>${Math.round(w)}</b>, cao = <b>${Math.round(h)}</b> px</span>`;
+            cap.replaceChildren(...(bad ? [note('var(--bad)', '<b>top ≥ bottom hoặc left ≥ right: vùng rỗng.</b> Code cắt ảnh sẽ ra kích thước âm hoặc 0. <br>Trong hệ thống thật: kiểm tra bốn cạnh trước khi dùng; và luôn kèm câu yes/no "trong ảnh có tem bảo hành không" vì Box luôn trả một vị trí.')] : []));
+          };
+          kids.push(el('div', { class: 'cols' }, [pre(JSON.stringify({ warranty_seal: { type: 'box', instructions: 'Tem bảo hành nằm ở đâu trong ảnh?' }, seal_present: { type: 'noul', instructions: 'Trong ảnh có tem bảo hành không?' } }, null, 1)), resPre]),
+            el('div', { class: 'row' }, ss.map((s) => s.node)), sv, stat, cap,
+            el('p', { class: 'hint', text: 'Chỉ Jev 1.14. Cần header TypeSafe-Danger-Zone-Images: true. TypeSafe ghi ảnh và Box chưa đủ chuẩn production. Confidence 0.7 là số dựng sẵn.' }));
+          upd();
+        }
+        tBody.replaceChildren(...kids);
+      }
+
+      stage.append(
+        el('h4', { text: '1. Softmax: từ điểm từng option ra xác suất', style: 'margin:0 0 6px' }),
+        el('div', { class: 'hint', style: 'margin:0 0 8px', html: `Ticket: <i>${esc(MSG)}</i>. Sau một lượt prefill, mỗi option nhận một logit.` }),
+        el('div', { class: 'row' }, sliders.map((s) => s.node)), el('div', { class: 'row' }, [bShift, bTie, bReset]), tblA, el('p', { class: 'hint', text: 'Cột e^(z − max): trừ logit lớn nhất trước khi lấy e mũ chỉ để số không tràn; vì chỉ hiệu số quan trọng nên xác suất ra y hệt.' }), statA, flagA,
+        el('h4', { text: '2. Khi option chung token đầu', style: 'margin:22px 0 6px' }),
+        el('div', { class: 'hint', style: 'margin:0 0 8px', text: 'Danh sách đội thêm doi_dia_chi (đổi địa chỉ giao hàng). LLM thường chỉ cho xác suất của token kế tiếp, nên muốn chấm một option phải đi qua từng token của tên nó (deep dive 4). Decision model chấm mỗi option một điểm. Hai cột đầu tính từ các thanh bạn kéo; cột thứ ba là số dựng sẵn.' }),
+        tickB, msgB, ctlB, colsB, flagB,
+        el('h4', { text: '3. Bốn loại câu hỏi', style: 'margin:22px 0 6px' }), tBtns, tBody,
+        el('p', { class: 'hint', text: 'Logit, xác suất token và các phân phối là số dựng sẵn để minh hoạ. Công thức softmax, score và confidence là công thức thật (confidence theo Jev, README §1.5).' }));
+      drawA(); loadB(); drawT();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

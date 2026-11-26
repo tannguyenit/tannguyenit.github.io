@@ -1,0 +1,739 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Models Lab 05</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-limits-vs-alternatives.html">← Lab trước</a><a href="06-applications-routing-guardrails.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/decision-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const pc = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  const tok = (s) => Math.ceil(s.length / 4);
+  function flag(kind, html) {
+    return el('div', { style: `border-left:3px solid var(--${kind});background:var(--bg);border-radius:6px;padding:8px 12px;margin-top:10px;font-size:13.5px`, html });
+  }
+  function tableBox(html) { return el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }, [el('table', { html })]); }
+  const pre = (text) => el('pre', { class: 'mono', style: 'background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.45;overflow:auto;max-height:340px;margin:6px 0 0', text });
+  const CARDS = {
+    jev: ['TypeSafe Jev', 'Họ Jev', [
+      ['Model', '<code>jev-1.14.0</code>, <code>jev-1.13.0</code>; alias <code>jev-latest</code> (stable mới nhất, mặc định của SDK), <code>jev-preview</code>'],
+      ['Endpoint', '<code>POST https://api.typesafe.ai/v1/systemone</code>'],
+      ['Giá', '$0.042 / 1M token input ($42 / 1B); output miễn phí'],
+      ['Context', '64k / request, 32k / câu hỏi; 262k khi gửi header <code>TypeSafe-Danger-Zone-Long-Context: true</code> (cùng giá, chậm hơn, kém chính xác hơn)'],
+      ['Số câu hỏi', 'Không giới hạn số lượng, chỉ giới hạn context'],
+      ['Loại câu hỏi', 'Choice, Score, Noul; Box chỉ có ở 1.14'],
+      ['Input', 'Text, JSON, mảng; ảnh PNG/JPEG cần header <code>TypeSafe-Danger-Zone-Images: true</code> (chưa đủ chuẩn production)'],
+      ['Giới hạn request', 'Body tối đa 32 MiB; gzip hoặc zstd; lồng tối đa 64 tầng; số lớn và ID gửi dạng chuỗi'],
+      ['Weights, tuỳ biến', 'Đóng. Không fine-tune, không LoRA; tuỳ biến qua state, instructions, criteria'],
+      ['Dữ liệu', 'Không huấn luyện trên request/response của khách; enterprise có zero data retention'],
+      ['SDK', '<code>pip install typesafe-sdk</code>, <code>npm install @typesafe-ai/sdk</code>; tự retry 429 (rate limit) và 529 (quá tải) theo <code>retry-after</code>']]],
+    clef: ['Cloudflare Clef', 'Họ Jev (tương thích hoàn toàn)', [
+      ['Model', '<code>@cf/cloudflare/clef</code> (backbone Qwen3.8-27B), <code>@cf/cloudflare/clef-flash</code> (Qwen3.5-9B), <code>@cf/cloudflare/clef-omni</code> (base Qwen3-Omni-30B-A3B)'],
+      ['Endpoint', '<code>https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/cloudflare/clef</code>'],
+      ['Giá input / 1M', '<code>clef</code> $0.24, <code>clef-flash</code> $0.038, <code>clef-omni</code> $0.15; output miễn phí. Tính bằng Neuron: 10.000 Neuron miễn phí mỗi ngày, vượt $0.011 / 1.000 Neuron; <code>clef</code> tốn 21.818 Neuron / 1M token'],
+      ['Context', '65.536 (<code>clef</code>), 24.576 (<code>clef-flash</code>), 64.000 (<code>clef-omni</code>)'],
+      ['Số câu hỏi', 'Tối đa 64 mỗi request'],
+      ['Input', 'Text, ảnh qua field <code>images</code> (tối đa 4, không nhận URL từ xa); <code>clef-omni</code> thêm audio (tối đa 4 clip), video (tối đa 2)'],
+      ['Weights', 'Mở, Apache 2.0, trên Hugging Face: <code>Cloudflare/clef</code>, <code>Cloudflare/clef-flash</code>, <code>Cloudflare/clef-omni</code>'],
+      ['Fine-tune', 'Có, qua đội forward-deployed engineer, sau sẽ thành nền tảng tự phục vụ'],
+      ['Chưa xác minh', 'Response có bọc trong <code>result</code> như các model Workers AI khác hay trả thẳng <code>answers</code>']]],
+    openai: ['OpenAI Decisions API', 'Phương ngữ OpenAI', [
+      ['Model', '<code>gpt-6-luna</code> (duy nhất); general availability tính đến 11/2026'],
+      ['Endpoint', '<code>POST /v1/decisions</code>; SDK <code>client.decisions.create(...)</code> (Python, JavaScript, Go, Java, Ruby)'],
+      ['Giá', '$0.10 / 1M token input chưa cache; cache theo giá prompt caching chuẩn của <code>gpt-6-luna</code>; output không tính phí'],
+      ['Số câu hỏi', '1–400 mỗi request (tăng từ 200 lúc beta); Score 2–10 mức'],
+      ['Loại câu hỏi', '<code>predicate</code>, <code>choice</code>, <code>score</code>; không có Box. Có loại đáp án <code>refusal</code>'],
+      ['Input', 'Chuỗi, hoặc mảng message, function call, custom tool call và output. Ảnh base64 hoặc URL HTTP/HTTPS công khai; không nhận <code>file_id</code>, file, audio'],
+      ['Prompt caching', 'Breakpoint ngầm ở cuối <code>input</code>, prefix từ 1.024 token; <code>questions</code> nằm ngoài prefix'],
+      ['Dữ liệu', 'ZDR (zero data retention: không lưu request) và HIPAA (chuẩn dữ liệu y tế Mỹ) cho khách đủ điều kiện; data residency; regional processing ở Mỹ và châu Âu'],
+      ['Theo dõi', '<code>GET /v1/organization/usage/decisions</code>; <code>num_model_requests</code> đếm request, không đếm câu hỏi']]],
+    ms: ['Microsoft-Decision-1', 'Họ Jev', [
+      ['Model', 'Post-train từ Qwen3.5-9B; bản sau sẽ chuyển sang nền MAI và model của OpenAI'],
+      ['Endpoint', 'Azure AI Foundry <code>POST &lt;resource&gt;/providers/microsoft/v1/systemone</code>, <code>model</code> là tên deployment; OpenRouter <code>microsoft/microsoft-decision-1</code> qua endpoint Decisions riêng'],
+      ['Giá', '$0.042 / 1M token input, output miễn phí'],
+      ['Context', '32.768 theo OpenRouter'],
+      ['Xác thực', 'Entra ID bearer token hoặc header <code>api-key</code>; deployment GlobalStandard hoặc DataZoneStandard'],
+      ['Weights', 'Không thấy công bố; license chưa xác minh'],
+      ['Hợp khi', 'Hạ tầng đã trên Azure, cần data zone hoặc Entra ID']]],
+    liquid: ['Liquid AI d1', 'Họ Jev', [
+      ['Model', '<code>d1.1</code> (mặc định), <code>d1-ultra</code>; <code>d1</code> cũ được OpenRouter ghi ngừng ngày 20/11/2026'],
+      ['Endpoint', '<code>https://api.liquid.ai/decisions/v1/systemone</code>; dùng client <code>typesafe_sdk</code> với base URL khác'],
+      ['Giá (OpenRouter)', '<code>d1</code>, <code>d1.1</code> $0.02 / 1M input; <code>d1-ultra</code> $0.042; chỉ tính phí input'],
+      ['Context', '<code>d1</code> 65.536 theo OpenRouter; docs Liquid không công bố'],
+      ['Input', 'Text và ảnh, tối đa 8 ảnh, body tối đa 4,5 MB'],
+      ['Weights mở', '<code>LiquidAI/d1-3B</code>: 3,12B tham số, nền LFM2.5-VL-3B, context 32.768, text và ảnh; <code>transformers &gt;= 5.14</code>, <code>trust_remote_code</code>, <code>model.system_one(...)</code>'],
+      ['License', 'Model card không ghi. LFM Open License v1.0 (miễn phí thương mại dưới 10 triệu USD doanh thu năm) áp cho d1-3B là suy luận, chưa xác minh']]],
+    local: ['Chạy local (Ollama, server riêng)', 'Họ Jev', [
+      ['Ollama', 'Hỗ trợ API kiểu Jev từ 0.35 (28/9/2026): <code>curl http://localhost:11434/v1/systemone</code>'],
+      ['Model trong thư viện Ollama', '<code>nimble</code> (Bespoke Nimble 9B, khoảng 9,5 GB), <code>tev1</code> (4B), <code>tev1:0.8b</code>. Theo blog ra mắt, Clef, Kev, Laya, Strands Decider không có; kiểm tra lại'],
+      ['Server riêng', 'Kev-9B <code>python -m kev.serve --run jaredpalmer/kev-9b</code>; Strands Decider <code>strands-decider serve</code>; Laya <code>laya-serve</code>; djev cần vLLM nhánh PR #57250'],
+      ['Client', '<code>typesafe-sdk</code> với <code>TYPESAFE_BASE_URL</code> trỏ về localhost'],
+      ['Lưu ý', 'Server local thường không có auth, không expose ra ngoài. Không có retry, cache, quan sát. Log model và revision weights']]]
+  };
+  const SPEC = { questions: [
+    { name: 'team', type: 'choice', instructions: 'Which ShopViet team should handle this ticket?', options: [['billing', 'Payments, invoices, refunds'], ['technical', 'Device faults, app errors, setup'], ['shipping', 'Delivery status and tracking'], ['returns', 'Exchanges and returns of products']] },
+    { name: 'urgent', type: 'yesno', instructions: 'Does the customer need this resolved today?' },
+    { name: 'impact', type: 'score', instructions: 'How much does this issue affect the customer?', levels: [['No impact', 'Customer can still use the product and the order normally'], ['Minor', 'Small inconvenience, a workaround exists'], ['Major', 'Cannot use the product or order, no workaround'], ['Critical', 'Money lost or safety risk']] }] };
+  const TICKETS = ['Đơn SV-40210 báo đang giao 5 ngày rồi mà chưa tới, mình cần gấp cho chuyến công tác mai.', 'Mình bị trừ tiền hai lần cho cùng một đơn tai nghe, kiểm tra giúp mình.', 'Sạc dự phòng mới mua bị phồng và nóng ran khi sạc.'];
+  function toJev(model, state, qs) {
+    const questions = {};
+    qs.forEach((q) => {
+      if (q.type === 'choice') questions[q.name] = { type: 'choice', instructions: q.instructions, criteria: Object.fromEntries(q.options) };
+      else if (q.type === 'yesno') questions[q.name] = { type: 'noul', instructions: q.instructions };
+      else questions[q.name] = { type: 'score', instructions: q.instructions, criteria: q.levels.map((l) => l[1]) };
+    });
+    return { model, state, questions };
+  }
+  function toOpenAI(state, qs) {
+    return { model: 'gpt-6-luna', input: state, questions: qs.map((q) => {
+      if (q.type === 'choice') return { type: 'choice', name: q.name, instructions: q.instructions, choices: q.options.map(([value, description]) => ({ value, description })) };
+      if (q.type === 'yesno') return { type: 'predicate', name: q.name, instructions: q.instructions };
+      return { type: 'score', name: q.name, instructions: q.instructions, levels: q.levels.map(([label, description]) => ({ label, description })) };
+    }) };
+  }
+  const JEVFAM = [
+    ['jev', 'TypeSafe Jev', 'POST https://api.typesafe.ai/v1/systemone', 'jev-1.14.0'],
+    ['clef', 'Cloudflare Clef', 'POST https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/cloudflare/clef', 'clef'],
+    ['ms', 'Microsoft (Azure AI Foundry)', 'POST <resource>/providers/microsoft/v1/systemone', '<tên deployment>'],
+    ['liquid', 'Liquid AI', 'POST https://api.liquid.ai/decisions/v1/systemone', 'd1.1'],
+    ['ollama', 'Ollama local', 'POST http://localhost:11434/v1/systemone', 'nimble']];
+  const FIT = [
+    ['jev-1.14.0', 64000, 32000, Infinity, 0.042],
+    ['clef', 65536, null, 64, 0.24],
+    ['clef-flash', 24576, null, 64, 0.038],
+    ['clef-omni', 64000, null, 64, 0.15],
+    ['gpt-6-luna', undefined, null, 400, 0.10],
+    ['microsoft-decision-1', 32768, null, undefined, 0.042],
+    ['d1.1 (Liquid)', undefined, null, undefined, 0.02],
+    ['d1-3B (tự chạy)', 32768, null, undefined, null]];
+  const BENCH = [['BFCL · case exact', [98.47, 98.76, 95.75, 96.52, 94.51, 38.13]], ['API-Bank · accuracy', [91.93, 93.11, 88.19, 83.66, 56.30, 11.41]], ['When2Call · accuracy', [72.37, 65.58, 80.97, 75.44, 49.62, 11.94]], ['BANKING77 · macro-F1', [94.20, 90.93, 79.74, 74.28, 84.83, 14.29]], ['CLINC150+OOS · macro-F1', [97.43, 66.77, 89.27, 83.49, 79.03, 3.19]], ['BRIGHT · nDCG@10', [45.91, 39.26, 47.52, 42.94, 38.53, 19.90]], ['PhishNChips · accuracy', [79.60, 75.05, 62.55, 85.35, 50.75, 50.15]], ['Median latency (ms)', [209.3, 38.8, 524.1, 84.4, 51.4, 5.8]], ['p95 latency (ms)', [238.6, 122.4, 536.0, 211.2, 187.9, 222.5]]];
+  const BM = ['Clef', 'Clef-flash', 'Jev', 'DiffusionGemma Jev', 'Kev 9B', 'Laya'];
+  return {
+    id: 'providers', nav: '5. Nhà cung cấp', ref: 'Phần 2',
+    title: 'Jev, Clef, OpenAI hay model tự chạy: đổi provider thì phải đổi những gì?',
+    hook: 'Chọn provider để xem thẻ thông tin. Bên dưới, cùng một ticket ShopViet được dựng thành request của hai phương ngữ, và bảng kiểm tra request đó có vừa giới hạn của từng model không.',
+    terms: [
+      ['Provider', 'Bên chạy model và bán API: TypeSafe (Jev), Cloudflare (Clef), OpenAI (Decisions API), Microsoft, Liquid AI. Hoặc chính bạn khi tự chạy.'],
+      ['Phương ngữ API', 'Cách đặt tên field. Họ Jev gọi nội dung là state và câu hỏi là object theo tên; OpenAI gọi là input và câu hỏi là mảng có field name.'],
+      ['Endpoint', 'Địa chỉ HTTP nhận request, ví dụ POST https://api.typesafe.ai/v1/systemone.'],
+      ['Alias', 'Tên trỏ tới một version, ví dụ jev-latest đang trỏ jev-1.14.0. Có thể đổi đích mà code không đổi.'],
+      ['Backbone, 27B, 9B', 'Backbone là LLM có sẵn làm nền rồi huấn luyện thêm thành decision model, ví dụ Clef xây trên Qwen3.8-27B. "27B" là 27 tỉ tham số (con số trong weights); càng lớn càng cần GPU nhiều bộ nhớ.'],
+      ['LoRA', 'Cách huấn luyện thêm chỉ một phần nhỏ tham số gắn lên model có sẵn, rẻ hơn huấn luyện lại toàn bộ. Kev-9B là LoRA trên Qwen3.5-9B.'],
+      ['Open-weight', 'Weights tải về được, ví dụ Cloudflare/clef trên Hugging Face theo Apache 2.0. Tự chạy được trên GPU của mình.'],
+      ['Token', 'Mẩu chữ model đọc và provider tính tiền. Tiếng Anh trung bình khoảng 4 ký tự một token; lab dùng ước lượng này, tiếng Việt có dấu thường tốn hơn.'],
+      ['Context', 'Số token tối đa model đọc trong một request. Ví dụ clef-flash 24.576 token: một state 30k token sẽ bị từ chối.'],
+      ['Neuron', 'Đơn vị tính tiền của Workers AI. clef tốn 21.818 Neuron cho mỗi 1M token input; 10.000 Neuron đầu mỗi ngày miễn phí.'],
+      ['Prompt caching', 'Provider lưu phần đầu input đã xử lý để lần sau đọc lại rẻ hơn. OpenAI Decisions yêu cầu prefix từ 1.024 token.'],
+      ['Adapter', 'Lớp code nhỏ đổi request và response giữa hai phương ngữ, để code định tuyến không phải biết đang gọi provider nào.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> chuyển ticket và kiểm duyệt bình luận bằng decision model. Đội kỹ thuật đang dùng Jev, sếp hỏi có nên chuyển sang Clef vì weights mở, hay OpenAI vì công ty đã có hợp đồng, hay tự chạy để dữ liệu khách không rời máy chủ.',
+      scenario: 'Mọi provider đều theo cùng một hợp đồng (state, câu hỏi, đáp án kèm xác suất), nhưng khác tên field, giới hạn context, số câu hỏi mỗi request, giá và cách xử lý dữ liệu. Một request chạy tốt trên Jev có thể bị clef-flash từ chối vì state quá dài, hoặc bị Clef từ chối vì quá 64 câu hỏi.',
+      ask: 'Mỗi provider có gì, khác nhau ở đâu, và chuyển giữa chúng phải sửa những gì trong code?',
+      solves: 'Đặt thông tin của từng provider cạnh nhau, dựng cùng một request ở hai phương ngữ để thấy adapter cần làm gì, và kiểm tra request theo giới hạn từng model trước khi gửi.',
+      read: ['Chọn provider: thẻ hiện model, endpoint, giá, context, giới hạn và lưu ý, lấy từ README Phần 2 (snapshot 11/2026).', 'Phần "Cùng một ticket, hai phương ngữ": bật tắt câu hỏi, chọn provider họ Jev. JSON bên trái và bên phải sinh từ cùng một spec bằng adapter chạy trong trình duyệt.', 'Bảng giới hạn: kéo độ dài state và số câu hỏi. Ô đỏ là request bị từ chối, ô cam là README không nêu giới hạn đó. Chi phí mỗi request tính từ giá trong README.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<div class="tbl"><table>
+<tr><th></th><th>TypeSafe Jev</th><th>Cloudflare Clef</th><th>OpenAI Decisions</th></tr>
+<tr><td>Model</td><td><code>jev-1.14.0</code>, <code>jev-1.13.0</code>; alias <code>jev-latest</code>, <code>jev-preview</code></td><td><code>clef</code>, <code>clef-flash</code>, <code>clef-omni</code></td><td><code>gpt-6-luna</code></td></tr>
+<tr><td>Weights</td><td>Đóng</td><td>Mở, Apache 2.0</td><td>Đóng</td></tr>
+<tr><td>Giá input / 1M</td><td>$0.042</td><td>$0.24 / $0.038 / $0.15</td><td>$0.10 (chưa cache)</td></tr>
+<tr><td>Context</td><td>64k / request, 32k / câu hỏi; 262k với header</td><td>64k (<code>clef</code>, <code>clef-omni</code>), 24k (<code>clef-flash</code>)</td><td>Không nêu riêng</td></tr>
+<tr><td>Câu hỏi / request</td><td>Không giới hạn số lượng</td><td>Tối đa 64</td><td>1–400</td></tr>
+<tr><td>Loại câu hỏi</td><td>Choice, Score, Noul, Box</td><td>Như Jev</td><td><code>predicate</code>, <code>choice</code>, <code>score</code></td></tr>
+<tr><td>Prompt caching</td><td>Không đề cập</td><td>Không đề cập</td><td>Có, prefix từ 1.024 token</td></tr>
+<tr><td>Fine-tune</td><td>Không</td><td>Có, qua đội FDE</td><td>Không đề cập</td></tr>
+</table></div>
+<h4>Khác</h4>
+<ul><li><b>Microsoft-Decision-1:</b> $0.042, context 32.768 (OpenRouter), Azure AI Foundry theo phương ngữ Jev, Entra ID. Weights không công bố.</li>
+<li><b>Liquid d1:</b> <code>d1.1</code> $0.02 và <code>d1-ultra</code> $0.042 (OpenRouter); weights mở <code>LiquidAI/d1-3B</code> (3,12B, context 32.768).</li>
+<li><b>Open-weight:</b> Kev-9B, Strands Decider, Bespoke Nimble, Tev1, Laya, GLiNER2.5-Decide, djev. Model càng nhỏ càng phải đo calibration trước khi đặt ngưỡng.</li>
+<li><b>Local:</b> Ollama 0.35 hỗ trợ API kiểu Jev; server local thường không có auth.</li></ul>
+<div class="verdict"><b>Chuyển provider:</b> trong họ Jev chỉ đổi endpoint và model ID. Giữa họ Jev và OpenAI cần một adapter nhỏ. Dù chuyển kiểu nào cũng phải chạy lại eval và đặt lại ngưỡng, vì xác suất của model mới không giống model cũ. Pin version, log field <code>model</code> trong response.</div>`,
+    why: {
+      c: 'Viết code định tuyến trên một dạng đáp án chung, đặt adapter mỏng cho từng phương ngữ, và pin version model. Chọn provider theo ràng buộc thật của ShopViet: context state cần, số câu hỏi mỗi request, nơi dữ liệu được phép đi, giá ở khối lượng thật, rồi đo trên dữ liệu của mình.',
+      s: 'Chọn theo benchmark nhà cung cấp: bảng của Cloudflare do Cloudflare chọn và chạy, không model nào thắng mọi hàng. Gắn chặt code vào một phương ngữ: chuyển provider thành sửa khắp nơi. Dùng alias jev-latest khi đã tune ngưỡng: version mới đến mà code không biết.',
+      p: 'Phải giữ adapter và một bộ eval chạy lại được khi đổi provider. Thông tin trong hạng mục này đổi theo tuần, nhiều mục README ghi chưa xác minh (response Workers AI, license d1-3B, weights Microsoft), nên phải kiểm tra trên request thật trước khi tin.'
+    },
+    deep: [
+      {
+        q: 'Cùng một việc, sao lại có hai kiểu request khác nhau?',
+        a: `<p>Jev ra trước (15/9/2026) và đặt ra hợp đồng; Cloudflare, Microsoft, Liquid, Ollama và các server open-weight chọn <b>tương thích Jev</b> để khách chuyển sang dễ. OpenAI làm phương ngữ riêng, giống phong cách các API khác của họ:</p>
+<div class="tbl"><table><tr><th></th><th>Họ Jev</th><th>OpenAI</th></tr>
+<tr><td>Nội dung</td><td><code>state</code></td><td><code>input</code></td></tr>
+<tr><td>Câu hỏi</td><td>object, key là tên</td><td>mảng, mỗi phần tử có <code>name</code></td></tr>
+<tr><td>Yes/no</td><td><code>noul</code></td><td><code>predicate</code></td></tr>
+<tr><td>Choice</td><td><code>criteria</code>: object</td><td><code>choices</code>: mảng <code>{value, description}</code></td></tr>
+<tr><td>Score</td><td><code>criteria</code>: mảng</td><td><code>levels</code>: mảng <code>{label, description}</code></td></tr>
+<tr><td>Response</td><td><code>answers</code>: object, <code>probabilities</code> là object</td><td><code>answers</code>: mảng, <code>probabilities</code> là mảng</td></tr>
+<tr><td>Từ chối</td><td>Không đề cập</td><td>Loại đáp án <code>refusal</code></td></tr></table></div>
+<p>Adapter phía response quan trọng hơn phía request, vì code định tuyến đọc response. Dưới đây hai response mẫu trong README (một của Jev, một của OpenAI) được đổi về cùng một dạng bằng hàm chạy trong trình duyệt:</p>`,
+        viz(box) {
+          const jevResp = { model: 'jev-1.13.0', answers: { department: { type: 'choice', choice: 'returns', confidence: 0.42, probabilities: { shipping: 0.04, billing: 0.35, returns: 0.61 } }, is_human_escalation: { type: 'noul', noul: 0.99 } } };
+          const oaResp = { answers: [{ type: 'choice', name: 'department', choice: 'billing', probabilities: [{ value: 'billing', probability: 0.95 }, { value: 'technical', probability: 0.02 }, { value: 'shipping', probability: 0.01 }, { value: 'other', probability: 0.02 }], confidence: 0.93 }] };
+          const fromJev = (r) => Object.entries(r.answers).map(([name, a]) => a.type === 'noul' ? { src: 'Jev', name, kind: 'yes/no', value: 'p = ' + a.noul, probs: '' } : { src: 'Jev', name, kind: a.type, value: a.choice ?? a.score, probs: Object.entries(a.probabilities).map(([k, v]) => k + ' ' + v).join(', ') });
+          const fromOA = (r) => r.answers.map((a) => a.type === 'refusal' ? { src: 'OpenAI', name: a.name, kind: 'refusal', value: '—', probs: '' } : a.type === 'predicate' ? { src: 'OpenAI', name: a.name, kind: 'yes/no', value: 'p = ' + a.probability, probs: '' } : { src: 'OpenAI', name: a.name, kind: a.type, value: a.choice ?? a.score, probs: a.probabilities.map((p) => (p.value ?? p.label) + ' ' + p.probability).join(', ') });
+          const rows = [...fromJev(jevResp), ...fromOA(oaResp)];
+          box.append(tableBox('<tr><th>Nguồn</th><th>Tên</th><th>Loại</th><th>Đáp án</th><th>Xác suất</th></tr>' + rows.map((r) => `<tr><td>${r.src}</td><td class="mono">${r.name}</td><td>${r.kind}</td><td class="mono">${r.value}</td><td class="mono">${r.probs}</td></tr>`).join('')),
+            el('div', { class: 'cap', text: 'Hai response là ví dụ trong docs provider, chép từ README §1.2 và §2.4; không phải model trả lời ticket ShopViet. Đọc bằng hai hàm fromJev và fromOA khoảng 5 dòng mỗi hàm. Field của đáp án yes/no phía OpenAI không có trong ví dụ README; hàm giả định tên probability, cần kiểm tra trên response thật.' }));
+        },
+        take: 'Code định tuyến nên đọc một dạng đáp án chung. Đổi provider khi đó chỉ là đổi adapter, không đổi logic.'
+      },
+      {
+        q: 'jev-latest luôn là bản tốt nhất, sao README lại bảo đừng dùng?',
+        a: `<p>Vì ngưỡng bạn đặt gắn với <b>xác suất của một version cụ thể</b>. Alias <code>jev-latest</code> trỏ đến bản stable mới nhất (hiện là <code>jev-1.14.0</code>) và là mặc định của SDK. Khi TypeSafe ra bản mới, alias đổi đích; code không đổi một dòng nào, nhưng phân phối xác suất có thể dịch, và ngưỡng 0.9 đã tune trên bản cũ không còn nghĩa cũ.</p>
+<p>README còn ghi một chi tiết: mỗi response có field <code>model</code> ghi version thật đã trả lời. Ví dụ response trong README trả <code>"model": "jev-1.13.0"</code>. Log field này để biết quyết định nào do version nào đưa ra.</p>
+<p>Hạng mục này đổi rất nhanh. Dòng thời gian từ README §2.1 và §2.5:</p>`,
+        viz(box) {
+          const EV = [['15/9', 'TypeSafe ra mắt Jev'], ['28/9', 'Ollama 0.35 hỗ trợ API kiểu Jev'], ['1/10', 'Cloudflare ra Clef, Clef-flash'], ['9/10', 'Clef-omni (audio, video)'], ['14/10', 'Jev 1.14, thêm Box'], ['20/11', 'Liquid d1 cũ ngừng (OpenRouter)']];
+          const day = (s) => { const [d, m] = s.split('/').map(Number); return (Date.UTC(2026, m - 1, d) - Date.UTC(2026, 8, 15)) / 864e5; };
+          const W = 540, span = day('27/11'), x = (s) => 20 + (day(s) / span) * (W - 40);
+          box.append(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${EV.length * 22 + 40}`, role: 'img', 'aria-label': 'Dòng thời gian decision model 2026' }, [
+            el('line', { x1: 20, x2: W - 20, y1: 14, y2: 14, stroke: 'var(--line)', 'stroke-width': 2 }),
+            ...EV.flatMap(([d, t], i) => [el('circle', { cx: x(d), cy: 14, r: 5, fill: 'var(--accent)' }), el('line', { x1: x(d), x2: x(d), y1: 14, y2: 36 + i * 22, stroke: 'var(--line)' }),
+              el('text', { x: Math.min(x(d) + 4, W - 230), y: 40 + i * 22, text: `${d}: ${t}` })])]),
+            el('div', { class: 'cap', text: `Từ ngày ra mắt Jev đến 27/11/2026 là ${span} ngày. OpenAI đưa Decisions API từ beta lên GA trong khoảng tháng 9–11; README không ghi ngày chính xác nên không vẽ.` }));
+        },
+        take: 'Pin version cụ thể khi đã tune ngưỡng, log field model, và chạy lại eval trước khi nâng version.'
+      },
+      {
+        q: 'Jev ghi "64k / request, 32k / câu hỏi". Hai giới hạn này khác nhau thế nào?',
+        a: `<p>Jev đọc state một lần rồi đánh giá mọi câu hỏi song song, nên một request phải vừa <b>cả hai</b>:</p>
+<ul><li><b>Per-request:</b> state cộng tất cả câu hỏi ≤ 64k.</li><li><b>Per-question:</b> state cộng một câu hỏi bất kỳ ≤ 32k.</li></ul>
+<p>Hệ quả hay bị bỏ qua: state 30k với một câu hỏi dài 3k (ví dụ criteria liệt kê 200 danh mục sản phẩm) thì tổng request chỉ 33k, vừa 64k, nhưng câu dài nhất cộng state là 33k, vượt 32k. Request bị từ chối với <code>400 max_tokens_exceeded</code>. Header <code>TypeSafe-Danger-Zone-Long-Context: true</code> nâng cả hai lên 262k, cùng giá mỗi token nhưng chậm hơn và kém chính xác hơn.</p>`,
+        viz(box) {
+          const S = { s: 30000, n: 3, q: 80, big: 3000, long: false }, out = el('div', { class: 'stat' }), note = el('div');
+          const draw = () => {
+            const req = S.s + (S.n - 1) * S.q + S.big, per = S.s + S.big, lr = S.long ? 262000 : 64000, lq = S.long ? 262000 : 32000, okR = req <= lr, okQ = per <= lq;
+            out.innerHTML = `<span>Request: <b class="${okR ? 'ok' : 'bad'}">${req.toLocaleString('vi-VN')}</b> / ${lr.toLocaleString('vi-VN')}</span><span>State + câu dài nhất: <b class="${okQ ? 'ok' : 'bad'}">${per.toLocaleString('vi-VN')}</b> / ${lq.toLocaleString('vi-VN')}</span>`;
+            note.replaceChildren(okR && !okQ ? flag('bad', `<b>Tổng request vừa giới hạn, nhưng vẫn bị từ chối.</b> State (${S.s.toLocaleString('vi-VN')}) cộng câu dài nhất (${S.big.toLocaleString('vi-VN')}) vượt ${lq.toLocaleString('vi-VN')} token mỗi câu. Điều này không có nghĩa request quá nhiều câu hỏi: bỏ bớt câu ngắn không giúp gì. Trong hệ thống thật: rút gọn state, chia criteria lớn thành các tầng (§3.12), hoặc bật header long context chỉ cho request cần.`) : !okR ? flag('bad', 'Request vượt giới hạn tổng. Rút gọn state hoặc tách câu hỏi sang request khác (state sẽ bị tính tiền lại).') : flag('ok', 'Request vừa cả hai giới hạn.'));
+          };
+          box.append(el('div', { class: 'row' }, [
+            slider('Token state', 1000, 60000, 1000, S.s, (v) => { S.s = v; draw(); }, (v) => v.toLocaleString('vi-VN')).node,
+            slider('Số câu hỏi', 1, 50, 1, S.n, (v) => { S.n = v; draw(); }).node,
+            slider('Token câu dài nhất', 50, 8000, 50, S.big, (v) => { S.big = v; draw(); }, (v) => v.toLocaleString('vi-VN')).node,
+            select('Header long context', [['0', 'tắt'], ['1', 'bật']], '0', (v) => { S.long = v === '1'; draw(); }).node]), out, note,
+            el('div', { class: 'cap', text: 'Các câu còn lại giả định 80 token mỗi câu. Lab tính 64k = 64.000 và 32k = 32.000 cho an toàn; README chỉ ghi "64k", "32k", "262k".' }));
+          draw();
+        },
+        take: 'Với Jev, kiểm tra cả tổng request lẫn state cộng câu dài nhất. Criteria khổng lồ trong một câu là nguyên nhân hay gặp.'
+      },
+      {
+        q: 'Clef mở weights mà lại đắt hơn Jev? Rồi "Neuron" là gì?',
+        a: `<p>Giá mỗi 1M token input theo README: <code>clef</code> $0.24, gần 6 lần Jev ($0.042). <code>clef-flash</code> $0.038 rẻ hơn Jev một chút nhưng context chỉ 24.576. Weights mở nghĩa là bạn <b>có thể</b> tự chạy (trả tiền GPU thay vì tiền token), không có nghĩa API của Cloudflare rẻ.</p>
+<p>Workers AI tính tiền bằng Neuron: 10.000 Neuron miễn phí mỗi ngày cho cả gói Free và Paid, vượt thì $0.011 / 1.000 Neuron. <code>clef</code> tốn 21.818 Neuron cho mỗi 1M token, nên phần miễn phí ≈ 0,46M token <code>clef</code> mỗi ngày. Kiểm tra: 21.818 × $0.011 / 1.000 ≈ $0.24, khớp giá niêm yết.</p>
+<p>Kéo khối lượng token mỗi ngày của ShopViet:</p>`,
+        viz(box) {
+          const vols = [0.2, 0.46, 1, 5, 20, 100, 1000], out = el('div');
+          const draw = (i) => {
+            const M = vols[i], clefNeur = Math.max(0, M * 21818 - 10000), clef = (clefNeur / 1000) * 0.011;
+            const rows = [['d1.1 (Liquid, OpenRouter) · $0.02', M * 0.02], ['clef-flash · $0.038', M * 0.038], ['Jev · $0.042', M * 0.042], ['Microsoft-Decision-1 · $0.042', M * 0.042], ['gpt-6-luna chưa cache · $0.10', M * 0.10], ['clef-omni · $0.15', M * 0.15], ['clef · $0.24, trừ 10.000 Neuron miễn phí', clef]];
+            const mx = Math.max(...rows.map((r) => r[1]), 0.0001);
+            out.replaceChildren(hbars(rows.map(([n, v]) => [n, v, n.startsWith('clef ·')]), { max: mx, fmt: (v) => '$' + v.toFixed(v < 1 ? 3 : 2) }),
+              M <= 0.46 ? flag('ok', `<b>${M}M token / ngày: clef miễn phí</b>, rẻ nhất bảng dù giá niêm yết cao nhất. Phần miễn phí 10.000 Neuron chỉ có ý nghĩa ở khối lượng nhỏ (thử nghiệm, POC). Trong hệ thống thật: đừng chọn provider production theo giá ở mức thử nghiệm.`) : el('span'));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Token input mỗi ngày', 0, vols.length - 1, 1, 3, draw, (i) => vols[i] + 'M').node]), out,
+            el('div', { class: 'cap', text: 'Giá từ README. README chỉ cho số Neuron của clef, nên chỉ clef được trừ phần miễn phí; clef-flash và clef-omni tính thẳng theo giá token. Giá OpenAI chưa gồm cache, phụ phí vùng và long context.' }));
+          draw(3);
+        },
+        take: 'So giá ở khối lượng thật. Weights mở là quyền tự chạy, không phải giá API rẻ.'
+      },
+      {
+        q: 'OpenAI Decisions khác họ Jev ở đâu, ngoài tên field?',
+        a: `<p>Ba khác biệt ảnh hưởng tới code:</p>
+<ol><li><b>Có đáp án <code>refusal</code>.</b> Code phải kiểm tra <code>answer.type == "refusal"</code> trước khi đọc giá trị. Code viết cho Jev sẽ đọc thẳng <code>answer.choice</code> và nhận về giá trị rỗng, rồi lỗi ở dòng tiếp theo.</li>
+<li><b><code>input</code> nhận cả hội thoại agent:</b> mảng message, function call, custom tool call và output. Dùng để hỏi "tool call vừa rồi có hợp lý không".</li>
+<li><b>Prompt caching:</b> breakpoint ngầm ở cuối <code>input</code>, prefix tối thiểu 1.024 token, và <code>questions</code> nằm ngoài prefix. Giữ tài liệu tham chiếu chung (ví dụ chính sách đổi trả của ShopViet) trong <code>input</code>, đổi câu hỏi giữa các request.</li></ol>
+<p>Dưới đây: cùng một response có một đáp án refusal, đọc bằng code kiểu Jev và code có kiểm tra:</p>`,
+        viz(box) {
+          const resp = { answers: [{ type: 'choice', name: 'team', choice: 'shipping', probabilities: [{ value: 'shipping', probability: 0.91 }], confidence: 0.88 }, { type: 'refusal', name: 'contains_threat' }] };
+          const naive = (a) => a.choice.toUpperCase();
+          const safe = (a) => a.type === 'refusal' ? 'refusal: chuyển người xem' : a.choice.toUpperCase();
+          const run = (f) => resp.answers.map((a) => { try { return `${a.name}: ${f(a)}`; } catch (e) { return `${a.name}: LỖI ${e.constructor.name}`; } });
+          const S = { tok: 800 }, cache = el('div', { class: 'stat' });
+          const drawC = () => { const ok = S.tok >= 1024; cache.innerHTML = `<span>Prefix trong input: <b class="${ok ? 'ok' : 'bad'}">${S.tok.toLocaleString('vi-VN')}</b> token</span><span>${ok ? 'Đủ 1.024 token, có thể được cache' : 'Dưới 1.024 token, không được cache'}</span>`; };
+          box.append(tableBox('<tr><th>Code đọc kiểu Jev</th><th>Code có kiểm tra refusal</th></tr>' + run(naive).map((n, i) => `<tr><td class="mono ${n.includes('LỖI') ? 'bad' : ''}">${n}</td><td class="mono">${run(safe)[i]}</td></tr>`).join('')),
+            el('div', { class: 'row', style: 'margin-top:12px' }, [slider('Token tài liệu tham chiếu trong input', 200, 4000, 100, S.tok, (v) => { S.tok = v; drawC(); }, (v) => v.toLocaleString('vi-VN')).node]), cache,
+            el('div', { class: 'cap', text: 'Hàm chạy thật trong trình duyệt. Response này viết tay theo dạng README §2.4, không phải model trả; đáp án refusal giả định chỉ có type và name. Giá cache read/write README không ghi số cụ thể nên không tính.' }));
+          drawC();
+        },
+        take: 'Adapter cho OpenAI phải xử lý refusal như một nhánh riêng, và nên đặt phần nội dung cố định ở đầu input để được cache.'
+      },
+      {
+        q: 'Microsoft và Liquid có gì mà phải cân nhắc, khi Jev và Clef đã đủ?',
+        a: `<p>Cả hai theo phương ngữ Jev, nên code gần như không đổi. Lý do chọn là <b>ràng buộc hạ tầng và giá</b>, không phải tính năng:</p>
+<div class="tbl"><table><tr><th></th><th>Microsoft-Decision-1</th><th>Liquid d1</th></tr>
+<tr><td>Hợp khi</td><td>Đã trên Azure, cần data zone hoặc Entra ID</td><td>Cần rẻ nhất, hoặc cần weights nhỏ chạy tại chỗ</td></tr>
+<tr><td>Giá / 1M input</td><td>$0.042</td><td><code>d1.1</code> $0.02, <code>d1-ultra</code> $0.042 (OpenRouter)</td></tr>
+<tr><td>Context</td><td>32.768 (OpenRouter)</td><td><code>d1</code> 65.536 (OpenRouter); <code>d1-3B</code> 32.768</td></tr>
+<tr><td>Weights</td><td>Không công bố</td><td><code>LiquidAI/d1-3B</code>, license suy luận là LFM Open License</td></tr>
+<tr><td>Cần chú ý</td><td>Bản sau chuyển sang nền MAI và model OpenAI: xác suất sẽ đổi</td><td><code>d1</code> cũ ngừng 20/11/2026; license trên 10 triệu USD doanh thu năm cần bản thương mại (nếu đúng là LFM)</td></tr></table></div>
+<p>README cũng sửa một hiểu lầm: vài bài viết thứ cấp nói d1 không có weights tải được. Điều đó sai với <code>d1-3B</code>.</p>`,
+        take: 'Trong họ Jev, chuyển provider là đổi endpoint, model ID và cách xác thực. Phần tốn công là chạy lại eval và đặt lại ngưỡng.'
+      },
+      {
+        q: 'Muốn dữ liệu khách không rời máy chủ ShopViet thì chạy model nào?',
+        a: `<p>README §2.6 liệt kê model open-weight và cách chọn theo phần cứng. Phần lớn số liệu chất lượng là do tác giả tự đo. Vài từ sẽ gặp: <b>B</b> là tỉ tham số (9B cần GPU lớn hơn 2B); <b>MoE</b> (mixture of experts) là model có nhiều tham số nhưng mỗi lần chỉ chạy một phần; <b>MLX</b> là thư viện chạy model trên chip Apple; <b>encoder</b> như ModernBERT là model nhỏ chỉ đọc, không sinh chữ; <b>zero-shot</b> là dùng ngay chưa huấn luyện thêm cho việc đó. Chọn nhu cầu:</p>`,
+        viz(box) {
+          const NEED = [
+            ['Gần chất lượng API hosted', 'Clef, rồi Clef-flash', 'Clef / Clef-flash / Clef-omni: 27B / 9B / 35B tổng (MoE), Apache 2.0, API tương thích Jev.'],
+            ['Một GPU tầm trung, cần API Jev', 'Kev-9B hoặc Clef-flash', 'Kev-9B: LoRA r16 + pointer head trên Qwen3.5-9B-Base, Apache 2.0, khoảng 22 GB, chạy trên một L40S/H100, có bản MLX cho Apple Silicon; serve 65.536 context nhưng chỉ kiểm chứng đến 8.192.'],
+            ['Laptop hoặc edge', 'Strands Decider 2B, d1-3B, Tev1 0.8B', 'Strands Decider: LoRA trên Qwen3.5-2B-Base, khoảng 1,9B, Apache 2.0, tự báo 180/231 trên JevBench, serve bind 127.0.0.1 không auth. d1-3B: 3,12B, context 32.768. Tev1: trả một chữ cái option qua chat completions, 2–24 option.'],
+            ['CPU, độ trễ vài ms, câu hỏi đơn giản', 'Laya hoặc GLiNER2.5-Decide', 'Laya: encoder ModernBERT-large 421M (bản multilingual mmBERT-base 322M), context 512 (multilingual 1.024), base gần ngẫu nhiên khi zero-shot (0,362). GLiNER2.5-Decide: DeBERTa-v3-large khoảng 340M, chạy CPU được.']];
+          const out = el('div');
+          const draw = (k) => { const [, pick, d] = NEED[k]; out.replaceChildren(el('div', { class: 'stat', html: `<span>Gợi ý của README: <b>${pick}</b></span>` }), el('p', { class: 'hint', text: d }),
+            k === 3 ? flag('warn', '<b>Laya median 5,8 ms nhưng BANKING77 chỉ 14,29 và CLINC150+OOS 3,19</b> (bảng Cloudflare, §2.9). Nhanh nhất bảng và kém nhất bảng cùng lúc. Điều này không có nghĩa Laya vô dụng: nó dành cho câu hỏi đơn giản, context ngắn. Trong hệ thống thật: đo calibration và độ chính xác trên ticket thật trước khi đặt ngưỡng; với tiếng Việt, bản multilingual của Laya là model duy nhất trong bảng nói rõ là đa ngôn ngữ.') : el('span')); };
+          box.append(el('div', { class: 'row' }, [select('Nhu cầu', NEED.map((n, i) => [i, n[0]]), 1, (v) => draw(+v)).node]), out);
+          draw(1);
+        },
+        take: 'Model càng nhỏ càng phải tự đo calibration. Chưa ai công bố đo đạc trên tiếng Việt cho các model nền Qwen.'
+      },
+      {
+        q: 'Tự chạy bằng Ollama thì mất gì so với API?',
+        a: `<p>Mất toàn bộ phần vận hành mà provider làm hộ. README §2.7:</p>
+<ul><li><b>Không có auth.</b> Server local thường mở cổng không cần khoá (Strands Decider bind <code>127.0.0.1</code>, không có auth). Không expose ra ngoài máy hoặc ngoài mạng nội bộ.</li>
+<li><b>Không có retry, cache hay quan sát.</b> Không có rate limit, nhưng phần retry, cache kết quả theo hash (model, state, questions), đo p50/p95 phải tự làm (§4.6).</li>
+<li><b>Version là việc của bạn.</b> Ghi model và revision weights vào log, giống pin version với API.</li></ul>
+<p>Đổi lại, mọi server đều mở <code>POST /v1/systemone</code>, nên helper <code>decide()</code> chỉ cần đổi <code>ENDPOINT</code>:</p>
+<div class="tbl"><table><tr><th>Model</th><th>Lệnh</th></tr>
+<tr><td>Bespoke Nimble (Ollama)</td><td><code>ollama pull nimble</code>, <code>ollama serve</code></td></tr>
+<tr><td>Kev-9B</td><td><code>python -m kev.serve --run jaredpalmer/kev-9b</code></td></tr>
+<tr><td>Strands Decider</td><td><code>pip install strands-decider</code>, <code>strands-decider serve</code></td></tr>
+<tr><td>Laya</td><td><code>pip install laya</code>, <code>laya-serve</code></td></tr>
+<tr><td>djev</td><td>vLLM nhánh có PR #57250 (chưa xác nhận đã merge)</td></tr></table></div>`,
+        take: 'Tự chạy giữ dữ liệu tại chỗ nhưng chuyển hết việc vận hành và bảo mật sang bạn.'
+      },
+      {
+        q: 'Benchmark của Cloudflare cho thấy model nào tốt nhất?',
+        a: `<p>Không model nào thắng mọi hàng. Đây là benchmark do Cloudflare chọn và chạy, công bố cùng lúc ra mắt Clef. Trên bộ workflow eval của chính TypeSafe, Cloudflare báo Clef thắng Jev 3/4 hạng mục với chênh lệch nhỏ (customer service 76.3 so với 76.0).</p>
+<p>Cách đọc: BFCL và API-Bank đo function calling (chọn đúng hàm và tham số); BANKING77 (77 ý định của khách ngân hàng) và CLINC150+OOS (150 ý định, cộng câu ngoài phạm vi) đo phân loại; BRIGHT đo xếp hạng tài liệu (nDCG@10: 10 kết quả đầu có đúng và đúng thứ tự không). README không mô tả When2Call và PhishNChips; xem nguồn Cloudflare trước khi suy ra. Accuracy, macro-F1, nDCG đều thang 0–100, cao là tốt; độ trễ thấp là tốt. Chọn từng hàng để xem ai dẫn đầu:</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (k) => {
+            const [name, vals] = BENCH[k], lat = name.includes('latency'), best = lat ? Math.min(...vals) : Math.max(...vals);
+            const notes = [];
+            if (name.startsWith('CLINC')) notes.push(flag('bad', '<b>Clef-flash tụt xuống 66.77 ở CLINC150+OOS</b>, trong khi đứng đầu BFCL và API-Bank. CLINC150+OOS có câu ngoài phạm vi (out-of-scope): model phải nhận ra "không option nào đúng". Điều này không có nghĩa Clef-flash kém nói chung: nó mạnh ở function calling. Trong hệ thống thật: nếu taxonomy của ShopViet có nhiều ticket ngoài danh mục, kèm câu yes/no "có đáp án nào phù hợp không" và đo trên dữ liệu thật.'));
+            if (lat) notes.push(flag('warn', '<b>Jev 524 ms đo từ hạ tầng Cloudflare gọi sang API TypeSafe.</b> TypeSafe nói phần lớn call khoảng 100 ms và đo 103 ms trung bình trong thử nghiệm của họ. Độ trễ phụ thuộc vị trí mạng và kích thước state. Trong hệ thống thật: đo từ vị trí deploy của bạn.'));
+            out.replaceChildren(hbars(BM.map((m, i) => [m, vals[i], vals[i] === best]), { max: Math.max(...vals), fmt: (v) => v.toFixed(lat ? 1 : 2) + (lat ? ' ms' : '') }),
+              el('div', { class: 'stat', html: `<span>${lat ? 'Nhanh nhất' : 'Cao nhất'}: <b>${BM[vals.indexOf(best)]}</b></span>` }), ...notes);
+          };
+          box.append(el('div', { class: 'row' }, [select('Benchmark', BENCH.map((b, i) => [i, b[0]]), 4, (v) => draw(+v)).node]), out,
+            el('div', { class: 'cap', text: 'Số từ README §2.9 (trích một phần bảng Cloudflare). Thanh đậm là giá trị tốt nhất của hàng. Jev Decision Index: so hai con số chỉ có ý nghĩa khi cùng version index (Kev ghi 0.2, Clef và Liquid ghi 0.2.1).' }));
+          draw(4);
+        },
+        take: 'Dùng benchmark để chọn ứng viên, rồi so trên ticket của ShopViet. Đọc kỹ ai đo, đo từ đâu.'
+      }
+    ],
+    poc: {
+      goal: "<b>POC không gọi model nào</b> (trừ phần 4 tuỳ chọn khi có API key). Mọi đáp án model trong POC là <b>dữ liệu viết tay</b>, không phải model thật trả lời ticket ShopViet: hai response chép từ ví dụ trong docs Jev và OpenAI (qua README), hai response do tác giả tự viết cho <code>refusal</code> và response bọc <code>result</code>. Phần chạy thật là code: adapter đổi một định nghĩa câu hỏi trung lập sang phương ngữ Jev và OpenAI, hàm chuẩn hoá bốn response đó về một dạng, và checker đếm token bằng tokenizer o200k rồi so với giới hạn từng model trong README.",
+      file: "docs/decision-models/pocs/05_providers.py",
+      run: "uv run docs/decision-models/pocs/05_providers.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí. Phần 4 chỉ gọi API khi có <code>TYPESAFE_API_KEY</code> hoặc <code>OPENAI_API_KEY</code> trong <code>pocs/.env</code>; mỗi lần dưới $0.0001. Output dưới đây chạy khi không có key nên phần đó in \"bỏ qua\".",
+      output: "1. Một định nghĩa câu hỏi trung lập → hai phương ngữ (adapter thật)\n  Jev   : {\"model\": \"jev-1.14.0\", \"state\": {\"ticket\": \"Mình bị trừ tiền hai lần cho cùng một đơn tai nghe, kiểm tra giúp mình.\"}, \"questions\": {\"team\": {\"type\": …\n  OpenAI: {\"model\": \"gpt-6-luna\", \"input\": \"Mình bị trừ tiền hai lần cho cùng một đơn tai nghe, kiểm tra giúp mình.\", \"questions\": [{\"type\": \"choice\", \"name\": \" …\n  Token (o200k): Jev 200, OpenAI 264\n\n2. Chuẩn hoá response về một dạng (tên → loại, giá trị, p_max)\n   Mẫu Jev và OpenAI chép từ README; mẫu refusal và mẫu bọc 'result' là VIẾT TAY (README: field refusal và việc bọc chưa xác minh).\nNguồn                  Câu hỏi              Loại     Giá trị  p_max\n---------------------  -------------------  -------  -------  -----\nJev §1.2               department           choice   returns  0.61\nJev §1.2               bug_severity         score    1.43     0.57\nJev §1.2               is_human_escalation  yesno    0.99     None\nOpenAI §2.4            department           choice   billing  0.95\nOpenAI refusal         department           refusal  None     None\nWorkers AI bọc result  urgent               yesno    0.91     None\n\n3. Kiểm tra giới hạn trước khi gửi (token đếm bằng o200k, giới hạn lấy từ README)\nTình huống                  Token   jev-1.14.0               clef         clef-flash               gpt-6-luna         microsoft-decision-1     d1-3B (tự chạy)\n--------------------------  ------  -----------------------  -----------  -----------------------  -----------------  -----------------------  -----------------------\nTicket thường, 3 câu        203     OK                       OK           OK                       OK                 OK                       OK\nKèm 900 đơn cũ trong state  33,506  mỗi câu 33,408 > 32,000  OK           request 33,506 > 24,576  OK                 request 33,506 > 32,768  request 33,506 > 32,768\n70 câu yes/no               1,915   OK                       70 câu > 64  70 câu > 64              OK                 OK                       OK\nScore 11 mức                168     Score 11 mức > 10        OK           OK                       Score 11 mức > 10  OK                       OK\n   gpt-6-luna: README không nêu context nên chỉ kiểm số câu hỏi và số mức.\n\n4. Gọi API thật (tuỳ chọn)\n  TYPESAFE_API_KEY: không có trong pocs/.env → bỏ qua (chép .env.example thành .env và điền key để gọi thật)\n  OPENAI_API_KEY: không có trong pocs/.env → bỏ qua (chép .env.example thành .env và điền key để gọi thật)\n\nRút ra: chuyển trong họ Jev chỉ đổi endpoint và model; sang OpenAI cần adapter đổi tên field và kiểm 'refusal'.\nCùng một request có thể vừa model này mà vượt model khác: kiểm token, số câu hỏi và số mức trước khi gửi.",
+      measured: true,
+      read: ["Mọi xác suất và đáp án trong bảng chuẩn hoá (returns 0.61, billing 0.95, urgent 0.91…) là mẫu viết tay hoặc ví dụ docs, không phải số đo; bảng chỉ chứng minh adapter đọc được các dạng response.", "Dòng token: cùng nội dung, request OpenAI dài hơn Jev (264 so với 200 token) vì mỗi option và mức là object có field riêng.", "Bảng chuẩn hoá: dòng <code>refusal</code> không có giá trị nào; code đọc thẳng <code>answer[\"choice\"]</code> sẽ lỗi ở đây.", "Bảng giới hạn: state 33.506 token vừa giới hạn 64k mỗi request của Jev nhưng vượt 32k mỗi câu hỏi; 70 câu hỏi vượt giới hạn 64 của Clef; Score 11 mức bị Jev và OpenAI từ chối.", "Phần 4 không có key nên không gọi API; muốn đo độ trễ và <code>usage</code> thật, điền key vào <code>.env</code>."]
+    },
+    mount(stage) {
+      const S = { p: 'jev', fam: 'jev', t: 0, on: [true, true, true], st: 3, nq: 0 };
+      const card = el('div'), panes = el('div', { class: 'cols' }), sizes = el('div', { class: 'stat' }), fit = el('div'), fitFlag = el('div');
+      const STV = [500, 2000, 8000, 20000, 26000, 30000, 40000, 64000, 70000, 100000, 262000], NQV = [1, 3, 8, 30, 64, 65, 200, 400, 401, 1000];
+      function drawCard() {
+        const [name, dialect, rows] = CARDS[S.p];
+        card.replaceChildren(el('h4', { html: `${name} <small style="color:var(--mute);font-weight:400">· ${dialect}</small>`, style: 'margin:4px 0 6px' }),
+          tableBox(rows.map(([k, v]) => `<tr><td style="white-space:nowrap"><b>${k}</b></td><td>${v}</td></tr>`).join('')));
+      }
+      const btns = SPEC.questions.map((q, i) => el('button', { class: 'on', text: q.name + ' · ' + (q.type === 'yesno' ? 'yes/no' : q.type), onclick: (e) => {
+        const on = S.on.filter(Boolean).length;
+        if (S.on[i] && on === 1) return;
+        S.on[i] = !S.on[i]; btns[i].className = S.on[i] ? 'on' : ''; drawReq();
+      } }));
+      function drawReq() {
+        const qs = SPEC.questions.filter((_, i) => S.on[i]), fam = JEVFAM.find((f) => f[0] === S.fam), state = TICKETS[S.t];
+        const j = JSON.stringify(toJev(fam[3], state, qs), null, 2), o = JSON.stringify(toOpenAI(state, qs), null, 2);
+        panes.replaceChildren(
+          el('div', {}, [el('h4', { html: `Họ Jev <small>· ${fam[1]}</small>` }), el('div', { class: 'mono', style: 'font-size:11.5px;color:var(--mute);overflow-wrap:anywhere', text: fam[2] }), pre(j)]),
+          el('div', {}, [el('h4', { html: 'OpenAI Decisions <small>· gpt-6-luna</small>' }), el('div', { class: 'mono', style: 'font-size:11.5px;color:var(--mute)', text: 'POST /v1/decisions' }), pre(o)]));
+        sizes.innerHTML = `<span>Họ Jev: <b>${j.length}</b> ký tự ≈ <b>${tok(j)}</b> token</span><span>OpenAI: <b>${o.length}</b> ký tự ≈ <b>${tok(o)}</b> token</span><span>Số câu hỏi: <b>${qs.length}</b></span>`;
+      }
+      function drawFit() {
+        const st = STV[S.st], nq = NQV[S.nq], q = 60, req = st + nq * q, per = st + q;
+        const cell = (ok, txt) => `<td class="mono ${ok === true ? 'ok' : ok === false ? 'bad' : ''}" style="${ok === null ? 'color:var(--warn)' : ''}">${txt}</td>`;
+        const issues = [];
+        const rows = FIT.map(([name, ctx, perQ, maxQ, price]) => {
+          const cOk = ctx === undefined ? null : req <= ctx && (perQ == null || per <= perQ);
+          const qOk = maxQ === undefined ? null : nq <= maxQ;
+          if (cOk === false) issues.push(name + ' (context)');
+          if (qOk === false) issues.push(name + ' (số câu hỏi)');
+          const cTxt = ctx === undefined ? 'README không nêu' : `${req.toLocaleString('vi-VN')} / ${ctx.toLocaleString('vi-VN')}${perQ ? `; mỗi câu ${per.toLocaleString('vi-VN')} / ${perQ.toLocaleString('vi-VN')}` : ''}`;
+          const qTxt = maxQ === undefined ? 'README không nêu' : maxQ === Infinity ? 'không giới hạn số lượng' : `${nq} / ${maxQ}`;
+          const cost = price == null ? 'tự host' : '$' + ((req / 1e6) * price).toFixed(6);
+          return `<tr><td class="mono">${name}</td>${cell(cOk, cTxt)}${cell(qOk, qTxt)}<td class="mono">${cost}</td></tr>`;
+        });
+        fit.replaceChildren(tableBox('<tr><th>Model</th><th>Context (token)</th><th>Câu hỏi</th><th>Chi phí / request</th></tr>' + rows.join('')));
+        const notes = [];
+        if (st + q > 32000 && st + q <= 262000 && req <= 64000) notes.push(flag('bad', `<b>Jev từ chối dù tổng request ${req.toLocaleString('vi-VN')} token vừa 64k.</b> State cộng một câu hỏi đã vượt 32k mỗi câu. Bớt câu hỏi không giúp gì. Trong hệ thống thật: rút gọn state, hoặc gửi header <code>TypeSafe-Danger-Zone-Long-Context: true</code> chỉ cho request cần (chậm hơn, kém chính xác hơn).`));
+        if (nq > 64 && nq <= 400) notes.push(flag('warn', `<b>${nq} câu hỏi: Jev và gpt-6-luna nhận, cả họ Clef từ chối (tối đa 64).</b> Cùng phương ngữ Jev không có nghĩa cùng giới hạn. Tách thành ${Math.ceil(nq / 64)} request trên Clef nghĩa là trả tiền state ${Math.ceil(nq / 64)} lần. Trong hệ thống thật: adapter phải biết giới hạn của từng provider và chia request trước khi gửi.`));
+        if (nq > 400) notes.push(flag('warn', `<b>${nq} câu hỏi vượt 400 của OpenAI.</b> Chỉ Jev không giới hạn số câu, nhưng vẫn phải vừa context.`));
+        if (st > 24576 && st <= 65536 && req <= 64000) notes.push(flag('warn', `<b>clef-flash từ chối state ${st.toLocaleString('vi-VN')} token, trong khi clef nhận.</b> Rẻ nhất họ Clef nhưng context chỉ 24.576. Trong hệ thống thật: kiểm tra độ dài state trước khi chọn model, hoặc định tuyến state dài sang clef.`));
+        fitFlag.replaceChildren(...(notes.length ? notes : [flag('ok', issues.length ? 'Một số model từ chối: ' + issues.join(', ') + '.' : 'Request vừa mọi giới hạn README có nêu. Ô cam là giới hạn README không công bố: kiểm tra trên request thật.')]));
+      }
+      const pS = select('Provider', Object.entries(CARDS).map(([k, v]) => [k, v[0]]), S.p, (v) => { S.p = v; drawCard(); });
+      const fS = select('Provider họ Jev', JEVFAM.map((f) => [f[0], f[1]]), S.fam, (v) => { S.fam = v; drawReq(); });
+      const tkS = select('Ticket', TICKETS.map((t, i) => [i, t.slice(0, 48) + '…']), 0, (v) => { S.t = +v; drawReq(); });
+      const stS = slider('Token state', 0, STV.length - 1, 1, S.st, (i) => { S.st = i; drawFit(); }, (i) => STV[i].toLocaleString('vi-VN'));
+      const nqS = slider('Số câu hỏi', 0, NQV.length - 1, 1, S.nq, (i) => { S.nq = i; drawFit(); }, (i) => String(NQV[i]));
+      stage.append(el('div', { class: 'row' }, [pS.node]), card,
+        el('h4', { text: 'Cùng một ticket, hai phương ngữ', style: 'margin:20px 0 4px' }),
+        el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Hai JSON sinh từ cùng một spec câu hỏi bằng hai hàm adapter toJev và toOpenAI. Đổi provider trong họ Jev chỉ đổi dòng endpoint và field model; phần thân giữ nguyên.' }),
+        el('div', { class: 'row' }, [tkS.node, fS.node]), el('div', { class: 'row' }, btns), panes, sizes,
+        el('h4', { text: 'Request này có vừa giới hạn của từng model?', style: 'margin:20px 0 4px' }),
+        el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu hỏi giả định 60 token. Giới hạn và giá từ README; 64k của Jev tính là 64.000, 32k là 32.000. Chi phí chưa gồm cache, phụ phí vùng hay Neuron miễn phí.' }),
+        el('div', { class: 'row' }, [stS.node, nqS.node]), fit, fitFlag);
+      drawCard(); drawReq(); drawFit();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

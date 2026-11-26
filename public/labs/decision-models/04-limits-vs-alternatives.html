@@ -1,0 +1,671 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decision Models Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-calibration.html">← Lab trước</a><a href="05-providers.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/decision-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const AP = [['dm', 'Decision model'], ['clf', 'Classifier truyền thống'], ['emb', 'Embedding similarity'], ['llm', 'LLM (structured output, tool use)']];
+  const V = { fit: ['ok', 'Hợp'], part: ['warn', 'Được, có điều kiện'], no: ['bad', 'Không hợp'] };
+  const pc = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  const tok = (s) => Math.ceil(s.length / 4);
+  function flag(kind, html) {
+    return el('div', { style: `border-left:3px solid var(--${kind});background:var(--bg);border-radius:6px;padding:8px 12px;margin-top:10px;font-size:13.5px`, html });
+  }
+  function tableBox(html) { return el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }, [el('table', { html })]); }
+  const fmtDur = (s) => (s < 120 ? s.toFixed(s < 10 ? 2 : 0) + ' giây' : s < 7200 ? (s / 60).toFixed(0) + ' phút' : (s / 3600).toFixed(1) + ' giờ');
+  const TASKS = [
+    { id: 'route', name: 'Chuyển ticket cho đội: billing, technical, shipping, returns', ref: '§1.8, §3.1', pick: 'Decision model (Choice)',
+      dm: ['fit', 'Đáp án luôn thuộc danh sách, có xác suất cho từng đội để đặt ngưỡng. Thêm đội là thêm một dòng criteria.'],
+      clf: ['part', 'Cần dữ liệu gán nhãn cho từng đội, huấn luyện lại khi thêm đội. Với nhiều dữ liệu và danh sách ổn định, có thể chính xác và rẻ hơn ở quy mô rất lớn.'],
+      emb: ['part', 'So ticket với mô tả đội bằng cosine. Hai vector tính riêng, nên ticket có từ ngữ giống nhau nhưng ý khác dễ bị xếp nhầm.'],
+      llm: ['part', 'Chạy được, nhưng mỗi ticket là một lượt sinh văn bản: chậm hơn, kém ổn định hơn khi hỏi lại, confidence tự viết không dùng làm ngưỡng được.'] },
+    { id: 'refund', name: 'Khách có đòi hoàn tiền không (có/không)', ref: 'Tra cứu nhanh, §1.5', pick: 'Decision model (yes/no)',
+      dm: ['fit', 'Một xác suất 0–1. Điểm khởi đầu: trên 0.7 là có, dưới 0.3 là không, vùng giữa có đường xử lý riêng.'],
+      clf: ['part', 'Làm được nếu có đủ ticket gán nhãn "đòi hoàn tiền". Mỗi điều kiện mới là một model mới.'],
+      emb: ['no', 'Cosine đo hai đoạn giống nhau đến đâu, không trả lời một điều kiện đúng hay sai.'],
+      llm: ['part', 'Trả "true/false" được, nhưng không có xác suất có ý nghĩa để đặt ngưỡng.'] },
+    { id: 'sev', name: 'Mức tác động lên khách: không ảnh hưởng, nhẹ, nặng, nghiêm trọng', ref: '§1.4', pick: 'Decision model (Score)',
+      dm: ['fit', 'Score trả vị trí trên thang và xác suất từng mức. Ranh giới quan trọng thì cộng xác suất các mức phía đó.'],
+      clf: ['part', 'Cần dữ liệu có nhãn theo từng mức; thang đổi là huấn luyện lại.'],
+      emb: ['no', 'Không có khái niệm thứ tự mức.'],
+      llm: ['part', 'Ghi được một mức, nhưng không có phân phối giữa các mức.'] },
+    { id: 'extract', name: 'Trích số điện thoại, mã đơn hàng, địa chỉ từ tin nhắn', ref: '§3.8, Tra cứu nhanh', pick: 'LLM, hoặc regex tạo ứng viên rồi decision model chọn',
+      dm: ['part', 'Không sinh giá trị mới. Làm được khi code (regex) tạo danh sách ứng viên, model chọn ứng viên đúng.'],
+      clf: ['no', 'Classifier gán nhãn, không trích giá trị.'],
+      emb: ['no', 'Không trích được giá trị.'],
+      llm: ['fit', 'Sinh giá trị tự do theo schema. Hợp khi giá trị không có miền đóng.'] },
+    { id: 'reply', name: 'Viết câu trả lời cho khách, tóm tắt ticket, giải thích lý do', ref: 'Tra cứu nhanh, §1.7', pick: 'LLM',
+      dm: ['no', 'Không sinh văn bản. Ép sinh bằng cách nối chuỗi các câu Choice vừa chậm vừa kém.'],
+      clf: ['no', 'Không sinh văn bản.'],
+      emb: ['part', 'Chỉ giúp tìm đoạn chính sách làm ngữ cảnh cho LLM viết.'],
+      llm: ['fit', 'Đúng việc của LLM.'] },
+    { id: 'date', name: 'Đơn đặt ngày 28/10 có còn trong hạn đổi trả 7 ngày không', ref: '§1.7, §3.8', pick: 'Code so ngày; decision model chỉ đọc từng thành phần ngày nếu cần',
+      dm: ['no', 'Không so được ngày nào trước, cách nhau bao lâu. Một lần prefill, không có bước tính toán.'],
+      clf: ['no', 'Không tính toán.'],
+      emb: ['no', 'Không tính toán.'],
+      llm: ['part', 'Reasoning model làm được, nhưng code làm chắc chắn và gần như miễn phí.'] },
+    { id: 'search', name: 'Tìm đoạn chính sách liên quan trong 1 triệu đoạn', ref: '§1.8, §3.5', pick: 'Embedding lọc trước, decision model rerank shortlist',
+      dm: ['part', 'Đọc query và đoạn cùng lúc nên phân biệt nghĩa tốt, nhưng phải gọi một lần cho mỗi cặp. Chỉ dùng để rerank shortlist.'],
+      clf: ['no', 'Không phải bài toán gán nhãn.'],
+      emb: ['fit', 'Vector tài liệu tính sẵn một lần; mỗi query chỉ embed một lần rồi tìm gần đúng. Bước đầu không thay được.'],
+      llm: ['no', 'Không đọc được 1 triệu đoạn trong một lượt.'] },
+    { id: 'newlabel', name: 'Danh mục sản phẩm thay đổi hằng tuần (thêm danh mục mới)', ref: '§1.8, §3.12', pick: 'Decision model (Choice, hoặc đi từng tầng)',
+      dm: ['fit', 'Nhận nhãn mới qua request: thêm một dòng vào criteria là xong, không huấn luyện lại.'],
+      clf: ['no', 'Phải gom dữ liệu cho nhãn mới và huấn luyện lại mỗi lần.'],
+      emb: ['part', 'Thêm mô tả danh mục mới là có vector mới, nhưng cosine giữa các danh mục gần nhau khó tách.'],
+      llm: ['part', 'Thêm danh mục vào prompt được, nhưng chi phí và độ ổn định như ticket.'] },
+    { id: 'scale', name: 'Lọc spam bình luận, rất nhiều mỗi ngày, có nhiều năm dữ liệu gán nhãn, nhãn ổn định', ref: '§1.8, §2.3', pick: 'Classifier fine-tune, hoặc fine-tune Clef',
+      dm: ['part', 'Dùng ngay được. Cloudflare mở dịch vụ fine-tune Clef cho đúng loại tác vụ có nhiều năm dữ liệu gán nhãn.'],
+      clf: ['fit', 'Classifier fine-tune trên đúng miền, với đủ dữ liệu, vẫn có thể chính xác hơn và rẻ hơn ở quy mô rất lớn.'],
+      emb: ['part', 'Logistic regression trên embedding là một dạng classifier rẻ.'],
+      llm: ['no', 'Quá chậm và đắt cho khối lượng này.'] },
+    { id: 'tool', name: 'Gọi hàm tạo mã giảm giá với số tiền tự do', ref: '§3.9', pick: 'LLM tool use',
+      dm: ['part', 'Chọn được hàm và tham số có miền đóng. Số tiền tự do thì không.'],
+      clf: ['no', 'Không điền tham số.'],
+      emb: ['no', 'Không điền tham số.'],
+      llm: ['fit', 'Tool use sinh tham số số và chuỗi tự do.'] }
+  ];
+  const LAT = [['Laya (median, Cloudflare đo)', 5.8], ['Clef-flash (median, Cloudflare đo)', 38.8], ['Jev 1.14 (trung bình, TypeSafe đo)', 103], ['Clef (median, Cloudflare đo)', 209.3], ['Jev (median, đo từ hạ tầng Cloudflare)', 524.1], ['LLM nhanh nhất trong thử nghiệm TypeSafe', 1900], ['LLM chậm nhất trong thử nghiệm TypeSafe', 13500]];
+  function latSvg() {
+    const W = 540, rowH = 22, P = 250, H = LAT.length * rowH + 26, lx = (ms) => P + (Math.log10(ms) / Math.log10(20000)) * (W - P - 50);
+    const kids = [];
+    [1, 10, 100, 1000, 10000].forEach((t) => { kids.push(el('line', { x1: lx(t), x2: lx(t), y1: 0, y2: H - 20, stroke: 'var(--line)' })); kids.push(el('text', { x: lx(t) - 10, y: H - 6, class: 'mute', text: t >= 1000 ? t / 1000 + ' s' : t + ' ms' })); });
+    LAT.forEach(([n, ms], i) => {
+      const y = i * rowH + 4, isL = ms >= 1000;
+      kids.push(el('text', { x: 0, y: y + 13, class: 'mute', text: n }));
+      kids.push(el('rect', { x: P, y, width: Math.max(2, lx(ms) - P), height: rowH - 8, rx: 3, fill: isL ? 'var(--warn)' : 'var(--accent)' }));
+      kids.push(el('text', { x: lx(ms) + 4, y: y + 12, text: ms >= 1000 ? (ms / 1000).toFixed(1) + ' s' : ms + ' ms' }));
+    });
+    return el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Độ trễ công bố, thang log' }, kids);
+  }
+  return {
+    id: 'limits', nav: '4. Giới hạn & so sánh', ref: '§1.7–1.8',
+    title: 'Việc nào nên giao decision model, việc nào nên để classifier, embedding hay LLM?',
+    hook: 'Chọn một việc của ShopViet. Bốn thẻ cho biết cách nào hợp và vì sao, phần dưới tính chi phí và thời gian theo số quyết định mỗi ngày.',
+    terms: [
+      ['Fine-tune', 'Huấn luyện tiếp một model có sẵn trên dữ liệu của bạn để nó giỏi đúng việc đó. Ví dụ lấy BERT, cho học 50.000 ticket đã gán đội.'],
+      ['Classifier truyền thống', 'Model chỉ học đúng một bộ nhãn từ dữ liệu gán nhãn, ví dụ fine-tune BERT hoặc logistic regression trên embedding. Thêm nhãn "trả góp" là phải gom dữ liệu và huấn luyện lại.'],
+      ['Embedding similarity', 'Biến từng đoạn văn thành một dãy số (vector), ví dụ "đổi trả tai nghe" → [0.12, −0.40, 0.33, …], mỗi đoạn tính riêng. Rồi đo cosine giữa hai vector: gần 1 là hai đoạn nói về điều giống nhau. Hai câu chung nhiều từ như "đổi trả tai nghe" và "bảo hành tai nghe" thường có cosine cao dù là hai chính sách khác nhau.'],
+      ['Cross-encoder', 'Model đọc hai đoạn cùng lúc trong một input. Decision model đọc query và passage chung một state nên hoạt động giống vậy.'],
+      ['LLM với structured output', 'LLM sinh JSON theo schema, ví dụ {"team": "billing", "confidence": 0.9}. Linh hoạt, nhưng con số confidence là chữ model viết.'],
+      ['Prefill', 'Bước model đọc toàn bộ input một lần. Decision model chỉ chạy prefill rồi chấm điểm option, không sinh token, nên không có "chỗ để suy nghĩ" nhiều bước.'],
+      ['Model jaggedness', 'Tên trang TypeSafe liệt kê điểm yếu đã biết của Jev: giỏi việc này nhưng hỏng bất ngờ ở việc trông dễ hơn, như đếm ký tự.'],
+      ['Reasoning model', 'LLM được huấn luyện để viết ra các bước suy nghĩ trước khi trả lời. Làm được toán và nhiều bước, đổi lại chậm hơn và tốn token output.'],
+      ['Logit', 'Điểm thô model gán cho mỗi option trước khi đổi thành xác suất. Hai option bằng điểm thì mỗi bên 0.5; cộng 0.1 logit cho một bên thì bên đó thành khoảng 0.525.'],
+      ['Self-consistency', 'Gửi lại đúng một request nhiều lần, đo đáp án đổi bao nhiêu lần. Không cần nhãn.'],
+      ['Cascade', 'Decision model quyết định nhanh phần rõ ràng, chuyển phần khó cho LLM hoặc người.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> có trợ lý chat và hệ thống ticket. Đội kỹ thuật đã dùng decision model để chuyển ticket và chặn nội dung xấu, giờ muốn dùng nó cho mọi thứ: trích số điện thoại, viết trả lời, kiểm tra hạn đổi trả, tìm chính sách.',
+      scenario: 'Mỗi việc có một công cụ hợp hơn. Dùng sai công cụ thì hoặc trả lời sai một cách tự tin (decision model so ngày tháng), hoặc tốn gấp hàng chục lần thời gian (LLM cho việc chỉ cần chọn), hoặc không làm được (decision model viết thư).',
+      ask: 'Với từng việc, nên dùng decision model, classifier, embedding hay LLM, và đổi lại phải trả gì?',
+      solves: 'Quy tắc README: đáp án thuộc tập đóng và quyết định lặp lại nhiều lần thì dùng decision model; cần sinh nội dung hoặc suy luận thì dùng LLM; toán và ngày tháng để code làm; cần lọc hàng triệu tài liệu thì embedding trước.',
+      read: ['Chọn một việc. Bốn thẻ: xanh là hợp, cam là được nhưng có điều kiện, đỏ là không hợp. Lý do lấy từ README §1.7, §1.8 và bảng tra cứu nhanh.', 'Kéo số quyết định mỗi ngày và token mỗi request (giả định). Chi phí tính từ giá trong README; README không có giá LLM nên phần đó để trống.', 'Biểu đồ độ trễ dùng thang log: mỗi vạch là gấp 10 lần. Mọi con số là số công bố trong README, đo ở các điều kiện khác nhau.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Decision model hay cách khác?</h4>
+<div class="tbl"><table>
+<tr><th>Bạn cần</th><th>Dùng</th><th>Vì sao</th></tr>
+<tr class="cur"><td>Chọn đội, nhãn, intent từ danh sách</td><td>Decision model (Choice)</td><td>Đáp án luôn thuộc danh sách, có xác suất từng lựa chọn</td></tr>
+<tr><td>Biết một điều kiện đúng hay sai</td><td>Decision model (yes/no)</td><td>Xác suất là tín hiệu để đặt ngưỡng</td></tr>
+<tr><td>Xếp vào thang mức</td><td>Decision model (Score)</td><td>Vị trí trên thang và phân phối giữa các mức</td></tr>
+<tr><td>Trích tên, số tiền, địa chỉ</td><td>LLM, hoặc regex tạo ứng viên rồi decision model chọn</td><td>Decision model không sinh giá trị mới</td></tr>
+<tr><td>Viết, tóm tắt, giải thích</td><td>LLM</td><td>Decision model không sinh văn bản</td></tr>
+<tr><td>Suy luận nhiều bước, toán</td><td>Reasoning model, hoặc code</td><td>Decision model dành cho phán đoán nhanh, một bước</td></tr>
+<tr><td>Gọi hàm có tham số tự do</td><td>LLM tool use</td><td>Decision model chỉ điền tham số miền đóng</td></tr>
+<tr><td>Lọc hàng triệu tài liệu</td><td>Embedding trước, decision model rerank</td><td>Decision model phải gọi một lần cho mỗi cặp</td></tr>
+</table></div>
+<h4>Những việc decision model làm kém (§1.7)</h4>
+<div class="tbl"><table>
+<tr><th>Điểm yếu</th><th>Cách xử lý</th></tr>
+<tr><td>Đọc theo nghĩa đen, phủ định, điều kiện ngầm</td><td>Viết điều kiện chính xác, đưa trường hợp biên vào criteria</td></tr>
+<tr><td>Toán, đếm, so hex</td><td>Code đếm và tính; đổi số thành tên nhóm trước khi hỏi</td></tr>
+<tr><td>Ngày tháng</td><td>Model đọc từng thành phần, code ráp và so</td></tr>
+<tr><td>Nhiều tầng gián tiếp</td><td>Viết trực tiếp, chỉ thẳng phần state liên quan</td></tr>
+<tr><td>State lớn nhiều chi tiết thừa</td><td>Lọc trong code, chỉ gửi field cần</td></tr>
+<tr><td>Nội dung đối kháng</td><td>Criteria rõ ràng, test ca đối kháng (§4.8)</td></tr>
+<tr><td>Instructions và criteria mâu thuẫn</td><td>Viết cùng chiều</td></tr>
+<tr><td>Thứ tự option</td><td>Đảo thứ tự khi eval, kiểm tra đáp án có giữ không</td></tr>
+<tr><td>Sinh văn bản</td><td>Dùng LLM</td></tr>
+</table></div>
+<div class="verdict"><b>Tiếng Việt:</b> không có tài liệu chính thức nào nói về chất lượng decision model trên tiếng Việt (README ghi chưa xác minh). Benchmark công bố đều bằng tiếng Anh. Đo trên dữ liệu của ShopViet, thử cả câu hỏi tiếng Anh trên state tiếng Việt và câu hỏi tiếng Việt.</div>`,
+    why: {
+      c: 'Dùng decision model cho phán đoán một bước trên tập đáp án đóng, lặp lại nhiều lần: chọn đội, yes/no, thang mức. Đẩy toán và ngày tháng sang code, đẩy viết và suy luận sang LLM, đặt embedding trước khi cần lọc kho lớn. Nhiều hệ thống tốt nhất dùng cả hai: decision model quyết định nhanh, chuyển phần khó cho LLM.',
+      s: 'LLM cho mọi thứ: chậm hơn hàng chục lần cho cùng quyết định (103 ms so với 1,9–13,5 giây trong thử nghiệm của TypeSafe), kém ổn định hơn khi hỏi lại, confidence không làm ngưỡng được. Classifier cho mọi thứ: mỗi nhãn mới là huấn luyện lại. Embedding cho phân loại: cosine của các đoạn gần nghĩa nằm quá sát nhau.',
+      p: 'Phải ghép nhiều công cụ và viết code định tuyến giữa chúng. Phải tách việc thành từng phán đoán hẹp. Số so sánh trong README phần lớn do chính nhà cung cấp đo (TypeSafe, Cloudflare), nên phải tự đo trên dữ liệu và ngôn ngữ của mình.'
+    },
+    deep: [
+      {
+        q: 'Decision model đọc hiểu tốt, sao lại trả lời sai những câu mà người thấy rõ ràng?',
+        a: `<p>Vì nó <b>đọc theo nghĩa đen</b>: trả lời đúng câu bạn viết, không phải câu bạn định hỏi. Không có bước suy luận nào để đoán ý bạn.</p>
+<p>Ví dụ ShopViet hỏi yes/no: "Khách có hài lòng không?" với ticket "Không phải là tôi không thích sản phẩm, chỉ là giao chậm quá." Phủ định kép, một ý khen một ý chê. Người đọc hiểu ngay "hàng ổn, giao hàng tệ". Model phải gánh cả phủ định kép lẫn việc đoán "hài lòng" là về sản phẩm hay giao hàng, trong một lần prefill.</p>
+<p>README khuyên: viết điều kiện chính xác ("Khách có phàn nàn về thời gian giao hàng không?"), đưa trường hợp biên vào criteria. Khi bạn thấy mình phải giải thích "ý tôi là...", phần giải thích đó chính là nửa còn thiếu của câu hỏi.</p>`,
+        take: 'Một câu hỏi là một phán đoán hẹp, viết trực tiếp. Câu hỏi mơ hồ cho xác suất mơ hồ, không phải vì model kém.'
+      },
+      {
+        q: 'Vậy sao không hỏi model "đơn này có hơn 3 sản phẩm không" cho nhanh?',
+        a: `<p>Vì đếm là việc decision model làm kém nhất. README §1.7: không đếm được ký tự, số lần xuất hiện, số phần tử; không so được hai mã màu hex. Model chỉ có một lần prefill, không có chỗ để đếm từng bước.</p>
+<p>Cách đúng: <b>code đếm và tính</b>, rồi đổi số thành tên nhóm có nghĩa trước khi đưa vào state nếu câu hỏi cần. Code làm việc này chính xác tuyệt đối và miễn phí. Chọn một đơn hàng bên dưới: code tính, và state gửi model chỉ chứa kết quả đã nhóm.</p>`,
+        viz(box) {
+          const ORD = [
+            ['Tai nghe x2, sạc dự phòng x1, cáp USB-C x3', [['Tai nghe', 2, 890000], ['Sạc dự phòng', 1, 650000], ['Cáp USB-C', 3, 120000]]],
+            ['Laptop x1', [['Laptop', 1, 21990000]]],
+            ['Ốp lưng x1, kính cường lực x1', [['Ốp lưng', 1, 150000], ['Kính cường lực', 1, 90000]]]];
+          const out = el('div');
+          const draw = (k) => {
+            const it = ORD[k][1], n = it.reduce((s, x) => s + x[1], 0), tot = it.reduce((s, x) => s + x[1] * x[2], 0);
+            const band = tot < 500000 ? 'đơn nhỏ (dưới 500 nghìn)' : tot < 5000000 ? 'đơn vừa (500 nghìn đến 5 triệu)' : 'đơn lớn (trên 5 triệu)';
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Code đếm: <b>${n}</b> sản phẩm</span><span>Code cộng: <b>${tot.toLocaleString('vi-VN')} đ</b></span><span>Hơn 3 sản phẩm: <b style="color:var(${n > 3 ? '--warn' : '--ink'})">${n > 3 ? 'có' : 'không'}</b></span>` }),
+              el('pre', { class: 'mono', style: 'background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12.5px;overflow-x:auto', text: JSON.stringify({ state: { order_size: band, many_items: n > 3, message: 'Tôi muốn đổi một món trong đơn này' } }, null, 2) }));
+          };
+          box.append(el('div', { class: 'row' }, [select('Đơn hàng', ORD.map((o, i) => [i, o[0]]), 0, (v) => draw(+v)).node]), out,
+            el('div', { class: 'cap', text: 'Giá và ngưỡng nhóm là giả định. Model chỉ thấy tên nhóm và cờ đã tính sẵn, không phải tự đếm.' }));
+          draw(0);
+        },
+        take: 'Code đếm, model đọc nghĩa. Đổi số thành tên nhóm có nghĩa trước khi hỏi.'
+      },
+      {
+        q: 'Ngày tháng cũng là chữ trong tin nhắn. Sao model không so được "đặt ngày 28/10, hạn 7 ngày"?',
+        a: `<p>So ngày là phép tính: đổi sang số ngày, trừ, so với 7. Model không có bước tính. README §1.7 ghi rõ: không so được ngày nào trước, cách nhau bao lâu, có nằm trong khoảng không.</p>
+<p>Cách README §3.8 đề xuất: nếu ngày nằm lẫn trong văn bản tự do, cho model <b>đọc từng thành phần</b> (ngày, tháng, năm là các câu Choice có miền đóng), rồi code ráp lại và so. Nếu ngày đã có trong database đơn hàng, code so thẳng, không cần model.</p>
+<p>Chọn hai ngày bên dưới, code tính. Chính sách đổi trả 7 ngày của ShopViet là giả định.</p>`,
+        viz(box) {
+          const D = ['20/10/2026', '28/10/2026', '1/11/2026', '3/11/2026', '4/11/2026', '6/11/2026'], S = { a: 1, b: 4 }, out = el('div', { class: 'stat' });
+          const parse = (s) => { const [d, m, y] = s.split('/').map(Number); return Date.UTC(y, m - 1, d); };
+          const draw = () => {
+            const days = Math.round((parse(D[S.b]) - parse(D[S.a])) / 864e5), ok = days >= 0 && days <= 7;
+            out.innerHTML = `<span>Cách nhau: <b>${days}</b> ngày</span><span>Trong hạn 7 ngày: <b class="${ok ? 'ok' : 'bad'}">${days < 0 ? 'ngày yêu cầu trước ngày đặt, dữ liệu sai' : ok ? 'còn hạn' : 'quá hạn'}</b></span>`;
+          };
+          box.append(el('div', { class: 'row' }, [select('Ngày đặt', D.map((d, i) => [i, d]), S.a, (v) => { S.a = +v; draw(); }).node, select('Ngày yêu cầu đổi', D.map((d, i) => [i, d]), S.b, (v) => { S.b = +v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Ba dòng code, đúng tuyệt đối. Giao phép tính này cho decision model là đổi một thứ chắc chắn lấy một xác suất.' }));
+          draw();
+        },
+        take: 'Model đọc thành phần, code ráp và so. Không bao giờ hỏi model một câu mà đáp án là kết quả của phép tính.'
+      },
+      {
+        q: 'Gửi cả hồ sơ khách cho model xem đủ ngữ cảnh, có tốt hơn không?',
+        a: `<p>Thường là tệ hơn. README §1.7: độ chính xác <b>giảm</b> khi state chứa nhiều nội dung không liên quan. Model không có bước "lọc cái cần đọc"; mọi thứ trong state đều kéo đáp án một chút.</p>
+<p>Và tiền tính theo token input. Lọc trong code trước, chỉ gửi field câu hỏi cần, là đòn bẩy giúp cả độ chính xác lẫn chi phí (§4.6). Hai state dưới cho câu hỏi "đội nào xử lý ticket này":</p>`,
+        viz(box) {
+          const full = JSON.stringify({ customer: { id: 'C-88213', name: 'Nguyễn Văn A', tier: 'gold', joined: '2021-03-02', addresses: ['12 Lê Lợi, Q1, TP.HCM', '45 Trần Phú, Hà Đông, Hà Nội'] }, orders: Array.from({ length: 12 }, (_, i) => ({ id: 'SV-' + (40210 + i), items: ['Tai nghe Bluetooth', 'Cáp USB-C'], total: 1010000 + i * 37000, status: i ? 'delivered' : 'shipping' })), chat_history: Array.from({ length: 8 }, (_, i) => ({ role: i % 2 ? 'agent' : 'customer', text: i % 2 ? 'Dạ ShopViet đã ghi nhận ạ.' : 'Cho mình hỏi tình trạng đơn với.' })), message: 'Đơn SV-40210 báo đang giao 5 ngày rồi mà chưa tới, mình cần gấp.' });
+          const slim = JSON.stringify({ message: 'Đơn SV-40210 báo đang giao 5 ngày rồi mà chưa tới, mình cần gấp.', order_status: 'shipping' });
+          const a = tok(full), b = tok(slim);
+          box.append(tableBox('<tr><th>State</th><th>Ký tự</th><th>Token (ước lượng ký tự / 4)</th><th>1 triệu ticket ở giá Jev</th></tr>' +
+            `<tr><td>Cả hồ sơ</td><td class="mono">${full.length}</td><td class="mono bad">${a}</td><td class="mono">$${((a * 1e6) / 1e6 * 0.042).toFixed(2)}</td></tr>` +
+            `<tr><td>Chỉ field cần</td><td class="mono">${slim.length}</td><td class="mono ok">${b}</td><td class="mono">$${((b * 1e6) / 1e6 * 0.042).toFixed(2)}</td></tr>`),
+            el('div', { class: 'cap', text: `State gọn ít hơn ${(a / b).toFixed(1)} lần. Giá Jev $0.042 / 1M token input lấy từ README. Ước lượng token thô; tiếng Việt có dấu thường tốn nhiều token hơn ước lượng này. Dữ liệu khách là giả định.` }));
+        },
+        take: 'Lọc state trong code trước khi hỏi. Ngữ cảnh thừa làm đáp án kém đi và hoá đơn to lên.'
+      },
+      {
+        q: 'Đổi thứ tự option thì đáp án có đổi không? Lẽ ra không được đổi chứ?',
+        a: `<p>Lẽ ra không, nhưng README §1.7 ghi: <b>có trường hợp model nghiêng về option đứng đầu</b>. Với ticket rõ ràng thì không sao. Với ticket nằm sát ranh giới giữa hai đội, một chút thiên lệch là đủ lật đáp án.</p>
+<p>Mô phỏng dưới: 300 ticket ranh giới giữa <code>shipping</code> và <code>returns</code>, điểm hai bên gần bằng nhau (giả định). Model cộng thêm một chút điểm cho option đứng đầu, đo bằng logit (điểm thô trước khi thành xác suất): thiên lệch 0.1 biến một ticket 50/50 thành khoảng 52,5/47,5, đủ để lật đáp án. Chạy hai lần: thứ tự gốc và thứ tự đảo, đếm số ticket đổi đáp án.</p>`,
+        viz(box) {
+          const rnd = seeded(5), T = Array.from({ length: 300 }, () => 0.6 * randn(rnd)), out = el('div', { class: 'stat' }), note = el('div');
+          const draw = (b) => {
+            let flips = 0; T.forEach((d) => { const a1 = d + b > 0, a2 = d - b > 0; if (a1 !== a2) flips++; });
+            out.innerHTML = `<span>Thiên lệch cho option đầu: <b>${b.toFixed(2)}</b> (đơn vị logit)</span><span>Đổi đáp án khi đảo thứ tự: <b class="${flips ? 'bad' : 'ok'}">${flips}</b> / 300 (${pc(flips / 300)})</span>`;
+            note.replaceChildren(flips > 15 ? flag('bad', `<b>${flips} ticket đổi đội chỉ vì đảo thứ tự option.</b> Không có thông tin mới nào trong ticket; chỉ vị trí của option thay đổi. Điều này không có nghĩa model đoán bừa: ticket rõ ràng không bị ảnh hưởng, chỉ ticket sát ranh giới. Trong hệ thống thật: eval với thứ tự đảo, và coi ticket đổi đáp án là vùng không chắc chắn, đưa người xem.`) : el('span'));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Thiên lệch', 0, 0.5, 0.01, 0.1, draw, (v) => v.toFixed(2)).node]), out, note,
+            el('div', { class: 'cap', text: 'Mức thiên lệch và phân bố ticket là giả định để thấy cơ chế. README không công bố độ lớn thiên lệch của model nào.' }));
+          draw(0.1);
+        },
+        take: 'Đảo thứ tự option là một bài test rẻ trong eval. Đáp án đổi theo thứ tự nghĩa là ticket đó nằm sát ranh giới.'
+      },
+      {
+        q: 'Classifier truyền thống đã có từ lâu. Decision model hơn nó ở chỗ nào?',
+        a: `<p>Ở chỗ <b>nhãn đi theo request, không đi theo weights</b>. Classifier học một bộ nhãn cố định từ dữ liệu gán nhãn. ShopViet thêm đội "trả góp" thì phải gom vài trăm ticket trả góp, gán nhãn, huấn luyện lại, deploy lại. Với decision model, thêm một dòng vào <code>criteria</code> là request sau đã có đội mới. Cloudflare gọi đây là điểm khác cốt lõi: làm việc trên mọi tập input mà không phải huấn luyện lại khi có danh mục mới.</p>
+<p>Nhưng classifier chưa hết thời. README nói rõ: classifier fine-tune trên đúng miền, với đủ dữ liệu, <b>vẫn có thể chính xác hơn và rẻ hơn ở quy mô rất lớn</b>. Chính Cloudflare cũng mở dịch vụ fine-tune Clef cho tác vụ có nhiều năm dữ liệu gán nhãn.</p>
+<div class="tbl"><table><tr><th></th><th>Classifier</th><th>Decision model</th></tr>
+<tr><td>Thêm nhãn</td><td>Gom dữ liệu, huấn luyện lại</td><td>Thêm một dòng criteria</td></tr>
+<tr><td>Cần dữ liệu gán nhãn để chạy</td><td>Có, cho từng nhãn</td><td>Không; chỉ cần để eval và đặt ngưỡng</td></tr>
+<tr><td>Quy mô rất lớn, nhãn ổn định</td><td>Có thể chính xác và rẻ hơn</td><td>Có thể fine-tune (Clef)</td></tr></table></div>`,
+        take: 'Nhãn hay đổi, dữ liệu ít: decision model. Nhãn ổn định, dữ liệu nhiều năm, khối lượng khổng lồ: cân nhắc classifier hoặc fine-tune.'
+      },
+      {
+        q: 'Embedding cũng cho một con số giống nhau bao nhiêu. Sao không dùng cosine để lọc passage?',
+        a: `<p>Vì hai vector được tính <b>riêng</b>, không vector nào biết câu hỏi kia hỏi gì. Decision model đọc query và passage <b>cùng lúc</b> trong một state, giống cross-encoder, nên phân biệt được đoạn có từ ngữ giống nhưng ý khác.</p>
+<p>Ví dụ RAG (tìm đoạn tài liệu liên quan rồi đưa cho LLM viết câu trả lời) ở README §3.4: 12 passage có cosine chỉ chênh nhau từ <b>0.455 đến 0.584</b>, quá hẹp để tách đoạn trả lời đúng khỏi đoạn chứa prompt injection; decision model tách được.</p>
+<p>Nhưng embedding thắng ở quy mô. Vector tài liệu tính sẵn một lần; decision model phải gọi một lần cho mỗi cặp query–passage. Kéo kích thước kho:</p>`,
+        viz(box) {
+          const W = 520, x = (v) => 20 + v * (W - 40), out = el('div', { class: 'stat' });
+          box.append(el('svg', { class: 'canvas', viewBox: `0 0 ${W} 60`, role: 'img', 'aria-label': 'Dải cosine 0.455 đến 0.584 trên thang 0 đến 1' }, [
+            el('line', { x1: x(0), x2: x(1), y1: 30, y2: 30, stroke: 'var(--line)', 'stroke-width': 2 }),
+            el('rect', { x: x(0.455), y: 18, width: x(0.584) - x(0.455), height: 24, fill: 'var(--warn)', opacity: 0.6 }),
+            ...[0, 0.25, 0.5, 0.75, 1].map((v) => el('text', { x: x(v) - 8, y: 56, class: 'mute', text: String(v) })),
+            el('text', { x: x(0.6), y: 14, text: `12 passage nằm trong ${(0.584 - 0.455).toFixed(3)} đơn vị` })]));
+          const draw = (k) => { const n = Math.pow(10, k), s = n * 0.103; out.innerHTML = `<span>Kho: <b>${fmtNum(n)}</b> đoạn</span><span>Embedding mỗi query: <b>1</b> lần embed + tìm gần đúng</span><span>Decision model chấm hết: <b>${fmtNum(n)}</b> cặp ≈ <b class="${s > 60 ? 'bad' : ''}">${fmtDur(s)}</b> nếu tuần tự ở 103 ms</span><span>Token (giả định 300 / cặp): <b>$${((n * 300) / 1e6 * 0.042).toFixed(2)}</b> mỗi query ở giá Jev</span>`; };
+          box.append(el('div', { class: 'row' }, [slider('Kích thước kho', 1, 6, 1, 2, draw, (k) => fmtNum(Math.pow(10, k))).node]), out,
+            el('div', { class: 'cap', text: '103 ms là độ trễ trung bình Jev trong thử nghiệm của TypeSafe; $0.042 / 1M là giá Jev. Token mỗi cặp là giả định. Cách đúng: embedding lấy top 20–50, decision model chấm lại shortlist đó.' }));
+          draw(2);
+        },
+        take: 'Embedding để lọc nhanh kho lớn, decision model để phân biệt nghĩa trong shortlist nhỏ. Hai bước, không thay nhau.'
+      },
+      {
+        q: 'LLM với structured output làm được hết các việc trên. Sao không dùng một thứ cho gọn?',
+        a: `<p>Được, nhưng trả giá ở ba chỗ, theo thử nghiệm self-consistency của TypeSafe (README §1.8):</p>
+<ul><li><b>Độ trễ:</b> request 8 câu Choice trên Jev 1.14 trung bình 103 ms; các LLM được thử (Claude Haiku 4.5, GPT-5.4 mini, GPT-5.5, Claude Opus 4.8) mất 1,9–13,5 giây. OpenAI cũng nói Decisions API nhanh hơn Responses API khoảng 10 lần.</li>
+<li><b>Ổn định:</b> 40 bài đăng ranh giới, mỗi bài gửi lại y hệt 15 lần. Quyết định kém ổn định nhất của Jev đổi trung bình 4,0% số lần, tối đa 6,7% (1 trên 15 lần). Với mọi cấu hình LLM, có bài đổi hơn 15% (hơn 2 trên 15 lần); temperature 0 (cấu hình để LLM luôn chọn token khả dĩ nhất) chỉ thu hẹp chứ không xoá khoảng cách.</li>
+<li><b>Ngưỡng:</b> confidence LLM tự viết không dùng làm ngưỡng được (Lab 3).</li></ul>
+<p>Lưu ý: đây là benchmark do chính TypeSafe thực hiện.</p>`,
+        viz(box) {
+          box.append(hbars([['Jev: đổi quyết định, trung bình', 4.0, true], ['Jev: đổi quyết định, tối đa', 6.7, true], ['LLM: một số bài đổi hơn', 15, false]], { max: 20, fmt: (v) => v.toFixed(1) + '%' }),
+            el('div', { class: 'cap', text: 'Số từ README §1.8. Thanh LLM là ngưỡng dưới ("hơn 15%"), không phải giá trị chính xác. Ý nghĩa: hỏi lại cùng một ticket, khách có thể nhận hai quyết định khác nhau, và khi khiếu nại bạn không tái hiện được quyết định cũ.' }));
+        },
+        take: 'Với quyết định đóng, lặp lại nhiều lần, LLM chậm hơn hàng chục lần và kém ổn định hơn. Giữ LLM cho việc chỉ LLM làm được.'
+      },
+      {
+        q: 'Vậy ghép decision model với LLM thế nào cho đúng?',
+        a: `<p>Kiểu <b>cascade</b>: decision model chạy trước cho mọi ticket, rất nhanh. Ticket có xác suất vượt ngưỡng được xử lý ngay; phần còn lại (vùng không chắc chắn) mới chuyển cho LLM hoặc người. README §3.7 và §3.11 có hai dạng: cascade trích xuất (escalate khi có cờ) và routing giữa các LLM.</p>
+<p>Lợi ích phụ thuộc vào tỉ lệ ticket decision model tự xử lý được (coverage). Kéo coverage, máy tính dùng 103 ms cho decision model và chọn mức độ trễ LLM từ README:</p>`,
+        viz(box) {
+          const S = { c: 0.7, l: 1.9 }, out = el('div', { class: 'stat' });
+          const draw = () => { const avg = 0.103 + (1 - S.c) * S.l; out.innerHTML = `<span>Chỉ LLM: <b>${S.l.toFixed(1)} s</b> mỗi ticket</span><span>Cascade: <b>${avg.toFixed(2)} s</b> trung bình</span><span>Lượt gọi LLM giảm <b>${pc(S.c, 0)}</b></span><span>Nhanh hơn <b>${(S.l / avg).toFixed(1)} lần</b></span>`; };
+          box.append(el('div', { class: 'row' }, [slider('Coverage của decision model (giả định)', 0, 0.99, 0.01, S.c, (v) => { S.c = v; draw(); }, (v) => pc(v, 0)).node,
+            select('Độ trễ LLM', [['1.9', '1,9 s (nhanh nhất)'], ['13.5', '13,5 s (chậm nhất)']], '1.9', (v) => { S.l = +v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Ticket chuyển sang LLM vẫn phải chờ decision model trước, nên cascade luôn cộng thêm 103 ms. Coverage thật lấy từ việc đặt ngưỡng trên tập có nhãn (Lab 3).' }));
+          draw();
+        },
+        take: 'Decision model gác cổng, LLM xử lý phần khó. Code giữ luồng điều khiển, mỗi model chỉ làm đúng phần mình giỏi.'
+      }
+    ],
+    poc: {
+      goal: "Máy tính chi phí và thời gian từ giá và độ trễ <b>công bố trong README</b> (không đo lại), kiểm tra vài con số trong README bằng phép tính, và mô phỏng thiên vị option đứng đầu với độ lớn <b>giả định</b> để thấy eval đảo thứ tự bắt được nó.",
+      file: "docs/decision-models/pocs/04_limits_vs_alternatives.py",
+      run: "uv run docs/decision-models/pocs/04_limits_vs_alternatives.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy vài giây, miễn phí.",
+      output: "1. Chi phí: 20,000 quyết định/ngày × 1000 token input (giá README, output miễn phí)\nModel                           $/1M input  Mỗi ngày  30 ngày  1 triệu quyết định\n------------------------------  ----------  --------  -------  ------------------\nLiquid d1.1 (OpenRouter)        $0.02       $0.40     $12.00   $20\nClef-flash                      $0.038      $0.76     $22.80   $38\nJev 1.14                        $0.042      $0.84     $25.20   $42\nMicrosoft-Decision-1            $0.042      $0.84     $25.20   $42\nOpenAI gpt-6-luna (chưa cache)  $0.1        $2.00     $60.00   $100\nClef-omni                       $0.15       $3.00     $90.00   $150\nClef                            $0.24       $4.80     $144.00  $240\nKiểm tra Workers AI: 10.000 Neuron miễn phí / 21.818 Neuron mỗi 1M token = 0.458M token clef/ngày (README: ~0,46M);\n21.818 Neuron × $0.011/1.000 = $0.240/1M token, khớp giá $0.24 của clef.\n\n2. Thời gian cho 20,000 quyết định theo độ trễ công bố (không đo lại; chỉ là phép nhân)\nNguồn                                Mỗi request  Tuần tự    8 worker song song\n-----------------------------------  -----------  ---------  ------------------\nLaya (median, Cloudflare đo)         5.8 ms       0.03 giờ   0.00 giờ\nClef-flash (median, Cloudflare đo)   38.8 ms      0.22 giờ   0.03 giờ\nJev 1.14 (trung bình, TypeSafe đo)   103 ms       0.57 giờ   0.07 giờ\nClef (median, Cloudflare đo)         209.3 ms     1.16 giờ   0.15 giờ\nJev (median, từ hạ tầng Cloudflare)  524.1 ms     2.91 giờ   0.36 giờ\nLLM nhanh nhất (TypeSafe thử)        1900 ms      10.56 giờ  1.32 giờ\nLLM chậm nhất (TypeSafe thử)         13500 ms     75.00 giờ  9.38 giờ\n\n3. Kiểm tra '13 câu gộp rẻ hơn 12,2 lần' (GDPR ~54,000 ký tự ≈ 13,500 token, giả định 4.0 ký tự/token)\n   tách/gộp = 13·(S+q) / (S+13·q). Để ra 12,2× thì mỗi câu hỏi ≈ 74 token, hợp lý cho một câu hỏi kèm criteria.\nToken mỗi câu hỏi  Tách đắt hơn gộp\n-----------------  ----------------\n20                 12.8×\n50                 12.4×\n74                 12.2×\n150                11.5×\n400                9.7×\n\n4. Thiên vị option đứng đầu: model GIẢ ĐỊNH cộng 0.4 logit cho option ở vị trí đầu\n   (README chỉ nói 'có trường hợp nghiêng về option đứng đầu', không cho độ lớn). Ticket 'giao thiếu + trừ tiền hai lần'.\nOption      Lần thắng / 120 thứ tự  Tỉ lệ  p trung bình qua mọi thứ tự  p không thiên vị\n----------  ----------------------  -----  ---------------------------  ----------------\ndoi_tra     0                       0.0%   0.041                        0.04\nbao_hanh    0                       0.0%   0.010                        0.01\nvan_chuyen  96                      80.0%  0.519                        0.52\nthanh_toan  24                      20.0%  0.410                        0.41\ntu_van      0                       0.0%   0.020                        0.02\n   24/120 thứ tự (đúng những lần thanh_toan đứng đầu) đổi đáp án. Trung bình qua mọi thứ tự trả lại p gần đúng.\n\n5. Ngày tháng để code làm: đơn 28/10, hạn đổi 7 ngày → hết hạn 04/11; hôm nay 03/11 → còn hạn (datetime, không cần model)\n\nRút ra: chi phí decision model gần như chỉ phụ thuộc token input và giá/1M; gộp câu hỏi quan trọng hơn chọn provider\nkhi state dài. Thiên vị thứ tự chỉ lộ ra khi đảo thứ tự option lúc eval; phép tính ngày để code làm.",
+      measured: true,
+      read: ["Bảng chi phí: 20.000 quyết định × 1.000 token mỗi ngày tốn $0.40–$4.80 tuỳ model; một triệu quyết định ở Jev là $42, OpenAI $100, khớp §4.6.", "Dòng Workers AI: 10.000 / 21.818 = 0.458M token clef miễn phí mỗi ngày, và 21.818 Neuron × $0.011/1.000 ra đúng $0.24/1M.", "Kiểm tra \"12,2 lần\": với bài khoảng 13.500 token, con số đó tương ứng mỗi câu hỏi khoảng 74 token; câu hỏi càng dài so với state thì lợi ích gộp càng giảm.", "Bảng thứ tự: 24/120 thứ tự đổi đáp án (đúng những lần thanh_toan đứng đầu); trung bình qua mọi thứ tự trả lại phân phối gần đúng."]
+    },
+    mount(stage) {
+      const S = { task: 'route', v: 20000, t: 1000 };
+      const cards = el('div', { class: 'cols' }), pick = el('div'), calc = el('div'), anomaly = el('div');
+      function anomalyFor(task) {
+        if (task.id === 'search') return flag('bad', `<b>Chấm 1 triệu đoạn bằng decision model cho một câu hỏi: khoảng ${fmtDur(1e6 * 0.103)} nếu tuần tự.</b> Decision model đọc từng cặp query–đoạn, nên chi phí tăng theo số cặp. Điều này không có nghĩa nó kém ở tìm kiếm: trên shortlist 20–50 đoạn, nó phân biệt nghĩa tốt hơn cosine. Trong hệ thống thật: embedding lấy shortlist trước, decision model rerank sau (§3.5).`);
+        if (task.id === 'date') return flag('bad', '<b>Một câu yes/no "còn hạn đổi trả không" sẽ vẫn trả một xác suất trông hợp lý.</b> Model không báo lỗi khi gặp việc nó không làm được; nó trả lời bằng trực giác của một lần prefill. Điều này không có nghĩa xác suất vô dụng ở mọi nơi, chỉ là câu này cần phép tính. Trong hệ thống thật: code so ngày (câu 3 bên dưới).');
+        if (task.id === 'reply') return flag('warn', '<b>Decision model không có đầu ra văn bản.</b> Ép nó viết bằng cách nối chuỗi các câu Choice (chọn từng từ) vừa chậm vừa kém. Trong hệ thống thật: LLM viết, decision model kiểm tra câu trả lời (guardrail §3.2).');
+        if (task.id === 'extract') return flag('warn', '<b>Decision model không sinh giá trị mới, nhưng chọn ứng viên rất tốt.</b> Regex số di động Việt Nam tìm mọi chuỗi giống số điện thoại; decision model chọn chuỗi nào là số của khách. Trong hệ thống thật: code tạo ứng viên và kiểm tra định dạng, model chọn (§3.8).');
+        return null;
+      }
+      function render() {
+        const task = TASKS.find((t) => t.id === S.task);
+        cards.replaceChildren(...AP.map(([k, n]) => {
+          const [v, txt] = task[k], [cls, lab] = V[v];
+          return el('div', { style: `border:1px solid var(--line);border-top:3px solid var(--${cls});border-radius:8px;padding:10px 12px;background:var(--bg)` }, [
+            el('h4', { html: `${n}<br><small class="${cls}">${lab}</small>` }), el('div', { style: 'font-size:13px', text: txt })]);
+        }));
+        pick.innerHTML = `<p class="hint" style="margin:10px 0 0">Chọn: <b style="color:var(--ink)">${task.pick}</b> · README ${task.ref}</p>`;
+        const a = anomalyFor(task);
+        anomaly.replaceChildren(a || el('span'));
+        const tokDay = S.v * S.t, sec = S.v * 0.103;
+        calc.replaceChildren(tableBox('<tr><th>Theo README</th><th>Mỗi ngày ở ' + fmtNum(S.v) + ' quyết định × ' + S.t + ' token</th></tr>' +
+          `<tr><td>Jev ($0.042 / 1M input, output miễn phí)</td><td class="mono">$${((tokDay / 1e6) * 0.042).toFixed(2)}</td></tr>` +
+          `<tr><td>Clef-flash ($0.038 / 1M)</td><td class="mono">$${((tokDay / 1e6) * 0.038).toFixed(2)}</td></tr>` +
+          `<tr><td>OpenAI Decisions ($0.10 / 1M chưa cache)</td><td class="mono">$${((tokDay / 1e6) * 0.10).toFixed(2)}</td></tr>` +
+          '<tr><td>LLM structured output</td><td>README không có giá; thêm cả token output do model sinh JSON</td></tr>' +
+          `<tr><td>Thời gian máy, tuần tự, decision model 103 ms</td><td class="mono">${fmtDur(sec)}</td></tr>` +
+          `<tr><td>Thời gian máy, tuần tự, LLM 1,9–13,5 s</td><td class="mono bad">${fmtDur(S.v * 1.9)} – ${fmtDur(S.v * 13.5)}</td></tr>`));
+      }
+      const tS = select('Việc cần làm', TASKS.map((t) => [t.id, t.name]), S.task, (v) => { S.task = v; render(); });
+      const vols = [1000, 5000, 20000, 100000, 1000000];
+      const vS = slider('Quyết định mỗi ngày', 0, vols.length - 1, 1, 2, (i) => { S.v = vols[i]; render(); }, (i) => fmtNum(vols[i]));
+      const kS = slider('Token mỗi request (giả định)', 200, 5000, 100, S.t, (v) => { S.t = v; render(); });
+      stage.append(el('div', { class: 'row' }, [tS.node]), cards, pick, anomaly,
+        el('h4', { text: 'Chi phí và thời gian theo khối lượng', style: 'margin:20px 0 4px' }),
+        el('div', { class: 'row' }, [vS.node, kS.node]), calc,
+        el('p', { class: 'hint', text: 'Thời gian máy là tổng nếu chạy tuần tự; chạy song song thì nhanh hơn nhưng tổng tài nguyên như nhau. Ví dụ README §4.6: 1.000 token input ở giá Jev ≈ $0.000042 mỗi quyết định, 1 triệu quyết định ≈ $42.' }),
+        el('h4', { text: 'Độ trễ công bố (thang log)', style: 'margin:20px 0 4px' }), latSvg(),
+        el('p', { class: 'hint', text: 'Mỗi số đo ở điều kiện khác nhau: Cloudflare đo từ hạ tầng của họ (Jev 524 ms gồm cả đường mạng sang TypeSafe), TypeSafe đo 103 ms trong thử nghiệm riêng. Đo từ vị trí deploy của bạn.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
