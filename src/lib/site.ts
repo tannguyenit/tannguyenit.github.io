@@ -71,6 +71,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Khi retrieval cơ bản không đủ: điểm hỏng của pipeline, long context và agentic RAG, query rewriting, rerank, contextual retrieval, parent–child, GraphRAG, metadata, trích dẫn, cập nhật index và phân quyền.',
     parts: ['Workflow tổng hợp', 'Các điểm hỏng của pipeline RAG', 'Long context và agentic RAG', 'Query rewriting, HyDE và decomposition', 'Rerank và contextual retrieval', 'Parent–child và GraphRAG', 'Metadata, đa phương thức và trích dẫn', 'Triệu chứng, cập nhật index và phân quyền', 'Độ trễ, chi phí, eval và failure modes']
   },
+  mcp: {
+    title: 'LLM - 15 - MCP',
+    description: 'Model Context Protocol: host, client, server, tools, resources và prompts, vòng đời request, stdio và Streamable HTTP, OAuth, connector của provider, thiết kế tool, bảo mật và debug.',
+    parts: ['Workflow tổng hợp', 'Host, client, server và primitives', 'Vòng đời, transport và so với function calling', 'Đặc tả, SDK và OAuth', 'Sampling, client và connector', 'Thiết kế tool và kích thước output', 'Remote server và bảo mật', 'Test, debug và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
