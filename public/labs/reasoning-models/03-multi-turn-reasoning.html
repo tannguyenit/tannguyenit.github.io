@@ -1,0 +1,627 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reasoning Models Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-tasks-effort-budget.html">← Lab trước</a><a href="04-providers.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/reasoning-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const TURNS = [
+    { u: 'Giao tới Đà Lạt mất mấy ngày?', ut: 20, th: 0, ans: 40, tool: false },
+    { u: 'Tính giá iPhone + ốp với ba khuyến mãi chồng nhau', ut: 90, th: 3600, ans: 320, tool: false },
+    { u: 'Đơn SV-4821 giao thiếu, thẻ bị trừ tiền hai lần', ut: 60, th: 1900, ans: 260, tool: true, redacted: true },
+    { u: 'Hoàn vào ví ShopViet thay vì thẻ được không?', ut: 25, th: 900, ans: 150, tool: true },
+    { u: 'Cảm ơn shop', ut: 8, th: 0, ans: 30, tool: false }
+  ];
+  const PROV = {
+    claudeKeep: { name: 'Claude Sonnet 5.5 (keep-all, preserved thinking)', claude: true, oldIn: true, loop: '400: tool_use thiếu thinking block đã sinh ra nó', cross: 'silent', bind: true, eff: { request: 'miss', mid: 'ok' } },
+    claudeLast: { name: 'Claude Haiku 4.5 (last-turn-only)', claude: true, oldIn: false, loop: '400: tool_use thiếu thinking block đã sinh ra nó', cross: 'ok', bind: false, eff: { request: 'miss', mid: 'err' } },
+    oaiResp: { name: 'OpenAI Responses gpt-5.6, tự quản lịch sử', oldIn: true, loop: '400: thiếu reasoning item khi có function call', cross: 'silent', eff: { request: 'miss', mid: 'ok' } },
+    oaiState: { name: 'OpenAI Responses, previous_response_id', stateful: true, oldIn: true, eff: { request: 'miss', mid: 'ok' } },
+    oaiCC: { name: 'OpenAI Chat Completions', none: true, oldIn: false, eff: { request: 'miss', mid: 'na' } },
+    gemini: { name: 'Gemini 3.5 Flash, generateContent stateless', oldIn: null, loop: 'finishReason: MISSING_THOUGHT_SIGNATURE', cross: 'gem', eff: { request: 'unk', mid: 'unk' } },
+    deepseek: { name: 'DeepSeek, request có tools', always: true, oldIn: true, loop: '400: thiếu reasoning_content', cross: 'err', eff: { request: 'unk', mid: 'unk' } }
+  };
+  const SYS = 1500, TOOLIO = 90, P_IN = 2, P_OUT = 10, CR = 0.05;
+  const RANK = { ok: 0, silent: 1, risk: 2, err: 3 };
+  const fT = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const usd = (x) => '$' + x.toFixed(4);
+  const flag = (kind, html) => el('div', { style: `border-left:4px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 9%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+
+  function simulate(c) {
+    const P = PROV[c.p], s = P.stateful || P.none || (c.s === 'filter' && !P.claude) ? 'raw' : c.s, rows = [];
+    let blocked = false, prevPrompt = 0, histText = SYS;
+    TURNS.forEach((t, i) => {
+      if (blocked) { rows.push({ i, blocked: true }); return; }
+      const notes = [];
+      let st = 'ok', cacheBreak = false;
+      const bump = (k, msg) => { if (RANK[k] > RANK[st]) st = k; notes.push([k, msg]); };
+      const priorTh = P.always ? i > 0 : TURNS.slice(0, i).some((x) => x.th > 0);
+      const oldThink = (s === 'raw' || s === 'filter') && P.oldIn === true ? TURNS.slice(0, i).reduce((a, x) => a + x.th, 0) : 0;
+      if ((s === 'text' || s === 'between') && priorTh) {
+        if (P.cross === 'err') bump('err', '400: request có tools nhưng thiếu reasoning_content của lượt trước (README §1.5)');
+        else if (P.cross === 'gem') bump('err', 'finishReason: MISSING_THOUGHT_SIGNATURE, lịch sử thiếu thought signature (README §3.7)');
+        else if (P.cross === 'silent') bump('silent', 'Không lỗi, nhưng model mất suy luận các lượt trước (model này đọc suy luận của mọi lượt)');
+        else notes.push(['ok', 'API vốn tự bỏ thinking của lượt cũ, nên bỏ trước cũng không đổi gì']);
+      }
+      if (c.edit && i === 3) {
+        cacheBreak = true;
+        if (P.bind && s !== 'text') bump('risk', 'Sửa system prompt: mọi thinking block sinh trước chỗ sửa mất hiệu lực. Sonnet 5.5 có thể trả 400 hoặc không báo lỗi; nếu không lỗi, block vẫn bị tính tiền và model làm tiếp dựa trên suy luận về prompt cũ (README §1.5)');
+        else notes.push(['silent', 'Sửa system prompt: prefix đổi từ token đầu, cache miss toàn bộ']);
+      }
+      if (i === 2 && c.eff !== 'none') {
+        const r = P.eff[c.eff];
+        if (r === 'miss') { cacheBreak = true; notes.push(['silent', c.eff === 'request' ? 'Đổi effort ở cấp request: cấu hình nằm trong prompt được render, cache_read_input_tokens: 0' : 'Không có cơ chế đổi giữa chừng, đành đổi ở cấp request: cache miss']); }
+        else if (r === 'na') { cacheBreak = true; notes.push(['silent', 'Chat Completions không có configuration_update (README chỉ mô tả cho Responses): đổi ở cấp request, cache miss']); }
+        else if (r === 'ok') notes.push(['ok', P.claude ? 'Per-message effort (beta): message role "system" rỗng mang output_config.effort; prefix giữ nguyên, cache vẫn khớp' : 'Item configuration_update trong input: prefix giữ nguyên, cache vẫn khớp']);
+        else if (r === 'err') bump('err', '400: output_config.effort requires a model that supports per-turn effort (Haiku 4.5 không có trong danh sách hỗ trợ)');
+        else notes.push(['silent', 'README không nêu ảnh hưởng tới cache với provider này: phải tự đo']);
+      }
+      if (t.tool && t.th > 0) {
+        if (P.none) bump('silent', 'Reasoning không vào context lượt sau: docs ghi chất lượng có thể giảm nhẹ và token suy luận tăng trong workflow nhiều function call');
+        else if (!P.stateful && s === 'text') bump('err', P.loop + ' (vòng hai của tool loop)');
+        else if (!P.stateful && s === 'filter' && P.claude && t.redacted) bump('err', 'Tool loop hỏng: lọc block.type == "thinking" làm mất redacted_thinking (README §1.2, §3.7)');
+        else if (P.stateful) notes.push(['ok', 'Server giữ trạng thái suy luận, bạn chỉ gửi previous_response_id']);
+      }
+      if (c.s === 'filter' && !P.claude && !P.stateful && !P.none && i === 0) notes.push(['ok', 'Lọc theo type "thinking" là lỗi riêng của Claude; provider này coi như gửi nguyên văn']);
+      const hist = histText + oldThink + t.ut;
+      const cache1 = i === 0 || cacheBreak ? 0 : Math.min(prevPrompt, hist - t.ut);
+      const reqs = [[hist, cache1]];
+      const loopOk = st !== 'err';
+      if (t.tool && loopOk) { const h2 = hist + (P.none ? 0 : t.th) + TOOLIO; reqs.push([h2, hist]); }
+      const inTok = reqs.reduce((a, r) => a + r[0], 0), cached = reqs.reduce((a, r) => a + r[1], 0);
+      const outTok = st === 'err' && !t.tool ? 0 : t.th + (t.tool ? 30 : 0) + (loopOk ? t.ans : 0);
+      const billed = !(st === 'err' && !t.tool);
+      const cost = billed ? ((inTok - cached) * P_IN + cached * P_IN * CR + outTok * P_OUT) / 1e6 : 0;
+      rows.push({ i, st, notes, hist, histText, oldThink, ut: t.ut, inTok, cached, cache1, outTok, cost, reqs: reqs.length });
+      prevPrompt = reqs[reqs.length - 1][0];
+      histText += t.ut + t.ans + (t.tool ? TOOLIO : 0);
+      if (st === 'err') blocked = true;
+    });
+    return rows;
+  }
+
+  return {
+    id: 'multi-turn-reasoning', nav: '3. Reasoning nhiều lượt', ref: '§1.5',
+    title: 'Lưu lịch sử kiểu nào thì lượt 3 trả 400, lượt 4 mất cache, hay model âm thầm quên suy luận',
+    hook: 'Chọn provider, cách code lưu lịch sử, và hai thay đổi giữa chừng (đổi effort ở lượt 3, sửa system prompt trước lượt 4). Mỗi hàng là một lượt: thanh input, phần đọc từ cache, trạng thái và tiền.',
+    terms: [
+      ['Stateless API', 'Server không nhớ gì giữa hai request; mỗi request bạn gửi lại cả lịch sử. Ví dụ Claude Messages: messages = [user1, assistant1, user2, ...].'],
+      ['Stateful API', 'Server giữ lịch sử; bạn chỉ gửi ID lượt trước. Ví dụ OpenAI Responses với previous_response_id, Gemini Interactions với store: true và previous_interaction_id.'],
+      ['User turn', 'Một câu hỏi mới của khách, ví dụ "Hoàn vào ví ShopViet được không?".'],
+      ['Tool loop', 'Trong một user turn: model gọi tool get_order, bạn gửi tool_result, model làm tiếp. Vòng hai là một request mới chứa cả kết quả tool.'],
+      ['Effort', 'Mức "nghĩ sâu bao nhiêu" bạn gửi kèm request: low, medium, high. Ví dụ Claude: "output_config": {"effort": "low"}. Effort thấp thì ít token suy luận hơn, rẻ hơn.'],
+      ['Thinking block', 'Phần suy luận Claude trả về, nằm trong mảng content cạnh câu trả lời: {"type": "thinking", "thinking": "...", "signature": "EqQB..."}. Một lượt có thể có vài block.'],
+      ['Signature', 'Chuỗi mã hoá kèm thinking block của Claude. Trên model có preserved thinking (model giữ thinking cũ trong context, như Sonnet 5.5), nó ghi lại phần đứng trước đã sinh ra block: system, tools, mọi message trước đó. Giống checksum: sửa phần trước thì checksum không còn khớp.'],
+      ['redacted_thinking', 'Block suy luận Claude trả dưới dạng mã hoá: {"type": "redacted_thinking", "data": "EmwK..."}. Không đọc được nhưng phải gửi lại.'],
+      ['Reasoning item / encrypted_content', 'Trạng thái suy luận của OpenAI Responses. Khi store: false, item có encrypted_content, phải gửi lại trong tool loop.'],
+      ['Thought signature', 'Trạng thái suy luận của Gemini, gắn vào part. Thiếu thì finishReason: MISSING_THOUGHT_SIGNATURE.'],
+      ['Keep-all / last-turn-only', 'Keep-all: model đọc thinking của mọi lượt (Sonnet 5.5). Last-turn-only: API tự bỏ thinking lượt cũ, chỉ giữ lượt đang chạy (Haiku 4.5).'],
+      ['Prompt cache', 'Provider lưu phần đầu (prefix) của prompt đã xử lý. Request sau có prefix giống hệt thì phần đó đọc từ cache, rẻ hơn và nhanh hơn. So khớp từ ký tự đầu tiên, như so chuỗi: request A = "SYS|u1|a1|u2", request B = "SYS|u1|a1|u2|a2|u3" thì phần "SYS|u1|a1|u2" đọc từ cache. Đổi một chữ trong SYS là không khớp gì nữa.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b>: một khách chat 5 lượt với trợ lý. Lượt 1 hỏi FAQ, lượt 2 tính giá khuyến mãi chồng nhau, lượt 3 khiếu nại đơn giao thiếu (agent gọi tool get_order), lượt 4 hỏi hoàn tiền vào ví (gọi tool refund_policy), lượt 5 cảm ơn.',
+      scenario: 'Code lưu lịch sử của đội chỉ giữ role và text cho "gọn". Ngoài ra, ở lượt 3 đội hạ effort cho rẻ bằng cách đổi tham số request, và ai đó sửa một dòng system prompt khi deploy giữa phiên.',
+      ask: 'Với mỗi provider, cách lưu lịch sử nào gây 400, cách nào chạy được nhưng mất cache hoặc làm model quên suy luận, và thinking cũ tốn thêm bao nhiêu input mỗi lượt?',
+      solves: 'Lưu nguyên response của provider, gửi lại nguyên văn, để API tự lọc. Không sửa phần lịch sử phía trước. Đổi effort giữa chừng bằng configuration_update (OpenAI) hoặc per-message effort (Claude).',
+      read: [
+        'Chọn <b>Provider</b> và <b>Code lưu lịch sử</b>. "Giữ nguyên trong tool loop, lưu DB chỉ text" là cách sửa nửa vời hay gặp: tool loop chạy, nhưng lượt sau đọc lịch sử từ DB đã mất suy luận. Bật các thay đổi giữa chừng nếu muốn.',
+        'Mỗi hàng là một lượt. Thanh trên: input của request đầu tiên trong lượt (xanh dương: system + lịch sử text, cam: thinking cũ gửi lại, xanh: câu mới). Thanh mảnh dưới: phần đọc từ cache.',
+        'Cột trạng thái: <b class="ok">ok</b>, <b>âm thầm</b> (không lỗi nhưng mất cache hoặc chất lượng), <b class="bad">rủi ro</b>, <b class="bad">lỗi</b>. Lỗi thì hội thoại dừng ở đó.',
+        'Token mỗi lượt là <b>giả định</b>. Giá là giá niêm yết thật của Sonnet 5.5 (Cost optimization §2.1, ngày 06/11/2026): $2 input, $10 output, $0,10 cache read mỗi 1 triệu token (cache read = 5% giá input). Lab dùng chung bảng giá này cho mọi provider để so cách lưu lịch sử, không để so giá giữa provider. Bỏ qua phí ghi cache. Quy tắc lỗi, cache và keep-all lấy từ README §1.5.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Hai tình huống khác nhau (README §1.5). <b>Trong tool loop</b> với API stateless có trạng thái suy luận: phải gửi lại trạng thái của lượt đang chạy, thiếu thì phần lớn trường hợp API trả 400. <b>Giữa các user turn</b>: mỗi provider một quy tắc.</p>
+<div class="tbl"><table>
+<tr><th>Provider</th><th>Trong tool loop</th><th>Giữa các user turn</th></tr>
+<tr><td>OpenAI Responses</td><td>Gửi lại mọi reasoning item, function call và output kể từ user message cuối</td><td><code>reasoning.context</code>: họ gpt-5.6 mặc định <code>all_turns</code>, model cũ hơn <code>current_turn</code></td></tr>
+<tr><td>OpenAI Chat Completions</td><td>Reasoning không bao giờ vào context lượt sau; chất lượng có thể giảm nhẹ</td><td>Như cột bên</td></tr>
+<tr class="cur"><td>Claude</td><td>Gửi lại mọi <code>thinking</code> và <code>redacted_thinking</code>, nguyên văn, đúng thứ tự</td><td>Keep-all: Opus 4.5+, Sonnet 4.6+, Haiku 5.5, Fable, Mythos. Last-turn-only: Opus/Sonnet cũ hơn và mọi Haiku đến 4.5</td></tr>
+<tr><td>Gemini</td><td>Gửi lại thought signature, không sửa</td><td>Từ Gemini 3.5 Flash, model dùng suy luận của mọi lượt trước khi signature có trong lịch sử</td></tr>
+<tr><td>DeepSeek</td><td>Có <code>tools</code>: gửi lại <code>reasoning_content</code> mọi lượt, thiếu là 400</td><td>Không có <code>tools</code>: <code>reasoning_content</code> cũ bị bỏ qua</td></tr>
+</table></div>
+<h4>Ảnh hưởng tới prompt caching</h4>
+<ul><li><b>Claude:</b> đổi kiểu thinking, <code>budget_tokens</code> hoặc effort ở cấp request làm cache miss (ví dụ docs: <code>cache_read_input_tokens: 0</code>). Dùng per-message effort để giữ cache.</li><li><b>OpenAI:</b> dùng item <code>configuration_update</code> trong <code>input</code> thay vì đổi tham số cấp request.</li><li><b>Claude keep-all:</b> thinking cũ được giữ trong context và cache, mỗi lượt sau đều trả tiền input hoặc cache read cho chúng. Docs gợi ý thinking block clearing khi cần lấy lại context.</li></ul>
+<div class="verdict"><b>Quy tắc an toàn:</b> với API stateless, lưu nguyên response, gửi lại nguyên văn, để API tự lọc. Với API stateful, gửi ID lượt trước. Chỉ nối thêm vào cuối lịch sử, không sửa phía trước.</div>`,
+    why: {
+      c: 'Lưu <code>resp.content</code> (Claude) hoặc <code>response.output</code> (OpenAI) nguyên văn vào lịch sử, không lọc theo type, không dựng lại từ text. Lịch sử append-only. Effort đổi qua per-message effort hoặc <code>configuration_update</code>. Docs Claude và OpenAI cùng nói gửi lại mọi thứ là cách đơn giản nhất vì item không liên quan bị bỏ qua.',
+      s: 'Chỉ lưu role và text: gọn, dễ hiển thị, nhưng 400 ở tool loop và âm thầm mất suy luận trên model keep-all. Lọc theo <code>type == "thinking"</code>: mất <code>redacted_thinking</code>. Đổi effort ở cấp request: chạy được nhưng mất cache. Chat Completions để khỏi phải gửi gì: chất lượng agent kém hơn Responses.',
+      p: 'Lịch sử nặng hơn (signature, blob mã hoá), phải lưu theo schema của từng provider. Với keep-all, thinking cũ tích luỹ trong input mỗi lượt. Không được sửa system prompt hay danh sách tool giữa phiên; muốn đổi phải bắt đầu phiên mới hoặc chấp nhận mất cache và có thể lỗi.'
+    },
+    deep: [
+      {
+        q: '"Stateless" nghĩa là gì? Sao mỗi lượt phải gửi lại cả lịch sử?',
+        a: `<p>Server không lưu gì giữa hai request. Model không có trí nhớ: nó chỉ thấy đúng những gì có trong request. Muốn model biết lượt 2 khách hỏi gì, bạn phải đặt lượt 2 vào mảng <code>messages</code> của request lượt 5.</p>
+<p>Với reasoning model, lịch sử còn chứa một thứ bạn không viết ra: thinking block kèm signature. Request lượt 3, vòng hai của tool loop, trông như sau (rút gọn):</p>
+<div class="tbl"><table><tr><td class="mono" style="font-size:12px;white-space:pre-wrap">[{"role": "user", "content": "Đơn SV-4821 giao thiếu..."},
+ {"role": "assistant", "content": [
+   {"type": "thinking", "thinking": "", "signature": "EqQB..."},
+   {"type": "redacted_thinking", "data": "EmwK..."},
+   {"type": "tool_use", "id": "toolu_01", "name": "get_order", "input": {"order_id": "SV-4821"}}]},
+ {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_01", "content": "..."}]}]</td></tr></table></div>
+<p>Hai block đầu của assistant là thứ code "chỉ giữ text" sẽ vứt đi.</p>`,
+        take: 'Lịch sử là bản sao response của provider. Thứ bạn không đọc được vẫn là một phần của lịch sử.'
+      },
+      {
+        q: 'Sao bỏ thinking ở lượt 2 không lỗi, mà bỏ ở lượt 3 lại 400?',
+        a: `<p>Vì lượt 3 có <b>tool loop</b>. README §1.5 tách hai tình huống:</p>
+<ul><li><b>Trong tool loop</b>: tool_use được sinh ra từ một mạch suy luận. Vòng hai cần mạch đó để làm tiếp. Thiếu nó, phần lớn trường hợp API trả 400.</li>
+<li><b>Giữa các user turn</b>: quy tắc tuỳ provider. Model last-turn-only (Haiku 4.5) vốn bị API bỏ thinking cũ, nên bạn bỏ trước cũng không sao. Model keep-all (Sonnet 5.5) đọc thinking mọi lượt: bỏ đi thì không lỗi, nhưng model mất suy luận cũ.</li></ul>
+<p>DeepSeek là ngoại lệ khó chịu: request có <code>tools</code> thì phải gửi lại <code>reasoning_content</code> <b>mọi lượt</b>, thiếu là 400, kể cả lượt không gọi tool. Chọn DeepSeek + "chỉ giữ text" ở hình chính: lỗi ngay lượt 2.</p>`,
+        take: 'Code chạy ổn ở hai lượt chat đầu chưa chứng minh gì. Lỗi lộ ra ở lượt đầu tiên có tool call.'
+      },
+      {
+        q: 'Signature "ghi lại prefix" là sao? Sửa một chữ trong system prompt thì hỏng tới đâu?',
+        a: `<p>Trên model có preserved thinking (Fable 5.1, 5.2, Mythos 5.1, 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5), signature của mỗi thinking block ghi lại phần đứng trước đã sinh ra nó: system, tools, mọi message trước đó (README §1.5). Sửa phần nào phía trước thì mọi block <b>đứng sau chỗ sửa</b> mất hiệu lực; block đứng trước chỗ sửa vẫn hợp lệ. Chọn chỗ sửa:</p>`,
+        viz(box) {
+          const pos = [['system', 'System prompt / tools'], ['u1', 'User lượt 1'], ['u2', 'User lượt 2'], ['u3', 'User lượt 3'], ['u4', 'User lượt 4']];
+          const blocks = [[2, 'thinking lượt 2'], [3, 'thinking + redacted lượt 3'], [4, 'thinking lượt 4']];
+          const out = el('div');
+          const draw = (v) => {
+            const at = v === 'system' ? 0 : +v.slice(1);
+            out.innerHTML = '<div class="tbl"><table><tr><th>Block</th><th>Sau khi sửa ' + pos.find((p) => p[0] === v)[1] + '</th></tr>' + blocks.map(([t, n]) => `<tr><td>${n}</td><td>${t >= at && at > 0 || at === 0 ? '<b class="bad">mất hiệu lực</b>' : '<b class="ok">vẫn hợp lệ</b>'}</td></tr>`).join('') + '</table></div>' +
+              '<div class="tbl"><table><tr><th>Model / chế độ</th><th>Khi gặp block mất hiệu lực (README §1.5)</th></tr><tr><td>Fable 5.2, Mythos 5.2, Mythos 5.1</td><td>400</td></tr><tr><td>Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5</td><td>400 <b>hoặc</b> không báo lỗi: block vẫn đến model, vẫn tính tiền</td></tr><tr><td>Message Batches</td><td>Không bao giờ 400: bỏ block, hoặc cho đi qua trên một số model</td></tr><tr><td>Beta <code>thinking-binding-controls-2026-08-01</code></td><td><code>"error"</code>: luôn 400. <code>"drop_block"</code>: bỏ block, không tính tiền</td></tr></table></div>';
+          };
+          box.append(el('div', { class: 'row' }, [select('Sửa', pos, 'system', draw).node]), out,
+            el('div', { class: 'cap', text: 'Block sinh ra sau lần sửa thì hợp lệ với prefix mới. Lượt 1 và lượt 5 không có thinking block trong ví dụ (model tự quyết có nghĩ hay không, và câu dễ thì không nghĩ).' }));
+          draw('system');
+        },
+        take: 'Lịch sử của phiên có suy luận là append-only. Đổi system prompt hay tools nghĩa là phiên mới.'
+      },
+      {
+        q: 'Code của tôi giữ lại mọi block có type "thinking". Vậy là an toàn rồi chứ?',
+        a: `<p>Chưa. Claude còn một loại block suy luận nữa: <code>redacted_thinking</code>, chứa <code>data</code> mã hoá. README §1.2 trích docs Claude: chỉ lọc theo <code>block.type == "thinking"</code> sẽ <b>âm thầm bỏ</b> <code>redacted_thinking</code> và làm hỏng giao thức nhiều lượt.</p>
+<p>Lỗi này hiếm gặp lúc test vì <code>redacted_thinking</code> không xuất hiện ở mọi response. Trong hình chính, lượt 3 có một block như vậy: chọn Claude + "lọc type == thinking" để thấy tool loop hỏng đúng ở lượt đó.</p>
+<p><b>POC 03 đo được:</b> dựng lịch sử 4 lượt có một <code>redacted_thinking</code> ở vòng hai tool loop lượt 3, rồi lọc <code>type == "thinking"</code>. Cả ba cột Claude (Sonnet 5.5, Fable 5.2, Haiku 4.5) đều ra <code>400: messages[7] tool_use thiếu redacted_thinking</code>; OpenAI, DeepSeek, Gemini vẫn hợp lệ vì họ không có loại block này. Nghĩa là code lọc theo type có thể qua hết test trên provider khác và chỉ vỡ khi chuyển sang Claude, đúng ở response hiếm có block mã hoá.</p>
+<p>Một bẫy cùng họ trong bảng §3.7: bỏ block có <code>thinking</code> rỗng khi <code>display: "omitted"</code> ("rỗng thì bỏ cho gọn") cũng gây 400. Gửi nguyên văn, kể cả block rỗng.</p>`,
+        take: 'Không lọc theo type. Bất kỳ danh sách type "cần giữ" nào cũng sẽ thiếu loại block provider thêm vào sau.'
+      },
+      {
+        q: 'Model keep-all đọc thinking mọi lượt. Vậy mỗi lượt tôi trả thêm bao nhiêu?',
+        a: `<p>README §1.5: với Claude keep-all, thinking block cũ được giữ trong context và cache, nên <b>mỗi lượt sau</b> đều trả tiền input (hoặc cache read) cho chúng. Hội thoại agent dài tích luỹ suy luận khá nhanh. Kéo số lượt và token suy luận mỗi lượt:</p>`,
+        viz(box) {
+          const st = { n: 20, th: 2000 }, out = el('div');
+          const draw = () => {
+            let keep = 0, cum = 0;
+            for (let k = 1; k <= st.n; k++) { cum += keep; keep += st.th; }
+            out.innerHTML = `<div class="stat"><span>Thinking cũ trong input ở lượt ${st.n}: <b>${fT((st.n - 1) * st.th)}</b> token</span><span>Cộng dồn cả phiên: <b>${fT(cum)}</b> token input</span><span>Nếu đọc từ cache ($0,10/1M, Sonnet 5.5): <b>${usd((cum * P_IN * CR) / 1e6)}</b></span><span>Nếu cache miss: <b>${usd((cum * P_IN) / 1e6)}</b></span></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Số lượt', 2, 60, 1, st.n, (v) => { st.n = v; draw(); }).node, slider('Token suy luận/lượt', 200, 10000, 200, st.th, (v) => { st.th = v; draw(); }, fT).node]), out,
+            el('div', { class: 'cap', text: 'Cộng dồn tăng theo bình phương số lượt: lượt k mang theo thinking của k−1 lượt trước. Giá Sonnet 5.5: $2/1M input, $0,10/1M cache read (Cost optimization §2.1). Model last-turn-only không có khoản này vì API tự bỏ thinking cũ.' }));
+          draw();
+        },
+        take: 'Keep-all đổi chi phí input tăng dần lấy trí nhớ suy luận. Phiên agent dài cần trần số lượt và thinking block clearing.'
+      },
+      {
+        q: 'Muốn lượt 3 dùng effort thấp hơn mà vẫn giữ cache thì làm thế nào?',
+        a: `<p><b>Vì sao đổi tham số lại mất cache?</b> Bạn tưởng <code>effort</code> là một tham số nằm ngoài prompt, như header HTTP. README §1.5: thực ra cấu hình suy luận nằm trong phần prompt được provider render ra. Cache so khớp từ ký tự đầu tiên và dừng ở chỗ khác đầu tiên, nên đổi <code>medium</code> thành <code>low</code> làm mọi thứ sau chỗ đổi không khớp nữa. Docs Claude có ví dụ: request thứ ba đổi effort từ <code>medium</code> sang <code>low</code> cho <code>cache_read_input_tokens: 0</code>.</p>
+<p><b>POC 03 đo được</b> trên bản render toy (JSON có <code>effort</code> đứng đầu, giống vị trí cấu hình trong prompt thật): giữa request lượt 3 và lượt 4, giữ effort thì prefix chung là 765 ký tự (100% request trước); đổi effort cấp request thì chỉ còn 12 ký tự (2%); per-message effort thì vẫn 765 (100%). <b>Không có nghĩa</b> tỉ lệ thật là đúng 2%: đó là chiều dài toy. Điều giữ nguyên là cơ chế: chỗ đổi nằm ở đâu thì cache chỉ khớp tới đó.</p>
+<p>Cách đúng: không đổi tham số cấp request, mà nối thêm một message mang cấu hình mới vào cuối. README §1.5 và §2.2, §2.3:</p>
+<ul><li><b>OpenAI Responses:</b> thêm item vào <code>input</code> trước user message tiếp theo: <code>{"type": "configuration_update", "reasoning": {"effort": "low"}}</code>. Có hiệu lực cho các response sau. Không kết hợp với compaction hoặc truncation tự động.</li>
+<li><b>Claude (beta <code>mid-conversation-output-config-2026-07-01</code>, bật bằng header <code>anthropic-beta</code>):</b> thêm <code>{"role": "system", "content": [], "output_config": {"effort": "low"}}</code> trước user message. Có ở Fable 5.1, Mythos 5.1, Opus 5.5, Opus 5, Sonnet 5.5, Haiku 5.5 trên Claude API.</li></ul>
+<p>Các lỗi đi kèm: thiếu beta header là 400 <code>messages.N.output_config: Extra inputs are not permitted</code>; model không hỗ trợ là 400 <code>output_config.effort requires a model that supports per-turn effort</code>. Chọn Haiku 4.5 + "cơ chế giữa chừng" ở hình chính để thấy lỗi thứ hai. Mức mới chỉ có hiệu lực từ user turn có input mới; đặt trong tool loop sẽ chờ tới lượt người dùng kế tiếp.</p>`,
+        take: 'Đổi cấu hình giữa hội thoại là một message mới nối vào cuối, không phải một tham số khác ở đầu.'
+      },
+      {
+        q: 'Chuyển lịch sử sang model khác hoặc tài khoản khác thì suy luận cũ còn dùng được không?',
+        a: `<p>Thường là không, và thường không có thông báo (README §1.2, §1.5):</p>
+<ul><li>Thinking block của Fable 5.2, Mythos 5.2, Sonnet 5.5, Haiku 5.5 <b>gắn với tài khoản</b> tạo ra nó. Ở tài khoản khác, API bỏ chúng mà không báo lỗi. Lịch sử từ môi trường thử chuyển sang production khác tài khoản là mất suy luận.</li>
+<li>OpenAI: suy luận chỉ tái sử dụng trong cùng họ model, không mang được giữa GPT-5.6 và GPT-5.5.</li>
+<li>Claude: Fable 5.1 đọc được thinking của Opus 5 và (trên Claude API) Opus 5.5, chiều ngược lại thì không. Block không đọc được bị bỏ, không lỗi, không tính tiền.</li>
+<li>Gemini: vẫn gửi lại thought block của model cũ khi đổi model giữa phiên, backend tự xử lý tương thích.</li></ul>`,
+        take: 'Suy luận là trạng thái riêng của một model và một tài khoản. Đổi một trong hai là coi như mất, dù API không báo.'
+      },
+      {
+        q: 'Chat Completions không có gì để gửi lại. Vậy dùng nó cho khỏi lo, được không?',
+        a: `<p>Được, theo nghĩa không bao giờ 400 vì thiếu reasoning. Nhưng README §1.5 và §2.2: reasoning item <b>không bao giờ</b> vào context lượt sau. Docs OpenAI ghi điều này có thể làm chất lượng giảm nhẹ và tăng token suy luận trong workflow nhiều function call, vì model phải suy luận lại từ đầu mỗi vòng. Chat Completions cũng không hỗ trợ function calling với GPT-6 Astra và GPT-6.1 Sol.</p>
+<p>Bảng §3.7 có đúng dòng: "Chat Completions: chất lượng agent kém hơn Responses" → chuyển sang Responses API.</p>`,
+        take: 'Không phải gửi gì không có nghĩa là không mất gì. Agent nhiều tool nên dùng API giữ được trạng thái suy luận.'
+      },
+      {
+        q: 'Dùng API stateful (previous_response_id) thì hết mọi chuyện trên phải không?',
+        a: `<p>Hết phần tự quản trạng thái: server giữ reasoning item, bạn chỉ gửi ID (README §1.5). Trong hình chính, chọn "previous_response_id": lựa chọn "Code lưu lịch sử" không còn tác dụng.</p>
+<p>Còn lại: đổi effort vẫn phải qua <code>configuration_update</code> để giữ cache; <code>configuration_update</code> không dùng chung được với compaction hoặc truncation tự động, và endpoint <code>/responses/compact</code> từ chối lịch sử có item này. Với OpenAI stream, nếu bạn vẫn tự lưu item thì lấy từ <code>response.output_item.done</code>, không từ <code>.added</code>, vì <code>encrypted_content</code> có thể chưa đầy đủ.</p>`,
+        take: 'API stateful chuyển việc giữ trạng thái sang provider, nhưng quy tắc cache và đổi cấu hình giữa chừng vẫn giữ nguyên.'
+      }
+    ],
+    poc: {
+      goal: "Dựng lịch sử 4 lượt thật (đơn SV-4821, có <code>redacted_thinking</code> trong tool loop) và chạy bộ kiểm tra áp quy tắc README §1.5/§3.7 cho bốn cách lưu lịch sử trên sáu cấu hình provider. Không gọi API: mã 400 là luật README được mã hoá, signature là hash <b>toy</b> của prefix.",
+      file: "docs/reasoning-models/pocs/03_multi_turn.py",
+      run: "uv run docs/reasoning-models/pocs/03_multi_turn.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy dưới vài giây, miễn phí.",
+      output: "Lịch sử 4 lượt (SV-4821), 9 message, đang ở vòng hai của tool loop lượt 3. Không gọi API:\nbộ kiểm tra áp quy tắc README §1.5/§3.7 lên request thật sẽ gửi. Signature là hash TOY của prefix nhìn thấy.\n\nCách lưu                 Claude Sonnet 5.5                                            Claude Fable 5.2                                             Claude Haiku 4.5                                             OpenAI Responses                   DeepSeek + tools                    Gemini stateless\n-----------------------  -----------------------------------------------------------  -----------------------------------------------------------  -----------------------------------------------------------  ---------------------------------  ----------------------------------  ---------------------------------------\nLưu nguyên response      hợp lệ                                                       hợp lệ                                                       hợp lệ                                                       hợp lệ                             hợp lệ                              hợp lệ\nChỉ giữ text/tool_use    400: messages[7] tool_use thiếu thinking, redacted_thinking  400: messages[7] tool_use thiếu thinking, redacted_thinking  400: messages[7] tool_use thiếu thinking, redacted_thinking  400: toolu_2 thiếu reasoning item  400: 4 msg thiếu reasoning_content  finishReason: MISSING_THOUGHT_SIGNATURE\nLọc type == 'thinking'   400: messages[7] tool_use thiếu redacted_thinking            400: messages[7] tool_use thiếu redacted_thinking            400: messages[7] tool_use thiếu redacted_thinking            hợp lệ                             hợp lệ                              hợp lệ\nNguyên văn + sửa system  400 hoặc im lặng: 4 block mất hiệu lực                       400: 4 block mất hiệu lực                                    hợp lệ                                                       hợp lệ                             hợp lệ                              hợp lệ\n\nCache: độ dài prefix chung (ký tự) giữa request lượt 3 và lượt 4, bản render TOY\nCách đổi                                  Prefix chung  % request trước còn khớp\n----------------------------------------  ------------  ------------------------\nGiữ effort medium                         765           100%\nĐổi effort cấp request → low              12            2%\nPer-message effort (message system rỗng)  765           100%\n\nRút ra: chỉ 'lưu nguyên response' qua được cả 6 cấu hình. Lọc type == 'thinking' chỉ hỏng ở Claude và chỉ khi\nlượt có redacted_thinking; sửa system không 400 ở model last-turn-only nhưng làm mất hiệu lực block ở model có preserved thinking.",
+      measured: true,
+      read: ["Chỉ dòng <b>Lưu nguyên response</b> hợp lệ ở cả sáu cột.", "Lọc <code>type == \"thinking\"</code> chỉ hỏng ở Claude, vì làm mất <code>redacted_thinking</code> của lượt đang chạy.", "Sửa system prompt: Haiku 4.5 (last-turn-only) không lỗi, Fable 5.2 trả 400, Sonnet 5.5 có thể 400 hoặc im lặng.", "Bảng cache: đổi effort cấp request làm prefix chung còn 2%; per-message effort giữ 100%. Bản render là toy, nhưng cơ chế prefix là cùng một phép so chuỗi."]
+    },
+    mount(stage) {
+      const st = { p: 'claudeKeep', s: 'raw', eff: 'none', edit: false };
+      const list = el('div'), stat = el('div', { class: 'stat' }), flags = el('div');
+      const LAB = { ok: ['ok', 'var(--ok)'], silent: ['âm thầm', 'var(--warn)'], risk: ['rủi ro', 'var(--bad)'], err: ['lỗi', 'var(--bad)'] };
+      function render() {
+        const R = simulate(st), base = simulate({ p: st.p, s: 'raw', eff: 'none', edit: false });
+        const done = R.filter((r) => !r.blocked), mx = Math.max(...base.concat(R).filter((r) => !r.blocked).map((r) => r.hist), 1);
+        list.replaceChildren(...R.map((r) => {
+          const t = TURNS[r.i];
+          if (r.blocked) return el('div', { style: 'display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);gap:10px;padding:8px 0;border-bottom:1px solid var(--line);opacity:.45;font-size:12.5px' }, [el('div', { html: `<b>Lượt ${r.i + 1}</b> · ${t.u}` }), el('div', { text: 'Không chạy: hội thoại đã dừng ở lỗi phía trên.' })]);
+          const W = (n) => `${(n / mx) * 100}%`;
+          return el('div', { style: 'display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px' }, [
+            el('div', { html: `<b>Lượt ${r.i + 1}</b>${t.tool ? ' <span class="hint">tool loop</span>' : ''}<br>${t.u}<br><span class="mono" style="font-size:11px;color:var(--mute)">suy luận ${fT(t.th)} · ${r.reqs} request</span>` }),
+            el('div', {}, [
+              el('div', { style: 'display:flex;height:14px;background:var(--bg);border:1px solid var(--line);border-radius:3px;overflow:hidden' }, [
+                el('div', { style: `width:${W(r.histText)};background:var(--g1)` }), el('div', { style: `width:${W(r.oldThink)};background:var(--warn)` }), el('div', { style: `width:${W(r.ut)};background:var(--accent)` })]),
+              el('div', { style: 'display:flex;height:5px;margin-top:2px;border-radius:2px;overflow:hidden;background:var(--bg)' }, [el('div', { style: `width:${W(r.cache1)};background:var(--ok)` })]),
+              el('div', { class: 'mono', style: 'font-size:11px;margin-top:3px', html: `<b style="color:${LAB[r.st][1]}">${LAB[r.st][0]}</b> · input ${fT(r.hist)} (thinking cũ ${fT(r.oldThink)}${PROV[st.p].oldIn === null ? ', README không nêu cách tính' : ''}) · cache ${fT(r.cached)}/${fT(r.inTok)} · ${usd(r.cost)}` }),
+              ...r.notes.map(([k, m]) => el('div', { style: `font-size:12px;margin-top:2px;color:${k === 'ok' ? 'var(--mute)' : LAB[k][1]}`, text: m }))])]);
+        }));
+        const sum = (A, f) => A.filter((r) => !r.blocked).reduce((a, r) => a + f(r), 0);
+        const cost = sum(R, (r) => r.cost), bcost = sum(base, (r) => r.cost), inT = sum(R, (r) => r.inTok), ca = sum(R, (r) => r.cached), old = sum(R, (r) => r.oldThink);
+        const stop = R.find((r) => r.st === 'err');
+        stat.innerHTML = `<span>Lượt chạy xong: <b>${stop ? stop.i : done.length}/5</b></span><span>Tiền cả phiên: <b>${usd(cost)}</b> (gửi nguyên văn, không đổi gì: ${usd(bcost)})</span><span>Tỉ lệ input từ cache: <b>${inT ? Math.round((ca / inT) * 100) : 0}%</b></span><span>Thinking cũ trong input: <b>${fT(old)}</b> token</span>`;
+        const f = [];
+        if (stop) f.push(flag('bad', `<b>Hội thoại dừng ở lượt ${stop.i + 1}:</b> ${stop.notes.filter((n) => n[0] === 'err').map((n) => n[1]).join('; ')}. Hai lượt đầu chạy ổn nên lỗi không lộ ra lúc test nhanh. Không có nghĩa model hay provider lỗi: request thiếu trạng thái suy luận mà provider yêu cầu.<br>Trong hệ thống thật: <code>messages.append({"role": "assistant", "content": resp.content})</code> (Claude), gửi lại <code>response.output</code> (OpenAI), không dựng lại từ text, không lọc theo type.`));
+        const risk = R.find((r) => r.st === 'risk');
+        if (risk) f.push(flag('bad', `<b>Lượt ${risk.i + 1} có thể lỗi hoặc tệ hơn: chạy mà sai.</b> Sửa system prompt làm mất hiệu lực thinking cũ. Nếu API không báo lỗi, model vẫn đọc suy luận về prompt cũ và bạn vẫn trả tiền cho nó.<br>Trong hệ thống thật: lịch sử append-only; đặt <code>prefix_mismatch_behavior: "error"</code> để lỗi lộ ra thay vì âm thầm.`));
+        const miss = R.filter((r) => !r.blocked && r.i > 0 && r.cached === 0);
+        if (miss.length) f.push(flag('warn', `<b>Cache miss ở lượt ${miss.map((r) => r.i + 1).join(', ')}:</b> ${fT(miss.reduce((a, r) => a + r.hist, 0))} token input tính giá đầy đủ thay vì giá cache read. Đổi effort ở cấp request hoặc sửa system prompt làm prefix khác từ đầu. Không có nghĩa cache hỏng: nó đang làm đúng việc là chỉ khớp prefix giống hệt.<br>Trong hệ thống thật: <code>configuration_update</code> hoặc per-message effort; không sửa phần đầu của prompt giữa phiên.`));
+        const silent = R.find((r) => !r.blocked && r.notes.some((n) => n[0] === 'silent' && /mất suy luận/.test(n[1])));
+        if (silent) f.push(flag('warn', '<b>Không lỗi, nhưng model quên suy luận cũ.</b> Model này đọc suy luận của mọi lượt; code chỉ giữ text nên lượt sau model phải nghĩ lại từ đầu hoặc thiếu ngữ cảnh. Lỗi kiểu này chỉ thấy qua eval chất lượng, không thấy trong log lỗi.'));
+        if (!stop && old > 0 && st.p === 'claudeKeep') f.push(flag('ok', `Keep-all: ${fT(old)} token thinking cũ đi kèm input qua các lượt. Đó là giá của việc model nhớ suy luận; phần lớn đọc từ cache nếu prefix ổn định.`));
+        flags.replaceChildren(...f);
+      }
+      const pS = select('Provider', Object.entries(PROV).map(([k, v]) => [k, v.name]), st.p, (v) => { st.p = v; render(); });
+      const sS = select('Code lưu lịch sử', [['raw', 'lưu nguyên response'], ['text', 'chỉ giữ role + text / tool call'], ['between', 'giữ nguyên trong tool loop, lưu DB chỉ text'], ['filter', 'lọc block.type == "thinking"']], st.s, (v) => { st.s = v; render(); });
+      const eS = select('Lượt 3 hạ effort', [['none', 'không đổi'], ['request', 'đổi tham số cấp request'], ['mid', 'cơ chế giữa chừng của provider']], st.eff, (v) => { st.eff = v; render(); });
+      const ed = el('input', { type: 'checkbox' }); ed.addEventListener('change', () => { st.edit = ed.checked; render(); });
+      stage.append(el('div', { class: 'row' }, [pS.node, sS.node]), el('div', { class: 'row' }, [eS.node, el('label', { class: 'ctl' }, [ed, 'Sửa system prompt trước lượt 4'])]),
+        el('div', { class: 'legend', html: '<span><i style="background:var(--g1)"></i>system + lịch sử text</span><span><i style="background:var(--warn)"></i>thinking cũ gửi lại</span><span><i style="background:var(--accent)"></i>câu mới</span><span><i style="background:var(--ok)"></i>đọc từ cache</span>' }),
+        list, stat, flags,
+        el('p', { class: 'hint', text: 'Giả định: token mỗi lượt, system + tools 1.500 token, mỗi vòng tool 90 token, giá Sonnet 5.5 theo Cost optimization §2.1 ($2/1M input, $10/1M output, $0,10/1M cache read) áp cho mọi provider, bỏ qua phí ghi cache, cache khớp phần lịch sử trùng với request trước. Với OpenAI, thinking cũ (reasoning.context all_turns) được tính như input là giả định. Quy tắc 400, MISSING_THOUGHT_SIGNATURE, keep-all, cache miss khi đổi effort và prefix binding lấy từ README §1.2, §1.5, §2.2, §2.3, §3.7.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

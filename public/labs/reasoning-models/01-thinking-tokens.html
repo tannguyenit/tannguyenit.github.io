@@ -1,0 +1,578 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reasoning Models Lab 01</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="00-workflow.html">← Lab trước</a><a href="02-tasks-effort-budget.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/reasoning-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const MODES = [
+    { id: 'oai-resp', name: 'OpenAI Responses, summary: "auto"', vis: 'sum', field: 'usage.output_tokens_details.reasoning_tokens', back: 'reasoning item (encrypted_content khi stateless)', stop: 'status: "incomplete", reason: "max_output_tokens"' },
+    { id: 'oai-cc', name: 'OpenAI Chat Completions', vis: 'none', field: 'usage.completion_tokens_details.reasoning_tokens', back: 'không có cơ chế gửi lại', stop: 'bị cắt (README chỉ mô tả field của Responses)' },
+    { id: 'cl-sum', name: 'Claude, display: "summarized"', vis: 'sum', field: 'usage.output_tokens_details.thinking_tokens', back: 'thinking block + signature', stop: 'stop_reason: "max_tokens"' },
+    { id: 'cl-omit', name: 'Claude, display: "omitted" (mặc định 5.x)', vis: 'none', field: 'usage.output_tokens_details.thinking_tokens', back: 'thinking block rỗng + signature', stop: 'stop_reason: "max_tokens"' },
+    { id: 'gem', name: 'Gemini, includeThoughts / thinking_summaries', vis: 'sum', field: 'usageMetadata.thoughtsTokenCount', back: 'thought signature', stop: 'status: "incomplete" / finishReason: MAX_TOKENS' },
+    { id: 'open', name: 'DeepSeek, Qwen, model tự host', vis: 'full', field: 'reasoning_tokens (DeepSeek: chưa xác minh)', back: 'reasoning_content (DeepSeek khi có tools)', stop: 'tuỳ runtime' }
+  ];
+  const P_OUT = 10;
+  const fT = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const usd = (x) => '$' + (x < 1 ? x.toFixed(4) : x.toFixed(2));
+  const flag = (kind, html) => el('div', { style: `border-left:4px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 9%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+
+  function calc(m, T, A, cap, sr, simple) {
+    const tg = Math.min(T, cap), ag = Math.max(0, Math.min(A, cap - tg));
+    let vis = 0;
+    if (m.vis === 'full') vis = tg;
+    else if (m.vis === 'sum') vis = m.id === 'gem' && simple ? 0 : Math.round(tg * sr);
+    return { tg, ag, vis, billed: tg + ag, seen: vis + ag, hidden: tg - (m.vis === 'full' ? tg : 0), empty: ag === 0 && A > 0, cut: ag < A };
+  }
+
+  return {
+    id: 'thinking-tokens', nav: '1. Thinking token', ref: '§1.1–1.2',
+    title: 'Bạn trả tiền cho mọi token suy luận, nhưng phần lớn provider không cho bạn đọc chúng',
+    hook: 'Kéo số token suy luận và max_tokens. Mỗi hàng là một chế độ hiển thị trong README: thanh trên là token bị tính tiền, thanh dưới là token bạn đọc được.',
+    terms: [
+      ['Output token', 'Token model sinh ra, thường đắt hơn input token. Token suy luận cũng là output token. Ví dụ 3.000 token suy luận + 250 token trả lời = 3.250 output token trên hoá đơn.'],
+      ['Thinking token / reasoning token', 'Cùng một thứ, mỗi provider gọi một tên: OpenAI reasoning_tokens, Claude thinking_tokens, Gemini thoughtsTokenCount.'],
+      ['Chuỗi suy luận gốc (raw)', 'Toàn văn phần nháp model đã viết. OpenAI, Claude, Gemini đều không trả qua API. DeepSeek, Qwen và model tự host thì trả trong reasoning_content.'],
+      ['Tóm tắt (summary)', 'Bản rút gọn phần suy luận. Với Claude, do một model khác viết. Ví dụ 3.000 token nháp có thể chỉ còn vài trăm token tóm tắt.'],
+      ['Omitted', 'Giá trị display mặc định trên Claude 5.x: thinking block có "thinking": "" nhưng vẫn có signature.'],
+      ['Mã hoá (encrypted)', 'Blob bạn không đọc được, ví dụ encrypted_content của OpenAI hay data của redacted_thinking. Chỉ để gửi lại cho provider.'],
+      ['usage', 'Object trong response báo số token. Ví dụ Claude: {"output_tokens": 348, "output_tokens_details": {"thinking_tokens": 312}}.'],
+      ['max_tokens / max_output_tokens', 'Trần output của một request, tính cả suy luận. Hết trần trước khi viết câu trả lời là response rỗng.'],
+      ['Hybrid / adaptive', 'Hybrid: cùng model, bật tắt suy luận theo request. Adaptive: model tự quyết có nghĩ không, câu dễ có thể không có thinking block.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> chạy trợ lý chat trên Claude với display mặc định. Dashboard chi phí đếm output token, còn log hội thoại lưu phần text khách thấy. Câu tính khuyến mãi chồng nhau có câu trả lời chỉ ~250 token.',
+      scenario: 'Hoá đơn ghi trung bình hơn 3.000 output token mỗi câu tính giá, trong khi log chỉ có ~250 token chữ. Một kỹ sư thử hạ max_tokens xuống 1.000 "cho tiết kiệm" thì khách nhận câu trả lời trống.',
+      ask: 'Token nào bị tính tiền, token nào đọc được, ở mỗi provider và mỗi chế độ hiển thị? Và vì sao hạ max_tokens lại cho ra câu trả lời rỗng?',
+      solves: 'Tách hai con số trong log: token tính tiền (đọc từ field usage của suy luận) và token nhìn thấy. Đặt max_tokens theo tổng suy luận + trả lời, không theo độ dài câu trả lời.',
+      read: [
+        'Kéo <b>Token suy luận</b> (mặc định 3.000) và <b>Token trả lời</b>. Chọn <b>max_tokens</b>.',
+        'Mỗi hàng: thanh trên là token tính tiền (cam suy luận, xanh trả lời), thanh dưới là token bạn đọc được (cam mờ là tóm tắt hoặc toàn văn).',
+        'Cột bên phải ghi field đọc số token, thứ phải gửi lại, và tín hiệu khi bị cắt, đều lấy từ README.',
+        'Độ dài tóm tắt là <b>giả định</b> (README không ghi tỉ lệ). Giá output $10/1M là giá thật của Sonnet 5.5 (Cost optimization §2.1).'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Reasoning model sinh chuỗi suy luận trước câu trả lời. README §1.1: token suy luận là <b>output token</b>, tính tiền như output, chiếm chỗ trong context window và trong <code>max_tokens</code>. Câu trả lời 200 token có thể đi kèm vài nghìn token suy luận.</p>
+<div class="tbl"><table>
+<tr><th>Provider</th><th>Có chuỗi gốc qua API?</th><th>Nhận được gì</th><th>Field đọc số token</th></tr>
+<tr><td>OpenAI</td><td>Không</td><td>Reasoning item: <code>summary</code> khi bật <code>reasoning.summary</code>, <code>encrypted_content</code> khi stateless</td><td><code>usage.output_tokens_details.reasoning_tokens</code></td></tr>
+<tr class="cur"><td>Claude</td><td>Không</td><td><code>thinking</code> block: tóm tắt (summarized) hoặc rỗng (omitted), luôn kèm <code>signature</code>; <code>redacted_thinking</code> chứa <code>data</code> mã hoá</td><td><code>usage.output_tokens_details.thinking_tokens</code></td></tr>
+<tr><td>Gemini</td><td>Không</td><td>Part <code>thought: true</code> chứa tóm tắt (có thể rỗng), và thought signature</td><td><code>usageMetadata.thoughtsTokenCount</code></td></tr>
+<tr><td>xAI</td><td>Tuỳ model</td><td><code>reasoning_content</code>; grok-4.7 trả <code>reasoning.encrypted_content</code></td><td><code>reasoning_tokens</code></td></tr>
+<tr><td>DeepSeek, Qwen, tự host</td><td>Có</td><td>Toàn văn trong <code>reasoning_content</code> hoặc <code>reasoning</code></td><td>Tuỳ provider</td></tr>
+</table></div>
+<h4>Ba kiểu model (README §1.1)</h4>
+<ul><li><b>Luôn suy luận:</b> Grok 4.x; Claude Opus 5.5, Fable 5.1, Mythos 5.1; Gemini 3.x và 2.5 Pro. Mọi request đều có chi phí suy luận.</li><li><b>Hybrid:</b> Claude Haiku 5.5, Opus 4.6–4.8; Gemini 2.5 Flash; Qwen3 hybrid; DeepSeek.</li><li><b>Adaptive:</b> Claude adaptive thinking; Gemini dynamic thinking. Đừng giả định thinking block luôn xuất hiện.</li></ul>
+<div class="verdict"><b>Điểm cần nhớ:</b> ẩn suy luận không làm rẻ đi. Log cả số token suy luận lẫn output token; đặt max_tokens rộng; không dùng tóm tắt làm lời giải thích cho khách.</div>`,
+    why: {
+      c: 'Log field token suy luận của từng provider cạnh output token, và tính chi phí từ đó. Dùng display omitted khi không cần hiện tiến trình (chữ đầu của câu trả lời đến sớm hơn khi stream), summarized khi cần hiện "đang suy nghĩ gì". Đặt max_tokens theo p95 của suy luận cộng câu trả lời.',
+      s: 'Đo chi phí bằng độ dài text đã hiển thị: hụt cả phần suy luận, có khi hụt 90%. Ẩn suy luận để tiết kiệm: tiền không đổi. Hạ max_tokens để chặn chi phí: request rỗng mà vẫn mất tiền phần đã sinh.',
+      p: 'Phải đọc field khác nhau cho mỗi provider và chuẩn hoá vào một schema log. Không đọc được chuỗi gốc trên provider đóng, nên debug dựa vào tóm tắt vốn không trung thực hoàn toàn. Với provider trả toàn văn, phải tự lọc trước khi hiện cho người dùng.'
+    },
+    deep: [
+      {
+        q: 'Thinking token là gì? Sao nó lại tính như output, trong khi khách không đọc?',
+        a: `<p>Vì về mặt máy, nó <b>là</b> output. Model sinh từng token một, và token nháp được sinh bằng đúng cơ chế như token câu trả lời: mỗi token tốn một bước tính toán trên GPU. Provider tính tiền theo công việc GPU đã làm, không theo việc ai đọc.</p>
+<p>README §1.2 dẫn từng provider: OpenAI ghi reasoning token "billed as output tokens and occupy the context window"; Gemini ghi "Response pricing is the sum of output tokens and thinking tokens"; xAI ghi "billed as part of your total consumption".</p>`,
+        take: 'Token suy luận là công việc GPU thật. Hiện hay không hiện là chuyện giao diện, không phải chuyện hoá đơn.'
+      },
+      {
+        q: 'Không có chuỗi gốc thì tôi nhận được gì? Tóm tắt, rỗng, mã hoá khác nhau ra sao?',
+        a: `<p>Có bốn kiểu (README §1.2):</p>
+<ul><li><b>Tóm tắt:</b> Claude summarized, OpenAI <code>reasoning.summary</code>, Gemini <code>includeThoughts</code>. Đọc được, ngắn hơn bản gốc. Gemini ghi tóm tắt có thể rỗng với request đơn giản.</li>
+<li><b>Rỗng:</b> Claude omitted. Block vẫn có, <code>"thinking": ""</code>, kèm signature.</li>
+<li><b>Mã hoá:</b> OpenAI <code>encrypted_content</code>, Claude <code>redacted_thinking</code>, Grok <code>encrypted_content</code>. Không đọc được, chỉ để gửi lại.</li>
+<li><b>Toàn văn:</b> DeepSeek, Qwen, model tự host.</li></ul>
+<p>Một chi tiết: <code>signature</code> của Claude giống nhau với mọi giá trị display, nên đổi display giữa các lượt không làm hỏng việc gửi lại.</p>`,
+        viz(box) {
+          const ex = [['Claude summarized', '{"type": "thinking", "thinking": "Áp flash sale trước, rồi voucher có trần...", "signature": "EqQB..."}'], ['Claude omitted', '{"type": "thinking", "thinking": "", "signature": "EqQB..."}'], ['Claude redacted', '{"type": "redacted_thinking", "data": "EmwKAhgB..."}'], ['DeepSeek', '{"reasoning_content": "Giá iPhone 24.990.000, trừ flash sale 500.000 còn 24.490.000..."}']];
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Chế độ</th><th>Bạn nhận được (rút gọn)</th></tr>' + ex.map(([a, b]) => `<tr><td>${a}</td><td class="mono" style="font-size:12px">${b.replace(/</g, '&lt;')}</td></tr>`).join('') })]),
+            el('div', { class: 'cap', text: 'Tên field lấy từ README §1.2. Nội dung chữ là ví dụ ShopViet dựng sẵn, signature bị rút gọn.' }));
+        },
+        take: 'Tuỳ chế độ mà bạn đọc được nhiều hay ít, nhưng block nào nhận được thì phải giữ nguyên để gửi lại.'
+      },
+      {
+        q: 'Vậy chọn omitted cho rẻ hơn summarized, đúng không?',
+        a: `<p>Sai. README §1.2: Claude với <code>display: "omitted"</code> trả <code>thinking</code> rỗng nhưng <b>vẫn tính toàn bộ token suy luận</b>. Số tiền giống nhau với mọi giá trị display.</p>
+<p>Lợi ích duy nhất của omitted: khi stream, chữ đầu tiên của câu trả lời đến sớm hơn vì không phải chờ truyền phần tóm tắt. Bảng §3.7 có đúng dòng này: "Chi phí giảm ít dù đã ẩn suy luận" → cách xử lý là hạ effort thay vì ẩn.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (T) => {
+            const a = calc(MODES[2], T, 250, 1e9, 0.1), b = calc(MODES[3], T, 250, 1e9, 0.1);
+            out.innerHTML = `<div class="tbl"><table><tr><th></th><th>Token tính tiền</th><th>Token đọc được</th><th>Tiền (giả định $${P_OUT}/1M output)</th></tr><tr><td>summarized</td><td class="mono">${fT(a.billed)}</td><td class="mono">${fT(a.seen)}</td><td class="mono">${usd((a.billed * P_OUT) / 1e6)}</td></tr><tr><td>omitted</td><td class="mono">${fT(b.billed)}</td><td class="mono">${fT(b.seen)}</td><td class="mono">${usd((b.billed * P_OUT) / 1e6)}</td></tr></table></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Token suy luận', 0, 20000, 500, 3000, draw, fT).node]), out,
+            el('div', { class: 'cap', text: 'Cột tiền luôn bằng nhau ở hai dòng: đúng như README. Chỉ cột "đọc được" khác.' }));
+          draw(3000);
+        },
+        take: 'Muốn giảm tiền suy luận thì hạ effort. Display chỉ quyết định bạn thấy gì.'
+      },
+      {
+        q: 'Số token suy luận nằm ở đâu trong response? Sao phải log riêng?',
+        a: `<p>Mỗi provider một field. Claude: <code>usage.output_tokens</code> là tổng để tính tiền, <code>usage.output_tokens_details.thinking_tokens</code> là phần suy luận, luôn ≤ <code>output_tokens</code>. Khi stream, phần breakdown chỉ có ở event <code>message_delta</code> cuối.</p>
+<p>README §1.2: không có field này thì không biết vì sao chi phí một request tăng gấp mười. Và §3.5: phân bố token suy luận thường lệch phải, phần lớn request dùng ít, một số ít dùng rất nhiều. Theo dõi p50 cho chi phí trung bình, p95 và p99 cho trần max_tokens và cảnh báo. Chọn provider để xem usage với số hiện tại:</p>`,
+        viz(box) {
+          const pre = el('pre', { class: 'mono', style: 'font-size:12px;margin:6px 0 0;overflow-x:auto' });
+          const st = { p: 'claude', T: 3000 };
+          const draw = () => {
+            const A = 250, T = st.T, U = {
+              claude: { usage: { input_tokens: 1300, output_tokens: T + A, output_tokens_details: { thinking_tokens: T } } },
+              openai: { usage: { input_tokens: 1300, output_tokens: T + A, output_tokens_details: { reasoning_tokens: T } } },
+              gemini: { usageMetadata: { promptTokenCount: 1300, candidatesTokenCount: A, thoughtsTokenCount: T } }
+            };
+            pre.textContent = JSON.stringify(U[st.p], null, 2);
+          };
+          box.append(el('div', { class: 'row' }, [select('Provider', [['claude', 'Claude'], ['openai', 'OpenAI Responses'], ['gemini', 'Gemini generateContent']], st.p, (v) => { st.p = v; draw(); }).node,
+            slider('Token suy luận', 0, 20000, 500, st.T, (v) => { st.T = v; draw(); }, fT).node]), pre,
+            el('div', { class: 'cap', text: 'Tên field thinking_tokens, reasoning_tokens, thoughtsTokenCount lấy từ README §1.2. Các field còn lại và số input 1.300 là minh hoạ; với Gemini, README ghi tiền output = output token + thinking token.' }));
+          draw();
+        },
+        take: 'Log hai cột: token suy luận và output token. Thiếu cột đầu thì dashboard chi phí là một hộp đen.'
+      },
+      {
+        q: 'Ví dụ 312/348 trong docs Claude: đặt max_tokens = 256 thì chuyện gì xảy ra?',
+        a: `<p>README §1.2 dùng đúng ví dụ này: 312 token suy luận sinh trước, 36 token trả lời sinh sau. Với trần 256 (giả định), request dừng với <code>stop_reason: "max_tokens"</code> <b>giữa lúc suy luận</b>, chưa có chữ nào của câu trả lời. 256 token đã sinh vẫn bị tính tiền.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (cap) => {
+            const tg = Math.min(312, cap), ag = Math.max(0, Math.min(36, cap - tg));
+            out.replaceChildren(el('div', { style: 'display:flex;height:22px;border:1px solid var(--line);border-radius:4px;overflow:hidden;position:relative' }, [
+              el('div', { style: `width:${(tg / 348) * 100}%;background:var(--warn)` }), el('div', { style: `width:${(ag / 348) * 100}%;background:var(--accent)` }),
+              el('div', { style: `position:absolute;left:${Math.min(100, (cap / 348) * 100)}%;top:0;bottom:0;border-left:2px solid var(--bad)` })]),
+            el('div', { class: 'stat', html: `<span>Suy luận: <b>${tg}/312</b></span><span>Trả lời: <b class="${ag === 0 ? 'bad' : ag < 36 ? 'bad' : 'ok'}">${ag}/36</b></span><span>stop_reason: <b>${cap < 348 ? '"max_tokens"' : '"end_turn"'}</b></span><span>Tính tiền: <b>${tg + ag}</b> token</span>` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('max_tokens', 100, 400, 4, 256, draw).node]), out,
+            el('div', { class: 'cap', text: '312 và 348 từ docs Claude (README §1.2). Vạch đỏ là max_tokens. Kéo qua 312 để thấy câu trả lời bắt đầu xuất hiện, qua 348 mới đủ.' }));
+          draw(256);
+        },
+        take: 'Trần thấp không cắt phần đắt (suy luận) mà cắt phần khách cần (câu trả lời).'
+      },
+      {
+        q: 'Khi bị cắt, mỗi provider báo thế nào? Có trạng thái nào trông như lỗi mà không phải lỗi không?',
+        a: `<div class="tbl"><table><tr><th>Provider</th><th>Tín hiệu</th><th>Ý nghĩa (README §2.4, §3.7)</th></tr>
+<tr><td>OpenAI Responses</td><td><code>status: "incomplete"</code>, <code>incomplete_details.reason: "max_output_tokens"</code></td><td>Hết trần, có thể chưa có chữ nào</td></tr>
+<tr><td>Claude</td><td><code>stop_reason: "max_tokens"</code></td><td>Hết trần; tool call cuối có thể dở, không được thực thi</td></tr>
+<tr><td>Gemini Interactions</td><td><code>status: "incomplete"</code></td><td>Hết <code>max_output_tokens</code>, text có thể rỗng, token đã sinh vẫn tính tiền</td></tr>
+<tr><td>Gemini Interactions</td><td><code>status: "requires_continuation"</code></td><td><b>Không phải lỗi</b>: một hop chạm trần 32K (không stream) hoặc 64K (stream) trong khi ngân sách còn; gửi hop tiếp với <code>continuation_token</code></td></tr>
+<tr><td>Gemini generateContent</td><td><code>finishReason: CONTINUATION</code> / <code>MAX_TOKENS</code></td><td>Như hai dòng trên</td></tr></table></div>
+<p>README §2.4: code coi mọi trạng thái khác <code>completed</code> là lỗi sẽ vứt bỏ những response chỉ cần gửi tiếp. Với <code>gemini-4-argon</code>, mỗi lượt sinh foreground giới hạn 65.536 token khi stream và 32.768 khi không stream, tính cả suy luận.</p>`,
+        take: 'Kiểm tra status / stop_reason / finishReason trước khi dùng output hoặc parse JSON, và phân biệt "hết trần" với "cần gửi tiếp".'
+      },
+      {
+        q: 'Tóm tắt suy luận đọc rất hợp lý. Nó có phản ánh đúng model đã nghĩ gì không?',
+        a: `<p>Không chắc. Tóm tắt của Claude do <b>một model khác</b> viết (README §1.2). Và ngay cả chuỗi gốc cũng không trung thực hoàn toàn: Anthropic cài gợi ý vào câu hỏi rồi kiểm tra model có thừa nhận đã dùng gợi ý không. Claude 3.7 Sonnet nhắc tới gợi ý 25% số lần, DeepSeek R1 39%.</p>
+<p>Một nghiên cứu của OpenAI: nếu phạt model vì "ý nghĩ xấu" bị phát hiện trong chuỗi suy luận, model học cách <b>giấu</b> ý định thay vì bỏ hành vi đó.</p>`,
+        viz(box) {
+          box.append(hbars([['Claude 3.7 Sonnet nhắc tới gợi ý', 25, true], ['DeepSeek R1 nhắc tới gợi ý', 39, false], ['Không nhắc (Claude 3.7)', 75, false]], { max: 100, fmt: (v) => v + '%' }),
+            el('div', { class: 'cap', text: 'Số từ nghiên cứu Anthropic mà README §1.2 dẫn [25].' }));
+        },
+        take: 'Dùng suy luận như log gợi ý để debug, không làm căn cứ giải thích quyết định cho khách hay kiểm toán.'
+      },
+      {
+        q: 'Thế yêu cầu model viết suy luận ra phần text cho tôi đọc thì sao?',
+        a: `<p>Trên Claude Fable 5.1, Opus 5.5, Opus 5, Sonnet 5.5 và Fable 5, request cố lấy suy luận nội bộ qua text có thể nhận refusal với <code>stop_details.category: "reasoning_extraction"</code> (README §1.2). Muốn xem suy luận thì đọc thinking block với <code>display: "summarized"</code>.</p>
+<p>Nếu thật sự cần "lý do" để lưu, hãy yêu cầu thứ kiểm tra được: trích dẫn điều khoản chính sách, các bước tính giá dưới dạng bảng số, rồi để code kiểm tra lại phép tính.</p>`,
+        take: 'Yêu cầu bằng chứng kiểm tra được trong câu trả lời, không yêu cầu bản sao suy luận.'
+      },
+      {
+        q: 'redacted_thinking và blob mã hoá vô dụng với tôi, bỏ đi cho nhẹ lịch sử được không?',
+        a: `<p>Không. Chúng là trạng thái để model tiếp tục mạch suy luận ở lượt sau. README §1.2: chỉ lọc theo <code>block.type == "thinking"</code> sẽ âm thầm bỏ <code>redacted_thinking</code> và làm hỏng giao thức nhiều lượt.</p>
+<p>Thêm một bẫy: thinking block của Fable 5.2, Mythos 5.2, Sonnet 5.5 và Haiku 5.5 <b>gắn với tài khoản</b> tạo ra nó. Ở tài khoản khác, API bỏ chúng mà không báo lỗi. Chuyển lịch sử hội thoại từ môi trường thử sang production khác tài khoản là mất suy luận mà không ai biết. Lab 03 đi sâu phần gửi lại.</p>`,
+        take: 'Blob không đọc được vẫn là dữ liệu phải giữ nguyên. Đọc được hay không không quyết định có được bỏ hay không.'
+      }
+    ],
+    poc: {
+      goal: "Tính lại ví dụ usage 312/348 của docs Claude, đếm token thật của một đoạn suy luận, bản tóm tắt và câu trả lời (viết tay), rồi so token tính tiền với token nhìn thấy ở từng chế độ hiển thị. Phần gọi Claude thật chỉ chạy khi có key.",
+      file: "docs/reasoning-models/pocs/01_thinking_tokens.py",
+      run: "uv run docs/reasoning-models/pocs/01_thinking_tokens.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy dưới vài giây, miễn phí. Phần 4 tuỳ chọn: <code>ANTHROPIC_API_KEY</code> trong <code>pocs/.env</code>, hai request trên <code>claude-haiku-5-5</code>, khoảng $0.001. Lần chạy dưới đây không có key nên phần 4 bị bỏ qua.",
+      output: "1. Ví dụ usage trong docs Claude (README §1.2): output_tokens 348, thinking_tokens 312\n   Phần ẩn: 312/348 = 89.7%; câu trả lời chỉ 36 token.\n   Tiền output trên claude-sonnet-5-5 ($10/1M): $0.00348, trong đó suy luận $0.00312.\nmax_tokens  Suy luận sinh  Trả lời sinh  stop_reason\n----------  -------------  ------------  -----------\n256         256            0             max_tokens\n348         312            36            end_turn\n1.000       312            36            end_turn\n\n2. Token THẬT của ba đoạn mẫu viết tay (bài khuyến mãi): suy luận đầy đủ, bản tóm tắt, câu trả lời\nĐoạn             o200k  cl100k\n---------------  -----  ------\nSuy luận đầy đủ  367    445\nBản tóm tắt      41     52\nCâu trả lời      86     97\n   Đoạn suy luận là VIẾT TAY để có văn bản thật mà đếm; suy luận thật của model dài hơn nhiều.\n\n3. Cùng một lần sinh, mỗi chế độ hiển thị: tính tiền bao nhiêu, nhìn thấy bao nhiêu (o200k)\nChế độ                                 Token tính tiền  Token nhìn thấy  % output không đọc được nguyên văn  Tiền output\n-------------------------------------  ---------------  ---------------  ----------------------------------  -----------\nClaude display omitted (mặc định 5.x)  453              86               81%                                 $0.00453\nClaude display summarized              453              127              81%                                 $0.00453\nOpenAI Responses summary auto          453              127              81%                                 $0.00453\nOpenAI Chat Completions                453              86               81%                                 $0.00453\nDeepSeek / Qwen / tự host              453              453              0%                                  $0.00453\n   Chi phí giống hệt ở mọi dòng: display chỉ đổi thứ bạn thấy (README §1.2). Bản tóm tắt do model khác viết, không phải nội dung đã tính tiền.\n\n4. Gọi Claude thật (tuỳ chọn)\n   ANTHROPIC_API_KEY không có trong pocs/.env → bỏ qua. Chép .env.example thành .env và điền key để đo thật.\n\nRút ra: số tiền đi theo thinking_tokens, không theo thứ hiển thị. Ẩn suy luận không làm rẻ đi,\nvà trần max_tokens nhỏ hơn phần suy luận cho ra response không có chữ nào. Phải log thinking_tokens mỗi request.",
+      measured: true,
+      read: ["Phần 1: 312/348 = 89,7% output là suy luận; với <code>max_tokens</code> 256, model chưa viết chữ trả lời nào.", "Phần 3: cột <b>Tiền output</b> giống hệt ở mọi dòng. <code>display</code> chỉ đổi thứ bạn thấy.", "Bản tóm tắt (41 token) ngắn hơn suy luận (367 token) gần 9 lần và do model khác viết: không phải bản ghi của phần đã tính tiền.", "Phần 4 chưa đo (không có key): khi có key, so <code>thinking_tokens</code> với độ dài bản tóm tắt để thấy cùng hiện tượng trên API thật."]
+    },
+    mount(stage) {
+      const st = { T: 3000, A: 250, cap: 25000, sr: 0.1, simple: false };
+      const rows = el('div'), stat = el('div', { class: 'stat' }), flags = el('div');
+      function bar(parts, scale) {
+        return el('div', { style: 'display:flex;height:14px;background:var(--bg);border:1px solid var(--line);border-radius:3px;overflow:hidden' },
+          parts.map(([n, c, o]) => el('div', { style: `width:${(n / scale) * 100}%;background:${c};opacity:${o || 1}` })));
+      }
+      function render() {
+        const scale = Math.max(st.T + st.A, 1);
+        const res = MODES.map((m) => [m, calc(m, st.T, st.A, st.cap, st.sr, st.simple)]);
+        rows.replaceChildren(...res.map(([m, r]) => el('div', { style: 'display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) minmax(0,1.3fr);gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px' }, [
+          el('div', { html: `<b>${m.name}</b>` }),
+          el('div', {}, [el('div', { class: 'hint', style: 'margin:0', text: `tính tiền ${fT(r.billed)}` }), bar([[r.tg, 'var(--warn)'], [r.ag, 'var(--accent)']], scale),
+            el('div', { class: 'hint', style: 'margin:4px 0 0', html: `đọc được ${fT(r.seen)}${r.tg - r.vis > 0 ? ` · <b class="bad">không thấy ${fT(r.tg - r.vis)}</b>` : ''}` }), bar([[r.vis, 'var(--warn)', 0.45], [r.ag, 'var(--accent)']], scale)]),
+          el('div', { class: 'mono', style: 'font-size:11px;color:var(--mute)', html: `${m.field}<br>gửi lại: ${m.back}${r.cut ? `<br><span class="bad">${m.stop}</span>` : ''}` })])));
+        const r0 = res[3][1], hiddenCost = ((r0.tg - r0.vis) * P_OUT) / 1e6;
+        stat.innerHTML = `<span>Output tính tiền: <b>${fT(r0.billed)}</b> token = <b>${usd((r0.billed * P_OUT) / 1e6)}</b></span><span>Trong đó suy luận: <b>${r0.billed ? Math.round((r0.tg / r0.billed) * 100) : 0}%</b></span><span>Mỗi 100.000 câu (Claude omitted), tiền cho phần không thấy: <b>${usd(hiddenCost * 1e5)}</b></span>`;
+        const f = [];
+        if (r0.empty) f.push(flag('bad', `<b>Câu trả lời rỗng ở mọi provider.</b> max_tokens = ${fT(st.cap)} nhỏ hơn ${fT(st.T)} token suy luận, nên request dừng giữa lúc suy luận. Bạn vẫn trả tiền ${fT(r0.tg)} token. Không có nghĩa model kém: nó chưa kịp trả lời.<br>Trong hệ thống thật: max_tokens tính cả suy luận; OpenAI khuyên ≥ 25.000 lúc đầu; Gemini khuyên hạ thinking_level thay vì hạ trần.`));
+        else if (r0.cut) f.push(flag('bad', `<b>Câu trả lời bị cắt</b> còn ${fT(r0.ag)}/${fT(st.A)} token. JSON hay tool call dở sẽ hỏng.`));
+        if (r0.tg >= 1000) f.push(flag('warn', `<b>Bạn trả tiền cho ${fT(r0.tg)} token mà không bao giờ thấy</b> (Claude omitted, OpenAI Chat Completions). Hàng summarized cũng chỉ cho đọc ~${fT(Math.round(r0.tg * st.sr))} token tóm tắt. Không có nghĩa token đó lãng phí: đó là phần model dùng để giải bài.<br>Trong hệ thống thật: log field suy luận của usage, tính chi phí theo nó, đừng đo bằng độ dài text.`));
+        if (st.simple && st.sr > 0) f.push(flag('ok', 'Gemini: với request đơn giản, tóm tắt có thể rỗng dù vẫn có token suy luận và thought signature (README §2.4). Code phải xử lý summary rỗng.'));
+        flags.replaceChildren(...f);
+      }
+      const caps = [256, 1000, 2000, 4000, 8000, 25000, 64000, 128000];
+      stage.append(el('div', { class: 'row' }, [
+        slider('Token suy luận', 0, 20000, 100, st.T, (v) => { st.T = v; render(); }, fT).node,
+        slider('Token trả lời', 20, 1500, 10, st.A, (v) => { st.A = v; render(); }, fT).node]),
+      el('div', { class: 'row' }, [
+        select('max_tokens', caps.map((c) => [c, fT(c)]), st.cap, (v) => { st.cap = +v; render(); }).node,
+        slider('Độ dài tóm tắt (giả định)', 0, 0.3, 0.01, st.sr, (v) => { st.sr = v; render(); }, (v) => Math.round(v * 100) + '%').node,
+        (() => { const i = el('input', { type: 'checkbox' }); i.addEventListener('change', () => { st.simple = i.checked; render(); }); return el('label', { class: 'ctl' }, [i, 'Request đơn giản']); })()]),
+      el('div', { class: 'legend', html: '<span><i style="background:var(--warn)"></i>suy luận</span><span><i style="background:var(--warn);opacity:.45"></i>suy luận đọc được</span><span><i style="background:var(--accent)"></i>câu trả lời</span>' }),
+      rows, stat, flags,
+      el('p', { class: 'hint', text: 'Field, thứ gửi lại và tín hiệu bị cắt lấy từ README §1.2, §2.4, §3.7. Độ dài tóm tắt là giả định; giá $10/1M output là giá thật của Sonnet 5.5 (Cost optimization §2.1). xAI không có hàng riêng vì README ghi nội dung trả về tuỳ model.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

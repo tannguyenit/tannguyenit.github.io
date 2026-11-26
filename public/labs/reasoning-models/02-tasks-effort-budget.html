@@ -1,0 +1,592 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reasoning Models Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-thinking-tokens.html">← Lab trước</a><a href="03-multi-turn-reasoning.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/reasoning-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const LV = ['off', 'low', 'medium', 'high', 'max'];
+  const LVN = { off: 'tắt', low: 'low', medium: 'medium', high: 'high', max: 'max' };
+  const TASKS = {
+    faq: { name: 'FAQ: giao hàng Đà Lạt', kind: 'dễ', think: { off: 0, low: 0, medium: 120, high: 500, max: 1400 }, ans: 70, acc: { off: 97, low: 97, medium: 97, high: 96, max: 95 } },
+    classify: { name: 'Phân loại ticket (đổi trả / bảo hành / thanh toán)', kind: 'dễ, quy tắc cứng', think: { off: 0, low: 150, medium: 600, high: 1800, max: 4000 }, ans: 10, acc: { off: 94, low: 94, medium: 93, high: 91, max: 88 } },
+    complaint: { name: 'Khiếu nại: giao thiếu, trừ tiền hai lần (tool loop)', kind: 'khó, nhiều bước', think: { off: 0, low: 700, medium: 1900, high: 4200, max: 9000 }, ans: 260, acc: { off: 68, low: 79, medium: 87, high: 90, max: 90 } },
+    promo: { name: 'Tính giá: khuyến mãi chồng nhau', kind: 'khó, toán nhiều bước', think: { off: 0, low: 1300, medium: 3600, high: 8200, max: 18000 }, ans: 320, acc: { off: 41, low: 70, medium: 85, high: 92, max: 93 } }
+  };
+  const GEM25 = { off: '—', low: '1.024', medium: '8.192', high: '24.576', max: '—' };
+  const IN = 1300, P_IN = 2, P_OUT = 10, SPEED = 150, BASE = 0.6;
+  const fT = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const fs = (t) => (t < 10 ? t.toFixed(1) : String(Math.round(t))).replace('.', ',') + ' s';
+  const usd = (x) => '$' + (x < 0.01 ? x.toFixed(5) : x.toFixed(4));
+  const flag = (kind, html) => el('div', { style: `border-left:4px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 9%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+  const point = (k, lv) => {
+    const t = TASKS[k], th = t.think[lv];
+    return { th, acc: t.acc[lv], lat: BASE + (th + t.ans) / SPEED, ttft: BASE + th / SPEED, cost: (IN * P_IN + (th + t.ans) * P_OUT) / 1e6 };
+  };
+  const sample = (median, n, seed) => { const r = seeded(seed); return Array.from({ length: n }, () => median * Math.exp(0.7 * randn(r))); };
+
+  function promoOrders() {
+    const ip = 24990000, cs = 390000, fl = 500000, vPct = 0.1, vCap = 1500000, gold = 0.03;
+    const voucher = (x) => Math.min(x * vPct, vCap);
+    const a1 = ip - fl + cs, a = (a1 - voucher(a1)) * (1 - gold);
+    const b1 = (ip - fl + cs) * (1 - gold), b = b1 - voucher(b1);
+    const c0 = ip + cs, c1 = c0 - voucher(c0) - fl, c = c1 * (1 - gold);
+    return [['Flash sale → voucher → thẻ Vàng', a], ['Flash sale → thẻ Vàng → voucher', b], ['Voucher trên giá gốc → flash sale → thẻ Vàng', c]];
+  }
+
+  return {
+    id: 'tasks-effort', nav: '2. Tác vụ & effort', ref: '§1.3–1.4',
+    title: 'Effort high cho câu FAQ là trả tiền mua không gì cả; cho bài tính khuyến mãi thì đáng',
+    hook: 'Chọn một loại việc của ShopViet và kéo mức effort. Đường xanh là độ đúng, đường cam là tiền; khung dưới so cả bốn loại việc ở cùng mức.',
+    terms: [
+      ['Effort / level', 'Mức định tính: low, medium, high... Ví dụ OpenAI reasoning.effort: "medium", Gemini 3.x thinking_level: "low". Là tín hiệu mềm.'],
+      ['Budget', 'Số token tối đa cho suy luận. Ví dụ Gemini 2.5 thinking_budget: 8192. Claude trả 400 với budget_tokens từ Opus 4.7.'],
+      ['Adaptive thinking', 'Model tự quyết có nghĩ không và nghĩ bao lâu, effort chỉ là gợi ý. Câu FAQ ở effort low có thể có 0 token suy luận.'],
+      ['Overthinking', 'Nghĩ rất nhiều cho bài dễ mà không đúng hơn. Ví dụ model kiểu o1 dùng nhiều compute cho "2+3=?".'],
+      ['Inverse scaling', 'Nghĩ lâu hơn làm kết quả tệ đi. Ví dụ đếm có thông tin gây nhiễu: model bị phân tâm bởi chi tiết không liên quan.'],
+      ['Test-time compute', 'Tăng lượng tính toán lúc trả lời thay vì tăng kích thước model. Effort cao chính là tăng test-time compute.'],
+      ['Sweep', 'Chạy cùng bộ câu hỏi test ở nhiều mức effort (tắt, low, medium, high, max) rồi so độ đúng, token, độ trễ.'],
+      ['p50 / p95', 'Trung vị và phân vị 95. p95 = 9.000 token nghĩa là 95% request dùng không quá 9.000 token suy luận.'],
+      ['Độ đúng (accuracy)', 'Tỉ lệ câu trả lời đúng trên bộ test. Ví dụ 92/100 câu tính giá ra đúng số tiền.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> có bốn loại việc đi qua trợ lý: câu FAQ, phân loại ticket, khiếu nại cần tra đơn bằng tool, và tính giá khi khuyến mãi chồng nhau. Hiện mọi request dùng chung một mức effort.',
+      scenario: 'Đội đặt high cho tất cả. Tính giá đúng hơn rõ, khiếu nại tốt lên một chút. FAQ không đổi nhưng chậm hơn. Phân loại ticket còn tệ đi vì model "nghĩ thêm" ra ngoại lệ không có trong quy tắc. README mở đầu bằng đúng câu chuyện này: hoá đơn tăng gần ba lần, p95 latency từ vài giây lên vài chục giây.',
+      ask: 'Loại việc nào đáng trả thêm tiền suy luận, trả tới mức nào, và dấu hiệu nào cho biết đang trả tiền mua không gì cả?',
+      solves: 'Chia traffic theo loại việc, sweep effort cho từng loại, chọn mức thấp nhất mà độ đúng không giảm có ý nghĩa. Việc dễ dùng mức thấp nhất hoặc model không suy luận.',
+      read: [
+        'Chọn <b>Việc</b> và kéo <b>Effort</b>. Biểu đồ: trục ngang là năm mức, đường xanh là độ đúng, đường cam là tiền mỗi request (chuẩn hoá theo mức max).',
+        'Dòng số: token suy luận, TTFT, tiền, và <b>tiền cho mỗi điểm % độ đúng tăng thêm</b> so với mức liền dưới.',
+        'Bảng dưới: cả bốn việc ở cùng mức effort, so với mức tắt.',
+        'Độ đúng, token theo effort, tốc độ 150 token/giây là số <b>giả định</b>; giá là giá thật Sonnet 5.5 $2/$10 mỗi 1M token (Cost optimization §2.1) dựng theo hướng mà README mô tả. Mốc thinking_budget của Gemini 2.5 lấy từ README.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Tác vụ nào hưởng lợi (README §1.3)</h4>
+<div class="tbl"><table>
+<tr><th>Nhóm tác vụ</th><th>Có lợi?</th><th>Căn cứ</th></tr>
+<tr class="cur"><td>Toán nhiều bước, chứng minh, bài có lời giải kiểm tra được</td><td>Có, rõ nhất</td><td>Docs Claude; Snell 2024</td></tr>
+<tr><td>Debug, sửa code nhiều file</td><td>Có</td><td>Docs Claude</td></tr>
+<tr class="cur"><td>Agent nhiều bước, tool loop dài</td><td>Có, kèm điều kiện quản lý đúng trạng thái suy luận</td><td>Docs Claude và OpenAI</td></tr>
+<tr><td>Phân loại, trích xuất, định dạng lại</td><td>Thường không; tăng latency và chi phí</td><td>Chen 2024; Shojaee 2025 ở mức dễ</td></tr>
+<tr><td>Đếm, nhiều chi tiết gây nhiễu, quy tắc cứng</td><td>Có thể hại khi suy luận dài</td><td>Gema 2025</td></tr>
+<tr><td>Hỏi đáp dựa trên tài liệu dài</td><td>Chưa có kết luận chung</td><td>Cần eval trên dữ liệu của bạn</td></tr>
+</table></div>
+<h4>Ba cách điều khiển (README §1.4)</h4>
+<div class="tbl"><table>
+<tr><th>Kiểu</th><th>Bạn nói gì với model</th><th>Provider dùng</th></tr>
+<tr><td><b>Effort / level</b></td><td>Một mức định tính: low, medium, high...</td><td>OpenAI <code>reasoning.effort</code>; Claude <code>output_config.effort</code>; Gemini 3.x <code>thinking_level</code>; Grok <code>reasoning_effort</code>; DeepSeek</td></tr>
+<tr><td><b>Budget</b></td><td>Số token tối đa cho suy luận</td><td>Gemini 2.5 <code>thinking_budget</code>; Claude cũ <code>budget_tokens</code>; Qwen <code>thinking_budget</code></td></tr>
+<tr><td><b>Adaptive</b></td><td>Model tự quyết, effort làm tín hiệu</td><td>Claude <code>thinking: {type: "adaptive"}</code>; Gemini dynamic thinking</td></tr>
+</table></div>
+<div class="verdict"><b>Quy trình (README §3.1):</b> bắt đầu từ mặc định của model; chia traffic theo loại tác vụ; sweep effort trên eval của từng loại; ghi effort tường minh, gắn với model; sweep lại sau mỗi lần nâng model.</div>`,
+    why: {
+      c: 'Effort theo loại việc: FAQ và phân loại ở mức thấp nhất (hoặc model không suy luận), khiếu nại ở mặc định, tính giá ở mức cao nhất mà sweep còn thấy lợi. Snell 2024 (README §1.1): phân bổ compute theo độ khó vượt best-of-N hơn 4 lần; đặt mức cao cho mọi request là cách dùng kém hiệu quả nhất.',
+      s: 'Một mức cho tất cả: hoặc phí tiền ở việc dễ, hoặc thiếu ở việc khó. Effort max "cho chắc": inverse scaling làm một số việc tệ đi, và TTFT có thể vượt timeout. Budget token cố định: Claude mới trả 400, Gemini 3.x không khuyến nghị, và một con số không hợp cả bài dễ lẫn bài khó.',
+      p: 'Cần phân loại request trước khi gọi model (thêm một bước, có thể sai), bộ eval riêng cho từng loại, và sweep lại sau mỗi lần đổi model hoặc prompt. Effort động trong cùng hội thoại phải đi qua cơ chế giữ cache của provider.'
+    },
+    deep: [
+      {
+        q: 'Bật high cho mọi thứ thì có gì sai? Nghĩ kỹ hơn thì đúng hơn chứ?',
+        a: `<p>Chỉ đúng với một số việc. README §1.1 dẫn Snell 2024: compute lúc suy luận đáng giá nhất khi phân bổ <b>theo độ khó</b> của từng prompt. Trong so sánh cùng FLOPs, model nhỏ được thêm compute lúc suy luận có thể vượt model lớn hơn 14 lần, nhưng chỉ trên những bài mà model nhỏ đã có tỉ lệ đúng khác không.</p>
+<p>Hình dưới tính chi phí một tháng với tỉ lệ traffic giả định của ShopViet (70% FAQ, 15% phân loại, 9% khiếu nại, 6% tính giá, 20.000 request/ngày):</p>`,
+        viz(box) {
+          const mix = { faq: 0.7, classify: 0.15, complaint: 0.09, promo: 0.06 }, N = 20000 * 30;
+          const plan = (f) => Object.keys(mix).reduce((s, k) => { const p = point(k, f(k)); s.cost += p.cost * mix[k] * N; s.acc += p.acc * mix[k]; return s; }, { cost: 0, acc: 0 });
+          const P = [['high cho tất cả', () => 'high'], ['medium cho tất cả', () => 'medium'], ['Theo loại việc', (k) => ({ faq: 'off', classify: 'off', complaint: 'medium', promo: 'high' })[k]]].map(([n, f]) => [n, plan(f)]);
+          const mx = Math.max(...P.map((p) => p[1].cost));
+          box.append(hbars(P.map(([n, v], i) => [n, v.cost, i === 2]), { max: mx, fmt: (v) => '$' + fT(v) }),
+            el('div', { class: 'stat', html: P.map(([n, v]) => `<span>${n}: đúng ~<b>${v.acc.toFixed(1)}%</b></span>`).join('') }),
+            el('div', { class: 'cap', text: 'Tất cả là số giả định của lab. Hình dạng kết quả (rẻ hơn nhiều, độ đúng tương đương hoặc cao hơn) khớp với câu chuyện mở đầu README, không phải số đo.' }));
+        },
+        take: 'Tiền suy luận nằm chủ yếu ở loại việc nhiều traffic nhất. Đó thường là việc dễ, nơi suy luận ít giúp nhất.'
+      },
+      {
+        q: 'Vì sao bài tính khuyến mãi lại "khó" với model? Chỉ là cộng trừ nhân chia thôi mà.',
+        a: `<p>Khó không phải ở phép tính mà ở <b>thứ tự áp quy tắc</b> và các điều kiện như trần voucher. Các thứ tự khác nhau có thể cho số khác nhau, và model phải giữ đúng thứ tự trong nhiều bước. Điều bất ngờ từ POC: với chiếc iPhone này, hai trong ba thứ tự cùng ra 22.678.600đ vì trần voucher chặn ở cả hai; chỉ thứ tự trừ thẻ Gold trước voucher ra 22.633.600đ. Nghĩa là một bộ test chỉ có ca này không phân biệt được hai cách tính. Với iPhone 9.990.000đ, hai thứ tự đó tách ra: 8.625.240đ và 8.576.740đ. Trong hệ thống thật: bộ test cho phép tính nhiều bước phải có ca làm lộ khác biệt giữa các thứ tự, không chỉ một ca "đẹp". Đây là kiểu "toán nhiều bước, có lời giải kiểm tra được", nhóm README §1.3 ghi là có lợi rõ nhất. Trình duyệt tính ba thứ tự cho đơn ví dụ:</p>`,
+        viz(box) {
+          const rows = promoOrders(), ok = rows[0][1];
+          const note = (v, i) => (i === 0 ? ' <b class="ok">đúng chính sách</b>' : Math.abs(v - ok) < 1 ? ' <span class="hint">trùng số đúng nhờ trần voucher, nhưng sai thứ tự</span>' : ` <span class="bad">(${v > ok ? '+' : '−'}${fT(Math.abs(v - ok))}đ so với đúng)</span>`);
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Thứ tự áp dụng</th><th>Khách trả</th></tr>' + rows.map(([n, v], i) => `<tr><td>${n}</td><td class="mono">${fT(v)}đ${note(v, i)}</td></tr>`).join('') })]),
+            el('div', { class: 'cap', text: 'iPhone 24.990.000đ, ốp 390.000đ, flash sale −500.000đ cho iPhone, voucher 10% tối đa 1.500.000đ, thẻ Vàng −3%. Chính sách nói thẻ Vàng áp sau mọi giảm giá, nên dòng đầu là đáp án đúng. Bài có đáp án kiểm tra được bằng code, nên eval rất rõ ràng.' }));
+        },
+        take: 'Việc có nhiều bước phụ thuộc nhau và đáp án kiểm tra được là chỗ suy luận đáng tiền nhất.'
+      },
+      {
+        q: 'Overthinking là gì? Model nghĩ thêm cho câu FAQ thì hại gì, cùng lắm là tốn tiền?',
+        a: `<p>Chen và cộng sự (2024) đặt tên hiện tượng này: model kiểu o1 dùng quá nhiều compute cho bài đơn giản như "2+3=?" mà gần như không thu được gì (README §1.3). Hại trực tiếp là tiền và thời gian chờ: TTFT của reasoning model gồm cả thời gian suy luận.</p>
+<p>Với câu FAQ "giao tới Đà Lạt mất mấy ngày?", đáp án nằm sẵn trong chính sách. Không có bước nào để kiểm tra lại. Bảng "Khi nào bật, khi nào giảm" của README: phân loại, trích xuất, định dạng lại, FAQ ngắn → effort thấp nhất model cho phép, hoặc route sang model không reasoning.</p>
+<p>Trong hình chính, chọn FAQ rồi kéo lên high: đường xanh nằm ngang (thậm chí đi xuống một chút), đường cam vọt lên.</p>`,
+        take: 'Nếu bài không có bước nào cần kiểm tra lại, suy luận không có gì để làm ngoài tiêu tiền.'
+      },
+      {
+        q: 'Nghĩ lâu hơn mà lại sai nhiều hơn? Chuyện đó có thật à?',
+        a: `<p>Có. Gema và cộng sự (2025) gọi là <b>inverse scaling</b> (README §1.3). Trên bốn nhóm tác vụ (đếm có thông tin gây nhiễu, hồi quy có đặc trưng giả, suy diễn có ràng buộc, các kịch bản rủi ro AI), cho model suy luận lâu hơn làm kết quả <b>tệ đi</b>. Năm kiểu thất bại:</p>
+<ol><li>Claude bị phân tâm bởi thông tin không liên quan.</li><li>Model o-series bám quá sát cách đặt vấn đề.</li><li>Chuyển từ giả định hợp lý sang tương quan giả.</li><li>Khó giữ tập trung trong suy diễn dài.</li><li>Suy luận dài có thể khuếch đại hành vi đáng lo ngại.</li></ol>
+<p>Phân loại ticket của ShopViet là quy tắc cứng: "khách nhắc tới tiền bị trừ thì là thanh toán". Model nghĩ lâu có thể tự "phát hiện" ngoại lệ không có trong quy tắc. Chọn "Phân loại ticket" ở hình chính: đường xanh đi xuống (số giả định minh hoạ hướng này).</p>`,
+        take: 'Luôn đo nhiều mức effort, không chỉ thấp và cao. Đường chất lượng có thể đi lên rồi đi xuống.'
+      },
+      {
+        q: 'Eval cho thấy tính giá ở max kém hơn high. Có phải model "nghĩ quá đà" không?',
+        a: `<p>Chưa chắc. Có thể chỉ là <b>hết token</b>. README §1.3 kể tranh luận giữa Shojaee 2025 ("The Illusion of Thinking") và Lawsen 2025: một phần "thất bại" là do output vượt giới hạn token, và một số bài thực ra không có lời giải nhưng vẫn bị chấm sai. Bài học: <b>tách "không đủ token" khỏi "không biết giải"</b>.</p>
+<p>Hình dưới lấy 2.000 request tính giá giả lập, token suy luận phân bố lệch phải quanh trung vị của mức effort (giả định). Request nào vượt max_tokens bị cắt và bị chấm sai. So "độ đúng đo được" với "độ đúng thật nếu không bị cắt":</p>`,
+        viz(box) {
+          const st = { lv: 'max', cap: 16000 }, out = el('div');
+          const draw = () => {
+            const t = TASKS.promo, xs = sample(t.think[st.lv] || 1, 2000, 7), cut = xs.filter((x) => x + t.ans > st.cap).length / xs.length;
+            const real = t.acc[st.lv], measured = real * (1 - cut);
+            out.innerHTML = `<div class="stat"><span>Bị cắt: <b class="${cut > 0.02 ? 'bad' : 'ok'}">${(cut * 100).toFixed(1)}%</b></span><span>Độ đúng thật (giả định): <b>${real}%</b></span><span>Độ đúng đo được: <b class="${measured < real - 1 ? 'bad' : ''}">${measured.toFixed(1)}%</b></span></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [select('Effort', LV.slice(1).map((l) => [l, l]), st.lv, (v) => { st.lv = v; draw(); }).node,
+            select('max_tokens khi eval', [4000, 8000, 16000, 25000, 64000].map((c) => [c, fT(c)]), st.cap, (v) => { st.cap = +v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Phân bố log-normal quanh trung vị của bảng token giả định, độ lệch giả định. Đổi max_tokens lên 64.000: độ đúng đo được ở max quay về đúng mức thật.' }));
+          draw();
+        },
+        take: 'Khi eval, đặt trần đủ cao và đếm riêng các case bị cắt, rồi mới kết luận mức effort nào kém.'
+      },
+      {
+        q: '"low" của provider này có bằng "low" của provider kia không?',
+        a: `<p>Không. README §1.4: ánh xạ giữa các provider <b>không tuyến tính</b>. Lớp tương thích OpenAI của Gemini công bố bảng ánh xạ:</p>
+<div class="tbl"><table><tr><th><code>reasoning_effort</code> (OpenAI)</th><th>Gemini 4 Argon</th><th>Gemini 3 Flash</th><th>Gemini 2.5 (<code>thinking_budget</code>)</th></tr>
+<tr><td><code>minimal</code></td><td><code>low</code></td><td><code>minimal</code></td><td>1.024</td></tr>
+<tr><td><code>low</code></td><td><code>low</code></td><td><code>low</code></td><td>1.024</td></tr>
+<tr><td><code>medium</code></td><td><code>medium</code></td><td><code>medium</code></td><td>8.192</td></tr>
+<tr><td><code>high</code></td><td><code>high</code></td><td><code>high</code></td><td>24.576</td></tr></table></div>
+<p>Thêm vài bẫy: DeepSeek ánh xạ <code>medium</code> thành <code>high</code>, nên gửi medium để giảm suy luận là hiểu sai (README §2.6). Gemini <code>minimal</code> "does not guarantee that thinking is off". OpenAI <code>gpt-6-astra</code> không nhận <code>none</code>, gửi là 400.</p>`,
+        take: 'Cấu hình effort gắn với từng model, kiểm tra giá trị thực tế gateway gửi đi, nhất là minimal và max.'
+      },
+      {
+        q: 'Effort là "tín hiệu mềm" nghĩa là sao? Vậy chặn chi phí tối đa bằng gì?',
+        a: `<p>Docs Claude ghi effort là "a behavioral signal, not a strict token budget" (README §1.4): ở effort thấp, model vẫn suy luận khi bài đủ khó, chỉ ít hơn. Nên cùng một mức effort, token suy luận dao động mạnh giữa các request.</p>
+<p>README §3.5: phân bố thường <b>lệch phải</b>. Chi phí trung bình dựa vào p50; trần max_tokens và cảnh báo dựa vào p95, p99. Chặn tuyệt đối thì dùng max_tokens, chấp nhận request chạm trần bị cắt. Histogram dưới là 2.000 request tính giá giả lập ở mức đã chọn:</p>`,
+        viz(box) {
+          const svg = el('svg', { class: 'canvas', viewBox: '0 0 560 170', role: 'img', 'aria-label': 'Phân bố token suy luận lệch phải' }), stat = el('div', { class: 'stat' });
+          const draw = (i) => {
+            const lv = LV[i + 1], xs = sample(TASKS.promo.think[lv], 2000, 3).sort((a, b) => a - b), p = (q) => xs[Math.floor(q * (xs.length - 1))];
+            const mx = p(0.995), NB = 40, bins = new Array(NB).fill(0);
+            xs.forEach((x) => { if (x <= mx) bins[Math.min(NB - 1, Math.floor((x / mx) * NB))]++; });
+            const bm = Math.max(...bins), X = (v) => 10 + (v / mx) * 540;
+            svg.replaceChildren(...bins.map((b, j) => el('rect', { x: 10 + j * 13.5, y: 150 - (b / bm) * 130, width: 12, height: (b / bm) * 130, fill: 'var(--accent)', opacity: 0.8 })),
+              ...[[0.5, 'p50', 'var(--ok)'], [0.95, 'p95', 'var(--warn)'], [0.99, 'p99', 'var(--bad)']].flatMap(([q, n, c]) => [el('line', { x1: X(p(q)), x2: X(p(q)), y1: 14, y2: 152, stroke: c, 'stroke-width': 2 }), el('text', { x: Math.min(X(p(q)) + 3, 520), y: 26 + (q > 0.9 ? (q > 0.98 ? 28 : 14) : 0), text: n, style: `font-size:11px;fill:${c}` })]),
+              el('line', { x1: 10, x2: 550, y1: 152, y2: 152, stroke: 'var(--line)' }));
+            stat.innerHTML = `<span>p50: <b>${fT(p(0.5))}</b></span><span>p95: <b>${fT(p(0.95))}</b></span><span>p99: <b>${fT(p(0.99))}</b></span><span>trung bình: <b>${fT(xs.reduce((a, b) => a + b, 0) / xs.length)}</b></span>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Effort', 0, 3, 1, 2, draw, (i) => LV[i + 1]).node]), svg, stat,
+            el('div', { class: 'cap', text: 'Log-normal giả định quanh trung vị trong bảng token của lab. Trung bình nằm trên p50: vài request rất dài kéo trung bình lên. Cảnh báo theo trung bình sẽ không bắt được chúng.' }));
+          draw(2);
+        },
+        take: 'Effort điều khiển cả phân bố, không điều khiển từng request. Đặt trần theo đuôi phân bố, không theo trung bình.'
+      },
+      {
+        q: 'Hạ effort chỉ làm model nghĩ ít đi thôi, đúng không?',
+        a: `<p>Với Claude thì không chỉ vậy. README §1.4: effort ảnh hưởng <b>toàn bộ output</b>. Effort thấp làm model gọi ít tool hơn, gộp thao tác, bỏ phần giới thiệu, viết xác nhận ngắn. Effort cao làm model gọi nhiều tool hơn, giải thích kế hoạch trước khi làm, tóm tắt kỹ hơn.</p>
+<p>README §3.3: Haiku 5.5 ở <code>low</code> dễ bỏ qua bước tìm kiếm, dừng sớm hoặc bỏ bước kiểm tra trong prompt agent dài. Với khiếu nại ShopViet, effort thấp có thể làm agent không gọi <code>get_payment_history</code> trước khi kết luận "không bị trừ trùng".</p>
+<p>Ngoài ra, prompt kiểu "nghĩ ít thôi" không đủ trên Sonnet 5.5 và Haiku 5.5, vì việc có suy luận hay không ít phụ thuộc prompt; phải hạ effort (README §3.2).</p>`,
+        take: 'Hạ effort cho agent là đổi hành vi agent. Eval cả số lần gọi tool, không chỉ độ dài suy luận.'
+      },
+      {
+        q: 'Đã sweep xong trên model cũ. Nâng model mới thì giữ nguyên cấu hình effort được không?',
+        a: `<p>Không nên. README §1.4: cùng tên mức nhưng khác lượng suy luận giữa các model. Các mức effort của Sonnet 5.5 đã được hiệu chỉnh lại, nên <code>high</code> trên Sonnet 5.5 không cho cùng lượng suy luận như <code>high</code> trên Sonnet 5.</p>
+<p>Mặc định cũng đổi: Opus 5.5 và Haiku 5.5 mặc định <code>medium</code>, các model Claude khác mặc định <code>high</code>. Request nâng từ Opus 5 lên Opus 5.5 mà <b>không đặt effort</b> sẽ âm thầm chạy thấp hơn một mức. Bảng failure mode §3.7 có dòng: "Hành vi agent đổi sau khi nâng model, dù không đổi code".</p>`,
+        take: 'Đặt effort tường minh trong cấu hình và chạy lại sweep sau mỗi lần nâng model.'
+      }
+    ],
+    poc: {
+      goal: "Tính bài khuyến mãi chồng nhau bằng code tất định theo ba thứ tự áp, rồi so tiền mỗi câu đúng theo effort cho bốn loại việc. Phép tính là thật; token và độ đúng theo effort là số <b>giả định</b> của lab.",
+      file: "docs/reasoning-models/pocs/02_tasks_effort.py",
+      run: "uv run docs/reasoning-models/pocs/02_tasks_effort.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy dưới vài giây, miễn phí.",
+      output: "1. Bài khuyến mãi chồng nhau: code tất định, tiền tính bằng số nguyên (không float)\nThứ tự áp                                     Giá trước voucher  Voucher trừ  Chạm trần?  Khách trả\n--------------------------------------------  -----------------  -----------  ----------  -----------\nFlash sale → voucher → thẻ Vàng               24.880.000đ        1.500.000đ   có          22.678.600đ\nFlash sale → thẻ Vàng → voucher               24.133.600đ        1.500.000đ   có          22.633.600đ\nVoucher trên giá gốc → flash sale → thẻ Vàng  25.380.000đ        1.500.000đ   có          22.678.600đ\n   Đúng theo câu chữ ('thẻ Vàng giảm thêm 3% sau mọi giảm giá'): 22.678.600đ.\n   Áp thẻ Vàng trước voucher lệch 45.000đ. Thứ tự 1 và 3 trùng nhau chỉ vì trần voucher chặn cả hai\n   (10% của 24.880.000đ và của 25.380.000đ đều vượt 1.500.000đ).\n   Vì vậy chấm đáp án bằng một con số dễ che lỗi thứ tự: cần thêm ca voucher không chạm trần.\n   Ca kiểm tra iPhone 9.990.000đ, flash → voucher → Vàng: 8.625.240đ\n   Ca kiểm tra iPhone 9.990.000đ, voucher gốc → flash → Vàng: 8.576.740đ\n\n2. Effort theo loại việc: giá thật claude-sonnet-5-5 ($2/$10 mỗi 1M, cost-optimization §2.1); token và độ đúng là GIẢ ĐỊNH của lab\nViệc                  Effort  Suy luận  Đúng  Tiền/request  Tiền/câu đúng  Thấp nhất trong 1 điểm\n--------------------  ------  --------  ----  ------------  -------------  ----------------------\nFAQ giao hàng Đà Lạt  off     0         97%   $0.00330      $0.00340       ←\nFAQ giao hàng Đà Lạt  low     0         97%   $0.00330      $0.00340\nFAQ giao hàng Đà Lạt  medium  120       97%   $0.00450      $0.00464\nFAQ giao hàng Đà Lạt  high    500       96%   $0.00830      $0.00865\nFAQ giao hàng Đà Lạt  max     1.400     95%   $0.0173       $0.0182\nPhân loại ticket      off     0         94%   $0.00270      $0.00287       ←\nPhân loại ticket      low     150       94%   $0.00420      $0.00447\nPhân loại ticket      medium  600       93%   $0.00870      $0.00935\nPhân loại ticket      high    1.800     91%   $0.0207       $0.0227\nPhân loại ticket      max     4.000     88%   $0.0427       $0.0485\nKhiếu nại SV-4821     off     0         68%   $0.00520      $0.00765\nKhiếu nại SV-4821     low     700       79%   $0.0122       $0.0154\nKhiếu nại SV-4821     medium  1.900     87%   $0.0242       $0.0278\nKhiếu nại SV-4821     high    4.200     90%   $0.0472       $0.0524        ←\nKhiếu nại SV-4821     max     9.000     90%   $0.0952       $0.1058\nKhuyến mãi chồng      off     0         41%   $0.00580      $0.0141\nKhuyến mãi chồng      low     1.300     70%   $0.0188       $0.0269\nKhuyến mãi chồng      medium  3.600     85%   $0.0418       $0.0492\nKhuyến mãi chồng      high    8.200     92%   $0.0878       $0.0954        ←\nKhuyến mãi chồng      max     18.000    93%   $0.1858       $0.1998\n   FAQ giao hàng Đà Lạt: high đắt gấp 2.5 lần mức tắt, độ đúng 97% → 96%\n   Phân loại ticket: high đắt gấp 7.7 lần mức tắt, độ đúng 94% → 91%\n   Khuyến mãi chồng: high đắt gấp 15.1 lần mức tắt, độ đúng 41% → 92%\n\n3. Cùng chữ 'low' nhưng khác lượng suy luận: bảng ánh xạ của lớp tương thích OpenAI trên Gemini (README §1.4)\nreasoning_effort  Gemini 2.5 thinking_budget  so với minimal\n----------------  --------------------------  --------------\nminimal           1.024                       1×\nlow               1.024                       1×\nmedium            8.192                       8×\nhigh              24.576                      24×\n   'minimal' và 'low' cùng ra 1.024 token: gửi minimal không tiết kiệm hơn low trên Gemini 2.5.\n\nRút ra: đáp án 22.678.600đ là phép tính tất định; reasoning đáng tiền ở chỗ chọn đúng thứ tự áp,\ncòn phép nhân chia nên giao cho code. Với FAQ và phân loại, effort cao chỉ tăng tiền và có thể giảm độ đúng.",
+      measured: true,
+      read: ["Bảng 1: 22.678.600đ là đáp án đúng theo câu chữ; áp thẻ Vàng trước voucher ra 22.633.600đ, lệch 45.000đ.", "Thứ tự 1 và 3 trùng nhau chỉ vì trần voucher chặn cả hai. Ca iPhone 9.990.000đ tách được chúng (8.625.240đ và 8.576.740đ): bộ eval cần ca như vậy.", "Bảng 2: FAQ và phân loại rẻ nhất ở mức tắt mà không mất độ đúng; khuyến mãi cần high (41% → 92%) dù đắt gấp 15 lần.", "Bảng 3: <code>minimal</code> và <code>low</code> cùng 1.024 token trên Gemini 2.5."]
+    },
+    mount(stage) {
+      const st = { task: 'faq', i: 3 };
+      const svg = el('svg', { class: 'canvas', viewBox: '0 0 620 220', role: 'img', 'aria-label': 'Độ đúng và tiền theo mức effort' });
+      const stat = el('div', { class: 'stat' }), flags = el('div'), tbl = el('div', { class: 'tbl' });
+      function render() {
+        const lv = LV[st.i], P = LV.map((l) => point(st.task, l)), cur = P[st.i], prev = st.i ? P[st.i - 1] : null;
+        const W = 620, L = 46, R = 46, T = 16, B = 190, X = (i) => L + (i / 4) * (W - L - R);
+        const accs = P.map((p) => p.acc), aMin = Math.max(0, Math.min(...accs) - 8), aMax = Math.min(100, Math.max(...accs) + 4);
+        const YA = (a) => B - ((a - aMin) / (aMax - aMin || 1)) * (B - T), cMax = P[4].cost, YC = (c) => B - (c / cMax) * (B - T);
+        const path = (f) => P.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + f(p).toFixed(1)).join(' ');
+        svg.replaceChildren(
+          el('line', { x1: L, x2: W - R, y1: B, y2: B, stroke: 'var(--line)' }),
+          el('rect', { x: X(st.i) - 26, y: T - 6, width: 52, height: B - T + 6, fill: 'var(--accent-soft)', opacity: 0.6 }),
+          el('path', { d: path((p) => YC(p.cost)), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 2.5 }),
+          el('path', { d: path((p) => YA(p.acc)), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }),
+          ...P.flatMap((p, i) => [el('circle', { cx: X(i), cy: YA(p.acc), r: i === st.i ? 6 : 4, fill: 'var(--accent)' }), el('circle', { cx: X(i), cy: YC(p.cost), r: i === st.i ? 6 : 4, fill: 'var(--warn)' }),
+            el('text', { x: X(i), y: B + 18, 'text-anchor': 'middle', class: 'mute', text: LVN[LV[i]] }), el('text', { x: X(i) + 8, y: YA(p.acc) - 8, text: p.acc + '%', style: 'font-size:11px;fill:var(--accent)' })]),
+          el('text', { x: 4, y: T + 4, text: aMax.toFixed(0) + '%', class: 'mute', style: 'font-size:11px' }), el('text', { x: 4, y: B, text: aMin.toFixed(0) + '%', class: 'mute', style: 'font-size:11px' }),
+          el('text', { x: W - R + 4, y: T + 4, text: usd(cMax), style: 'font-size:10px;fill:var(--warn)' }));
+        const dAcc = prev ? cur.acc - prev.acc : 0, dCost = prev ? cur.cost - prev.cost : 0;
+        stat.innerHTML = `<span>Token suy luận: <b>${fT(cur.th)}</b></span><span>TTFT: <b class="${cur.ttft > 60 ? 'bad' : ''}">${fs(cur.ttft)}</b></span><span>Tiền/request: <b>${usd(cur.cost)}</b> (gấp <b>${(cur.cost / P[0].cost).toFixed(1)}</b> lần tắt)</span><span>Độ đúng: <b>${cur.acc}%</b></span>` +
+          (prev ? `<span>So với ${LVN[LV[st.i - 1]]}: <b class="${dAcc > 0 ? 'ok' : 'bad'}">${dAcc > 0 ? '+' : ''}${dAcc} điểm</b>, ${dAcc > 0 ? `<b>${usd(dCost / dAcc)}</b>/điểm/request` : '<b class="bad">trả thêm mà không được gì</b>'}</span>` : '') +
+          `<span>Gemini 2.5 thinking_budget tương ứng: <b>${GEM25[lv]}</b></span>`;
+        const f = [], best = Math.max(...accs.slice(0, st.i + 1));
+        if ((st.task === 'faq' || st.task === 'classify') && st.i >= 3 && cur.acc <= P[0].acc) f.push(flag('warn', `<b>Effort ${lv} cho ${TASKS[st.task].kind === 'dễ' ? 'câu FAQ' : 'phân loại ticket'} = trả tiền mua không gì cả.</b> Tiền gấp ${(cur.cost / P[0].cost).toFixed(1)} lần mức tắt, TTFT từ ${fs(P[0].ttft)} lên ${fs(cur.ttft)}, độ đúng ${cur.acc}% so với ${P[0].acc}%. Không có nghĩa reasoning vô dụng: nó vô dụng cho việc không có bước nào cần kiểm tra lại (overthinking, Chen 2024).<br>Trong hệ thống thật: route việc này sang effort thấp nhất hoặc model không suy luận.`));
+        if (cur.acc < best) f.push(flag('bad', `<b>Inverse scaling:</b> độ đúng ở ${lv} (${cur.acc}%) thấp hơn mức tốt nhất ở effort thấp hơn (${best}%). Nghĩ lâu hơn làm kết quả tệ đi, kiểu Gema 2025 mô tả cho tác vụ có nhiễu và quy tắc cứng. Trước khi kết luận, kiểm tra xem có case nào bị cắt do max_tokens không (câu hỏi 5).`));
+        if (st.task === 'promo' && st.i <= 1) f.push(flag('warn', `<b>Tiết kiệm sai chỗ:</b> bài tính giá ở ${lv} chỉ đúng ${cur.acc}%. Mỗi câu sai là khách bị báo sai số tiền. Đây là nhóm "toán nhiều bước, có lời giải kiểm tra được" mà README ghi có lợi rõ nhất.`));
+        if (prev && dAcc > 0 && dAcc <= 1 && dCost / P[0].cost > 0.5) f.push(flag('warn', `<b>Lợi ích cận biên rất nhỏ:</b> từ ${LVN[LV[st.i - 1]]} lên ${lv} chỉ thêm ${dAcc} điểm mà tiền tăng ${((cur.cost / prev.cost - 1) * 100).toFixed(0)}%. Một điểm có ý nghĩa thống kê không phụ thuộc vào cỡ bộ eval của bạn.`));
+        if (cur.ttft > 60) f.push(flag('bad', `TTFT ${fs(cur.ttft)} vượt 60 giây, timeout mặc định của nhiều load balancer (README §3.5).`));
+        flags.replaceChildren(...f);
+        tbl.innerHTML = `<table><tr><th>Việc (ở ${lv})</th><th>Token suy luận</th><th>Độ đúng so với tắt</th><th>Tiền so với tắt</th><th>Đáng?</th></tr>` + Object.keys(TASKS).map((k) => {
+          const a = point(k, 'off'), b = point(k, lv), g = b.acc - a.acc;
+          return `<tr${k === st.task ? ' style="background:var(--accent-soft)"' : ''}><td>${TASKS[k].name}<br><span class="hint">${TASKS[k].kind}</span></td><td class="mono">${fT(b.th)}</td><td class="mono ${g > 0 ? 'ok' : g < 0 ? 'bad' : ''}">${g > 0 ? '+' : ''}${g}</td><td class="mono">×${(b.cost / a.cost).toFixed(1)}</td><td>${g >= 5 ? '<b class="ok">có</b>' : g > 0 ? 'ít' : lv === 'off' ? '—' : '<b class="bad">không</b>'}</td></tr>`;
+        }).join('') + '</table>';
+      }
+      const tS = select('Việc', Object.entries(TASKS).map(([k, v]) => [k, v.name]), st.task, (v) => { st.task = v; render(); });
+      const eS = slider('Effort', 0, 4, 1, st.i, (v) => { st.i = v; render(); }, (v) => LVN[LV[v]]);
+      stage.append(el('div', { class: 'row' }, [tS.node, eS.node]), svg,
+        el('div', { class: 'legend', html: '<span><i style="background:var(--accent)"></i>độ đúng (giả định)</span><span><i style="background:var(--warn)"></i>tiền mỗi request, chuẩn hoá theo mức max</span>' }),
+        stat, flags, el('h4', { text: 'Bốn loại việc ở cùng mức effort', style: 'margin:18px 0 4px' }), tbl,
+        el('p', { class: 'hint', text: 'Số giả định (README không công bố hệ số "high tốn gấp bao nhiêu low", và ghi rõ con số phụ thuộc mạnh vào loại tác vụ): token suy luận, độ đúng, 150 token/giây (giá $2/1M input, $10/1M output là giá thật Sonnet 5.5, Cost optimization §2.1), input 1.300 token. Mức "tắt" chỉ có ở model hybrid. Mốc thinking_budget Gemini 2.5 và mốc 60 giây từ README.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

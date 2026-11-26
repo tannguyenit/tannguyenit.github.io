@@ -76,6 +76,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Model Context Protocol: host, client, server, tools, resources và prompts, vòng đời request, stdio và Streamable HTTP, OAuth, connector của provider, thiết kế tool, bảo mật và debug.',
     parts: ['Workflow tổng hợp', 'Host, client, server và primitives', 'Vòng đời, transport và so với function calling', 'Đặc tả, SDK và OAuth', 'Sampling, client và connector', 'Thiết kế tool và kích thước output', 'Remote server và bảo mật', 'Test, debug và failure modes']
   },
+  'reasoning-models': {
+    title: 'LLM - 09 - Reasoning Models',
+    description: 'Khi nào cho model suy nghĩ lâu hơn: thinking token, effort và budget, reasoning trong hội thoại nhiều lượt, khác biệt giữa provider, chi phí, độ trễ và đo xem reasoning có thật sự giúp.',
+    parts: ['Workflow tổng hợp', 'Thinking token: tính phí nhưng không thấy', 'Tác vụ nào cần, effort và budget', 'Reasoning trong hội thoại nhiều lượt', 'Reasoning theo provider', 'Effort, prompt, tool và JSON', 'Chi phí, eval và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

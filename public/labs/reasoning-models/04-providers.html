@@ -1,0 +1,739 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reasoning Models Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-multi-turn-reasoning.html">← Lab trước</a><a href="05-effort-prompt-tools-json.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/reasoning-models/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const note = (level, html) => el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${level});border-radius:6px;padding:8px 12px;font-size:13.5px;margin-top:8px`, html });
+  const preStyle = 'margin:6px 0;font-size:11.5px;white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;max-height:260px;overflow:auto';
+  const LV = [['off', 'Tắt / thấp nhất'], ['low', 'low'], ['medium', 'medium'], ['high', 'high'], ['max', 'max']];
+  const TASKS = {
+    faq: { t: 'FAQ: "Giao tới Đà Lạt mất mấy ngày?"', lv: 'off', q: 'ShopViet có giao tới Đà Lạt không, mất mấy ngày?' },
+    complaint: { t: 'Khiếu nại: SV-4821 giao thiếu, trừ tiền hai lần', lv: 'medium', q: 'Đơn SV-4821 giao thiếu một tai nghe, thẻ lại bị trừ tiền hai lần. Tôi muốn hoàn phần thiếu và khoản trừ trùng.' },
+    promo: { t: 'Khuyến mãi chồng: iPhone + ốp, voucher, flash sale, thẻ Vàng', lv: 'high', q: 'Mua iPhone 24.990.000đ và ốp 390.000đ, có voucher 10% tối đa 1.500.000đ, flash sale giảm 500.000đ cho iPhone, thẻ Vàng giảm thêm 3% sau mọi giảm giá. Tôi trả bao nhiêu?' }
+  };
+  const B = (t) => ({ lvl: 'bad', t }), W = (t) => ({ lvl: 'warn', t }), I = (t) => ({ lvl: 'ok', t });
+
+  const P = [
+    { id: 'openai', name: 'OpenAI', model: 'gpt-6-astra', api: 'Responses API', vis: 'Không có bản gốc. <code>reasoning.summary</code> cho bản tóm tắt; <code>encrypted_content</code> khi <code>store: false</code>.', bill: '<code>usage.output_tokens_details.reasoning_tokens</code>, tính như output', resend: 'Reasoning item, function call và output kể từ user message cuối.',
+      build(lv, o) {
+        const f = [], r = { model: 'gpt-6-astra', input: o.q, reasoning: { effort: lv === 'off' ? 'none' : lv, summary: 'auto' }, max_output_tokens: 25000 };
+        if (lv === 'off') f.push(B('400: <code>gpt-6-astra</code> không nhận <code>none</code>. Chỉ model nhận <code>none</code> mới tắt được.'));
+        if (lv === 'max') f.push(W('SDK khai báo <code>max</code>, nhưng không model nào nhận đủ bảy giá trị. README không ghi model này nhận <code>max</code>: kiểm tra docs model.'));
+        if (o.sampling) { r.temperature = 0.2; f.push(W('README không nêu OpenAI xử lý <code>temperature</code> thế nào với reasoning model. Kiểm tra docs, đừng đoán.')); }
+        if (o.tools) { r.tools = ['get_order', 'refund_policy']; f.push(I('Tool loop: gửi lại reasoning item cùng function call của nó. Lọc hoặc đổi thứ tự item là 400.')); }
+        return { r, f };
+      } },
+    { id: 'opus', name: 'Claude Opus 5.5', model: 'claude-opus-5-5', api: 'Messages API', vis: '<code>display: "omitted"</code> mặc định (thinking rỗng, vẫn có <code>signature</code>); <code>"summarized"</code> cho bản tóm tắt do model khác viết.', bill: '<code>usage.output_tokens_details.thinking_tokens</code>, tính như output với mọi <code>display</code>', resend: 'Mọi <code>thinking</code> và <code>redacted_thinking</code> block, nguyên văn, đúng thứ tự.',
+      build(lv, o) {
+        const f = [], r = { model: 'claude-opus-5-5', max_tokens: 16000 };
+        if (lv === 'off') { r.thinking = { type: 'disabled' }; f.push(B('400: Opus 5.5 không tắt được thinking. Muốn rẻ thì hạ <code>effort</code> xuống <code>low</code>.')); }
+        else r.output_config = { effort: lv };
+        if (lv === 'medium') f.push(I('<code>medium</code> cũng là mặc định của Opus 5.5. Bỏ trống thì vẫn chạy medium.'));
+        if (lv === 'high' || lv === 'max') f.push(W('Docs khuyên đặt <code>max_tokens</code> lớn khi effort từ <code>high</code> trở lên. 16.000 có thể bị cắt.'));
+        if (o.sampling) { r.temperature = 0.2; r.top_p = 0.9; f.push(B('400: Claude 5.x trả 400 với <code>temperature</code>, <code>top_p</code>, <code>top_k</code> khác mặc định. Từ API version <code>2026-10-21</code>, gửi bất kỳ tham số nào trong ba là 400.')); }
+        if (o.tools) { r.tools = ['get_order', 'refund_policy']; r.tool_choice = { type: 'auto' }; f.push(I('Chỉ dùng <code>tool_choice: auto</code>. Opus 5.5 trả 400 với <code>any</code> hoặc <code>tool</code>.')); }
+        r.messages = [{ role: 'user', content: o.q }];
+        return { r, f };
+      } },
+    { id: 'sonnet', name: 'Claude Sonnet 5.5', model: 'claude-sonnet-5-5', api: 'Messages API', vis: 'Như Opus 5.5. Thinking block gắn với tài khoản tạo ra nó.', bill: 'Như Opus 5.5', resend: 'Như Opus 5.5.',
+      build(lv, o) {
+        const f = [], r = { model: 'claude-sonnet-5-5', max_tokens: 16000 };
+        if (lv === 'off') { r.thinking = { type: 'between_tools' }; r.output_config = { effort: 'low' }; f.push(W('Không tắt hẳn được. <code>between_tools</code> chỉ tắt phần nghĩ trước câu trả lời, ở effort <code>high</code> trở xuống; vẫn có progress update giữa các tool call. Gửi kèm <code>display</code> là 400.')); }
+        else r.output_config = { effort: lv };
+        if (lv === 'high') f.push(I('<code>high</code> là mặc định của Sonnet 5.5, nhưng đã hiệu chỉnh lại: không cùng lượng suy luận với <code>high</code> của Sonnet 5.'));
+        if (lv === 'max') f.push(W('Effort cao: docs khuyên <code>max_tokens</code> lớn. Coding agent trên Sonnet 5.5: 128.000 và stream.'));
+        if (o.sampling) { r.temperature = 0.2; r.top_p = 0.9; f.push(B('400: <code>temperature</code>/<code>top_p</code> trên Claude 5.x.')); }
+        if (o.tools) { r.tools = ['get_order', 'refund_policy']; f.push(I('Forced tool use (<code>any</code>/<code>tool</code>) là 400 trên Sonnet 5.5. Dùng <code>auto</code> + strict tool use.')); }
+        r.messages = [{ role: 'user', content: o.q }];
+        return { r, f };
+      } },
+    { id: 'haiku', name: 'Claude Haiku 5.5', model: 'claude-haiku-5-5', api: 'Messages API', vis: 'Như Opus 5.5.', bill: 'Như Opus 5.5', resend: 'Như Opus 5.5.',
+      build(lv, o) {
+        const f = [], r = { model: 'claude-haiku-5-5', max_tokens: 16000 };
+        if (lv === 'off') { r.thinking = { type: 'disabled' }; r.output_config = { effort: 'low' }; f.push(I('Tắt được, chỉ khi effort <code>high</code> trở xuống. Ở <code>xhigh</code>/<code>max</code> thì <code>disabled</code> là 400.')); }
+        else r.output_config = { effort: lv };
+        if (lv === 'low' && o.tools) f.push(W('Haiku 5.5 ở <code>low</code> dễ bỏ bước tìm kiếm, dừng sớm trong prompt agent dài. Agent "tiết kiệm" quyết định trên ít dữ liệu hơn.'));
+        if (o.sampling) { r.temperature = 0.2; r.top_p = 0.9; f.push(B('400: <code>temperature</code>/<code>top_p</code> trên Claude 5.x.')); }
+        if (o.tools) r.tools = ['get_order', 'refund_policy'];
+        r.messages = [{ role: 'user', content: o.q }];
+        return { r, f };
+      } },
+    { id: 'g38', name: 'Gemini 3.8 Flash', model: 'gemini-3.8-flash', api: 'generateContent', vis: 'Part <code>thought: true</code> chứa tóm tắt khi <code>include_thoughts</code>; có thể rỗng với request đơn giản.', bill: '<code>usageMetadata.thoughtsTokenCount</code>, tính như output', resend: 'Thought signature, nguyên văn. Function response khớp <code>id</code>, <code>name</code>, số lượng.',
+      build(lv, o) {
+        const f = [], tl = lv === 'off' ? 'minimal' : lv;
+        const r = { model: 'gemini-3.8-flash', contents: o.q, config: { thinking_config: { thinking_level: tl, include_thoughts: true } } };
+        if (lv === 'off') f.push(B('Gemini 3 không tắt được, và 3.8 Flash không nhận <code>minimal</code>. Mức thấp nhất là <code>low</code>.'));
+        if (lv === 'max') f.push(B('3.8 Flash chỉ nhận <code>low</code>, <code>medium</code>, <code>high</code>.'));
+        if (lv === 'medium') f.push(I('<code>medium</code> là mặc định của 3.8 Flash.'));
+        if (o.sampling) { r.config.temperature = 0.2; f.push(W('Google khuyên bỏ <code>temperature</code>, <code>top_p</code>, <code>top_k</code> khỏi mọi request Gemini 3.x. Muốn ổn định thì viết quy tắc rõ trong system instruction.')); }
+        if (o.tools) f.push(W('Function response không khớp <code>id</code>/<code>name</code>/số lượng: generateContent không báo lỗi, thường trả rỗng với <code>finish_reason: STOP</code>.'));
+        return { r, f };
+      } },
+    { id: 'g25', name: 'Gemini 2.5 Flash', model: 'gemini-2.5-flash', api: 'generateContent', vis: 'Như Gemini 3.8 Flash.', bill: 'Như Gemini 3.8 Flash', resend: 'Như Gemini 3.8 Flash.',
+      build(lv, o) {
+        const f = [], map = { low: 1024, medium: 8192, high: 24576, max: 24576 };
+        let r;
+        if (lv === 'off') { r = { model: 'gemini-2.5-flash', reasoning_effort: 'none', messages: [{ role: 'user', content: o.q }] }; f.push(I('Qua lớp tương thích OpenAI, <code>reasoning_effort: "none"</code> tắt được suy luận trên 2.5 không phải Pro.')); }
+        else r = { model: 'gemini-2.5-flash', contents: o.q, config: { thinking_config: { thinking_budget: map[lv] } } };
+        if (lv !== 'off') f.push(I('Số token lấy từ bảng ánh xạ <code>reasoning_effort</code> → <code>thinking_budget</code> của lớp tương thích OpenAI.'));
+        if (lv === 'max') f.push(W('Bảng ánh xạ không có <code>max</code>. Lab dùng tạm mức <code>high</code> = 24.576.'));
+        if (o.sampling) { (r.config || r).temperature = 0.2; }
+        return { r, f };
+      } },
+    { id: 'grok', name: 'xAI Grok 4.7', model: 'grok-4.7', api: 'Chat Completions / Responses', vis: '<code>reasoning_content</code>; <code>reasoning.encrypted_content</code> trên mọi response.', bill: '<code>reasoning_tokens</code>, tính vào tổng tiêu thụ', resend: '<code>reasoning.encrypted_content</code>.',
+      build(lv, o) {
+        const f = [], eff = lv === 'off' ? 'low' : lv === 'max' ? 'xhigh' : lv;
+        const r = { model: 'grok-4.7', reasoning_effort: eff, messages: [{ role: 'user', content: o.q }] };
+        if (lv === 'off') f.push(B('Docs: "Reasoning cannot be disabled". Lab gửi <code>low</code> thay vì tắt.'));
+        if (lv === 'max') f.push(B('Không có <code>max</code>. Mức cao nhất là <code>xhigh</code> (mặc định là <code>high</code>).'));
+        if (o.sampling) { r.temperature = 0.2; r.stop = ['\n\n']; f.push(B('Lỗi: Grok không hỗ trợ <code>presencePenalty</code>, <code>frequencyPenalty</code>, <code>stop</code>.')); }
+        f.push(I('xAI khuyên timeout client cao, ví dụ 3.600 giây.'));
+        return { r, f };
+      } },
+    { id: 'deepseek', name: 'DeepSeek', model: 'deepseek-v4-pro', api: 'OpenAI-compatible', vis: 'Toàn văn suy luận trong <code>reasoning_content</code>.', bill: 'Field usage cho token suy luận: chưa xác minh', resend: 'Có <code>tools</code>: <code>reasoning_content</code> của mọi lượt, thiếu là 400.',
+      build(lv, o) {
+        const f = [], eb = { thinking: { type: lv === 'off' ? 'disabled' : 'enabled' } };
+        const r = { model: 'deepseek-v4-pro', messages: [{ role: 'user', content: o.q }], extra_body: eb };
+        if (lv !== 'off') r.reasoning_effort = lv;
+        if (lv === 'medium') f.push(W('<code>medium</code> được ánh xạ thành <code>high</code>. Gửi medium để "giảm bớt" là hiểu sai. Mức docs nêu: <code>low</code>, <code>high</code>, <code>max</code>.'));
+        if (o.sampling) { r.temperature = 0.2; r.top_p = 0.9; f.push(W('Thinking mode bỏ qua <code>temperature</code> mà không báo lỗi. <code>deepseek-v4-pro</code> cũng bỏ qua <code>top_p</code> ở thinking mode (cố định 0,95 khi có tool, 1,0 khi không).')); }
+        if (o.tools) { r.tools = ['get_order', 'refund_policy']; f.push(W('Có <code>tools</code>: phải gửi lại <code>reasoning_content</code> của mọi lượt trước, kể cả lượt không gọi tool. Code thời R1 hay xoá field này.')); }
+        return { r, f };
+      } },
+    { id: 'qwen', name: 'Qwen (DashScope)', model: 'qwen3.5-27b', api: 'OpenAI-compatible', vis: 'Toàn văn trong <code>reasoning_content</code>.', bill: '<code>completion_tokens_details.reasoning_tokens</code>', resend: 'Theo <code>preserve_thinking</code> (mặc định tuỳ model).',
+      build(lv, o) {
+        const f = [], budget = { low: 1024, medium: 8192, high: 24576, max: 24576 };
+        const r = { model: 'qwen3.5-27b', messages: [{ role: 'user', content: o.q }], enable_thinking: lv !== 'off' };
+        if (lv !== 'off') { r.thinking_budget = budget[lv]; r.stream = true; f.push(W('Qwen không có mức effort, chỉ có số token. Con số ở đây là <b>giả định</b> (mượn bảng Gemini 2.5) để minh hoạ.')); f.push(I('Model này chỉ chạy stream khi bật thinking. Không stream: <code>parameter.enable_thinking only support stream call</code>.')); }
+        if (o.sampling) r.temperature = 0.2;
+        return { r, f };
+      } },
+    { id: 'vllm', name: 'vLLM tự host (Qwen3)', model: 'Qwen/Qwen3-32B', api: '/v1/chat/completions', vis: 'Toàn văn trong <code>message.reasoning</code> (bản cũ: <code>reasoning_content</code>).', bill: 'GPU của bạn: token suy luận chiếm thời gian sinh', resend: 'Theo chat template; Qwen3 chỉ render suy luận sau user message cuối.',
+      build(lv, o) {
+        const f = [], r = { model: 'Qwen/Qwen3-32B', messages: [{ role: 'user', content: o.q }] };
+        if (lv === 'max') { f.push(B('vLLM nhận <code>low</code>, <code>medium</code>, <code>high</code>, <code>none</code>. Không có <code>max</code>.')); r.reasoning_effort = 'high'; }
+        else r.reasoning_effort = lv === 'off' ? 'none' : lv;
+        if (lv === 'low' || lv === 'high') f.push(W('README chỉ ghi vLLM đổi <code>reasoning_effort</code> thành <code>enable_thinking</code> tương ứng. <code>low</code> và <code>high</code> có khác lượng suy luận không thì README không nêu: đo trước khi tin.'));
+        if (o.json) { r.response_format = { type: 'json_schema' }; f.push(B('Constrained decoding: model trả lời ngay từ token đầu, không có phần suy luận. Tách hai bước nếu cần cả hai.')); }
+        if (o.tools) f.push(W('Tool call chỉ parse từ <code>content</code>, không từ <code>reasoning</code>. DeepSeek R1 không hỗ trợ tool calling trên vLLM.'));
+        if (o.sampling) r.temperature = 0.2;
+        f.push(I('Server phải chạy <code>--reasoning-parser qwen3</code>, nếu không suy luận lọt vào câu trả lời.'));
+        return { r, f };
+      } },
+    { id: 'gptoss', name: 'gpt-oss tự host', model: 'gpt-oss', api: 'harmony format', vis: 'Toàn văn ở kênh <code>analysis</code>. Không hiển thị cho người dùng cuối.', bill: 'GPU của bạn', resend: 'Thường bỏ <code>analysis</code> của lượt đã kết thúc bằng <code>final</code>; giữ khi có tool call.',
+      build(lv, o) {
+        const f = [], v = lv === 'off' ? 'low' : lv === 'max' ? 'high' : lv;
+        const r = { messages: [{ role: 'system', content: 'Reasoning: ' + v }, { role: 'user', content: o.q }] };
+        if (lv === 'off') f.push(W('Harmony chỉ có <code>low</code>/<code>medium</code>/<code>high</code>. Lab gửi <code>low</code>.'));
+        if (lv === 'max') f.push(B('Không có <code>max</code>. Mức cao nhất là <code>high</code>.'));
+        if (lv === 'medium') f.push(I('Mặc định là <code>medium</code>.'));
+        if (o.sampling) r.temperature = 0.2;
+        return { r, f };
+      } }
+  ];
+
+  const rank = { ok: 0, warn: 1, bad: 2 };
+  const worst = (f) => f.reduce((m, x) => (rank[x.lvl] > rank[m] ? x.lvl : m), 'ok');
+
+  function mount(stage) {
+    const state = { task: 'faq', lv: 'off', sampling: false, tools: false, json: false };
+    const lvSel = select('Mức muốn chạy', LV, state.lv, (v) => { state.lv = v; draw(); });
+    const taskSel = select('Câu hỏi', Object.entries(TASKS).map(([k, v]) => [k, v.t]), state.task, (v) => { state.task = v; state.lv = TASKS[v].lv; lvSel.sel.value = state.lv; state.tools = v === 'complaint'; tb.tools.classList.toggle('on', state.tools); draw(); });
+    const tb = {};
+    const tog = (k, t) => { tb[k] = el('button', { text: t, onclick: () => { state[k] = !state[k]; tb[k].classList.toggle('on', state[k]); draw(); } }); return tb[k]; };
+    const grid = el('div', { class: 'cols' }), stat = el('div', { class: 'stat' }), cap = el('div');
+    stage.append(el('div', { class: 'row' }, [taskSel.node, lvSel.node]),
+      el('div', { class: 'row' }, [tog('sampling', 'Code cũ gửi temperature / top_p / stop'), tog('tools', 'Có tools (get_order, refund_policy)'), tog('json', 'Bật structured output')]),
+      stat, cap, grid,
+      el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--ok)' }), 'Chạy được']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'Chạy nhưng khác ý bạn']), el('span', {}, [el('i', { style: 'background:var(--bad)' }), 'Lỗi hoặc không làm được'])]));
+
+    function draw() {
+      const o = { q: TASKS[state.task].q, sampling: state.sampling, tools: state.tools, json: state.json };
+      const res = P.map((p) => Object.assign({ p }, p.build(state.lv, o)));
+      const cnt = { ok: 0, warn: 0, bad: 0 };
+      grid.replaceChildren(...res.map(({ p, r, f }) => {
+        const w = worst(f); cnt[w]++;
+        return el('div', { style: `border:1px solid var(--line);border-top:4px solid var(--${w});border-radius:8px;padding:10px;background:var(--bg);min-width:0;font-size:12.5px` }, [
+          el('h4', { html: `${esc(p.name)} <small>${esc(p.api)}</small>` }),
+          el('pre', { class: 'mono', style: preStyle, text: JSON.stringify(r, null, 1) }),
+          ...f.map((x) => el('div', { class: x.lvl === 'bad' ? 'bad' : '', style: `border-left:3px solid var(--${x.lvl});padding:2px 6px;margin:4px 0`, html: x.t })),
+          el('div', { style: 'margin-top:6px;color:var(--mute)', html: `<b>Nhìn thấy:</b> ${p.vis}<br><b>Đếm token:</b> ${p.bill}<br><b>Gửi lại:</b> ${p.resend}` })]);
+      }));
+      stat.innerHTML = `<span>Chạy được <b class="ok">${cnt.ok}</b></span><span>Chạy nhưng khác ý <b>${cnt.warn}</b></span><span>Lỗi / không làm được <b class="bad">${cnt.bad}</b></span><span>trên <b>${P.length}</b> cấu hình</span>`;
+      const msgs = [];
+      if (state.lv === 'off' && cnt.bad) msgs.push(note('bad', `<b>Bất thường:</b> bạn chỉ muốn "tắt suy luận cho câu FAQ" mà ${res.filter((x) => x.f.some((y) => y.lvl === 'bad')).length} cấu hình báo lỗi hoặc không làm được. <b>Vì sao:</b> Opus 5.5, Gemini 3.x, Grok 4.x được thiết kế để luôn suy luận; "tắt" ở đó là 400 hoặc giá trị không tồn tại. <b>Không có nghĩa:</b> FAQ phải tốn nhiều. Hạ về mức thấp nhất model cho phép, hoặc route FAQ sang model không reasoning.<br><b>Trong hệ thống thật:</b> lưu bảng "model → tập effort hợp lệ" và kiểm tra trước khi gửi, thay vì một hằng số <code>effort</code> dùng chung.`));
+      if (state.lv === 'medium') msgs.push(note('warn', '<b>Bất thường:</b> cùng một chữ <code>medium</code>, DeepSeek chạy <code>high</code>. <b>Vì sao:</b> DeepSeek chỉ có <code>low</code>, <code>high</code>, <code>max</code> và ánh xạ các giá trị khác về đó. <b>Không có nghĩa:</b> DeepSeek tốn hơn provider khác ở cùng mức, vì "medium" vốn không so được giữa provider.<br><b>Trong hệ thống thật:</b> khi đi qua gateway đa provider, log giá trị effort thực sự được gửi, nhất là các mức biên.'));
+      if (state.sampling) msgs.push(note('bad', '<b>Bất thường:</b> một dòng <code>temperature: 0.2</code> chép từ code cũ cho bốn kết cục khác nhau: Claude 5.x trả 400, Grok lỗi vì <code>stop</code>, DeepSeek bỏ qua mà không báo, Gemini 3.x chạy nhưng Google khuyên bỏ. <b>Vì sao:</b> reasoning model được tối ưu cho sampling mặc định. <b>Không có nghĩa:</b> provider nào im lặng là "chấp nhận": DeepSeek không áp dụng giá trị bạn gửi.<br><b>Trong hệ thống thật:</b> xoá tham số sampling khỏi request tới reasoning model; muốn ổn định thì viết quy tắc rõ trong prompt.'));
+      if (state.json) msgs.push(note('warn', '<b>Bất thường:</b> chỉ vLLM tự host mất phần suy luận khi bật structured output. <b>Vì sao:</b> structured output ở vLLM dùng constrained decoding: ở mỗi token, runtime chỉ cho chọn token khớp schema JSON (token đầu buộc là <code>{</code>), nên không còn chỗ cho phần suy luận tự do. Provider đóng cho model suy luận ở phần riêng rồi mới viết JSON. <b>Không có nghĩa:</b> Qwen3 kém suy luận; cùng model không bật structured output vẫn suy luận bình thường.<br><b>Trong hệ thống thật:</b> với self-host, chạy hai bước (suy luận tự do, rồi trích JSON) hoặc dùng runtime áp grammar sau phần suy luận.'));
+      if (!msgs.length) msgs.push(note('accent', `Ở mức <b>${esc(state.lv)}</b>, phần lớn cấu hình chạy được. Để ý tên tham số: <code>reasoning.effort</code>, <code>output_config.effort</code>, <code>thinking_level</code>, <code>thinking_budget</code>, <code>reasoning_effort</code>, <code>enable_thinking</code>, dòng <code>Reasoning:</code> trong system. Cùng một ý định, ${P.length} cấu hình viết theo nhiều cách khác nhau.`));
+      cap.replaceChildren(...msgs);
+    }
+    draw();
+  }
+
+  return {
+    id: 'providers', nav: '4. Theo provider', ref: 'Phần 2',
+    title: 'Cùng một ý "nghĩ vừa phải", mỗi provider viết khác và có chỗ trả 400',
+    hook: 'Chọn câu hỏi và mức suy luận, bật các thói quen của code cũ. Mỗi thẻ là request thật sẽ gửi tới một provider, viền màu cho biết nó chạy được, chạy sai ý, hay lỗi.',
+    terms: [
+      ['Effort / level', 'Một mức định tính: low, medium, high. Ví dụ Claude: "output_config": {"effort": "low"}. Không phải số token chính xác, chỉ là tín hiệu cho model.'],
+      ['Budget', 'Trần số token cho phần suy luận. Ví dụ Gemini 2.5: "thinking_budget": 8192. Đang bị thay dần bằng effort.'],
+      ['Adaptive thinking', 'Model tự quyết có nghĩ hay không và nghĩ bao lâu, effort chỉ là gợi ý. Claude: "thinking": {"type": "adaptive"}.'],
+      ['Token', 'Đơn vị provider đếm và tính tiền, cỡ một mẩu từ. Ví dụ đo bằng tokenizer o200k: đoạn 49 từ tiếng Việt thành 56 token (Cost optimization §2.1).'],
+      ['Reasoning token', 'Token model sinh ra lúc suy luận, trước câu trả lời. Mọi provider lớn tính như token output, kể cả khi bạn không nhìn thấy.'],
+      ['display: "omitted"', 'Claude trả thinking block với chuỗi rỗng, chỉ kèm signature. Bạn vẫn trả tiền cho toàn bộ suy luận.'],
+      ['signature / encrypted_content', 'Chuỗi mã hoá đại diện cho phần suy luận. Bạn không đọc được, nhưng phải gửi lại nguyên văn ở lượt sau để model nối tiếp mạch suy luận.'],
+      ['reasoning_content', 'Field chứa toàn văn suy luận ở DeepSeek, Qwen, SGLang. vLLM bản mới đổi tên thành reasoning.'],
+      ['Reasoning parser', 'Bộ tách phần <think>...</think> ra khỏi câu trả lời khi tự host. Bật bằng --reasoning-parser qwen3 trên vLLM.'],
+      ['Hybrid / thinking-only', 'Model hybrid bật hoặc tắt suy luận theo từng request (Haiku 5.5, Gemini 2.5 Flash, Qwen3 hybrid). Model luôn suy luận (Qwen gọi là thinking-only) không tắt được (Opus 5.5, Gemini 3.x, Grok 4.x).'],
+      ['Sweep effort', 'Chạy cùng bộ eval ở từng mức effort (low, medium, high...) rồi so điểm và chi phí, để chọn mức cho model mới.'],
+      ['Sampling', 'Các tham số như temperature, top_p, top_k điều khiển độ ngẫu nhiên khi chọn token. temperature: 0.2 là "bớt sáng tạo".']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> là cửa hàng điện tử online, có trợ lý chat cho khách. Ba loại câu hỏi: FAQ ("Giao tới Đà Lạt mất mấy ngày?") dễ; khiếu nại "Đơn SV-4821 giao thiếu một tai nghe, thẻ bị trừ tiền hai lần" cần gọi tool <code>get_order</code>, <code>refund_policy</code>; và tính giá khi khuyến mãi chồng nhau (iPhone 24.990.000đ và ốp 390.000đ, flash sale -500.000đ cho iPhone, voucher 10% tối đa 1.500.000đ, thẻ Vàng -3% sau mọi giảm giá) khó nhất vì thứ tự áp dụng làm đổi kết quả.',
+      scenario: 'ShopViet đang chạy trên Claude và muốn có phương án dự phòng: OpenAI, Gemini, Grok, DeepSeek, Qwen trên DashScope, và tự host Qwen3 bằng vLLM. Đội viết một file cấu hình chung: <code>effort: "medium"</code>, <code>temperature: 0.2</code> chép từ code chatbot cũ, và "tắt suy luận" cho FAQ.',
+      ask: 'Cấu hình chung đó biến thành request gì ở từng provider, chỗ nào trả 400, chỗ nào chạy im lặng nhưng sai ý?',
+      solves: 'Đặt cấu hình suy luận theo từng model, không dùng hằng số chung. Biết với mỗi provider: tên tham số độ sâu, tắt được không, nhận được gì, đếm token ở đâu, phải gửi lại gì.',
+      read: ['Chọn <b>Câu hỏi</b>: mức suy luận tự đổi theo độ khó (FAQ tắt, khiếu nại medium, khuyến mãi high). Đổi <b>Mức muốn chạy</b> để thử các mức khác.', 'Mỗi thẻ là request JSON cho một provider. Viền xanh: chạy được. Vàng: chạy nhưng không đúng ý (mức bị ánh xạ, tham số bị bỏ qua). Đỏ: lỗi hoặc không làm được.', 'Bật <b>Code cũ gửi temperature</b>, <b>Có tools</b>, <b>Structured output</b> để thấy cảnh báo đổi theo.', 'Khung trên cùng tự giải thích bất thường mà dữ liệu vừa cho thấy.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Mọi provider có cùng ba thành phần: <b>một tham số độ sâu</b>, <b>một trạng thái phải gửi lại</b>, và <b>token suy luận tính như output</b>. Khác nhau ở chi tiết, và chi tiết là chỗ gây 400.</p>
+<div class="tbl"><table>
+<tr><th>Provider</th><th>Tham số độ sâu</th><th>Tắt được không</th><th>Nhận được gì</th><th>Phải gửi lại</th></tr>
+<tr><td>OpenAI (Responses)</td><td><code>reasoning.effort</code>: <code>none</code> → <code>max</code>, tuỳ model; <code>reasoning.mode</code></td><td>Chỉ model nhận <code>none</code></td><td>Tóm tắt (<code>reasoning.summary</code>), <code>encrypted_content</code></td><td>Reasoning item, function call, output kể từ user message cuối</td></tr>
+<tr><td>Claude 5.x</td><td><code>output_config.effort</code>: <code>low</code> → <code>max</code></td><td>Opus 5.5 không; Sonnet 5.5 chỉ <code>between_tools</code>; Haiku 5.5 có ở effort ≤ <code>high</code></td><td><code>summarized</code> hoặc <code>omitted</code> (mặc định)</td><td>Mọi <code>thinking</code>, <code>redacted_thinking</code>, nguyên văn</td></tr>
+<tr><td>Gemini 3.x, 4</td><td><code>thinking_level</code></td><td>Không; <code>minimal</code> không đảm bảo tắt</td><td>Tóm tắt khi bật <code>includeThoughts</code></td><td>Thought signature</td></tr>
+<tr><td>Gemini 2.5</td><td><code>thinking_budget</code> (số token)</td><td>Có trên Flash, Flash-Lite</td><td>Như trên</td><td>Như trên</td></tr>
+<tr><td>Grok 4.5–4.7</td><td><code>reasoning_effort</code>: <code>low</code> → <code>xhigh</code></td><td>Không</td><td><code>reasoning_content</code>, <code>encrypted_content</code></td><td><code>encrypted_content</code></td></tr>
+<tr><td>DeepSeek</td><td><code>thinking</code> bật/tắt, <code>reasoning_effort</code> (<code>low</code>/<code>high</code>/<code>max</code>)</td><td>Có</td><td>Toàn văn <code>reasoning_content</code></td><td><code>reasoning_content</code> mọi lượt khi có <code>tools</code></td></tr>
+<tr><td>Qwen (DashScope)</td><td><code>enable_thinking</code>, <code>thinking_budget</code></td><td>Model hybrid có; model thinking-only không</td><td>Toàn văn</td><td>Theo <code>preserve_thinking</code></td></tr>
+<tr><td>vLLM, SGLang, gpt-oss</td><td><code>chat_template_kwargs</code>, <code>reasoning_effort</code>, dòng <code>Reasoning:</code></td><td>Tuỳ model</td><td>Toàn văn (<code>reasoning</code> / <code>reasoning_content</code> / kênh <code>analysis</code>)</td><td>Tuỳ chat template</td></tr>
+</table></div>
+<h4>Tham số sampling</h4>
+<ul><li>Claude 5.x, Opus 4.7, 4.8: <code>temperature</code>, <code>top_p</code>, <code>top_k</code> khác mặc định là 400; từ API version <code>2026-10-21</code> gửi bất kỳ tham số nào trong ba là 400.</li>
+<li>Gemini 3.x: khuyên bỏ hẳn. DeepSeek: bỏ qua <code>temperature</code>, <code>presence_penalty</code>, <code>frequency_penalty</code> mà không báo lỗi. Grok: <code>stop</code>, penalty là lỗi.</li></ul>
+<div class="verdict"><b>Quy tắc chung:</b> cấu hình effort gắn với model, kiểm tra giá trị hợp lệ trước khi gửi, không gửi sampling tới reasoning model, lưu và gửi lại nguyên văn trạng thái suy luận.</div>`,
+    why: {
+      c: 'Một bảng cấu hình theo từng model: tên tham số, tập giá trị hợp lệ, mặc định, cách tắt (nếu có), field đọc token suy luận, thứ phải gửi lại. Gateway đọc bảng này để dựng request, không dịch "medium" một cách mù quáng.',
+      s: 'Một hằng số <code>effort: "medium"</code> cho mọi provider: DeepSeek chạy high, vLLM có thể không khác low. Gửi kèm <code>temperature</code> "cho chắc": Claude 400, DeepSeek bỏ qua im lặng. Đọc suy luận qua một tên field cố định: đổi vLLM sang SGLang là rỗng mà không lỗi.',
+      p: 'Phải bảo trì bảng theo từng đợt phát hành model, vì mặc định và tập giá trị đổi (Opus 5 mặc định high, Opus 5.5 mặc định medium). Mỗi lần thêm provider là một lần sweep effort và viết lại phần lưu lịch sử.'
+    },
+    deep: [
+      {
+        q: 'Vì sao không có một tham số chung? "medium" của OpenAI có bằng "medium" của Gemini không?',
+        a: `<p>Không bằng. Mỗi provider tự huấn luyện model và tự định nghĩa mức. Có ba kiểu điều khiển: <b>effort/level</b> (một chữ: low, medium, high), <b>budget</b> (một số token, ví dụ 8192), và <b>adaptive</b> (model tự quyết, effort chỉ là tín hiệu).</p>
+<p>Lớp tương thích OpenAI của Gemini công bố bảng ánh xạ. Bảng này đủ để thấy cùng chữ <code>low</code> mang nghĩa khác nhau tuỳ model. Chọn giá trị <code>reasoning_effort</code> bên dưới để xem nó thành gì ở ba model Gemini.</p>`,
+        viz(box) {
+          const M = { minimal: ['low', 'minimal', 1024], low: ['low', 'low', 1024], medium: ['medium', 'medium', 8192], high: ['high', 'high', 24576] };
+          const out = el('div');
+          const draw = (v) => {
+            const [a, f, b] = M[v];
+            out.replaceChildren(el('div', { class: 'tbl' }, [el('table', { class: 'mono', style: 'font-size:12.5px;border-collapse:collapse;width:100%' }, [
+              el('tr', {}, ['Bạn gửi', 'Gemini 4 Argon', 'Gemini 3 Flash', 'Gemini 2.5 (thinking_budget)'].map((t) => el('th', { text: t, style: 'text-align:left;padding:4px;border-bottom:1px solid var(--line)' }))),
+              el('tr', {}, [v, a, f, b.toLocaleString('vi-VN') + ' token'].map((t, i) => el('td', { text: t, style: `padding:4px;${i && String(t).split(' ')[0] !== v ? 'color:var(--warn);font-weight:700' : ''}` })))])]));
+            if (v === 'minimal') out.append(el('div', { class: 'cap', html: '<b>Bất thường:</b> <code>minimal</code> trên Gemini 4 Argon thành <code>low</code>, trên 2.5 thành 1.024 token giống hệt <code>low</code>. Gửi minimal hay low ra cùng một kết quả.' }));
+          };
+          const s = select('reasoning_effort', Object.keys(M).map((k) => [k, k]), 'minimal', draw);
+          box.append(el('div', { class: 'row' }, [s.node]), out, el('div', { class: 'cap', text: 'Số liệu từ bảng ánh xạ trong README §1.4. Ô màu cam là chỗ giá trị thực tế khác chữ bạn gửi.' }));
+          draw('minimal');
+        },
+        take: 'Không có thang đo chung. Khi đổi provider hoặc model, sweep effort lại trên eval thay vì dịch chữ.'
+      },
+      {
+        q: 'Claude cho chọn display: "omitted" để ẩn suy luận. Ẩn đi thì có rẻ hơn không?',
+        a: `<p>Không. Mọi provider lớn tính token suy luận theo giá output. Với Claude, số tiền giống nhau với mọi giá trị <code>display</code>; chỉ thứ bạn nhìn thấy là khác. Lợi ích duy nhất của <code>omitted</code>: khi stream, chữ đầu tiên của câu trả lời đến sớm hơn vì không phải chờ truyền phần tóm tắt.</p>
+<p>Ví dụ trong docs Claude: 312 thinking token trên tổng 348 output token. Đổi <code>display</code> bên dưới: phần bạn thấy đổi, phần bạn trả tiền thì không.</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (d) => {
+            const shown = d === 'summarized' ? 'tóm tắt (do model khác viết)' : 'chuỗi rỗng + signature';
+            out.replaceChildren(hbars([['Thinking (tính tiền)', 312, true], ['Câu trả lời (tính tiền)', 36], ['Tổng output tính tiền', 348, true]], { max: 348, fmt: (v) => v + ' tok' }),
+              el('div', { class: 'stat', html: `<span>display = <b>${d}</b></span><span>Bạn nhận: <b>${shown}</b></span><span>Tỉ lệ suy luận: <b>${((312 / 348) * 100).toFixed(1)}%</b> output</span>` }));
+          };
+          const s = select('display', [['omitted', 'omitted (mặc định Claude 5.x)'], ['summarized', 'summarized']], 'omitted', draw);
+          box.append(el('div', { class: 'row' }, [s.node]), out, el('div', { class: 'cap', text: 'Số 312/348 lấy từ ví dụ trong docs Claude (README §1.2). Hai thanh tính tiền không đổi khi đổi display.' }));
+          draw('omitted');
+        },
+        take: 'Muốn rẻ thì hạ effort, không phải ẩn suy luận. Và luôn log field token suy luận, vì gần 90% output có thể là phần không ai đọc.'
+      },
+      {
+        q: 'DeepSeek và Qwen trả toàn văn suy luận. Vậy hiển thị nó cho khách ShopViet làm "lý do" được không?',
+        a: `<p>Không nên, vì ba lý do.</p>
+<ol><li><b>Không trung thực.</b> Nhóm Anthropic cài gợi ý vào câu hỏi rồi xem model có thừa nhận đã dùng gợi ý trong chain-of-thought không: Claude 3.7 Sonnet nhắc tới 25% số lần, DeepSeek R1 39%. Phần lớn trường hợp, yếu tố thực sự quyết định không được nói ra.</li>
+<li><b>Không an toàn.</b> OpenAI khuyến cáo không hiển thị kênh <code>analysis</code> của gpt-oss cho người dùng cuối, vì nó không tuân theo cùng tiêu chuẩn an toàn như kênh <code>final</code>.</li>
+<li><b>Không phải của model.</b> Bản tóm tắt của Claude do một model khác viết, không phải model đang trả lời.</li></ol>
+<p>Với câu khuyến mãi chồng, nếu khách cần lý do có thể kiểm tra ("vì sao tôi trả 22.678.600đ?"), hãy yêu cầu model liệt kê từng khoản giảm trong câu trả lời và dùng code tính lại.</p>`,
+        viz(box) {
+          box.append(hbars([['Claude 3.7 Sonnet', 25], ['DeepSeek R1', 39]], { max: 100, fmt: (v) => v + '%' }),
+            el('div', { class: 'cap', text: 'Tỉ lệ model nhắc tới gợi ý đã dùng trong chain-of-thought (README §1.2, Chen và cộng sự 2025). Phần còn lại của thanh là những lần suy luận không nói ra điều đã quyết định câu trả lời.' }));
+        },
+        take: 'Suy luận là log gợi ý để debug, không phải bằng chứng. Lý do đưa cho khách phải nằm trong câu trả lời và kiểm tra được bằng code.'
+      },
+      {
+        q: 'Vì sao cùng một dòng temperature: 0.2 mà Claude trả 400, còn DeepSeek thì im lặng?',
+        a: `<p>Reasoning model được tối ưu cho sampling mặc định. Provider phản ứng với tham số "lạc chỗ" theo hai triết lý: <b>từ chối rõ ràng</b> (Claude 5.x trả 400, Grok lỗi với <code>stop</code>) hoặc <b>bỏ qua im lặng</b> (DeepSeek thinking mode). Gemini 3.x ở giữa: chạy, nhưng khuyên bỏ.</p>
+<p>Kiểu im lặng nguy hiểm hơn. Đội ShopViet chỉnh temperature xuống để "giảm sáng tạo" khi trả lời chính sách, không thấy gì thay đổi, rồi đi tìm nguyên nhân ở prompt. Chọn tham số bên dưới để xem từng provider phản ứng thế nào.</p>`,
+        viz(box) {
+          const R = {
+            temperature: { 'Claude 5.x': ['bad', '400'], 'Gemini 3.x': ['warn', 'Chạy, Google khuyên bỏ'], 'DeepSeek (thinking)': ['warn', 'Bỏ qua, không báo lỗi'], 'Grok 4.x': ['ok', 'README không nêu'], 'OpenAI': ['ok', 'README không nêu'] },
+            top_p: { 'Claude 5.x': ['bad', '400 (kể cả top_p: 1, vì mặc định là 0,99)'], 'Gemini 3.x': ['warn', 'Chạy, Google khuyên bỏ'], 'DeepSeek (thinking)': ['warn', 'Tuỳ model: v4-pro bỏ qua; flash ép về 0,95–1,0'], 'Grok 4.x': ['ok', 'README không nêu'], 'OpenAI': ['ok', 'README không nêu'] },
+            presence_penalty: { 'Claude 5.x': ['ok', 'README không nêu'], 'Gemini 3.x': ['ok', 'README không nêu'], 'DeepSeek (thinking)': ['warn', 'Bỏ qua, không báo lỗi'], 'Grok 4.x': ['bad', 'Lỗi: không hỗ trợ'], 'OpenAI': ['ok', 'README không nêu'] },
+            stop: { 'Claude 5.x': ['ok', 'README không nêu'], 'Gemini 3.x': ['ok', 'README không nêu'], 'DeepSeek (thinking)': ['ok', 'README không nêu'], 'Grok 4.x': ['bad', 'Lỗi: không hỗ trợ'], 'OpenAI': ['ok', 'README không nêu'] }
+          };
+          const out = el('div');
+          const draw = (k) => out.replaceChildren(...Object.entries(R[k]).map(([p, [l, t]]) => el('div', { style: `display:grid;grid-template-columns:160px 1fr;gap:8px;padding:4px 8px;border-left:4px solid var(--${l});margin-bottom:4px;font-size:13px` }, [el('b', { text: p }), el('span', { text: t })])));
+          const s = select('Tham số', Object.keys(R).map((k) => [k, k]), 'temperature', draw);
+          box.append(el('div', { class: 'row' }, [s.node]), out, el('div', { class: 'cap', text: '"README không nêu" nghĩa là tài liệu nguồn không có thông tin, không có nghĩa là an toàn. Màu xanh ở đây chỉ là "không có cảnh báo đã biết".' }));
+          draw('temperature');
+        },
+        take: 'Bỏ hẳn sampling khỏi request tới reasoning model. Lỗi 400 còn dễ chịu hơn tham số bị bỏ qua mà không ai biết.'
+      },
+      {
+        q: 'Mình gửi DeepSeek effort "medium" để tiết kiệm, sao hoá đơn không giảm?',
+        a: `<p>Docs DeepSeek chỉ nêu ba mức <code>low</code>, <code>high</code>, <code>max</code>. Các giá trị khác được ánh xạ về ba mức đó: <code>minimal</code> và <code>low</code> về <code>low</code>; <code>medium</code> và <code>xhigh</code> về <code>high</code>; <code>ultra</code> về <code>max</code>. Gửi <code>medium</code> là đang chạy <code>high</code>.</p>
+<p>Đây là lỗi không có thông báo nào, chỉ lộ ra khi bạn so token suy luận giữa các mức. Bấm thử từng giá trị.</p>`,
+        viz(box) {
+          const map = { minimal: 'low', low: 'low', medium: 'high', high: 'high', xhigh: 'high', max: 'max', ultra: 'max' };
+          box.append(el('div', {}, Object.entries(map).map(([k, v]) => el('div', { class: 'mem' + (k !== v ? ' cur' : '') }, [el('span', { class: 'mono', text: 'gửi "' + k + '"' }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${{ low: 33, high: 67, max: 100 }[v]}%` })]), el('span', { class: 'v', text: '→ ' + v })]))),
+            el('div', { class: 'cap', text: 'Thanh đậm là giá trị bị ánh xạ sang mức khác chữ bạn gửi. Độ dài thanh chỉ thể hiện thứ tự low < high < max, không phải số token.' }));
+        },
+        take: 'Với DeepSeek, muốn ít suy luận thì gửi low hoặc tắt thinking. Ở mọi provider, log giá trị effort thực tế đã gửi.'
+      },
+      {
+        q: 'Lượt sau phải gửi lại gì? Mình chỉ lưu text câu trả lời có được không?',
+        a: `<p>Với khiếu nại SV-4821, model gọi <code>get_order</code> rồi <code>refund_policy</code>. Trong tool loop, API stateless cần trạng thái suy luận của lượt đang chạy, vì nó là mạch suy nghĩ đã dẫn tới tool call. Thiếu nó, phần lớn trường hợp là 400.</p>
+<p>Quy tắc an toàn: <b>lưu nguyên response, gửi lại nguyên văn, để API tự lọc</b>. Bẫy hay gặp ở Claude: code lọc <code>block.type == "thinking"</code> để "giữ phần suy luận" sẽ âm thầm bỏ <code>redacted_thinking</code>. Chọn cách lưu lịch sử bên dưới.</p>`,
+        viz(box) {
+          const blocks = [['thinking', '"" + signature'], ['redacted_thinking', 'data: mã hoá'], ['text', '"Mình kiểm tra đơn..."'], ['tool_use', 'get_order(SV-4821)']];
+          const ways = { all: ['Lưu nguyên resp.content', () => true], filter: ['Lọc type == "thinking" + tool_use', (t) => t === 'thinking' || t === 'tool_use'], text: ['Chỉ lưu text + tool_use', (t) => t === 'text' || t === 'tool_use'], drop: ['Bỏ block thinking rỗng (display omitted)', (t) => t !== 'thinking'] };
+          const out = el('div');
+          const draw = (k) => {
+            const keep = blocks.map(([t]) => ways[k][1](t)), lost = blocks.filter((b, i) => !keep[i] && b[0] !== 'text').map((b) => b[0]);
+            out.replaceChildren(el('div', { class: 'chunks' }, blocks.map(([t, c], i) => el('div', { class: 'ch', style: keep[i] ? '' : 'opacity:.35;text-decoration:line-through' }, [el('small', { text: t }), c]))),
+              el('div', { class: lost.length ? 'bad' : 'ok', style: 'font-size:13px', html: lost.length ? `Lượt sau: <b>400</b> hoặc model mất mạch suy luận. Thiếu: ${lost.map((x) => '<code>' + x + '</code>').join(', ')}.` : 'Lượt sau: chạy. API tự bỏ những gì model không cần.' }));
+            if (k === 'drop') out.append(el('div', { class: 'cap', text: 'Block có thinking rỗng trông như rác, nhưng signature của nó là trạng thái suy luận. Docs Claude: gửi nguyên văn, kể cả block rỗng.' }));
+          };
+          const s = select('Cách lưu', Object.entries(ways).map(([k, v]) => [k, v[0]]), 'filter', draw);
+          box.append(el('div', { class: 'row' }, [s.node]), out);
+          draw('filter');
+        },
+        take: 'Không dựng lại lịch sử từ text đã hiển thị, không lọc theo type. OpenAI: gửi lại response.output; Claude: mọi block; Gemini: thought signature; DeepSeek: reasoning_content mọi lượt khi có tools.'
+      },
+      {
+        q: 'ShopViet tự host Qwen3. Chuyển từ vLLM sang SGLang thì suy luận biến mất, không có lỗi nào. Vì sao?',
+        a: `<p>Model mở sinh suy luận dưới dạng text thường trong thẻ <code>&lt;think&gt;...&lt;/think&gt;</code>. Server phải tách bằng reasoning parser, rồi đặt vào một field. Tên field khác nhau: vLLM mới dùng <code>reasoning</code>, vLLM cũ và SGLang dùng <code>reasoning_content</code>. SDK OpenAI giữ field lạ trong <code>model_extra</code>, nên đọc sai tên chỉ ra <code>None</code>, không lỗi.</p>
+<p>Còn tệ hơn: chưa bật parser thì toàn bộ suy luận nằm trong <code>content</code>, và khách thấy model "lẩm bẩm" trước câu trả lời.</p>`,
+        viz(box) {
+          const RT = { vnew: ['vLLM mới', 'reasoning'], vold: ['vLLM cũ', 'reasoning_content'], sg: ['SGLang', 'reasoning_content'], noparser: ['vLLM, quên --reasoning-parser', null] };
+          const CL = { r: ['Đọc reasoning', ['reasoning']], rc: ['Đọc reasoning_content', ['reasoning_content']], fb: ['Đọc reasoning, fallback reasoning_content', ['reasoning', 'reasoning_content']] };
+          let rt = 'sg', cl = 'r';
+          const out = el('div');
+          const draw = () => {
+            const field = RT[rt][1], got = field && CL[cl][1].includes(field);
+            const content = field ? 'Giá cuối là 22.678.600đ.' : '<think>Flash sale trước, voucher 10% chạm trần 1.500.000đ, thẻ Vàng sau cùng...</think> Giá cuối là 22.678.600đ.';
+            out.replaceChildren(el('pre', { class: 'mono', style: preStyle, text: JSON.stringify(field ? { content, [field]: 'Flash sale trước, voucher 10% chạm trần 1.500.000đ, thẻ Vàng sau cùng...' } : { content }, null, 1) }),
+              el('div', { class: !field ? 'bad' : got ? 'ok' : 'bad', style: 'font-size:13px', html: !field ? '<b>Suy luận lọt vào câu trả lời khách thấy.</b> Bật <code>--reasoning-parser qwen3</code>.' : got ? 'Đọc được suy luận.' : `<b>Suy luận rỗng, không lỗi.</b> Server trả <code>${field}</code>, code đọc <code>${CL[cl][1][0]}</code>.` }));
+          };
+          box.append(el('div', { class: 'row' }, [select('Runtime', Object.entries(RT).map(([k, v]) => [k, v[0]]), rt, (v) => { rt = v; draw(); }).node, select('Client', Object.entries(CL).map(([k, v]) => [k, v[0]]), cl, (v) => { cl = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Đọc reasoning trước, fallback reasoning_content, và có test kiểm tra content không chứa thẻ <think>.'
+      },
+      {
+        q: 'Gemini 4 Argon trả status requires_continuation cho câu khuyến mãi dài. Đó là lỗi à?',
+        a: `<p>Không. Với <code>gemini-4-argon</code>, mỗi lần sinh liên tục (docs gọi là một <b>hop</b>) bị giới hạn <b>32.768 token khi không stream</b> và <b>65.536 token khi stream</b>, tính cả suy luận. Interactions API phân biệt hai trạng thái:</p>
+<ul><li><code>requires_continuation</code>: chạm trần của một hop nhưng <code>max_output_tokens</code> vẫn còn. Gửi hop tiếp với <code>continuation_token</code>, hoặc để SDK tự tiếp tục.</li>
+<li><code>incomplete</code>: đã hết <code>max_output_tokens</code>. Text có thể rỗng, token đã sinh vẫn bị tính tiền.</li></ul>
+<p>Code coi mọi trạng thái khác <code>completed</code> là lỗi sẽ vứt bỏ những response chỉ cần gửi tiếp. Kéo thanh trượt (số token request cần là <b>giả định</b>).</p>`,
+        viz(box) {
+          let need = 40000, cap = 50000, stream = false;
+          const out = el('div');
+          const draw = () => {
+            const hop = stream ? 65536 : 32768, used = Math.min(need, cap, hop);
+            const st = need <= Math.min(cap, hop) ? ['ok', 'completed'] : cap <= hop ? ['bad', 'incomplete'] : ['warn', 'requires_continuation'];
+            out.replaceChildren(hbars([['Cần (giả định)', need], ['max_output_tokens', cap], ['Trần mỗi hop', hop, true], ['Đã sinh hop 1', used]], { max: 130000, fmt: (v) => fmtNum(Math.round(v / 100) * 100) }),
+              el('div', { class: st[0] === 'ok' ? 'ok' : st[0] === 'bad' ? 'bad' : '', style: 'font-size:13.5px', html: `status: <b class="mono">${st[1]}</b>. ` + (st[1] === 'requires_continuation' ? 'Không phải lỗi: gửi hop tiếp với <code>continuation_token</code>.' : st[1] === 'incomplete' ? 'Hết trần: tiếp tục với trần cao hơn, hoặc hạ <code>thinking_level</code>. Phần đã sinh vẫn tính tiền.' : 'Xong trong một hop.') }));
+          };
+          const s1 = slider('Cần', 5000, 120000, 1000, need, (v) => { need = v; draw(); }, fmtNum), s2 = slider('max_output_tokens', 8000, 128000, 1000, cap, (v) => { cap = v; draw(); }, fmtNum);
+          const b = el('button', { text: 'Stream', onclick: () => { stream = !stream; b.classList.toggle('on', stream); draw(); } });
+          box.append(el('div', { class: 'row' }, [s1.node, s2.node, b]), out);
+          draw();
+        },
+        take: 'Đọc status/finishReason theo từng giá trị, không gộp mọi thứ khác completed vào "lỗi".'
+      },
+      {
+        q: 'Nâng Claude từ Opus 5 lên Opus 5.5, không đổi dòng code nào. Vì sao agent khiếu nại của ShopViet làm việc kém kỹ hơn?',
+        a: `<p>Vì mặc định đổi. Opus 5.5 và Haiku 5.5 mặc định <code>medium</code>, các model Claude khác mặc định <code>high</code>. Request không đặt effort sẽ âm thầm chạy thấp hơn một mức. Effort của Claude ảnh hưởng cả hành vi agent: effort thấp gọi ít tool hơn, gộp thao tác.</p>
+<p>Ngay cả khi đặt tường minh, mức cũng đã được hiệu chỉnh lại: <code>high</code> trên Sonnet 5.5 không cùng lượng suy luận với <code>high</code> trên Sonnet 5.</p>`,
+        viz(box) {
+          const D = { 'claude-opus-5': 'high', 'claude-opus-5-5': 'medium', 'claude-sonnet-5': 'high', 'claude-sonnet-5-5': 'high', 'claude-haiku-5-5': 'medium' };
+          let from = 'claude-opus-5', to = 'claude-opus-5-5';
+          const out = el('div');
+          const draw = () => { const a = D[from], b = D[to]; out.replaceChildren(el('div', { class: 'stat', html: `<span>Không đặt effort, trước: <b>${a}</b></span><span>Sau: <b class="${a !== b ? 'bad' : ''}">${b}</b></span>` }), el('div', { class: 'cap', text: a !== b ? 'Mặc định đổi mà không có lỗi nào. Đặt effort tường minh và sweep lại trên eval.' : 'Mặc định giống nhau, nhưng mức có thể đã được hiệu chỉnh lại giữa hai model. Vẫn phải sweep lại.' })); };
+          const opts = Object.keys(D).map((k) => [k, k]);
+          box.append(el('div', { class: 'row' }, [select('Từ', opts, from, (v) => { from = v; draw(); }).node, select('Sang', opts, to, (v) => { to = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Ghi effort tường minh trong cấu hình, gắn với model. Mỗi lần nâng model là một lần sweep effort.'
+      }
+    ],
+    poc: {
+      goal: "Từ một ý định \"mức suy luận X\", dựng request thật cho 9 cấu hình provider theo tên tham số trong README Phần 2 và đánh dấu chỗ trả 400, chỗ chạy nhưng khác ý, chỗ README không nói. Không gọi API.",
+      file: "docs/reasoning-models/pocs/04_providers.py",
+      run: "uv run docs/reasoning-models/pocs/04_providers.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy dưới vài giây, miễn phí.",
+      output: "1. Một ý định 'mức suy luận X' → request thật cho 9 cấu hình (tên tham số và luật lấy từ README Phần 2)\nCấu hình            off             low  medium  high      max\n------------------  --------------  ---  ------  --------  --------\nOpenAI gpt-6-astra  400             ok   ok      ok        ?\nClaude Opus 5.5     400             ok   ok      cảnh báo  cảnh báo\nClaude Sonnet 5.5   khác ý          ok   ok      cảnh báo  cảnh báo\nClaude Haiku 5.5    ok              ok   ok      cảnh báo  cảnh báo\nGemini 3.8 Flash    400             ok   ok      ok        400\nGemini 2.5 Flash    ok              ok   ok      ok        khác ý\nGrok 4.7            không làm được  ok   ok      ok        khác ý\nDeepSeek v4-pro     ok              ok   khác ý  ok        ok\nvLLM Qwen3          ok              ok   ok      ok        khác ý\n   'off' (tắt suy luận): 4/9 cấu hình trả 400 hoặc không tắt được.\n\n2. Thói quen của code cũ, ở mức medium\nThói quen                          Cấu hình            Kết cục  Vì sao\n---------------------------------  ------------------  -------  -------------------------------------------------------\ntemperature 0.2 (+ stop cho Grok)  OpenAI gpt-6-astra  ?        README không nêu temperature với reasoning model OpenAI\ntemperature 0.2 (+ stop cho Grok)  Claude Opus 5.5     400      Claude 5.x từ chối temperature/top_p/top_k\ntemperature 0.2 (+ stop cho Grok)  Claude Sonnet 5.5   400      Claude 5.x từ chối temperature/top_p/top_k\ntemperature 0.2 (+ stop cho Grok)  Claude Haiku 5.5    400      Claude 5.x từ chối temperature/top_p/top_k\ntemperature 0.2 (+ stop cho Grok)  Gemini 3.8 Flash    khác ý   Google khuyên bỏ temperature với Gemini 3.x\ntemperature 0.2 (+ stop cho Grok)  Grok 4.7            400      Grok không hỗ trợ stop/presencePenalty/frequencyPenalty\ntemperature 0.2 (+ stop cho Grok)  DeepSeek v4-pro     khác ý   thinking mode bỏ qua temperature, không báo lỗi\ntool_choice any                    Claude Opus 5.5     400      tool_choice any/tool bị từ chối trên model này\ntool_choice any                    Claude Sonnet 5.5   400      tool_choice any/tool bị từ chối trên model này\nstructured output                  vLLM Qwen3          khác ý   constrained decoding: không còn suy luận\ncòn sót thinking_budget            Gemini 3.8 Flash    400      gửi cả thinking_level và thinking_budget\n\n3. Cùng ý định medium, 9 cách viết (token đếm bằng o200k của JSON request)\n   OpenAI gpt-6-astra   69 token  {\"reasoning\": {\"effort\": \"medium\"}}\n   Claude Opus 5.5      80 token  {\"output_config\": {\"effort\": \"medium\"}}\n   Claude Sonnet 5.5    80 token  {\"output_config\": {\"effort\": \"medium\"}}\n   Claude Haiku 5.5     80 token  {\"output_config\": {\"effort\": \"medium\"}}\n   Gemini 3.8 Flash     66 token  {\"config\": {\"thinking_config\": {\"thinking_level\": \"medium\"}}}\n   Gemini 2.5 Flash     67 token  {\"config\": {\"thinking_config\": {\"thinking_budget\": 8192}}}\n   Grok 4.7             69 token  {\"reasoning_effort\": \"medium\"}\n   DeepSeek v4-pro      76 token  {\"thinking\": {\"type\": \"enabled\"}, \"reasoning_effort\": \"medium\"}\n   vLLM Qwen3           70 token  {\"reasoning_effort\": \"medium\"}\n\nRút ra: không có một hằng số effort dùng chung. 'Tắt' là 400 ở model luôn suy luận, 'medium' của DeepSeek chạy high,\nvà một dòng temperature chép từ code cũ cho bốn kết cục khác nhau. Cấu hình effort phải gắn với từng model.",
+      measured: true,
+      read: ["Cột <b>off</b>: 4/9 cấu hình trả 400 hoặc không tắt được (gpt-6-astra, Opus 5.5, Gemini 3.8 Flash, Grok).", "Cột <b>medium</b>: DeepSeek ánh xạ thành <code>high</code>; mọi cấu hình khác chạy đúng ý.", "Bảng 2: một dòng <code>temperature</code> cho 400 ở Claude, lỗi ở Grok (vì <code>stop</code>), bị bỏ qua im lặng ở DeepSeek, bị khuyên bỏ ở Gemini 3.x.", "Phần 3: chín cách viết cùng một ý định. Cấu hình effort phải gắn với model."]
+    },
+    mount
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
