@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-encoders.html">← Lab trước</a><a href="05-ann.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -269,6 +289,154 @@ lesson({
     s: 'Lấy top-3 rồi đưa thẳng cho LLM: một lần xếp hạng thô sai là mất nguồn đúng, và LLM sẽ trả lời từ đoạn sai hoặc tự bịa. Đưa cả 50 ứng viên vào prompt: tốn token, chậm, và các đoạn gần đúng gây nhiễu.',
     p: 'Thêm một lần gọi reranker (độ trễ và tiền). N lớn thì recall cao nhưng reranker phải chấm nhiều cặp hơn. Chọn N bằng cách đo Recall@N: tăng N tới khi tỉ lệ câu hỏi có đoạn đúng trong tập ứng viên đạt mức bạn cần.'
   },
+  deep: [
+    {
+      q: 'Retriever và reranker đều chấm "độ liên quan". Sao phải chấm hai lần?',
+      a: `<p>Vì hai bước dùng hai loại model khác nhau về bản chất, và khác nhau ở chỗ <b>lúc nào thì được đọc tài liệu</b>.</p>
+<p><b>Retriever</b> thường là bi-encoder: model mã hoá câu hỏi và tài liệu <i>riêng rẽ</i>. Mỗi đoạn đã được biến thành vector từ lúc index, trước khi biết ai sẽ hỏi gì. Lúc có câu hỏi, chỉ còn phép nhân vector. Rẻ, nhưng mọi chi tiết của đoạn phải nén vào một vector cố định. Giống lọc CV bằng bản tóm tắt viết sẵn.</p>
+<p><b>Reranker</b> thường là cross-encoder: model đọc <i>cặp</i> (câu hỏi, đoạn) cùng lúc trong một lần chạy. Từng từ của câu hỏi được đối chiếu với từng từ của đoạn. Giống phỏng vấn trực tiếp từng ứng viên: chính xác hơn, nhưng mỗi ứng viên tốn một buổi.</p>
+<p>Số đo thật từ <code>pocs/03_encoders.py</code> (24 đoạn ShopViet, model nhỏ chạy CPU): với câu "Tai nghe của tôi bị rè, đổi trả được không?", bi-encoder xếp đoạn đúng <code>doitra-1</code> ở <b>hạng 15</b>, cross-encoder đưa nó lên <b>hạng 8</b>. Cross-encoder tốt hơn, nhưng cũng không thần kỳ: cả hai đều là model nhỏ chạy CPU, và đoạn đúng vẫn chưa vào top-3.</p>`,
+      take: 'Bi-encoder tính trước được nên quét được cả kho. Cross-encoder phải đọc từng cặp nên chỉ dùng được trên tập nhỏ.'
+    },
+    {
+      q: 'Cross-encoder chính xác hơn thì dùng nó chấm thẳng cả kho, bỏ retriever đi?',
+      a: `<p>Vì không tính trước được, cross-encoder phải chạy model <b>một lần cho mỗi đoạn</b>, mỗi câu hỏi. Thời gian tăng thẳng theo kích thước kho. Còn bi-encoder chỉ còn phép nhân vector, rẻ hơn hàng nghìn lần mỗi đoạn.</p>
+<p>Hình dưới dùng hai số đo thật trên cùng máy: cross-encoder <b>4.4 ms mỗi cặp</b> (POC 03) và brute-force bi-encoder <b>5.21 ms cho 200.000 vector 384 chiều</b> (POC 05). Chọn kích thước kho để xem mỗi câu hỏi tốn bao lâu.</p>`,
+      viz(box) {
+        const CE = 4.4, BI = 5.21 / 2e5, out = el('div');
+        const t = (ms) => ms < 1000 ? ms.toFixed(ms < 10 ? 2 : 0) + ' ms' : ms < 6e4 ? (ms / 1000).toFixed(1) + ' giây' : ms < 3.6e6 ? (ms / 6e4).toFixed(0) + ' phút' : (ms / 3.6e6).toFixed(1) + ' giờ';
+        function draw(n) {
+          out.innerHTML = `<div class="tbl"><table><tr><th>Cách làm</th><th>Phép tính</th><th>Thời gian / câu hỏi</th></tr>
+<tr><td>Cross-encoder chấm cả kho</td><td class="mono">${n.toLocaleString('vi')} × 4.4 ms</td><td><b class="bad">${t(n * CE)}</b></td></tr>
+<tr><td>Bi-encoder quét cả kho (brute-force)</td><td class="mono">${n.toLocaleString('vi')} × ${(BI * 1e6).toFixed(0)} ns</td><td><b class="ok">${t(n * BI)}</b></td></tr>
+<tr><td>Bi-encoder rồi cross-encoder chấm 100 ứng viên</td><td class="mono">trên + 100 × 4.4 ms</td><td><b>${t(n * BI + 100 * CE)}</b></td></tr></table></div>`;
+        }
+        box.append(el('div', { class: 'row' }, [select('Số đoạn trong kho', [[24, '24 (POC ShopViet)'], [1e4, '10.000'], [2e5, '200.000'], [1e6, '1 triệu'], [1e7, '10 triệu']], 1e6, (v) => draw(+v)).node]), out,
+          el('div', { class: 'cap', text: 'Số đo thật trên CPU laptop, reranker nhỏ, đo một lần. Dòng bi-encoder ngoại suy tuyến tính từ 200.000 vector và chưa tính thời gian embed câu hỏi. Reranker qua API chạy GPU nên nhanh hơn nhiều, README không đưa con số.' }));
+        draw(1e6);
+      },
+      take: 'Retriever tồn tại để thu hẹp hàng triệu đoạn xuống vài chục đoạn, đủ nhỏ để model đắt được phép đọc kỹ.'
+    },
+    {
+      q: 'Sao tài liệu nói "tối ưu recall trước"? Lấy ít mà trúng không tốt hơn à?',
+      a: `<p>Hãy nhìn phễu như hai cửa nối tiếp. Đoạn đúng muốn tới được LLM phải qua <b>cả hai</b>:</p>
+<ol><li>Cửa 1: lọt vào top-N của retriever. Xác suất này chính là Recall@N.</li><li>Cửa 2: được reranker xếp vào top-K.</li></ol>
+<p>Xác suất cuối cùng là <b>tích</b> của hai cửa. Reranker giỏi đến đâu cũng chỉ làm cửa 2 gần 100%. Nó không mở lại được cửa 1. Vì thế README gọi Recall@N là <b>trần</b> (ceiling) của cả hệ thống: đoạn bị loại ở cửa 1 thì mất hẳn.</p>
+<p>"Lấy ít mà trúng" là đòi retriever vừa nhanh vừa chính xác, đúng thứ bi-encoder không làm được. Chia việc thì mỗi bước chỉ cần giỏi một thứ. Kéo N và K bên dưới. Trình duyệt mô phỏng 200 câu hỏi và đếm mỗi câu rơi ở cửa nào.</p>`,
+      viz(box) {
+        const Q = 200, rnd = seeded(4), S = { n: 5, k: 3 };
+        const rank = Array.from({ length: Q }, () => Math.max(1, Math.round(Math.exp(0.7 + 1.5 * randn(rnd)))));
+        const gold = rank.map(() => 3 + randn(rnd)), noise = rank.map(() => Array.from({ length: 199 }, () => randn(rnd)));
+        const bar = el('div', { style: 'display:flex;height:28px;border-radius:6px;overflow:hidden;border:1px solid var(--line)' }), stat = el('div', { class: 'stat' });
+        function draw() {
+          let lost1 = 0, lost2 = 0;
+          rank.forEach((r, i) => {
+            if (r > S.n) lost1++;
+            else if (noise[i].slice(0, S.n - 1).filter((x) => x > gold[i]).length >= S.k) lost2++;
+          });
+          const ok = Q - lost1 - lost2;
+          bar.replaceChildren(...[[ok, 'var(--ok)'], [lost2, 'var(--warn)'], [lost1, 'var(--bad)']].map(([v, c]) => el('span', { style: `width:${(v / Q) * 100}%;background:${c}` })));
+          stat.innerHTML = `<span class="ok">Tới LLM: <b>${ok}</b></span><span>Lọt top-N nhưng reranker xếp trượt: <b>${lost2}</b></span><span class="bad">Bị loại ở retriever: <b>${lost1}</b></span><span>Recall@${S.n} = <b>${(((Q - lost1) / Q) * 100).toFixed(0)}%</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('N', 1, 200, 1, S.n, (v) => { S.n = v; draw(); }).node, slider('K', 1, 10, 1, S.k, (v) => { S.k = v; draw(); }).node]), bar, stat,
+          el('div', { class: 'cap', text: 'Mô phỏng với số giả định: hạng của đoạn đúng theo retriever lấy ngẫu nhiên (trung vị khoảng hạng 2, có đuôi dài), điểm rerank là điểm đoạn đúng cộng nhiễu so với các ứng viên khác. Chỉ để thấy cơ chế, không phải số đo.' }));
+        draw();
+      },
+      take: 'Phần đỏ (bị loại ở retriever) không bước nào phía sau cứu được. Vì vậy bước đầu tối ưu recall, bước sau mới lo precision.'
+    },
+    {
+      q: 'Vậy lấy N thật lớn, 1000 luôn cho chắc?',
+      a: `<p>Không, vì hai đường cong đi ngược nhau:</p>
+<ul><li><b>Recall@N tăng nhanh lúc đầu rồi chững lại.</b> Phần lớn đoạn đúng nằm ở vài chục hạng đầu. Từ 100 lên 1000 chỉ cứu thêm vài câu hỏi hiếm.</li>
+<li><b>Chi phí rerank tăng thẳng theo N.</b> Gấp 10 lần ứng viên là gấp 10 lần số cặp phải chấm, gấp 10 lần độ trễ nếu tự host.</li>
+<li><b>Nhiều ứng viên hơn là nhiều "đối thủ" hơn</b> cho reranker. Mỗi ứng viên thêm vào là thêm một cơ hội để một đoạn gần đúng vượt mặt đoạn đúng. Ở mô phỏng câu trước, thử đẩy N lên 200: phần cam nhích lên.</li></ul>
+<p>Đó là lý do README chọn vùng <b>N = 50–100</b>: thường đã qua khúc cua của đường recall, mà reranker vẫn chấm kịp. Con số chính xác phải đo trên dữ liệu của bạn.</p>`,
+      viz(box) {
+        const rnd = seeded(4), R = Array.from({ length: 3000 }, () => Math.max(1, Math.round(Math.exp(0.7 + 1.5 * randn(rnd)))));
+        const W = 560, H = 180, P = 34, NS = [1, 2, 3, 5, 8, 10, 15, 20, 30, 50, 70, 100, 150, 200];
+        const x = (n) => P + (Math.log(n) / Math.log(200)) * (W - 2 * P), yR = (r) => H - 8 - r * (H - 24), yT = (n) => H - 8 - (n / 200) * (H - 24);
+        const rec = (n) => R.filter((r) => r <= n).length / R.length;
+        const path = (f) => NS.map((n, i) => (i ? 'L' : 'M') + x(n).toFixed(1) + ' ' + f(n).toFixed(1)).join(' ');
+        const mark = el('line', { y1: 8, y2: H - 8, stroke: 'var(--ink)', 'stroke-dasharray': '4 4' }), stat = el('div', { class: 'stat' });
+        box.append(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 22}`, role: 'img', 'aria-label': 'Recall theo N và chi phí rerank theo N' }, [
+          el('line', { x1: P, x2: W - P, y1: H - 8, y2: H - 8, stroke: 'var(--line)' }),
+          el('path', { d: path((n) => yR(rec(n))), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }),
+          el('path', { d: path(yT), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 2.5 }), mark,
+          ...[1, 3, 10, 30, 100, 200].map((n) => el('text', { x: x(n) - 6, y: H + 14, class: 'mute', text: String(n) })),
+          el('text', { x: P + 4, y: 20, fill: 'var(--accent)', text: 'Recall@N (mô phỏng)' }),
+          el('text', { x: W - P - 150, y: H - 30, fill: 'var(--warn)', text: 'Số cặp phải rerank' })]));
+        const draw = (i) => { const n = NS[i]; mark.setAttribute('x1', x(n)); mark.setAttribute('x2', x(n));
+          stat.innerHTML = `<span>N = <b>${n}</b></span><span>Recall@N = <b>${(rec(n) * 100).toFixed(1)}%</b></span><span>Rerank: <b>${n}</b> cặp, ≈ <b>${(n * 4.4).toFixed(0)} ms</b> ở tốc độ CPU của POC 03</span>`; };
+        box.append(el('div', { class: 'row' }, [slider('N', 0, NS.length - 1, 1, 9, draw, (i) => NS[i]).node]), stat,
+          el('div', { class: 'cap', text: 'Trục ngang dạng log. Đường xanh dùng phân bố hạng giả định như câu trước. Đường cam là số cặp, tỉ lệ thuận với N. Mili giây lấy từ số đo 4.4 ms/cặp của POC 03 trên CPU, chỉ để so thứ bậc.' }));
+        draw(9);
+      },
+      take: 'Tăng N tới khi đường recall gần phẳng thì dừng. Phần recall còn thiếu sau đó nên sửa ở retriever (hybrid, chunking), không phải bằng N.'
+    },
+    {
+      q: 'Sao không bỏ reranker, đưa thẳng 50 ứng viên cho LLM tự chọn?',
+      a: `<p>Làm được, và README liệt kê nó là một cấu hình hợp lệ. Nhưng có ba cái giá:</p>
+<ol><li><b>Tiền và độ trễ.</b> LLM tính tiền theo token đầu vào. 50 đoạn là gấp hơn 10 lần token so với 3–5 đoạn, cho <i>mỗi</i> câu hỏi. Prompt dài cũng làm LLM trả lời chậm hơn.</li>
+<li><b>Tín hiệu bị loãng.</b> Thường chỉ một hai đoạn chứa câu trả lời. Phần còn lại là đoạn "gần đúng": cùng chủ đề, khác chi tiết. Ví dụ hoàn tiền gói Basic nằm cạnh hoàn tiền gói Pro. README cảnh báo evidence chính có thể bị chìm giữa các đoạn phụ, hai đoạn mâu thuẫn đặt cạnh nhau mà không có tín hiệu phân giải.</li>
+<li><b>Khó trích dẫn và debug.</b> Câu trả lời sai thì khó biết LLM đã dựa vào đoạn nào trong 50 đoạn.</li></ol>
+<p>Thử bảng tính dưới đây. Chú ý dòng "phần prompt là đoạn đúng": K càng lớn, câu trả lời càng là cây kim nhỏ trong đống rơm.</p>`,
+      viz(box) {
+        const S = { k: 5, t: 300, q: 1e4 }, PRICE = 2.5, BASE = 150, out = el('div', { class: 'stat' });
+        function draw() {
+          const tok = BASE + S.k * S.t, usd = (S.q * tok / 1e6) * PRICE;
+          out.innerHTML = `<span>Token đầu vào / câu: <b>${tok.toLocaleString('vi')}</b></span><span>Chi phí đầu vào / ngày: <b>$${usd.toFixed(2)}</b></span><span>Phần prompt là đoạn đúng (giả sử 1 đoạn): <b class="${S.t / tok > 0.1 ? 'ok' : 'bad'}">${((S.t / tok) * 100).toFixed(1)}%</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [
+          select('K đoạn vào prompt', [[3, '3'], [5, '5'], [10, '10'], [50, '50'], [100, '100']], S.k, (v) => { S.k = +v; draw(); }).node,
+          slider('Token / đoạn', 100, 800, 50, S.t, (v) => { S.t = v; draw(); }).node,
+          select('Câu hỏi / ngày', [[1e3, '1.000'], [1e4, '10.000'], [1e5, '100.000']], S.q, (v) => { S.q = +v; draw(); }).node]), out,
+          el('div', { class: 'cap', text: 'Giá đầu vào $2.5 / 1 triệu token lấy từ hằng số PRICE trong rag-poc/pipeline.py (model chat của POC). 150 token cho chỉ dẫn và câu hỏi là số giả định. Chưa tính token đầu ra.' }));
+        draw();
+      },
+      take: 'Reranker là bộ lọc rẻ đặt trước bước đắt nhất. Nó giữ prompt ngắn, sắc, và giữ tỉ lệ tín hiệu trên nhiễu cao.'
+    },
+    {
+      q: 'Còn K thì sao? Chọn 3 hay 10?',
+      a: `<p>K là số đoạn cuối cùng đưa cho LLM. README gợi ý <b>K ≈ 3–10</b>. Cân nhắc hai chiều:</p>
+<ul><li><b>K quá nhỏ</b>: câu trả lời cần ghép từ nhiều đoạn thì thiếu mảnh. Ví dụ "đổi trả tai nghe mất phí ship không?" cần cả đoạn đổi trả 30 ngày lẫn đoạn ai chịu phí vận chuyển. Reranker xếp sai một bậc là mất luôn nguồn.</li>
+<li><b>K quá lớn</b>: quay lại vấn đề của câu trước, prompt dài và loãng.</li></ul>
+<p>Thứ tự trong top-K cũng quan trọng. README dùng nDCG@K (điểm thưởng nhiều hơn khi đoạn đúng đứng đầu) để đo bước rerank, vì các đoạn ở vị trí 1–3 ảnh hưởng LLM nhiều hơn vị trí 8–10.</p>
+<p>Sau rerank còn bước <b>ghép ngữ cảnh</b> (context assembly): bỏ đoạn trùng ý, giữ tiêu đề và nguồn để LLM trích dẫn, tôn trọng ngân sách token. README nói thẳng: ba đoạn ngắn nhưng sắc thường hữu ích hơn mười đoạn dài và loãng.</p>`,
+      take: 'K nhỏ khi câu hỏi thường có một nguồn, K lớn hơn khi câu trả lời hay phải ghép nhiều đoạn. Cả hai phải kiểm bằng câu hỏi thật.'
+    },
+    {
+      q: 'Trong thực tế làm sao biết N đã đủ chưa?',
+      a: `<p>Đo Recall@N trên một bộ câu hỏi test. Mẹo rẻ: bạn <b>không cần chạy lại cho từng N</b>.</p>
+<ol><li>Gom vài chục đến vài trăm câu hỏi thật, mỗi câu ghi lại đoạn đúng.</li>
+<li>Chạy retriever một lần với N lớn (ví dụ 200), ghi lại <b>hạng</b> của đoạn đúng. Không thấy thì coi như hạng vô cùng.</li>
+<li>Recall@N với mọi N chỉ là đếm: bao nhiêu câu có hạng ≤ N. Một lần chạy cho ra cả đường cong.</li></ol>
+<p>Ô bên dưới đã điền hạng <b>đo thật</b> của đoạn đúng cho 4 câu hỏi ShopViet trong POC (model MiniLM 384 chiều, 24 đoạn): 15, 1, 3, 3. Thử sửa danh sách để xem bảng tính lại.</p>`,
+      viz(box) {
+        const NS = [1, 3, 5, 10, 15, 20], out = el('div');
+        const inp = el('input', { type: 'text', value: '15, 1, 3, 3', 'aria-label': 'Danh sách hạng của đoạn đúng', style: 'font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);width:220px' });
+        function draw() {
+          const r = inp.value.split(/[,\s]+/).map(Number).filter((v) => v > 0);
+          if (!r.length) { out.innerHTML = '<p class="hint">Nhập ít nhất một số hạng.</p>'; return; }
+          out.innerHTML = '<div class="tbl"><table><tr><th>N</th>' + NS.map((n) => `<th>${n}</th>`).join('') + '</tr><tr><td>Recall@N</td>' +
+            NS.map((n) => { const v = r.filter((x) => x <= n).length / r.length; return `<td class="mono"><b class="${v === 1 ? 'ok' : v < 0.75 ? 'bad' : ''}">${Math.round(v * 100)}%</b></td>`; }).join('') + '</tr></table></div>';
+        }
+        inp.addEventListener('input', draw);
+        box.append(el('label', { class: 'ctl' }, ['Hạng đoạn đúng', inp]), out,
+          el('div', { class: 'cap', text: 'Số mặc định đo thật từ POC (poc-out: 01 và 03), chỉ 4 câu hỏi nên mỗi câu là 25 điểm phần trăm. Kho 24 đoạn nên N = 15 đã là hơn nửa kho. Đủ để thấy cách tính, không đủ để chọn N.' }));
+        draw();
+      },
+      take: 'Một lần chạy với N lớn cho cả đường Recall@N. Chọn N ở chỗ đường cong gần phẳng, rồi mới chỉnh K bằng chất lượng câu trả lời.'
+    },
+    {
+      q: 'RAG POC của ShopViet đang đặt N, K bao nhiêu, và vì sao không phải 50–100?',
+      a: `<p>Trong <code>rag-poc/app.py</code>, mặc định là <b>N = 8</b> (Qdrant tìm theo cosine trên vector Cohere <code>embed-v4.0</code> 1536 chiều) và <b>K = 3</b> (Cohere <code>rerank-v3.5</code> giữ 3 đoạn cho prompt). Kho POC chỉ có vài file mẫu (chính sách, bảng giá, ảnh) cắt bằng Unstructured <code>chunk_by_title</code>, nên 8 ứng viên đã là một phần lớn của kho. Lấy 50 thì gần như đưa cả kho cho reranker.</p>
+<p>Khi kho lên cỡ 1 triệu đoạn như kịch bản ShopViet, mọi thứ đổi:</p>
+<ul><li>N = 8 gần như chắc chắn làm Recall@N tụt. Đo lại theo cách ở câu trước, rồi đẩy N về vùng 50–100 như README gợi ý.</li>
+<li>Chi phí rerank: <code>pipeline.py</code> ghi phí rerank theo <b>mỗi lần gọi</b> chứ không theo N (đây là hằng số trong code, hãy kiểm tra trang giá Cohere trước khi dự toán). Độ trễ thì vẫn tăng theo N.</li>
+<li>K = 3 hợp với câu hỏi một nguồn như "Gói Pro hoàn tiền thế nào?". Nếu log thấy nhiều câu cần ghép hai ba chính sách, thử K = 5 và so câu trả lời.</li></ul>`,
+      take: 'N và K không phải hằng số. N theo kích thước kho và Recall@N đo được, K theo kiểu câu hỏi và chất lượng câu trả lời.'
+    }
+  ],
   mount(stage) {
     const K = 3;
     const docs = [
@@ -315,6 +483,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -322,7 +529,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),

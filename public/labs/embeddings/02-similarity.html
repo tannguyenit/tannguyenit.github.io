@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-embedding-space.html">← Lab trước</a><a href="03-encoders.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -289,6 +309,184 @@ lesson({
     s: 'Dot product cho search: trang dài được ưu tiên chỉ vì vector dài, không vì đúng ý. L2 cho search: trang dài bị phạt vì cùng lý do. Cosine cho recommendation: sản phẩm ngách và sản phẩm bán chạy ngang điểm, mất tín hiệu quan trọng.',
     p: 'Cosine bỏ hẳn thông tin độ dài. Nếu vector đã chuẩn hoá về độ dài 1 (nhiều API embedding làm sẵn) thì cả ba thước đo cho cùng thứ hạng, và khi đó chọn dot cho nhanh nhất vì bỏ được bước chia. Việc cần làm là đọc docs của model xem vector đã chuẩn hoá chưa.'
   },
+  deep: [
+    {
+      q: 'Khoan đã, "độ dài" của một embedding là gì? Một câu văn thì làm gì có độ dài theo kiểu hình học?',
+      a: `<p>Embedding là một dãy số, ví dụ 384 hoặc 1536 số. Coi dãy đó là toạ độ của đầu một mũi tên xuất phát từ gốc toạ độ. <b>Độ dài</b> (norm) là độ dài mũi tên đó: căn bậc hai của tổng bình phương mọi phần tử, √(x₁² + x₂² + ... + x_d²). Giống định lý Pytago, chỉ là có nhiều chiều hơn.</p>
+<p>Điều quan trọng: với model text, <b>không ai thiết kế để độ dài mang một nghĩa cụ thể</b>. Nó là sản phẩm phụ của lớp cuối và bước pooling (gộp vector của từng token thành một vector cho cả câu). Độ dài có thể dao động theo độ dài văn bản, theo việc từ hiếm hay phổ biến, tuỳ model. Ví dụ "bài dài thì norm lớn" trong README là một hình ảnh minh hoạ, không phải quy luật của mọi model.</p>
+<p>Trên thực tế nhiều khi câu hỏi này tự biến mất. POC 01 chạy <code>paraphrase-multilingual-MiniLM-L12-v2</code> với <code>normalize_embeddings=True</code> và in ra độ dài vector bằng <b>1.00</b> (số đo thật). README ghi OpenAI và Cohere cũng trả vector đã chuẩn hoá về độ dài 1. Khi mọi vector dài bằng nhau, chỉ còn hướng là khác nhau.</p>`,
+      take: 'Độ dài là sản phẩm phụ, không phải nghĩa được thiết kế. Trừ khi model được huấn luyện để độ dài mang tín hiệu (như recommendation), hãy coi nó là nhiễu.'
+    },
+    {
+      q: 'Vậy sao lại so bằng góc (cosine) mà không dùng khoảng cách thường, như đo trên bản đồ?',
+      a: `<p>Vì nghĩa nằm ở <b>hướng</b>. Lab 07 cho thấy từng chiều riêng lẻ không có nghĩa, chỉ có tổ hợp của tất cả các chiều, tức hướng của mũi tên, mới mang nghĩa. Model embedding được huấn luyện để câu hỏi và đoạn trả lời đúng <b>chỉ cùng một hướng</b>. README ghi hầu hết model (OpenAI, Cohere, Google, Jina) được train để tối ưu cosine.</p>
+<p>Khoảng cách thường (L2) trộn hai thứ vào một con số: khác hướng bao nhiêu <b>và</b> khác độ dài bao nhiêu. Hãy nghĩ tới hai biển chỉ đường cùng chỉ về Hà Nội, một biển to, một biển nhỏ. Hỏi "đi hướng nào?" thì hai biển như nhau. Đo khoảng cách giữa hai đầu mũi tên thì lại thấy chúng khác nhau, chỉ vì kích thước biển.</p>
+<p>Cosine = dot / (‖a‖ × ‖b‖). Bước chia cho hai độ dài chính là bước "bỏ yếu tố không liên quan", giống so sánh chuỗi không phân biệt hoa thường: hạ hết về chữ thường rồi mới so, vì hoa hay thường không đổi nghĩa của từ.</p>`,
+      take: 'Cosine là dot product sau khi đã chia hết độ dài ra, chỉ còn lại hướng. Đó đúng là phần model được huấn luyện để mang nghĩa.'
+    },
+    {
+      q: 'Nếu vector nào cũng dài 1 rồi thì cosine, dot và L2 còn khác nhau không?',
+      a: `<p>Chỉ khác thang điểm, không khác thứ tự. Khai triển bình phương khoảng cách:</p>
+<p class="mono">‖a − b‖² = (a − b)·(a − b) = a·a − 2 a·b + b·b = ‖a‖² + ‖b‖² − 2 a·b</p>
+<p>Khi ‖a‖ = ‖b‖ = 1 thì a·b chính là cos, và công thức trở thành:</p>
+<p class="mono"><b>‖a − b‖² = 2 − 2 cos</b></p>
+<p>Đây là một hàm giảm đều: cos càng lớn thì L2 càng nhỏ. Không có cách nào để đoạn X có cos cao hơn đoạn Y mà lại có L2 lớn hơn. Ví dụ cos = 0.6 tương ứng L2 = √0.8 ≈ 0.894, cos = 0.4 tương ứng L2 ≈ 1.095. Còn dot thì bằng đúng cos. Ba thước đo, một thứ hạng.</p>
+<p>Hình dưới sinh 160 cặp vector ngẫu nhiên 64 chiều và tính L2 thật cho từng cặp. Khi đã chuẩn hoá, mọi điểm rơi đúng lên đường cong √(2 − 2cos). Bấm nút để nhân mỗi vector với một độ dài ngẫu nhiên: các điểm văng ra khỏi đường cong, và một cos không còn ứng với một L2 duy nhất.</p>`,
+      viz(box) {
+        const W = 560, H = 220, P = 30, d = 64, rnd = seeded(3);
+        const pairs = Array.from({ length: 160 }, () => {
+          const a = unitVec(d, rnd), r = unitVec(d, rnd), t = rnd(), b0 = a.map((x, k) => t * x + (1 - t) * r[k]), nb = Math.sqrt(dotp(b0, b0));
+          return [a, b0.map((x) => x / nb), 0.4 + 2.2 * rnd(), 0.4 + 2.2 * rnd()];
+        });
+        const X = (c) => P + ((c + 0.2) / 1.2) * (W - 2 * P), Y = (v) => H - (v / 4.5) * (H - 10);
+        const curve = Array.from({ length: 61 }, (_, i) => { const c = -0.2 + i * 0.02; return (i ? 'L' : 'M') + X(c).toFixed(1) + ' ' + Y(Math.sqrt(2 - 2 * c)).toFixed(1); }).join(' ');
+        const svg = el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 22}`, role: 'img', 'aria-label': 'L2 theo cosine cho 160 cặp vector' }), stat = el('div', { class: 'stat' });
+        let norm = true;
+        function draw() {
+          let worst = 0;
+          const pts = pairs.map(([a, b, sa, sb]) => {
+            const A = norm ? a : a.map((x) => x * sa), B = norm ? b : b.map((x) => x * sb);
+            const cos = dotp(A, B) / Math.sqrt(dotp(A, A) * dotp(B, B)), l2sq = A.reduce((s, x, k) => s + (x - B[k]) ** 2, 0);
+            if (norm) worst = Math.max(worst, Math.abs(l2sq - (2 - 2 * cos)));
+            return el('circle', { cx: X(cos), cy: Y(Math.sqrt(l2sq)), r: 3, fill: norm ? 'var(--accent)' : 'var(--warn)', 'fill-opacity': 0.75 });
+          });
+          svg.replaceChildren(el('line', { x1: P, x2: W - P, y1: H, y2: H, stroke: 'var(--line)' }), el('line', { x1: P, x2: P, y1: 6, y2: H, stroke: 'var(--line)' }),
+            el('path', { d: curve, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }), ...pts,
+            ...[-0.2, 0, 0.5, 1].map((c) => el('text', { x: X(c) - 8, y: H + 16, class: 'mute', text: String(c) })),
+            el('text', { x: W - P - 60, y: H - 6, class: 'mute', text: 'cosine →' }), el('text', { x: P + 6, y: 18, class: 'mute', text: 'L2 ↑' }));
+          stat.innerHTML = norm ? `<span>Sai lệch lớn nhất giữa L2² và 2 − 2cos: <b>${worst.toExponential(1)}</b> (chỉ là sai số làm tròn)</span>` : '<span>Cùng một cosine giờ ứng với nhiều L2 khác nhau, nên thứ hạng theo L2 không còn trùng thứ hạng theo cosine.</span>';
+        }
+        const btn = el('button', { text: 'Bỏ chuẩn hoá (nhân độ dài ngẫu nhiên)', onclick: () => { norm = !norm; btn.textContent = norm ? 'Bỏ chuẩn hoá (nhân độ dài ngẫu nhiên)' : 'Chuẩn hoá lại về độ dài 1'; draw(); } });
+        box.append(el('div', { class: 'row' }, [btn]), svg, stat, el('div', { class: 'cap', text: 'Mỗi chấm là một cặp vector ngẫu nhiên do trình duyệt sinh ra, L2 và cosine được tính thật. Đường đứt nét là √(2 − 2cos).' }));
+        draw();
+      },
+      take: 'Với vector độ dài 1: ‖a − b‖² = 2 − 2cos. L2 chỉ là cosine viết theo thang khác, nên thứ hạng giống hệt.'
+    },
+    {
+      q: 'Trên giấy thì cùng thứ hạng. Còn chạy thật thì giống y hệt, hay chỉ gần giống?',
+      a: `<p>Giống y hệt, chỉ trừ trường hợp hai đoạn có điểm sát nhau đến mức sai số làm tròn của số thực (float32 chính xác khoảng 7 chữ số) đủ để đảo chỗ. Trường hợp đó hiếm và vô hại, vì hai đoạn gần như bằng điểm.</p>
+<p>POC 02 kiểm tra trên 24 đoạn ShopViet với câu "Gói Pro hoàn tiền thế nào?". Khi vector đã chuẩn hoá, cả ba thước đo cho cùng top 3: <code>pro-1, pro-2, pro-3</code> (số đo thật). Sau đó script <b>cố ý</b> nhân vector của từng đoạn với một hệ số từ 0.5 đến 3.0 để giả lập model trả vector dài ngắn khác nhau. Lúc đó chỉ cosine giữ nguyên top 3. Dot và L2 cho ra hai danh sách khác hẳn.</p>
+<p>Bạn có thể lặp lại thí nghiệm bên dưới. Trình duyệt sinh 24 vector 384 chiều có độ liên quan khác nhau với một query, rồi nhân độ dài theo đúng cách POC làm.</p>`,
+      viz(box) {
+        const rnd = seeded(24), d = 384, q = unitVec(d, rnd);
+        const docs = Array.from({ length: 24 }, () => { const t = 0.1 + 0.5 * rnd(), r = unitVec(d, rnd), v = q.map((x, k) => t * x + (1 - t) * r[k]), n = Math.sqrt(dotp(v, v)); return v.map((x) => x / n); });
+        const scale = docs.map((_, i) => 0.5 + (2.5 * i) / 23), out = el('div');
+        const top = (s, asc) => docs.map((_, i) => i).sort((a, b) => (asc ? s[a] - s[b] : s[b] - s[a])).slice(0, 5);
+        let raw = false;
+        function draw() {
+          const D = docs.map((v, i) => (raw ? v.map((x) => x * scale[i]) : v));
+          const dot = D.map((v) => dotp(v, q)), cos = D.map((v, i) => dot[i] / Math.sqrt(dotp(v, v))), l2 = D.map((v) => Math.sqrt(v.reduce((s, x, k) => s + (x - q[k]) ** 2, 0)));
+          const ref = top(cos).join(), row = (name, ids) => `<tr><td>${name}</td><td class="mono ${ids.join() === ref ? 'ok' : 'bad'}">${ids.map((i) => 'd' + (i + 1) + (raw ? '(×' + scale[i].toFixed(1) + ')' : '')).join(' ')}</td></tr>`;
+          out.innerHTML = '<div class="tbl"><table><tr><th>Thước đo</th><th>Top 5 (đỏ = khác cosine)</th></tr>' + row('cosine', top(cos)) + row('dot', top(dot)) + row('L2', top(l2, true)) + '</table></div>';
+        }
+        const btn = el('button', { text: 'Nhân độ dài 0.5 → 3.0 như POC 02', onclick: () => { raw = !raw; btn.textContent = raw ? 'Chuẩn hoá lại' : 'Nhân độ dài 0.5 → 3.0 như POC 02'; draw(); } });
+        box.append(el('div', { class: 'row' }, [btn]), out, el('div', { class: 'cap', text: 'Vector ngẫu nhiên, điểm tính thật trong trình duyệt. d1 nhân 0.5, d24 nhân 3.0, giống cách pocs/02_similarity.py giả lập.' }));
+        draw();
+      },
+      take: 'Chuẩn hoá xong thì ba thước đo cho cùng kết quả. Chưa chuẩn hoá thì chỉ cosine là không bị độ dài kéo lệch.'
+    },
+    {
+      q: 'Lúc chưa chuẩn hoá, dot chọn don-2, còn L2 lại chọn doitra-1. Sao hai thước đo sai theo hai kiểu ngược nhau?',
+      a: `<p>Kết quả đo thật của POC 02 với vector đã bị nhân độ dài:</p>
+<div class="tbl"><table><tr><th>Thước đo</th><th>Top 3</th><th>Hệ số độ dài của các đoạn này</th></tr>
+<tr><td>cosine</td><td class="mono ok">pro-1, pro-2, pro-3</td><td class="mono">1.15, 1.26, 1.37</td></tr>
+<tr><td>dot</td><td class="mono bad">don-2, tt-3, tt-1</td><td class="mono">2.24, 2.02, 1.80</td></tr>
+<tr><td>L2</td><td class="mono bad">doitra-1, pro-1, doitra-3</td><td class="mono">0.50, 1.15, 0.72</td></tr></table></div>
+<p>Hệ số trong cột cuối tính từ cách script nhân (0.5 cho đoạn đầu, 3.0 cho đoạn cuối, chia đều). Dot chọn những đoạn được nhân lớn. L2 nghiêng về các đoạn được nhân nhỏ. Không bên nào chọn theo nghĩa.</p>
+<p>Lý do nằm ở công thức. Gọi s là độ dài của đoạn, query dài 1, góc giữa chúng có cosine c:</p>
+<ul><li><b>dot = s × c</b>. Tăng s thì điểm tăng mãi. Đoạn đơn hàng không liên quan nhưng bị nhân 2.24 vẫn thắng đoạn đúng bị nhân 1.15.</li>
+<li><b>L2² = 1 + s² − 2sc</b>. Đây là một parabol theo s, nhỏ nhất khi <b>s = c</b>. Cosine giữa query và đoạn liên quan thường chỉ cỡ 0.3 đến 0.6 (top 3 của các câu hỏi trong POC 01 nằm trong khoảng 0.39 đến 0.64), nên L2 ưu tiên đoạn có độ dài quanh 0.3 đến 0.6, tức đoạn <b>ngắn</b>.</li></ul>
+<p>Kéo thanh trượt để đổi c và xem điểm thấp nhất của L2 dịch theo.</p>`,
+      viz(box) {
+        const W = 560, H = 200, P = 30, X = (s) => P + (s / 3) * (W - 2 * P), Y = (v) => H - (v / 3.3) * (H - 10);
+        const svg = el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 22}`, role: 'img', 'aria-label': 'dot và L2 theo độ dài vector' }), stat = el('div', { class: 'stat' });
+        const path = (f) => Array.from({ length: 61 }, (_, i) => { const s = i * 0.05; return (i ? 'L' : 'M') + X(s).toFixed(1) + ' ' + Y(f(s)).toFixed(1); }).join(' ');
+        function draw(c) {
+          const l2 = (s) => Math.sqrt(1 + s * s - 2 * s * c);
+          svg.replaceChildren(el('line', { x1: P, x2: W - P, y1: H, y2: H, stroke: 'var(--line)' }),
+            el('path', { d: path((s) => s * c), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }),
+            el('path', { d: path(l2), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 2.5 }),
+            el('circle', { cx: X(c), cy: Y(l2(c)), r: 5, fill: 'var(--warn)' }),
+            el('text', { x: X(c) - 30, y: Y(l2(c)) + 20, fill: 'var(--warn)', text: 'L2 nhỏ nhất' }),
+            el('text', { x: X(2.2), y: Y(2.2 * c) - 8, fill: 'var(--accent)', text: 'dot = s × c' }),
+            ...[0, 1, 2, 3].map((s) => el('text', { x: X(s) - 4, y: H + 16, class: 'mute', text: String(s) })),
+            el('text', { x: W - P - 110, y: H - 6, class: 'mute', text: 'độ dài đoạn s →' }));
+          stat.innerHTML = `<span>L2 nhỏ nhất khi s = <b>${c.toFixed(2)}</b></span><span>dot ở s = 1: <b>${c.toFixed(2)}</b>, ở s = 3: <b>${(3 * c).toFixed(2)}</b></span>`;
+        }
+        const sl = slider('cosine c', 0.1, 0.9, 0.05, 0.45, draw, (v) => v.toFixed(2));
+        box.append(el('div', { class: 'row' }, [sl.node]), svg, stat, el('div', { class: 'cap', text: 'Đường xanh là dot, đường cam là L2, với query độ dài 1. Tính thẳng từ công thức, không phải số giả định.' }));
+        draw(0.45);
+      },
+      take: 'Chưa chuẩn hoá thì dot thưởng cho vector dài, L2 thưởng cho vector có độ dài gần bằng cos (thường là vector ngắn). Cả hai đều chấm độ dài chứ không chấm nghĩa.'
+    },
+    {
+      q: 'Vậy có khi nào người ta cố tình dùng dot trên vector chưa chuẩn hoá không?',
+      a: `<p>Có, khi độ dài <b>được huấn luyện để mang tín hiệu</b>. Ví dụ điển hình trong README là recommendation kiểu two-tower: model học từ hàng tỷ lượt click. Món phổ biến xuất hiện nhiều trong dữ liệu huấn luyện nên vector của nó hội tụ mạnh và dài hơn. Lúc này dot = ‖user‖ × ‖item‖ × cos là "hợp sở thích bao nhiêu" nhân với "món này đáng tin bao nhiêu".</p>
+<p>Với ShopViet, đó là ô "gợi ý cho bạn" ở trang chủ: giữa hai sạc nhanh cùng hợp gu, gợi ý mẫu bán chạy là lựa chọn an toàn. Còn trợ lý chat trả lời chính sách thì không: một FAQ một dòng và một trang chính sách dài cùng nói về bảo hành phải được xếp ngang nhau.</p>
+<p>Quy tắc chung: <b>dùng đúng thước đo mà model được huấn luyện</b>. Model card thường ghi rõ. Có những model embedding được train với dot product làm hàm chấm điểm. Khi đó đổi sang cosine cũng là dùng sai.</p>
+<p>Thử bên dưới: một món phổ biến hơi kém hợp gu (cos 0.75) và một món ngách rất hợp gu (cos 0.90, độ dài 3.2). Kéo độ dài của món phổ biến.</p>`,
+      viz(box) {
+        const out = el('div'), stat = el('div', { class: 'stat' });
+        function draw(n) {
+          const pop = { cos: 0.75, len: n }, nic = { cos: 0.9, len: 3.2 }, dp = pop.cos * pop.len, dn = nic.cos * nic.len;
+          out.replaceChildren(el('h4', { text: 'Cosine (chỉ hướng)', style: 'margin:0 0 4px;font-size:13px' }), hbars([['Phổ biến', pop.cos, pop.cos > nic.cos], ['Ngách', nic.cos, nic.cos > pop.cos]], { max: 1, fmt: (v) => v.toFixed(2) }),
+            el('h4', { text: 'Dot (hướng × độ dài)', style: 'margin:10px 0 4px;font-size:13px' }), hbars([['Phổ biến', dp, dp > dn], ['Ngách', dn, dn > dp]], { max: 9, fmt: (v) => v.toFixed(2) }));
+          stat.innerHTML = `<span>Món phổ biến thắng theo dot khi độ dài &gt; <b>${(dn / pop.cos).toFixed(2)}</b></span>`;
+        }
+        const sl = slider('Độ dài món phổ biến', 1, 10, 0.1, 8.5, draw, (v) => v.toFixed(1));
+        box.append(el('div', { class: 'row' }, [sl.node]), out, stat, el('div', { class: 'cap', text: 'Độ dài 8.5 và 3.2 lấy từ ví dụ Endgame và Blade Runner 2049 trong README. Hai giá trị cosine 0.75 và 0.90 là số giả định.' }));
+        draw(8.5);
+      },
+      take: 'Dot trên vector chưa chuẩn hoá là có chủ đích khi độ dài được huấn luyện để mang nghĩa. Với search và RAG thì không, nên dùng cosine.'
+    },
+    {
+      q: 'Người ta hay nói "chuẩn hoá xong dùng dot cho nhanh". Nhanh hơn bao nhiêu? Có đáng bận tâm không?',
+      a: `<p>Cosine cho một cặp cần: một dot product, độ dài của hai vector, rồi một phép chia. Dot chỉ cần phần đầu. Nghe như cosine tốn gấp ba, nhưng thực tế không tệ vậy:</p>
+<ul><li>Độ dài của query chỉ tính một lần cho mỗi câu hỏi.</li><li>Độ dài của tài liệu có thể tính sẵn lúc index và lưu lại, giống một cột tính sẵn (computed column) trong SQL.</li></ul>
+<p>Vậy phần chênh thực sự chỉ là một phép chia cho mỗi tài liệu. Cái lợi lớn hơn của việc chuẩn hoá lúc lưu là <b>đơn giản</b>: dot lúc đó đúng bằng cosine, không còn lo nhầm thước đo. Còn trong vector DB có index ANN như HNSW, phần lớn thời gian nằm ở việc đi trên đồ thị và đọc vector từ bộ nhớ, chứ không phải ở phép chia.</p>
+<p>Bấm nút để đo trên chính máy bạn: 10.000 vector 384 chiều, so cách tính cosine "ngây thơ" (tính lại độ dài mỗi lần) với dot trên vector đã chuẩn hoá. Đừng ngạc nhiên nếu chênh lệch rất nhỏ, có khi còn dưới 1: phần nặng nhất là đọc 384 số của mỗi vector từ bộ nhớ, và cả hai cách đều phải đọc như nhau.</p>`,
+      viz(box) {
+        const out = el('div', { class: 'stat' }, [el('span', { text: 'Chưa đo. Bấm nút để chạy (khoảng nửa giây).' })]);
+        function run() {
+          const N = 10000, d = 384, rnd = seeded(7), M = new Float32Array(N * d), q = new Float32Array(d);
+          for (let i = 0; i < M.length; i++) M[i] = rnd() - 0.5;
+          for (let k = 0; k < d; k++) q[k] = rnd() - 0.5;
+          let sink = 0;
+          const best = (f) => { let b = 1e9; for (let r = 0; r < 5; r++) { const t = performance.now(); f(); b = Math.min(b, performance.now() - t); } return b; };
+          const cosAll = () => { let qn = 0; for (let k = 0; k < d; k++) qn += q[k] * q[k]; qn = Math.sqrt(qn);
+            for (let i = 0; i < N; i++) { let s = 0, n = 0; const o = i * d; for (let k = 0; k < d; k++) { const x = M[o + k]; s += x * q[k]; n += x * x; } sink += s / (Math.sqrt(n) * qn); } };
+          const dotAll = () => { for (let i = 0; i < N; i++) { let s = 0; const o = i * d; for (let k = 0; k < d; k++) s += M[o + k] * q[k]; sink += s; } };
+          const tc = best(cosAll), td = best(dotAll);
+          out.innerHTML = `<span>cosine ngây thơ: <b>${tc.toFixed(1)} ms</b></span><span>dot: <b>${td.toFixed(1)} ms</b></span><span>chênh: <b>×${(tc / td).toFixed(2)}</b></span><span>ước tính 1 triệu vector bằng dot: <b>${(td * 100).toFixed(0)} ms</b></span>`; out.title = 'checksum ' + sink.toFixed(3);
+        }
+        box.append(el('div', { class: 'row' }, [el('button', { class: 'primary', text: 'Đo trên máy tôi', onclick: run })]), out,
+          el('div', { class: 'cap', text: 'Số đo thật trên trình duyệt của bạn, JavaScript một luồng, quét toàn bộ (brute-force). Không phải số của Qdrant, vốn dùng SIMD và index ANN.' }));
+      },
+      take: 'Chuẩn hoá lúc lưu giúp tiết kiệm một ít phép tính, nhưng lợi chính là dot = cosine, không còn chỗ để nhầm.'
+    },
+    {
+      q: 'Điểm cosine 0.636 là cao hay thấp? Đặt ngưỡng "trên 0.7 mới trả lời" được không?',
+      a: `<p>Con số cosine tuyệt đối khó đọc hơn bạn nghĩ. Số đo thật từ POC 01 (MiniLM đa ngôn ngữ, 24 đoạn):</p>
+<div class="tbl"><table><tr><th>Cặp</th><th>Cosine</th></tr>
+<tr><td>"Tai nghe của tôi bị rè, đổi trả được không?" và đoạn hướng dẫn kết nối Bluetooth (không phải đáp án)</td><td class="mono">0.636, hạng 1</td></tr>
+<tr><td>"Bảo hành tai nghe bao lâu?" và đoạn bảo hành 12 tháng (đáp án đúng)</td><td class="mono">0.445, hạng 3</td></tr>
+<tr><td>"Hoàn tiền trong 14 ngày" và một câu cùng nghĩa nhưng không chung từ nào</td><td class="mono">0.273</td></tr>
+<tr><td>"Hoàn tiền trong 14 ngày" và "Cửa hàng mở cửa lúc 8 giờ sáng"</td><td class="mono">0.174</td></tr></table></div>
+<p>Ngưỡng 0.7 sẽ loại sạch mọi đáp án đúng ở đây. Còn với model khác, có thể ngay cả cặp không liên quan cũng được trên 0.7. Mỗi model có "vùng điểm" riêng. Điểm cosine chỉ chắc chắn dùng được để <b>so các đoạn với nhau trong cùng một câu hỏi, cùng một model</b>.</p>
+<p>Nếu cần ngưỡng (ví dụ để trả lời "tôi không tìm thấy"), hãy đặt bằng cách đo trên bộ câu hỏi có đáp án của chính bạn, và đo lại mỗi khi đổi model. Lab 03 bàn tiếp chuyện ngưỡng với điểm của reranker.</p>`,
+      take: 'Cosine tốt cho xếp hạng, kém cho ngưỡng tuyệt đối. Ngưỡng phải đo theo từng model trên dữ liệu thật.'
+    },
+    {
+      q: 'Chốt lại: collection Qdrant trong RAG POC nên đặt metric nào, và đổi sau được không?',
+      a: `<p><code>rag-poc/pipeline.py</code> tạo collection với <code>VectorParams(size=1536, distance=Distance.COSINE)</code>. Vector đến từ Cohere <code>embed-v4.0</code>, kiểu float, 1536 chiều, với <code>input_type</code> là <code>search_document</code> lúc nạp và <code>search_query</code> lúc hỏi. Cosine là lựa chọn đúng vì ba lý do:</p>
+<ol><li>Đây là search, độ dài vector không mang tín hiệu mà ta muốn dùng.</li>
+<li>Theo tài liệu của Qdrant, với metric Cosine, Qdrant tự chuẩn hoá vector lúc ghi và dùng dot khi tìm. Nghĩa là bạn đã được tốc độ của dot mà không phải tự chuẩn hoá. Hệ quả: vector lưu trong collection là bản đã chuẩn hoá. Nếu cần độ dài gốc, hãy lưu riêng vào payload.</li>
+<li>Chọn Dot không nhanh hơn, và sẽ sai âm thầm nếu một ngày có vector chưa chuẩn hoá lọt vào. Chọn Euclid cho cùng thứ hạng (vì 2 − 2cos), nhưng điểm trả về là khoảng cách, càng nhỏ càng tốt, rất dễ viết ngưỡng ngược chiều.</li></ol>
+<p>Metric được đặt lúc tạo collection. Muốn đổi thì tạo collection mới, nạp lại vector rồi chuyển alias, giống quy trình đổi số chiều ở lab 07.</p>
+<p>Cuối cùng, metric không cứu được embedding kém. Trong POC, đoạn đúng của câu "tai nghe bị rè, đổi trả" đứng hạng 15 theo cosine (POC 03). Vector đã chuẩn hoá nên đổi sang dot hay L2 thì vẫn hạng 15. Đó là giới hạn của model, và lab 03 giải quyết nó bằng reranker.</p>`,
+      take: 'RAG POC: Qdrant Distance.COSINE với vector Cohere. Đúng cho search, đã nhanh như dot, và đổi metric nghĩa là tạo collection mới.'
+    }
+  ],
   mount(stage) {
     const W = 520, H = 330, OX = 50, OY = 296, S = 62;
     const toPx = (x, y) => [OX + x * S, OY - y * S];
@@ -358,6 +556,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -365,7 +602,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),

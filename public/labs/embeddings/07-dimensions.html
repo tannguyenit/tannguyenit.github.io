@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="06-chunking.html">← Lab trước</a><a href="08-hybrid.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -273,6 +293,188 @@ lesson({
     s: 'Giữ 3072 chiều cho chắc: tốn gấp đôi RAM so với 1536, trong khi nhiều bài toán không cần. Cắt xuống 256 cho rẻ nhất: chỗ quá chật, hai đoạn khác ý nhưng gần nghĩa bị nén thành gần như một điểm, Recall@K tụt rõ. PCA sau khi embed: không biết cấu trúc embedding nên thường mất nhiều hơn MRL.',
     p: 'Không có con số chung. 1536 hay 768 đều là điểm thương lượng giữa RAM và chất lượng, đúng với dữ liệu nào thì phải đo. Quantization (int8, binary) giảm RAM thêm nhưng mất thêm độ chính xác. Đổi số chiều sau khi đã index nghĩa là embed lại hoặc cắt và dựng lại index.'
   },
+  deep: [
+    {
+      q: 'Một "chiều" là gì? Chiều số 37 có nghĩa là "giá tiền" hay "bảo hành" không?',
+      a: `<p>Không. Mỗi chiều chỉ là một con số mà lớp cuối của model xuất ra. Lớp đó có bao nhiêu nơ-ron thì vector có bấy nhiêu chiều. Không ai đặt tên cho từng chiều. Model tự sắp xếp chúng trong lúc huấn luyện.</p>
+<p>Nghĩa không nằm ở một ô riêng lẻ mà nằm ở <b>hướng</b> của cả vector, tức tổ hợp của tất cả các ô. Hãy so với màu RGB: kênh R luôn có nghĩa là "đỏ". Embedding giống một công thức pha 1536 loại sơn không có nhãn. Chỉ khi so hai công thức với nhau bạn mới biết chúng giống nhau đến đâu.</p>
+<p>Thử nghiệm bên dưới chứng minh điều đó. Ba vector A, B, C có 12 chiều. Bấm nút để xáo trộn thứ tự các chiều và đổi dấu ngẫu nhiên, áp dụng giống nhau cho cả ba. Nhìn từng ô thì vector trông khác hẳn, nhưng cosine giữa chúng <b>không đổi một chút nào</b>. Nếu chiều số 37 thật sự có nghĩa "giá tiền" thì phép xáo trộn này đã làm hỏng nghĩa.</p>`,
+      viz(box) {
+        const d = 12, rnd = seeded(37);
+        const base = unitVec(d, rnd), B = base.map((x) => x + 0.35 * randn(rnd)), C = unitVec(d, rnd);
+        let vecs = [base, B, C].map((v) => { const n = Math.hypot(...v); return v.map((x) => x / n); });
+        const strips = el('div'), stat = el('div', { class: 'stat' });
+        const color = (x) => x >= 0 ? `color-mix(in srgb, var(--g1) ${Math.min(100, Math.abs(x) * 180)}%, var(--bg))` : `color-mix(in srgb, var(--g2) ${Math.min(100, Math.abs(x) * 180)}%, var(--bg))`;
+        function draw() {
+          strips.replaceChildren(...vecs.map((v, i) => el('div', { style: 'display:grid;grid-template-columns:28px repeat(12,1fr);gap:3px;margin-bottom:4px;align-items:center' },
+            [el('b', { class: 'mono', text: 'ABC'[i] }), ...v.map((x) => el('span', { title: x.toFixed(3), style: `height:24px;border-radius:3px;background:${color(x)}` }))])));
+          stat.innerHTML = `<span>cos(A, B) = <b>${dotp(vecs[0], vecs[1]).toFixed(4)}</b></span><span>cos(A, C) = <b>${dotp(vecs[0], vecs[2]).toFixed(4)}</b></span>`;
+        }
+        const btn = el('button', { text: 'Xáo trộn và đổi dấu các chiều', onclick: () => {
+          const perm = Array.from({ length: d }, (_, i) => i).sort(() => rnd() - 0.5), sign = perm.map(() => (rnd() < 0.5 ? -1 : 1));
+          vecs = vecs.map((v) => perm.map((p, i) => v[p] * sign[i]));
+          draw(); strips.classList.remove('pulse'); void strips.offsetWidth; strips.classList.add('pulse');
+        } });
+        box.append(el('div', { class: 'row' }, [btn]), strips, stat,
+          el('div', { class: 'cap', text: 'Xanh là số dương, cam là số âm, càng đậm thì trị tuyệt đối càng lớn. Rê chuột lên ô để xem giá trị.' }));
+        draw();
+      },
+      take: 'Chiều không có nghĩa riêng. Vì vậy cắt bớt chiều không làm mất "một khái niệm" mà làm mọi khái niệm mờ đi một chút.'
+    },
+    {
+      q: 'Vậy con số 1536 từ đâu ra? Sao chỗ nào cũng thấy 1536?',
+      a: `<p>Số chiều do người thiết kế model chọn. Nó bằng kích thước lớp ẩn (hidden size) của mạng. Họ thường chọn bội số của 128 vì GPU nhân ma trận nhanh nhất ở các kích thước đó: 384 = 3 × 128, 768 = 6 × 128, 1536 = 12 × 128, 3072 = 24 × 128.</p>
+<p>1536 phổ biến vì <b>lịch sử</b>, không phải vì nó là con số tối ưu:</p>
+<ol><li>Tháng 12/2022 OpenAI ra <code>text-embedding-ada-002</code>, trả về 1536 chiều. Model này rẻ và dễ dùng nên trở thành mặc định trong rất nhiều tutorial, ví dụ của LangChain và LlamaIndex, và schema <code>vector(1536)</code> của pgvector.</li>
+<li>Tháng 01/2024 <code>text-embedding-3-small</code> giữ mặc định 1536. Ai đang dùng ada-002 có thể đổi model mà không phải sửa schema.</li>
+<li>Cohere <code>embed-v4.0</code> (model trong RAG POC) cũng mặc định 1536, và cho chọn 256, 512, 1024.</li></ol>
+<p>OpenAI chưa từng công bố vì sao chọn đúng 1536. Model open-source lại hay dùng 384, 768 hoặc 1024. Hình dưới lấy số chiều từ bảng model trong README.</p>`,
+      viz(box) {
+        const rows = [['all-MiniLM-L6-v2', 384], ['EmbeddingGemma-300m', 768], ['BGE-M3', 1024], ['voyage-4', 1024], ['text-embedding-3-small', 1536], ['Cohere embed-v4.0', 1536], ['Cohere embed-v5.0-pro', 2048], ['text-embedding-3-large', 3072], ['gemini-embedding-2', 3072]];
+        box.append(hbars(rows.map(([m, d]) => [m, d, d === 1536]), { max: 3072, fmt: (v) => `${v} = ${v / 128}×128` }),
+          el('div', { class: 'cap', text: 'Thanh màu đậm là các model mặc định 1536 chiều. Mọi con số đều là bội của 128.' }));
+      },
+      take: '1536 là "chuẩn ngầm" do model của OpenAI phổ biến, không phải quy luật. Câu đúng phải là: số chiều nào đủ cho dữ liệu của tôi?'
+    },
+    {
+      q: 'Nhiều chiều hơn thì được gì? "Có thêm chỗ chứa nghĩa" nghĩa là sao?',
+      a: `<p>Thử tưởng tượng chỉ có 2 chiều, như một tờ bản đồ. Bạn muốn đặt "tai nghe" gần "bảo hành", gần "Bluetooth", gần "pin" và gần "giá". Nhưng "bảo hành" và "Bluetooth" không liên quan nhau, nên chúng phải ở xa nhau. Trên mặt phẳng không làm được: mọi thứ quây quanh "tai nghe" sẽ bị ép sát vào nhau.</p>
+<p>Mỗi chiều thêm vào là một hướng mới để tách các thứ ra. Có một sự thật toán học đáng nhớ: trong không gian nhiều chiều, <b>hai hướng ngẫu nhiên gần như luôn vuông góc</b> (cosine gần 0). Độ lệch của cosine chỉ cỡ 1/√d. Với d = 1536 thì đó là ±0.026.</p>
+<p>Nghĩa là chiều cao cho model rất nhiều "hướng trống". Các chủ đề không liên quan đứng ở các hướng gần vuông góc nhau và không lẫn vào nhau. Nhờ vậy các cặp thật sự liên quan, với cosine 0.4 hay 0.6, nổi bật hẳn lên.</p>
+<p>Kéo thanh trượt bên dưới. Trình duyệt sẽ sinh 100 vector ngẫu nhiên ở số chiều bạn chọn và vẽ phân bố cosine của 4950 cặp. Đây là số tính thật, không phải số vẽ sẵn.</p>`,
+      viz(box) {
+        const ds = [2, 3, 8, 32, 128, 384, 1536], W = 560, H = 170, NB = 40;
+        const svg = el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 26}`, role: 'img', 'aria-label': 'Histogram cosine giữa các cặp vector ngẫu nhiên' });
+        const stat = el('div', { class: 'stat' });
+        function draw(d) {
+          const rnd = seeded(11), N = 100, vs = Array.from({ length: N }, () => unitVec(d, rnd));
+          const bins = new Array(NB).fill(0); let big = 0, tot = 0;
+          for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+            const c = dotp(vs[i], vs[j]);
+            bins[Math.min(NB - 1, Math.floor(((c + 1) / 2) * NB))]++; if (Math.abs(c) > 0.5) big++; tot++;
+          }
+          const mx = Math.max(...bins), bw = W / NB;
+          svg.replaceChildren(
+            ...bins.map((b, i) => el('rect', { x: i * bw + 1, y: H - (b / mx) * (H - 10), width: bw - 2, height: (b / mx) * (H - 10), rx: 2, fill: Math.abs(i + 0.5 - NB / 2) > NB / 4 ? 'var(--warn)' : 'var(--accent)' })),
+            el('line', { x1: 0, x2: W, y1: H, y2: H, stroke: 'var(--line)' }),
+            ...[[-1, 0], [-0.5, W / 4], [0, W / 2], [0.5, (3 * W) / 4], [1, W]].map(([t, x]) => el('text', { x: Math.min(W - 14, Math.max(2, x - 6)), y: H + 18, class: 'mute', text: String(t) })));
+          stat.innerHTML = `<span>${tot} cặp</span><span>cặp có |cos| &gt; 0.5: <b>${((big / tot) * 100).toFixed(1)}%</b></span><span>1/√d = <b>${(1 / Math.sqrt(d)).toFixed(3)}</b></span>`;
+        }
+        const sl = slider('Số chiều', 0, ds.length - 1, 1, 0, (v) => draw(ds[v]), (v) => ds[v]);
+        box.append(el('div', { class: 'row' }, [sl.node]), svg, stat,
+          el('div', { class: 'cap', text: 'Trục ngang là cosine từ -1 đến 1. Cột cam là các cặp "trông có vẻ liên quan" (|cos| > 0.5) dù thực ra chỉ là vector ngẫu nhiên. Ở 2 chiều có khoảng 2/3 số cặp như vậy. Ở 1536 chiều thì gần như không còn cặp nào.' }));
+        draw(ds[0]);
+      },
+      take: 'Chiều cao làm cho những thứ không liên quan ở xa nhau một cách tự nhiên. Chiều thấp thì nhiều thứ trông "giống nhau" chỉ vì thiếu chỗ.'
+    },
+    {
+      q: 'Vậy cắt xuống ít chiều thì hỏng đến mức nào? Có số đo thật không?',
+      a: `<p>Có. File <code>pocs/07_dimensions.py</code> lấy model <code>paraphrase-multilingual-MiniLM-L12-v2</code> (384 chiều), embed 24 đoạn ShopViet, rồi cắt vector còn 256, 128, 64, 32 chiều và chuẩn hoá lại. Sau đó chạy 4 câu hỏi và đếm số câu tìm thấy đoạn đúng trong top 3.</p>
+<p>Kết quả: 384, 256 và 128 chiều cho cùng mức 75%. Xuống 64 chiều thì tụt còn 25%. Lưu ý MiniLM <b>không được huấn luyện kiểu Matryoshka</b>, nên cắt đuôi là cách cắt "thô". Với chỉ 24 đoạn, 128 chiều vẫn đủ chỗ. Kho 1 triệu đoạn với nhiều chủ đề sát nhau sẽ cần nhiều chỗ hơn.</p>
+<p>Đây là kiểu "va chạm" của chiều thấp. Khi không đủ hướng, "đổi trả tai nghe" và "bảo hành tai nghe" bị ép gần thành một điểm, nên đoạn sai chen vào top 3.</p>`,
+      viz(box) {
+        const rows = [['float32 · 384', 75, 1.54], ['float32 · 256', 75, 1.02], ['float32 · 128', 75, 0.51], ['float32 · 64', 25, 0.26], ['float32 · 32', 25, 0.13], ['int8 · 384', 75, 0.38], ['binary · 384', 50, 0.048]];
+        box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Cấu hình</th><th>Recall@3 (4 câu hỏi)</th><th>RAM cho 1 triệu chunk</th></tr>' + rows.map(([c, r, g]) => `<tr><td>${c}</td><td><b class="${r >= 75 ? 'ok' : 'bad'}">${r}%</b></td><td class="mono">${g} GB</td></tr>`).join('') })]),
+          el('div', { class: 'cap', text: 'Số đo thật từ pocs/07_dimensions.py. Chỉ có 4 câu hỏi nên mỗi câu bằng 25 điểm phần trăm. Dùng để thấy xu hướng, không dùng để chọn cấu hình production.' }));
+      },
+      take: 'Chiều thấp làm các ý gần nghĩa dính vào nhau. Điểm gãy phụ thuộc vào dữ liệu và model, nên phải tự đo.'
+    },
+    {
+      q: 'Thế cứ chọn 3072 chiều cho chắc ăn được không?',
+      a: `<p>Được, nhưng bạn trả tiền cho phần không dùng tới. Chi phí tăng <b>tuyến tính</b> theo số chiều. Gấp đôi số chiều thì:</p>
+<ul><li>Gấp đôi RAM và ổ đĩa cho vector.</li><li>Gấp đôi phép nhân cộng trên mỗi lần so sánh. Brute-force 10 triệu vector 3072 chiều là khoảng 31 tỷ phép tính cho một câu hỏi.</li><li>Gấp đôi dữ liệu truyền qua mạng khi đồng bộ hoặc sao lưu.</li></ul>
+<p>Còn chất lượng thì tăng nhanh lúc đầu rồi <b>chững lại</b>. README ghi model có MRL thường giữ khoảng 95% chất lượng khi chỉ dùng một nửa số chiều. Phần chiều cuối chỉ thêm các chi tiết rất tinh.</p>
+<p>Một điểm hay bị quên: index HNSW lưu thêm danh sách hàng xóm cho mỗi điểm, và phần này <b>không giảm</b> khi bạn giảm chiều. Vì vậy cắt chiều đi một nửa thì tổng RAM giảm ít hơn một nửa.</p>`,
+      viz(box) {
+        const D = [256, 512, 768, 1024, 1536, 3072], Q = { 256: 78, 512: 88, 768: 91, 1024: 92.5, 1536: 94, 3072: 95 }, W = 560, H = 190, P = 34;
+        const x = (d) => P + (d / 3072) * (W - 2 * P), yC = (d) => H - 10 - (d / 3072) * (H - 30), yQ = (q) => H - 10 - ((q - 70) / 30) * (H - 30);
+        const path = (f) => D.map((d, i) => (i ? 'L' : 'M') + x(d).toFixed(1) + ' ' + f(d).toFixed(1)).join(' ');
+        box.append(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 24}`, role: 'img', 'aria-label': 'Chi phí tăng thẳng, chất lượng chững lại' }, [
+          el('line', { x1: P, x2: W - P, y1: H - 10, y2: H - 10, stroke: 'var(--line)' }),
+          el('path', { d: path(yC), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 2.5 }),
+          el('path', { d: path((d) => yQ(Q[d])), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }),
+          ...D.flatMap((d) => [el('circle', { cx: x(d), cy: yQ(Q[d]), r: 4, fill: 'var(--accent)' }), el('circle', { cx: x(d), cy: yC(d), r: 4, fill: 'var(--warn)' }),
+            el('text', { x: x(d) - 12, y: H + 10, class: 'mute', text: String(d) })]),
+          el('text', { x: W - P - 160, y: 115, fill: 'var(--warn)', text: 'Chi phí (RAM, phép tính)' }),
+          el('text', { x: P + 8, y: yQ(95) - 30, fill: 'var(--accent)', text: 'Chất lượng (Recall@5 giả định)' })]),
+          el('div', { class: 'cap', text: 'Đường cam là số thật: chi phí tỉ lệ thuận với số chiều. Đường xanh là số giả định cùng bộ với bảng ở trên, chỉ để thấy hình dạng "chững lại".' }));
+      },
+      take: 'Sau một mức nào đó, thêm chiều là trả gấp đôi tiền để được vài điểm phần trăm. Mức đó phải đo trên dữ liệu của bạn.'
+    },
+    {
+      q: 'MRL làm thế nào mà cắt bớt vẫn giữ chất lượng, còn cắt model thường lại hỏng?',
+      a: `<p>Model thường được huấn luyện chỉ với vector đầy đủ. Thông tin vì vậy trải đều khắp các chiều. Cắt một nửa là vứt đi một nửa thông tin.</p>
+<p>MRL thay đổi cách huấn luyện. Hàm loss được tính ở <b>nhiều độ dài cùng lúc</b>, ví dụ 64, 128, 256 đến đủ chiều, rồi cộng lại. Model bị buộc phải làm sao cho đoạn 64 chiều đầu tự nó đã dùng được. Kết quả là thông tin thô quan trọng nhất dồn lên đầu, còn chi tiết tinh nằm ở đuôi. Giống búp bê Nga lồng nhau: con nhỏ nhất bên trong vẫn là một con búp bê hoàn chỉnh.</p>
+<p>Lưu ý khi tự cắt: vector sau khi cắt không còn độ dài 1. Nếu bạn so bằng dot product thì phải <b>chuẩn hoá lại</b>. Còn khi truyền <code>output_dimension</code> cho Cohere hay <code>dimensions</code> cho OpenAI, API đã làm việc này cho bạn.</p>`,
+      viz(box) {
+        const n = 48, flat = Array(n).fill(1 / n), raw = Array.from({ length: n }, (_, i) => Math.exp(-i / 9)), sum = raw.reduce((a, b) => a + b), mrl = raw.map((v) => v / sum);
+        const out = el('div');
+        function row(name, w, keep) {
+          const mx = Math.max(...w), kept = w.slice(0, keep).reduce((a, b) => a + b, 0);
+          return el('div', { style: 'margin-bottom:10px' }, [el('div', { class: 'hint', style: 'margin:0 0 4px', html: `${name}: giữ lại <b>${Math.round(kept * 100)}%</b> thông tin` }),
+            el('div', { style: 'display:flex;align-items:flex-end;gap:2px;height:60px' }, w.map((v, i) => el('span', { style: `flex:1;height:${Math.max(4, (v / mx) * 60)}px;border-radius:2px;background:${i < keep ? 'var(--accent)' : 'var(--line)'}` })))]);
+        }
+        const sl = slider('Giữ lại', 4, 48, 4, 24, (k) => draw(k), (k) => `${Math.round((k / 48) * 3072)} / 3072 chiều`);
+        function draw(k) { out.replaceChildren(row('Model thường', flat, k), row('Model MRL', mrl, k)); }
+        box.append(el('div', { class: 'row' }, [sl.node]), out, el('div', { class: 'cap', text: 'Hình minh hoạ khái niệm. Chiều cao mỗi cột là lượng thông tin của nhóm chiều đó. Phần trăm là con số của hình vẽ, không phải số đo trên model thật.' }));
+        draw(24);
+      },
+      take: 'Chỉ cắt chiều khi model có MRL. Với model không MRL, muốn ít chiều hơn thì chọn model nhỏ hơn hoặc đo thật kỹ.'
+    },
+    {
+      q: 'float32 sang int8 sang binary thì mất gì? Sao chỉ 1 bit mỗi chiều mà vẫn dùng được?',
+      a: `<p><b>int8</b>: chia khoảng giá trị thành 256 nấc rồi làm tròn mỗi số về nấc gần nhất. Sai số rất nhỏ. Vector sau khi khôi phục gần như trùng với bản gốc, trong khi RAM giảm 4 lần.</p>
+<p><b>binary</b>: chỉ giữ dấu của mỗi số, dương là 1 và âm là 0. Mọi thông tin về độ lớn bị mất. Với vector ngẫu nhiên, cosine giữa bản gốc và bản binary chỉ khoảng 0.8. RAM giảm 32 lần.</p>
+<p>Vì sao binary vẫn dùng được? Tìm kiếm chỉ cần <b>thứ tự</b> đúng, không cần điểm số đúng. Sai số ở 1536 chiều phần lớn triệt tiêu nhau. Cách làm phổ biến là lọc hai tầng: dùng binary để lấy nhanh 100 ứng viên, rồi tính lại điểm cho 100 ứng viên đó bằng vector float32 hoặc int8.</p>
+<p>Bấm nút bên dưới để sinh một vector 1536 chiều mới. Trình duyệt sẽ lượng tử hoá nó và tính lại cosine.</p>`,
+      viz(box) {
+        const out = el('div'); let seed = 5;
+        function draw() {
+          const v = unitVec(1536, seeded(seed)), sc = Math.max(...v.map(Math.abs)) / 127;
+          const i8 = v.map((x) => Math.round(x / sc)), deq = i8.map((q) => q * sc), bin = v.map((x) => (x >= 0 ? 1 : -1));
+          const cos = (a, b) => dotp(a, b) / (Math.hypot(...a) * Math.hypot(...b));
+          out.innerHTML = '<div class="tbl"><table><tr><th>Kiểu</th><th>8 số đầu</th><th>Byte / vector</th><th>cos với bản gốc</th></tr>' +
+            `<tr><td>float32</td><td class="mono">${v.slice(0, 8).map((x) => x.toFixed(3)).join(' ')}</td><td class="mono">6144</td><td class="mono">1</td></tr>` +
+            `<tr><td>int8</td><td class="mono">${i8.slice(0, 8).join(' ')}</td><td class="mono">1536</td><td class="mono"><b>${cos(v, deq).toFixed(5)}</b></td></tr>` +
+            `<tr><td>binary</td><td class="mono">${bin.slice(0, 8).map((b) => (b > 0 ? 1 : 0)).join(' ')}</td><td class="mono">192</td><td class="mono"><b>${cos(v, bin).toFixed(3)}</b></td></tr></table></div>`;
+        }
+        box.append(el('div', { class: 'row' }, [el('button', { text: 'Vector ngẫu nhiên khác', onclick: () => { seed++; draw(); } })]), out,
+          el('div', { class: 'cap', text: 'int8 ở đây dùng một hệ số scale cho cả vector: scale = max|x| / 127. Hệ thống thật thường tính scale theo từng chiều trên cả kho nên còn chính xác hơn.' }));
+        draw();
+      },
+      take: 'int8 gần như miễn phí về chất lượng. binary rất rẻ nhưng cần bước tính lại điểm bằng vector chính xác hơn.'
+    },
+    {
+      q: 'Đã index 1 triệu vector 1536 chiều rồi, giờ muốn đổi số chiều hoặc đổi model thì sao?',
+      a: `<p>Vector của hai model khác nhau <b>không so sánh được</b>, kể cả khi cùng 1536 chiều. Mỗi model có một hệ trục riêng, giống hai bản đồ khác tỉ lệ và khác hướng bắc. Câu hỏi và tài liệu phải đi qua cùng một model, cùng số chiều. Đổi model nghĩa là embed lại toàn bộ kho và dựng lại index.</p>
+<p>Nếu vẫn dùng model cũ có MRL và bạn đã lưu vector đầy đủ, bạn có thể tự cắt rồi chuẩn hoá lại mà không cần gọi API. Nhưng index vẫn phải dựng lại.</p>
+<p>Cách an toàn là tạo collection mới song song, embed lại, đo Recall, rồi chuyển alias sang collection mới. Qdrant hỗ trợ collection alias cho việc này. Chi phí embed lại tính theo <b>số token</b>, không theo số chiều:</p>`,
+      viz(box) {
+        const S = { n: 1e6, t: 400, p: 0.02 }, out = el('div', { class: 'stat' });
+        const draw = () => { const tok = S.n * S.t; out.innerHTML = `<span>${fmtNum(S.n)} chunk × ${S.t} token = <b>${fmtNum(tok)}</b> token</span><span>Chi phí ≈ <b>$${((tok / 1e6) * S.p).toFixed(2)}</b></span>`; };
+        box.append(el('div', { class: 'row' }, [
+          select('Số chunk', [[1e5, '100k'], [1e6, '1M'], [1e7, '10M']], S.n, (v) => { S.n = +v; draw(); }).node,
+          slider('Token/chunk', 100, 1000, 50, S.t, (v) => { S.t = v; draw(); }).node,
+          select('Giá', [[0.02, '$0.02/1M (text-embedding-3-small)'], [0.13, '$0.13/1M (text-embedding-3-large)']], S.p, (v) => { S.p = +v; draw(); }).node]), out,
+          el('div', { class: 'cap', text: 'Giá theo trang giá của OpenAI tại thời điểm viết README. Chưa tính thời gian chờ do rate limit, thường mới là phần tốn kém nhất.' }));
+        draw();
+      },
+      take: 'Tiền embed lại thường rẻ. Cái đắt là thời gian, rate limit và rủi ro chuyển đổi. Hãy chọn số chiều cẩn thận ngay từ đầu.'
+    },
+    {
+      q: 'POC nhỏ dùng MiniLM 384 chiều, còn RAG POC dùng Cohere 1536 chiều. Khác nhau chủ yếu vì số chiều à?',
+      a: `<p>Không hẳn. Số chiều giống <b>kích thước cái tủ</b>. Chất lượng tìm kiếm phụ thuộc nhiều hơn vào <b>người xếp đồ</b>, tức model đã học từ dữ liệu gì, học để làm việc gì và lớn đến đâu.</p>
+<div class="tbl"><table><tr><th></th><th>paraphrase-multilingual-MiniLM-L12-v2</th><th>Cohere embed-v4.0</th></tr>
+<tr><td>Số chiều</td><td>384</td><td>1536 mặc định, chọn được 256 / 512 / 1024</td></tr>
+<tr><td>Ngôn ngữ</td><td>Đa ngôn ngữ, có tiếng Việt</td><td>Đa ngôn ngữ, có tiếng Việt</td></tr>
+<tr><td>Học để làm gì</td><td>Nhận ra hai câu cùng ý (paraphrase)</td><td>Tìm kiếm: câu hỏi ngắn tìm đoạn tài liệu dài, có <code>input_type</code> riêng cho query và document</td></tr>
+<tr><td>Độ dài tối đa</td><td>128 token</td><td>Dài hơn nhiều</td></tr>
+<tr><td>Chạy ở đâu</td><td>CPU máy bạn, miễn phí</td><td>API trả phí</td></tr>
+<tr><td>MRL</td><td>Không</td><td>Có</td></tr></table></div>
+<p>Trong POC 03, với câu "Tai nghe của tôi bị rè, đổi trả được không?", MiniLM đặt đoạn đúng (chính sách đổi trả) ở <b>hạng 15</b>. Đoạn đứng đầu là "Tai nghe bị rè hoặc mất tiếng thường do Bluetooth yếu". Model nhận ra bề mặt "tai nghe bị rè" rất giống, nhưng không hiểu rằng ý chính của khách là <b>đổi trả</b>. Đó là giới hạn của một model nhỏ học để so hai câu cùng ý, không phải học để tìm tài liệu trả lời câu hỏi. Thêm chiều không sửa được lỗi này. Đổi sang model học cho tìm kiếm, hoặc thêm bước rerank, mới sửa được.</p>`,
+      take: 'Chọn model trước (ngôn ngữ, miền dữ liệu, giá), rồi mới chọn số chiều trong các mức model đó hỗ trợ.'
+    }
+  ],
   mount(stage) {
     const S = { n: 1e6, d: 1536, t: 'f32' };
     const BYTES = { f32: 4, i8: 1, bin: 1 / 8 }, NAME = { f32: 'float32', i8: 'int8', bin: 'binary' };
@@ -326,6 +528,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -333,7 +574,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),

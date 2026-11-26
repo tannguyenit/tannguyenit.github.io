@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-funnel.html">← Lab trước</a><a href="06-chunking.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -263,6 +283,174 @@ lesson({
     s: 'Brute-force: chính xác tuyệt đối, nhưng 1 triệu vector là 1 triệu phép tính mỗi câu hỏi. Vẫn dùng được cho vài nghìn tài liệu. IVF: chia kho thành cụm, chỉ tìm trong cụm gần nhất, tiết kiệm RAM hơn nhưng cần bước phân cụm trước. DiskANN: đồ thị nằm trên SSD cho kho vượt RAM, đổi lại chậm hơn.',
     p: 'Kết quả là gần đúng: đôi khi bỏ lỡ láng giềng thật, bạn có thể thấy điều đó trong hình. Đồ thị nằm trong RAM nên tốn bộ nhớ thêm ngoài vector. Dựng index mất thời gian, thêm tài liệu mới thì phải cập nhật đồ thị. Chỉnh tham số (m, ef_search) là đổi giữa recall và tốc độ, nên đo trên dữ liệu của bạn.'
   },
+  deep: [
+    {
+      q: 'Máy tính nhân cộng cả tỷ phép mỗi giây. So với 1 triệu vector thì chậm chỗ nào?',
+      a: `<p>Đếm thử. So câu hỏi với một vector d chiều là d phép nhân và d phép cộng. Brute-force (so với tất cả, giống full table scan khi không có index) với N vector là <b>N × d</b> phép nhân cộng cho <i>mỗi</i> câu hỏi, và phải đọc toàn bộ N × d × 4 byte từ RAM.</p>
+<p>Với kịch bản ShopViet: 1 triệu × 1536 = khoảng 1,5 tỷ phép nhân cộng và 6 GB dữ liệu phải đọc cho một câu hỏi. Thường thì cái nghẽn là <b>tốc độ đọc RAM</b> chứ không phải CPU tính. Một trăm người hỏi cùng lúc là 100 lần như vậy.</p>
+<p>POC 05 đo thật: 200.000 vector 384 chiều, brute-force mất <b>5.21 ms mỗi câu hỏi</b>. Nghe nhanh, nhưng chi phí tăng thẳng theo N × d. Chọn kích thước bên dưới để ngoại suy, và bấm nút để trình duyệt của bạn tự quét 20.000 vector thật.</p>`,
+      viz(box) {
+        const S = { n: 1e6, d: 1536 }, out = el('div', { class: 'stat' }), live = el('div', { class: 'stat' });
+        const big = (x) => x >= 1e9 ? (x / 1e9).toFixed(1) + ' tỷ' : (x / 1e6).toFixed(1) + ' triệu';
+        const ms = (v) => v < 1000 ? v.toFixed(1) + ' ms' : (v / 1000).toFixed(1) + ' giây';
+        function draw() {
+          const ops = S.n * S.d;
+          out.innerHTML = `<span>Nhân cộng / câu hỏi: <b>${big(ops)}</b></span><span>Dữ liệu đọc: <b>${((ops * 4) / 1e9).toFixed(2)} GB</b></span><span>Ngoại suy từ POC 05: <b>${ms((5.21 * ops) / (2e5 * 384))}</b></span>`;
+        }
+        function bench() {
+          const n = 20000, d = 384, data = new Float32Array(n * d), q = new Float32Array(d);
+          for (let i = 0; i < data.length; i++) data[i] = Math.random() - 0.5;
+          for (let j = 0; j < d; j++) q[j] = Math.random() - 0.5;
+          let best = Infinity, top = -1;
+          for (let rep = 0; rep < 3; rep++) {
+            const t0 = performance.now(); let bs = -Infinity;
+            for (let i = 0; i < n; i++) { let s = 0; const o = i * d; for (let j = 0; j < d; j++) s += data[o + j] * q[j]; if (s > bs) { bs = s; top = i; } }
+            best = Math.min(best, performance.now() - t0);
+          }
+          live.innerHTML = `<span>Trình duyệt của bạn: 20.000 × 384 mất <b>${best.toFixed(1)} ms</b></span><span>Suy ra 1 triệu × 1536: <b>${ms(best * 200)}</b></span><span class="mute">(gần nhất: vector #${top})</span>`;
+        }
+        box.append(el('div', { class: 'row' }, [
+          select('Số vector', [[2e5, '200.000'], [1e6, '1 triệu'], [1e7, '10 triệu'], [1e8, '100 triệu']], S.n, (v) => { S.n = +v; draw(); }).node,
+          select('Số chiều', [[384, '384'], [1536, '1536'], [3072, '3072']], S.d, (v) => { S.d = +v; draw(); }).node]), out,
+          el('div', { class: 'row', style: 'margin-top:10px' }, [el('button', { text: 'Đo brute-force trên trình duyệt', onclick: bench })]), live,
+          el('div', { class: 'cap', text: 'Dòng trên: 5.21 ms là số đo thật của POC 05 (FAISS, 200 câu hỏi gửi theo lô nên thời gian mỗi câu được chia đều), các kích thước khác là ngoại suy tuyến tính. Dòng dưới: JavaScript thuần một luồng, chậm hơn thư viện tối ưu như FAISS.' }));
+        draw();
+      },
+      take: 'Brute-force tăng thẳng theo N × d. Kho lớn gấp 10 là chậm gấp 10, trong khi ngân sách tìm kiếm của ShopViet chỉ vài chục mili giây.'
+    },
+    {
+      q: 'Database có B-tree làm index cho số và chuỗi. Sao vector không có index chính xác như vậy?',
+      a: `<p>B-tree chạy được vì số và chuỗi có <b>thứ tự</b>: biết 500 &gt; 300 thì bỏ được nửa cây. Vector 1536 chiều không có thứ tự kiểu đó. "Gần nhau" phụ thuộc vào cả 1536 chiều cùng lúc.</p>
+<p>Có những cây chia không gian, như kd-tree (cắt không gian lần lượt theo từng chiều). Chúng chạy tốt ở 2–3 chiều. Nhưng khi số chiều lớn, mọi điểm đều cách nhau gần như bằng nhau (lab 07 có hình minh hoạ), nên gần như nhánh nào cũng phải xét. Cây thoái hoá thành quét toàn bộ. Đây là "lời nguyền số chiều" (curse of dimensionality).</p>
+<p>Vì vậy ngành chọn lối khác: <b>bỏ yêu cầu chính xác 100%</b>. ANN (Approximate Nearest Neighbor, tìm láng giềng gần đúng) chấp nhận đôi khi trả về hạng 11 thay vì hạng 10. Đổi lại, chỉ phải xét một phần rất nhỏ của kho. Với RAG, cái giá này thường nhỏ: bước sau còn reranker, và đoạn hạng 11 thường cũng liên quan gần bằng đoạn hạng 10.</p>`,
+      take: '"Approximate" nghĩa là bỏ lời hứa luôn đúng top-K, để đổi lấy tốc độ không còn tăng thẳng theo N.'
+    },
+    {
+      q: 'HNSW đi theo "hàng xóm" là sao? Sao đi như vậy lại tới được gần câu hỏi?',
+      a: `<p>Lúc dựng index, mỗi vector được nối cạnh với vài vector gần nó nhất. Kết quả là một đồ thị, giống mạng bạn bè: ai cũng quen vài người ở gần.</p>
+<p>Lúc tìm, bắt đầu từ một nút bất kỳ (entry point). Ở mỗi bước, tính khoảng cách từ câu hỏi tới các hàng xóm của nút hiện tại, rồi <b>nhảy sang hàng xóm gần câu hỏi nhất</b>. Khi không hàng xóm nào gần hơn nút đang đứng thì dừng. Đó là greedy search (tìm tham lam). Nó chỉ tính khoảng cách tới các nút nằm dọc đường đi, không phải cả kho.</p>
+<p>Hình dưới chạy thật trên 300 điểm ngẫu nhiên. <b>M</b> là số hàng xóm gần nhất mỗi điểm được nối (cạnh hai chiều, như HNSW). Bấm vào hình để đặt câu hỏi. Thử M = 3: đồ thị thưa, đường đi dễ kẹt ở một điểm "trông như gần nhất" nhưng không phải.</p>`,
+      viz(box) {
+        const N = 300, W = 560, H = 300, rnd = seeded(21), P = Array.from({ length: N }, () => [rnd(), rnd()]);
+        const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+        const near = P.map((p) => P.map((_, j) => j).sort((a, b) => d2(p, P[a]) - d2(p, P[b])).slice(1, 13));
+        const graph = (m) => { const G = P.map(() => new Set()); near.forEach((ns, i) => ns.slice(0, m).forEach((j) => { G[i].add(j); G[j].add(i); })); return G; };
+        const S = { m: 6, q: [0.15, 0.85], g: graph(6) }, svg = el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Greedy search trên đồ thị láng giềng', style: 'cursor:crosshair' }), stat = el('div', { class: 'stat' });
+        const X = (p) => p[0] * (W - 20) + 10, Y = (p) => p[1] * (H - 20) + 10;
+        function draw() {
+          let cur = 0, ev = 1; const path = [0];
+          for (;;) { let best = cur; for (const nb of S.g[cur]) { ev++; if (d2(P[nb], S.q) < d2(P[best], S.q)) best = nb; } if (best === cur) break; cur = best; path.push(cur); }
+          const truth = P.reduce((b, p, i) => (d2(p, S.q) < d2(P[b], S.q) ? i : b), 0);
+          svg.replaceChildren(
+            ...P.flatMap((p, i) => near[i].slice(0, S.m).map((j) => el('line', { x1: X(p), y1: Y(p), x2: X(P[j]), y2: Y(P[j]), stroke: 'var(--line)' }))),
+            ...P.map((p) => el('circle', { cx: X(p), cy: Y(p), r: 2.5, fill: 'var(--mute)' })),
+            el('path', { d: path.map((i, k) => (k ? 'L' : 'M') + X(P[i]) + ' ' + Y(P[i])).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 3 }),
+            el('circle', { cx: X(P[truth]), cy: Y(P[truth]), r: 9, fill: 'none', stroke: 'var(--ok)', 'stroke-width': 2.5 }),
+            el('circle', { cx: X(P[cur]), cy: Y(P[cur]), r: 6, fill: 'var(--accent)' }),
+            el('circle', { cx: X(P[0]), cy: Y(P[0]), r: 6, fill: 'var(--g4)' }),
+            el('circle', { cx: X(S.q), cy: Y(S.q), r: 7, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 3 }));
+          stat.innerHTML = `<span>Số bước nhảy: <b>${path.length - 1}</b></span><span>Phép tính khoảng cách: <b>${ev}</b> / ${N}</span><span>${cur === truth ? '<b class="ok">Tìm đúng láng giềng gần nhất</b>' : '<b class="bad">Kẹt ở cực tiểu cục bộ, trượt</b>'}</span>`;
+        }
+        svg.addEventListener('click', (e) => { const r = svg.getBoundingClientRect(); S.q = [((e.clientX - r.left) / r.width * W - 10) / (W - 20), ((e.clientY - r.top) / r.height * H - 10) / (H - 20)]; draw(); });
+        box.append(el('div', { class: 'row' }, [slider('M (số hàng xóm)', 1, 12, 1, S.m, (v) => { S.m = v; S.g = graph(v); draw(); }).node]), svg, stat,
+          el('div', { class: 'cap', text: 'Tính thật trong trình duyệt. Chấm tím là điểm xuất phát, vòng đen là câu hỏi, đường xanh ngọc là đường đi, vòng xanh lá là láng giềng gần nhất thật (tìm bằng brute-force để đối chiếu). Đây là một tầng, chưa có tầng trên của HNSW.' }));
+        draw();
+      },
+      take: 'Đồ thị láng giềng biến "so với tất cả" thành "đi theo hướng gần hơn". Số phép tính tỉ lệ với độ dài đường đi, không phải với N.'
+    },
+    {
+      q: 'Ở hình trên mỗi bước chỉ tiến một quãng ngắn. Kho 1 triệu thì sao? "Nhiều tầng" giải quyết gì?',
+      a: `<p>Chỉ nối với hàng xóm gần thì mỗi bước chỉ tiến được một quãng ngắn. Kho càng lớn, đường đi càng dài. Giống đi từ Hà Nội vào Sài Gòn mà chỉ được dùng đường làng.</p>
+<p>HNSW (Hierarchical Navigable Small World, đồ thị "thế giới nhỏ" nhiều tầng) thêm <b>tầng cao tốc</b>. Khi chèn một điểm, nó tung xúc xắc để quyết định điểm đó có mặt tới tầng nào. Xác suất giảm theo cấp số nhân: theo bài báo gốc, với M = 16 thì khoảng 1/16 số điểm có mặt ở tầng 1, 1/256 ở tầng 2, và cứ thế. Tầng trên ít điểm nên các cạnh nối rất xa.</p>
+<p>Tìm kiếm bắt đầu ở tầng cao nhất, đi tham lam vài bước để nhảy về đúng vùng, rồi xuống tầng dưới dùng điểm vừa tìm làm điểm xuất phát, và lặp lại tới tầng 0 (tầng có mọi điểm). Đây chính là skip list (danh sách liên kết có làn nhảy) mở rộng sang không gian nhiều chiều. Nhờ vậy số bước tăng cỡ log N thay vì tăng theo kích thước kho.</p>
+<p>Phần mô phỏng phía trên bài (nút <b>HNSW</b>) vẽ đúng cơ chế này với 3 tầng.</p>`,
+      take: 'Tầng trên để nhảy xa cho đúng vùng, tầng 0 để tinh chỉnh. Không có tầng trên thì đường đi dài ra theo kích thước kho.'
+    },
+    {
+      q: 'Vậy vì sao HNSW không đạt recall 100%? Làm sao kéo nó lên?',
+      a: `<p>Greedy search chỉ giữ <b>một</b> ứng viên. Nếu mọi hàng xóm của nút hiện tại đều xa câu hỏi hơn, nó dừng, kể cả khi đi vòng qua một nút xa hơn một chút sẽ tới được điểm gần hơn. Đó là cực tiểu cục bộ ở hình câu 3.</p>
+<p>Ở tầng 0, HNSW không đi một mình mà giữ một danh sách <b>ef ứng viên tốt nhất</b> (beam search: tìm theo chùm). Nó liên tục mở rộng ứng viên tốt nhất chưa xét, và chỉ dừng khi không còn ứng viên nào có thể vào top-ef. ef lớn thì xét nhiều nút hơn, ít kẹt hơn, nhưng chậm hơn. Tham số này tên là <code>ef_search</code> (Qdrant gọi là <code>hnsw_ef</code>).</p>
+<p>Bảng dưới đo thật trong trình duyệt: 1.000 vector 12 chiều, đồ thị nối mỗi điểm với 8 hàng xóm gần nhất, 50 câu hỏi. Recall@10 là tỉ lệ 10 kết quả thật (từ brute-force) mà beam search tìm lại được.</p>`,
+      viz(box) {
+        const out = el('div', { class: 'hint', text: 'Bấm nút để dựng đồ thị và đo (mất khoảng 0,1 giây).' });
+        function run() {
+        const N = 1000, D = 12, M = 8, rnd = seeded(5), X = new Float32Array(N * D), DD = new Float32Array(N * N);
+        for (let i = 0; i < X.length; i++) X[i] = randn(rnd);
+        const dist = (i, q) => { let s = 0; for (let j = 0; j < D; j++) { const t = X[i * D + j] - q[j]; s += t * t; } return s; };
+        const vec = (i) => X.subarray(i * D, i * D + D), G = Array.from({ length: N }, () => new Set());
+        for (let i = 0; i < N; i++) { const v = vec(i); for (let j = i + 1; j < N; j++) DD[i * N + j] = DD[j * N + i] = dist(j, v); }
+        for (let i = 0; i < N; i++) {
+          const best = [];
+          for (let j = 0; j < N; j++) if (j !== i && (best.length < M || DD[i * N + j] < DD[i * N + best[M - 1]])) { let k = Math.min(best.length, M - 1); while (k > 0 && DD[i * N + best[k - 1]] > DD[i * N + j]) { best[k] = best[k - 1]; k--; } best[k] = j; }
+          best.forEach((j) => { G[i].add(j); G[j].add(i); });
+        }
+        const Qs = Array.from({ length: 50 }, () => Array.from({ length: D }, () => randn(rnd)));
+        const truth = Qs.map((q) => Array.from({ length: N }, (_, i) => [dist(i, q), i]).sort((a, b) => a[0] - b[0]).slice(0, 10).map((r) => r[1]));
+        function search(q, ef) {
+          const seen = new Set([0]), d0 = dist(0, q), cand = [[d0, 0]], res = [[d0, 0]]; let ev = 1;
+          while (cand.length) {
+            let m = 0; for (let i = 1; i < cand.length; i++) if (cand[i][0] < cand[m][0]) m = i;
+            const [dc, c] = cand[m]; cand[m] = cand[cand.length - 1]; cand.pop();
+            if (res.length >= ef && dc > res[res.length - 1][0]) break;
+            for (const nb of G[c]) if (!seen.has(nb)) { seen.add(nb); const dn = dist(nb, q); ev++;
+              if (res.length < ef || dn < res[res.length - 1][0]) { cand.push([dn, nb]); let k = res.length; res.push(null); while (k > 0 && res[k - 1][0] > dn) { res[k] = res[k - 1]; k--; } res[k] = [dn, nb]; if (res.length > ef) res.pop(); } }
+          }
+          return { ids: res.slice(0, 10).map((r) => r[1]), ev };
+        }
+        const rows = [10, 16, 32, 64, 128].map((ef) => { let hit = 0, ev = 0; Qs.forEach((q, k) => { const r = search(q, ef); ev += r.ev; hit += r.ids.filter((i) => truth[k].includes(i)).length; }); return [ef, ev / Qs.length, hit / (Qs.length * 10)]; });
+        out.className = 'tbl'; out.replaceChildren(el('table', { html: '<tr><th>ef</th><th>Phép tính khoảng cách / câu</th><th>% kho đã xét</th><th>Recall@10</th></tr>' +
+          rows.map(([ef, ev, r]) => `<tr><td class="mono">${ef}</td><td class="mono">${ev.toFixed(0)}</td><td class="mono">${((ev / N) * 100).toFixed(1)}%</td><td><b class="${r >= 0.95 ? 'ok' : r < 0.8 ? 'bad' : ''}">${(r * 100).toFixed(1)}%</b></td></tr>`).join('') }));
+        }
+        box.append(el('div', { class: 'row' }, [el('button', { class: 'primary', text: 'Dựng đồ thị và đo recall', onclick: run })]), out,
+          el('div', { class: 'cap', text: 'Tính thật trong trình duyệt, trên dữ liệu ngẫu nhiên nhỏ và chỉ một tầng, nên con số chỉ cho thấy xu hướng. POC 05 có in bảng efSearch trên 200.000 vector nhưng bảng đó chưa được ghi lại, nên không dùng ở đây.' }));
+      },
+      take: 'Recall dưới 100% vì tìm kiếm dừng sớm ở cực tiểu cục bộ. ef_search là núm vặn: xét nhiều nút hơn để đổi lấy recall.'
+    },
+    {
+      q: 'M, ef_construction, ef_search: vặn cái nào, trả giá gì?',
+      a: `<p>README §3.2 tóm lại ba núm:</p>
+<div class="tbl"><table><tr><th>Tham số</th><th>Là gì</th><th>Tăng lên thì</th><th>Đổi được không cần dựng lại?</th></tr>
+<tr><td><code>m</code></td><td>Số cạnh mỗi nút</td><td>Recall tăng, RAM và thời gian dựng tăng</td><td>Không</td></tr>
+<tr><td><code>ef_construction</code></td><td>Độ rộng chùm khi <i>dựng</i> đồ thị: chèn điểm mới thì tìm kỹ cỡ nào để chọn hàng xóm</td><td>Đồ thị tốt hơn, dựng chậm hơn nhiều</td><td>Không</td></tr>
+<tr><td><code>ef_search</code></td><td>Độ rộng chùm khi <i>tìm</i></td><td>Recall tăng, mỗi câu hỏi chậm hơn</td><td>Có, đổi theo từng câu hỏi</td></tr></table></div>
+<p>Vì vậy README khuyên khi thiếu recall thì <b>tăng ef_search trước</b>: rẻ nhất, không phải dựng lại. Dựng lại tốn thật: POC 05 dựng HNSW cho 200.000 vector 384 chiều (M = 32) mất <b>39.7 giây</b> trên laptop. ef_construction quá thấp thì đồ thị kém <i>vĩnh viễn</i>, ef_search không bù hết được.</p>
+<p>Cái giá của M nằm ở RAM. Mỗi nút lưu danh sách id hàng xóm, và phần này <b>không giảm khi bạn giảm số chiều</b>. Bảng tính dưới ước lượng thô.</p>`,
+      viz(box) {
+        const S = { n: 1e6, d: 1536, m: 16 }, out = el('div');
+        function draw() {
+          const vec = (S.n * S.d * 4) / 1e9, graph = (S.n * 2 * S.m * 4) / 1e9;
+          out.replaceChildren(hbars([['Vector (float32)', vec, false], [`Đồ thị tầng 0 (M = ${S.m})`, graph, true]], { max: Math.max(vec, graph), fmt: (v) => v.toFixed(2) + ' GB' }),
+            el('div', { class: 'stat', html: `<span>Tổng ≈ <b>${(vec + graph).toFixed(2)} GB</b></span><span>Đồ thị chiếm <b>${((graph / (vec + graph)) * 100).toFixed(0)}%</b></span>` }));
+        }
+        box.append(el('div', { class: 'row' }, [
+          select('Số vector', [[1e6, '1 triệu'], [1e7, '10 triệu']], S.n, (v) => { S.n = +v; draw(); }).node,
+          select('Số chiều', [[384, '384'], [768, '768'], [1536, '1536']], S.d, (v) => { S.d = +v; draw(); }).node,
+          slider('M', 8, 64, 8, S.m, (v) => { S.m = v; draw(); }).node]), out,
+          el('div', { class: 'cap', text: 'Ước lượng thô: tầng 0 lưu tối đa 2 × M hàng xóm mỗi nút (theo bài báo HNSW), mỗi id 4 byte. Bỏ qua tầng trên (nhỏ) và overhead riêng của từng engine. Chọn 384 chiều để thấy đồ thị chiếm phần lớn hơn.' }));
+        draw();
+      },
+      take: 'Khi thiếu recall: tăng ef_search trước. Chỉ tăng m hoặc ef_construction khi đã chấp nhận dựng lại index và tốn thêm RAM.'
+    },
+    {
+      q: 'HNSW tốn RAM vậy, còn IVF với DiskANN thì sao?',
+      a: `<p>Theo README, cả ba đều là ANN nhưng đặt cái giá ở chỗ khác nhau:</p>
+<ul><li><b>IVF</b> (Inverted File Index): chia kho thành K cụm bằng K-means, lúc tìm chỉ quét vài cụm gần câu hỏi nhất. Ít RAM hơn HNSW, nhưng phải huấn luyện phân cụm trước và nhạy với cách dữ liệu phân bố. Giống chia bảng theo partition rồi chỉ quét vài partition.</li>
+<li><b>DiskANN</b>: đồ thị giống HNSW nhưng nằm trên SSD thay vì RAM. Dùng khi kho vượt RAM. Đổi lại, mỗi bước nhảy là một lần đọc ổ đĩa nên độ trễ cao hơn.</li></ul>
+<p>Điểm chung đáng nhớ: tìm trên đồ thị là chuỗi bước nhảy <b>tuần tự</b>, phải tới nút này mới biết nút tiếp theo. Vì vậy đồ thị chỉ nhanh khi mỗi bước nhảy rẻ. README §3.2 có ví dụ: nếu mỗi lượt đọc từ object storage mất cỡ 100 ms thì vài chục bước nhảy thành vài giây.</p>`,
+      take: 'RAM đủ thì HNSW. RAM là nút thắt thì IVF. Kho vượt RAM thì DiskANN. Chọn bằng recall và độ trễ đo được.'
+    },
+    {
+      q: 'Với ShopViet và RAG POC, phần này áp vào thế nào?',
+      a: `<p>RAG POC tạo collection Qdrant với vector Cohere <code>embed-v4.0</code> 1536 chiều, khoảng cách cosine, và <b>không đặt cấu hình HNSW</b>, tức dùng mặc định của Qdrant. Với vài chục chunk từ <code>chunk_by_title</code>, index nào cũng nhanh. Brute-force cũng đủ.</p>
+<p>Lên kịch bản 1 triệu đoạn thì khác:</p>
+<ol><li>Brute-force ngoại suy từ POC 05 là cỡ 100 ms mỗi câu, vượt ngân sách vài chục mili giây. Cần HNSW.</li>
+<li>RAM: khoảng 6 GB cho vector 1536 chiều float32, cộng phần đồ thị (bảng tính câu trước).</li>
+<li>Bắt đầu với heuristic README: <code>m=16</code>, <code>ef_construction=200</code>, <code>ef_search=100</code>. Trong Qdrant là <code>hnsw_config={"m": 16, "ef_construct": 200}</code> lúc tạo collection và <code>hnsw_ef=100</code> lúc tìm.</li>
+<li>Đo Recall@10 của HNSW so với brute-force trên một mẫu câu hỏi thật. Thiếu thì tăng <code>hnsw_ef</code> trước.</li></ol>
+<p>Cuối cùng, nhớ lab 04: ANN là cửa đầu tiên của phễu. Đoạn đúng bị ANN bỏ lỡ thì reranker <code>rerank-v3.5</code> phía sau cũng không cứu được. Recall của ANN cộng dồn vào recall của retriever.</p>`,
+      take: 'Kho nhỏ thì không cần nghĩ nhiều. Kho lớn thì HNSW với tham số mặc định hợp lý, rồi đo recall so với brute-force trước khi tin nó.'
+    }
+  ],
   mount(stage) {
     const W = 600, H = 360, rnd = seeded(7), N = 150;
     const centers = [[0.22, 0.3], [0.7, 0.28], [0.5, 0.75]];
@@ -348,6 +536,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -355,7 +582,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),

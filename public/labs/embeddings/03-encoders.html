@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-similarity.html">← Lab trước</a><a href="04-funnel.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -272,6 +292,148 @@ lesson({
     s: 'Cross-encoder cho cả kho: 1 triệu lần gọi model mỗi câu hỏi, giống chạy một query đắt tiền trên từng dòng thay vì dùng index. Chỉ dùng bi-encoder: nhanh nhưng bỏ lỡ chi tiết ở mức từ, ví dụ phủ định như "không được hoàn tiền".',
     p: 'Bi-encoder nén cả đoạn thành một vector nên mất chi tiết, đó là lý do cần cross-encoder chấm lại. Ghép hai bước thì thêm một lần gọi model nữa (độ trễ, chi phí), đổi lại độ chính xác cao hơn.'
   },
+  deep: [
+    {
+      q: 'Bi-encoder biến một đoạn văn thành một vector bằng cách nào? Sao lại "tính sẵn" được?',
+      a: `<p>Đoạn văn được cắt thành token (mẩu từ). Model transformer cho mỗi token một vector, và trong lúc tính, các token <b>của cùng đoạn đó</b> nhìn nhau qua cơ chế attention (mỗi token tự quyết định nên "để ý" token nào khác). Cuối cùng một bước pooling, thường là lấy trung bình, gộp mọi vector token thành <b>một vector duy nhất</b> cho cả đoạn.</p>
+<p>Điểm mấu chốt: trong suốt quá trình đó, model <b>không hề thấy câu hỏi</b>. Vector của đoạn "Gói Pro được hoàn tiền trong 14 ngày" là như nhau dù sau này ai hỏi gì. Một hàm chỉ phụ thuộc vào đầu vào của nó thì kết quả cache được. Đó là lý do bi-encoder tính vector cho 1 triệu đoạn một lần lúc nạp dữ liệu, lưu vào Qdrant, và lúc có câu hỏi chỉ chạy model đúng một lần cho câu hỏi.</p>
+<p>Giống trong backend: bạn tính sẵn cột <code>search_vector</code> cho mỗi dòng lúc INSERT, thay vì tính lại cho cả bảng mỗi lần SELECT.</p>
+<p>Chi tiết nhỏ: "bi" nghĩa là hai phía, câu hỏi và tài liệu, đi qua encoder riêng rẽ. Nhiều model còn cho đánh dấu vai trò, như Cohere với <code>input_type="search_query"</code> và <code>"search_document"</code>. Vai trò khác nhau nhưng vẫn không phía nào nhìn thấy phía kia.</p>`,
+      take: 'Vector tài liệu không phụ thuộc câu hỏi, nên tính một lần và dùng mãi. Đây là toàn bộ lý do bi-encoder nhanh.'
+    },
+    {
+      q: 'Nhưng mã hoá đoạn văn khi chưa biết câu hỏi thì mất gì?',
+      a: `<p>Model phải nén mọi thứ của đoạn vào một vector cố định mà không biết sau này người ta quan tâm chi tiết nào. Đoạn "Hàng khuyến mãi chỉ được đổi trả trong 7 ngày và không hoàn lại phần giảm giá" chứa ít nhất ba ý: khuyến mãi, 7 ngày, không hoàn phần giảm giá. Vector chỉ có một hướng, nên nó là "trung bình" của các ý đó. Câu hỏi chỉ quan tâm một ý sẽ thấy đoạn này "hơi giống".</p>
+<p>Những chi tiết nhỏ nhưng đổi hẳn nghĩa, như phủ định "không", con số "7 hay 30 ngày", ai là chủ thể, dễ bị chìm trong trung bình. README gọi đây là "mất chi tiết ở mức token".</p>
+<p>Hình bên dưới dùng một <b>encoder đồ chơi</b>: mỗi từ được gán một vector ngẫu nhiên cố định, vector của câu là trung bình các vector từ. Kết quả với câu mặc định: đoạn B, nói điều <b>ngược lại</b>, còn được điểm cao hơn đoạn A. Lý do: trong câu hỏi tiếng Việt, "không" ở cuối là trợ từ hỏi, còn trong đoạn B nó là phủ định. Encoder đồ chơi coi hai chữ đó là một và thưởng cho đoạn B vì "chung từ". Thử sửa các ô để xem điểm thay đổi ra sao.</p>`,
+      viz(box) {
+        const tok = (s) => s.normalize('NFC').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+        const hash = (w) => { let h = 2166136261; for (const ch of w) h = Math.imul(h ^ ch.codePointAt(0), 16777619); return h >>> 0; };
+        const enc = (s) => { const ws = tok(s), v = new Array(64).fill(0); ws.forEach((w) => unitVec(64, seeded(hash(w))).forEach((x, k) => (v[k] += x))); const n = Math.sqrt(dotp(v, v)) || 1; return v.map((x) => x / n); };
+        const field = (label, val) => { const i = el('input', { type: 'text', value: val, style: 'width:100%;font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' }); i.addEventListener('input', draw); return [el('div', { class: 'hint', style: 'margin:6px 0 2px', text: label }), i]; };
+        const [lq, iq] = field('Câu hỏi', 'Gói Pro có được hoàn tiền không?'), [la, ia] = field('Đoạn A', 'Gói Pro được hoàn tiền trong 14 ngày.'), [lb, ib] = field('Đoạn B', 'Gói Pro không được hoàn tiền sau 14 ngày.');
+        const stat = el('div', { class: 'stat' });
+        function draw() {
+          const q = enc(iq.value), a = dotp(q, enc(ia.value)), b = dotp(q, enc(ib.value));
+          stat.innerHTML = `<span>cos(câu hỏi, A) = <b>${a.toFixed(3)}</b></span><span>cos(câu hỏi, B) = <b>${b.toFixed(3)}</b></span><span>chênh: <b>${Math.abs(a - b).toFixed(3)}</b></span>`;
+        }
+        box.append(lq, iq, la, ia, lb, ib, stat, el('div', { class: 'cap', text: 'Encoder đồ chơi để minh hoạ khái niệm: trung bình vector ngẫu nhiên của từng từ, 64 chiều, không phải model thật. Model thật hiểu ngữ cảnh tốt hơn nhiều, nhưng vẫn phải nén cả đoạn vào một vector trước khi thấy câu hỏi.' }));
+        draw();
+      },
+      take: 'Bi-encoder phải đoán trước điều gì quan trọng trong đoạn văn. Chi tiết nhỏ mà đổi nghĩa là thứ dễ mất nhất.'
+    },
+    {
+      q: 'Cross-encoder "đọc cả cặp cùng lúc" thì khác gì về cơ chế? Sao vậy lại chính xác hơn?',
+      a: `<p>Cross-encoder ghép câu hỏi và đoạn văn thành <b>một chuỗi đầu vào</b>, dạng <span class="mono">[câu hỏi] [SEP] [đoạn văn]</span>, rồi cho qua transformer. Ở mỗi lớp, mỗi token có thể attention tới <b>mọi token của cả hai phía</b>. Chữ "rè" trong câu hỏi nhìn thẳng được vào "Bluetooth yếu" trong đoạn văn. Chữ "đổi trả" nhìn được vào "30 ngày", "hóa đơn gốc". Cuối cùng model trả ra một con số: cặp này liên quan đến đâu.</p>
+<p>Đếm thử: câu hỏi 10 token, đoạn văn 30 token. Bi-encoder có <b>0</b> cặp (token câu hỏi, token đoạn văn) được nhìn nhau trước khi chấm điểm, chỉ có một phép so hai vector ở cuối. Cross-encoder có 10 × 30 = <b>300</b> cặp như vậy ở mỗi lớp, mỗi attention head, theo cả hai chiều. Model có chỗ để kiểm tra "chữ không này phủ định cái gì", "con số này có khớp với câu hỏi không".</p>
+<p>So sánh đời thường: bi-encoder giống tuyển dụng bằng cách so CV với mô tả công việc, mỗi bên tóm tắt riêng thành vài từ khoá. Cross-encoder giống phỏng vấn: đặt ứng viên trước đúng câu hỏi đó rồi mới đánh giá.</p>`,
+      take: 'Cross-encoder cho từng token câu hỏi đối chiếu trực tiếp với từng token tài liệu. Bi-encoder chỉ so hai bản tóm tắt.'
+    },
+    {
+      q: 'Nghe thì cross-encoder hơn hẳn. POC có cho thấy điều đó không?',
+      a: `<p>POC 03 chạy câu "Tai nghe của tôi bị rè, đổi trả được không?" trên 24 đoạn ShopViet. Đáp án đúng là <code>doitra-1</code> (chính sách đổi trả 30 ngày). Bi-encoder là <code>paraphrase-multilingual-MiniLM-L12-v2</code>, cross-encoder là <code>cross-encoder/mmarco-mMiniLMv2-L12-H384-v1</code>, cả hai chạy trên CPU.</p>
+<p>Kết quả đo được: cross-encoder kéo đoạn đúng từ <b>hạng 15 lên hạng 8</b>. Có tiến bộ, nhưng vẫn chưa vào top 3. Cả hai model đều bị đoạn "Tai nghe bị rè ... Bluetooth yếu" hút về hạng 1, vì câu hỏi nói về triệu chứng nhiều hơn về ý định đổi trả.</p>
+<p>Đọc kết quả này cho đúng: chỉ có <b>một câu hỏi, 24 đoạn</b>, và hai model nhỏ. Nó cho thấy cơ chế (đọc cặp giúp đẩy đoạn đúng lên), không chứng minh cross-encoder luôn đưa đáp án lên đầu. Reranker lớn hơn như Cohere rerank-v3.5 trong RAG POC có thể làm tốt hơn, nhưng phải đo mới biết.</p>`,
+      viz(box) {
+        const strip = (name, rank, cls) => el('div', { style: 'margin-bottom:10px' }, [el('div', { class: 'hint', style: 'margin:0 0 4px', html: `${name}: đoạn đúng ở <b class="${cls}">hạng ${rank}</b> / 24` }),
+          el('div', { style: 'display:grid;grid-template-columns:repeat(24,1fr);gap:2px' }, Array.from({ length: 24 }, (_, i) => el('span', { title: 'hạng ' + (i + 1), style: `height:22px;border-radius:3px;background:${i + 1 === rank ? 'var(--accent)' : i < 3 ? 'color-mix(in srgb, var(--ok) 30%, var(--bg))' : 'var(--line)'}` })))]);
+        const top = (rows) => '<table><tr><th>Điểm</th><th>Top 3</th></tr>' + rows.map(([s, t]) => `<tr><td class="mono">${s}</td><td>${t}</td></tr>`).join('') + '</table>';
+        box.append(strip('Bi-encoder (cosine)', 15, 'bad'), strip('Cross-encoder', 8, 'bad'),
+          el('div', { class: 'cols' }, [
+            el('div', { html: '<h4>Bi-encoder</h4>' + top([['0.636', 'Tai nghe bị rè ... Bluetooth yếu'], ['0.504', 'Tai nghe Pro X: driver 40mm ...'], ['0.438', 'Tai nghe được bảo hành 12 tháng ...']]) }),
+            el('div', { html: '<h4>Cross-encoder</h4>' + top([['1.237', 'Tai nghe bị rè ... Bluetooth yếu'], ['-2.260', 'Tai nghe được bảo hành 12 tháng ...'], ['-4.765', 'Sạc nhanh 65W ...']]) })]),
+          el('div', { class: 'cap', text: 'Số đo thật từ pocs/03_encoders.py. Một câu hỏi, 24 đoạn: đủ để thấy cơ chế, không đủ để kết luận về chất lượng model. Ô xanh nhạt là top 3.' }));
+      },
+      take: 'Đọc cặp giúp đẩy đoạn đúng lên, nhưng không phải phép màu. Chất lượng reranker cũng phải đo trên câu hỏi thật.'
+    },
+    {
+      q: 'Chính xác hơn thì sao không chạy cross-encoder cho cả kho luôn, bỏ bi-encoder đi?',
+      a: `<p>Vì kết quả của cross-encoder phụ thuộc <b>cả câu hỏi lẫn đoạn văn</b>. Không có gì để tính sẵn. Mỗi câu hỏi mới là N lần chạy model đầy đủ, với N là số đoạn trong kho. Giống một câu SQL buộc phải chạy một hàm đắt tiền trên từng dòng, không index nào giúp được.</p>
+<p>POC 03 đo trên CPU: <b>4.4 ms mỗi cặp</b>. Với 1 triệu đoạn là khoảng <b>73 phút cho một câu hỏi</b>. GPU và batch lớn sẽ nhanh hơn nhiều lần, nhưng vẫn là hàng triệu lần chạy transformer cho mỗi câu hỏi, tức là không khả thi về chi phí.</p>
+<p>Phía bi-encoder, POC in ra 17.62 ms. Lưu ý con số này gồm cả việc <b>chạy model một lần để mã hoá câu hỏi</b>. Phần so 24 vector thì gần như không tốn gì. Bấm nút dưới để đo riêng phần so vector trên máy bạn.</p>`,
+      viz(box) {
+        const out = el('div', { class: 'stat' }, [el('span', { text: 'Chưa đo.' })]);
+        function run() {
+          const N = 10000, d = 384, rnd = seeded(9), M = new Float32Array(N * d), q = new Float32Array(d);
+          for (let i = 0; i < M.length; i++) M[i] = rnd() - 0.5;
+          for (let k = 0; k < d; k++) q[k] = rnd() - 0.5;
+          let sink = 0, best = 1e9;
+          for (let r = 0; r < 3; r++) { const t = performance.now(); for (let i = 0; i < N; i++) { let s = 0; const o = i * d; for (let k = 0; k < d; k++) s += M[o + k] * q[k]; sink += s; } best = Math.min(best, performance.now() - t); }
+          const bi1M = best * 100, cr1M = 4.4 * 1e6;
+          out.title = 'checksum ' + sink.toFixed(3);
+          out.innerHTML = `<span>So 10.000 vector: <b>${best.toFixed(1)} ms</b></span><span>Suy ra 1 triệu vector: <b>${(bi1M / 1000).toFixed(2)} giây</b></span><span>Cross-encoder 1 triệu cặp: <b>${(cr1M / 60000).toFixed(0)} phút</b></span><span>Chênh: <b>×${fmtNum(Math.round(cr1M / bi1M))}</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [el('button', { class: 'primary', text: 'Đo phần so vector trên máy tôi', onclick: run })]), out,
+          el('div', { class: 'cap', text: 'Phần so vector đo thật trên trình duyệt của bạn (quét hết, không index, một luồng). 4.4 ms mỗi cặp là số đo của cross-encoder trong POC 03 trên CPU. Hai số đo trên hai máy khác nhau, chỉ dùng để thấy bậc độ lớn.' }));
+      },
+      take: 'Cross-encoder không tính sẵn được nên chi phí nhân theo số tài liệu cho mỗi câu hỏi. Bi-encoder đẩy gần hết chi phí sang lúc nạp dữ liệu.'
+    },
+    {
+      q: 'Vậy ghép hai cái lại. Nên đưa bao nhiêu ứng viên cho reranker?',
+      a: `<p>Pipeline chuẩn trong README: bi-encoder (hoặc hybrid) lấy nhanh top N từ cả kho, rồi reranker chấm lại N ứng viên đó và giữ top K. README khuyên N khoảng <b>50 đến 100</b>.</p>
+<p>Có một luật không thương lượng được: <b>reranker chỉ sắp xếp lại những gì nó được đưa</b>. Nếu đoạn đúng không lọt vào top N của bước đầu, reranker giỏi đến đâu cũng không cứu được. Vì vậy bước đầu tối ưu recall (lấy đủ rộng), bước sau mới tối ưu precision (xếp đúng thứ tự).</p>
+<p>Ví dụ ngay trong POC: bi-encoder để đoạn đúng ở hạng 15. Chọn N = 10 thì đoạn đúng bị loại trước khi tới reranker. README của RAG POC cũng gợi ý thử giảm N xuống 2 để thấy đúng hiện tượng này. Kéo thanh trượt bên dưới.</p>`,
+      viz(box) {
+        const out = el('div'), stat = el('div', { class: 'stat' }), GOLD = 15, MS = 4.4;
+        function draw(n) {
+          const inN = n >= GOLD;
+          out.replaceChildren(el('div', { style: 'display:grid;grid-template-columns:repeat(50,1fr);gap:2px' }, Array.from({ length: 50 }, (_, i) =>
+            el('span', { style: `height:18px;border-radius:2px;background:${i + 1 === GOLD ? (inN ? 'var(--ok)' : 'var(--bad)') : i < n ? 'var(--accent)' : 'var(--line)'}` }))));
+          stat.innerHTML = `<span>Đưa cho reranker: <b>${n}</b> đoạn</span><span>Thời gian rerank: <b>${(n * MS).toFixed(0)} ms</b></span><span>Đoạn đúng (hạng ${GOLD}): <b class="${inN ? 'ok' : 'bad'}">${inN ? 'được chấm lại' : 'bị loại trước khi rerank'}</b></span>`;
+        }
+        const sl = slider('Top N', 2, 50, 1, 10, draw);
+        box.append(el('div', { class: 'row' }, [sl.node]), out, stat,
+          el('div', { class: 'cap', text: 'Mỗi ô là một hạng theo bi-encoder, ô xanh lá hoặc đỏ là đoạn đúng (hạng 15, đo thật trong POC 03). Thời gian dùng 4.4 ms mỗi cặp đo trên CPU trong POC; API reranker thường chấm cả lô trong một lần gọi nên thời gian thật khác.' }));
+        draw(10);
+      },
+      take: 'Bước đầu lấy đủ rộng để không bỏ sót, bước sau mới chấm kỹ. N quá nhỏ thì reranker vô dụng, N quá lớn thì chậm và tốn tiền.'
+    },
+    {
+      q: 'Reranker trả về 1.237 và -2.260. Đó là xác suất liên quan à? Đặt ngưỡng "điểm trên 0.5 mới dùng" được không?',
+      a: `<p>Không phải xác suất. Xác suất không thể âm. Cross-encoder trong POC trả về điểm thô, số càng lớn càng liên quan, không có đơn vị.</p>
+<p>Điều <b>chắc chắn an toàn</b> với điểm rerank: trong cùng một câu hỏi, cùng một model, đoạn điểm cao hơn được model coi là liên quan hơn. Chỉ vậy thôi.</p>
+<p>Những điều <b>không an toàn</b> nếu nhà cung cấp không nói rõ:</p>
+<ul><li>Đọc điểm như "75% khả năng đúng". Có thể đưa điểm qua hàm sigmoid để được số từ 0 đến 1, nhưng đó chỉ là đổi thang, không phải xác suất đã kiểm chứng.</li>
+<li>So điểm giữa hai câu hỏi khác nhau. Câu hỏi dễ có thể cho mọi đoạn điểm cao, câu hỏi khó cho mọi đoạn điểm thấp.</li>
+<li>So điểm giữa hai model, hay giữa hai phiên bản của cùng một model.</li></ul>
+<p>Một số reranker được <b>calibrate</b> (hiệu chỉnh để điểm có ý nghĩa ổn định giữa các câu hỏi). README ghi Cohere Rerank 5 có "calibrated relevance scores" và Voyage rerank-3 giữ thang điểm tương thích để dùng lại ngưỡng cũ. Với model khác, kể cả rerank-v3.5 trong RAG POC, README không nói, nên đừng giả định. Cần ngưỡng thì đo trên bộ câu hỏi có đáp án của bạn.</p>
+<p>Hình dưới lấy 3 điểm thô đo thật từ POC, cộng thêm một hằng số rồi đưa qua sigmoid. Thứ hạng không bao giờ đổi, nhưng "xác suất" thì muốn bao nhiêu cũng được.</p>`,
+      viz(box) {
+        const raw = [['Tai nghe bị rè ... Bluetooth', 1.237], ['Bảo hành tai nghe 12 tháng', -2.26], ['Sạc nhanh 65W', -4.765]], out = el('div');
+        const sig = (x) => 1 / (1 + Math.exp(-x));
+        function draw(b) {
+          out.replaceChildren(hbars(raw.map(([t, s]) => [t, sig(s + b), sig(s + b) >= 0.5]), { max: 1, fmt: (v) => v.toFixed(3) }),
+            el('div', { class: 'stat', html: `<span>Số đoạn "qua ngưỡng 0.5": <b>${raw.filter(([, s]) => sig(s + b) >= 0.5).length}</b> / 3</span><span>Thứ hạng: <b>không đổi</b></span>` }));
+        }
+        const sl = slider('Dịch điểm thêm', -3, 6, 0.5, 0, draw, (v) => (v > 0 ? '+' : '') + v);
+        box.append(el('div', { class: 'row' }, [sl.node]), out,
+          el('div', { class: 'cap', text: 'Điểm thô 1.237, -2.260, -4.765 đo thật từ pocs/03_encoders.py. Phép dịch và sigmoid là biến đổi để minh hoạ: cùng một thứ hạng có thể khoác lên rất nhiều bộ "xác suất" khác nhau.' }));
+        draw(0);
+      },
+      take: 'Điểm rerank chắc chắn dùng được để xếp hạng trong một câu hỏi. Dùng làm ngưỡng tuyệt đối thì chỉ khi model đã calibrate hoặc bạn tự đo.'
+    },
+    {
+      q: 'Có cách nào nằm giữa không, vừa tính sẵn được vừa so được chi tiết từng từ?',
+      a: `<p>Có, README nhắc tới <b>ColBERT</b> (late interaction, tương tác muộn). Ý tưởng: vẫn mã hoá câu hỏi và tài liệu riêng như bi-encoder, nên tài liệu vẫn tính sẵn được. Nhưng thay vì gộp thành một vector, giữ lại <b>một vector cho mỗi token</b>.</p>
+<p>Lúc chấm điểm dùng MaxSim: mỗi token của câu hỏi tìm token giống nó nhất trong tài liệu, rồi cộng các điểm đó lại. Chữ "đổi trả" trong câu hỏi tự tìm được chữ "đổi trả" trong đoạn văn, không bị chìm trong trung bình của cả đoạn.</p>
+<p>Cái giá: một đoạn 100 token cần lưu 100 vector thay vì 1, nên bộ nhớ lớn hơn nhiều. Và tương tác vẫn yếu hơn cross-encoder, vì hai phía không attention vào nhau qua các lớp mà chỉ gặp nhau ở bước MaxSim cuối cùng.</p>
+<div class="tbl"><table><tr><th></th><th>Tính sẵn tài liệu</th><th>Hai phía gặp nhau ở đâu</th><th>Lưu mỗi đoạn</th></tr>
+<tr><td>Bi-encoder</td><td class="ok">Có</td><td>Một phép so hai vector</td><td>1 vector</td></tr>
+<tr><td>ColBERT</td><td class="ok">Có</td><td>MaxSim giữa các token</td><td>1 vector mỗi token</td></tr>
+<tr><td>Cross-encoder</td><td class="bad">Không</td><td>Mọi lớp attention</td><td>Không lưu gì, chấm lúc hỏi</td></tr></table></div>`,
+      take: 'Càng để hai phía gặp nhau sớm thì càng chính xác và càng khó tính sẵn. Ba kiến trúc là ba điểm trên cùng một trục đánh đổi.'
+    },
+    {
+      q: 'Trong RAG POC, Cohere rerank-v3.5 nằm ở đâu và được dùng thế nào?',
+      a: `<p>Luồng trong <code>rag-poc/pipeline.py</code>:</p>
+<ol><li><b>Nạp</b>: Unstructured cắt tài liệu bằng <code>chunk_by_title</code>, Cohere <code>embed-v4.0</code> mã hoá từng chunk với <code>input_type="search_document"</code> thành vector 1536 chiều, lưu vào Qdrant (Distance.COSINE). Đây là phần bi-encoder, làm một lần.</li>
+<li><b>Hỏi</b>: mã hoá câu hỏi với <code>input_type="search_query"</code>, Qdrant trả top N chunk (<code>limit=n</code>).</li>
+<li><b>Rerank</b>: gửi câu hỏi và văn bản của N chunk đó cho <code>co.rerank(model="rerank-v3.5", top_n=k)</code>. API trả về chỉ số của từng chunk và <code>relevance_score</code>. Pipeline lưu thêm <code>rank_before</code>, tức hạng trước khi rerank, để bạn thấy reranker đã đảo thứ tự ra sao.</li></ol>
+<p>Cohere không mô tả chi tiết kiến trúc của rerank-v3.5 trong tài liệu ta dùng. Nhưng về cách dùng nó đúng vai cross-encoder: nhận cặp (câu hỏi, đoạn văn) và trả một điểm cho mỗi cặp. Khác POC 03 ở chỗ việc chấm chạy trên máy chủ của Cohere, cả N chunk đi trong <b>một lần gọi API</b>, nên bạn trả theo lần gọi và chịu độ trễ mạng, không phải 4.4 ms × N trên CPU của mình.</p>
+<p>Những gì nên thử trong RAG POC, theo README của nó: hỏi "Tai nghe bị rè, đổi trả được không?" và so <code>rank_before</code> với thứ hạng sau rerank. Rồi giảm N xuống 2 để thấy đoạn đúng bị loại trước khi reranker kịp nhìn thấy. Còn <code>relevance_score</code> thì dùng để xếp hạng. Đừng đặt ngưỡng cứng khi chưa đo, như câu hỏi trước đã giải thích.</p>`,
+      take: 'RAG POC: embed-v4.0 + Qdrant lấy rộng (recall), rerank-v3.5 chấm kỹ top N (precision). Hạng trước và sau rerank là chỗ để quan sát.'
+    }
+  ],
   mount(stage) {
     const PER_PASS_MS = 5;
     let exp = 6, timers = [];
@@ -318,6 +480,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -325,7 +526,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),

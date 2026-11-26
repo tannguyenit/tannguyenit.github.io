@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a class="off" href="#">← Lab trước</a><a href="01-embedding-space.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -456,6 +476,166 @@ lesson({
     s: 'Bỏ rerank: nhanh hơn nhưng đoạn hơi lệch có thể chen vào top-3. Chỉ dùng một nhánh tìm kiếm: mất mã đơn hoặc mất câu diễn đạt tự nhiên. Đưa cả kho cho LLM: vượt giới hạn context, tốn tiền, và LLM bị nhiễu.',
     p: 'Nhiều khâu nghĩa là nhiều chỗ có thể sai mà không báo lỗi: hệ thống vẫn trả lời, chỉ trả lời sai. Cần bộ câu hỏi test để đo từng khâu. Đổi embedding model về sau nghĩa là embed lại cả kho, giống migrate toàn bộ index.'
   },
+  deep: [
+    {
+      q: 'Sao phải tìm kiếm rồi mới hỏi? Gửi luôn cả kho tài liệu cho LLM, để nó tự đọc, không được à?',
+      a: `<p>LLM chỉ biết những gì có trong dữ liệu huấn luyện. Nó không biết chính sách đổi trả của ShopViet, nên muốn nó trả lời đúng thì phải <b>đưa tài liệu vào prompt</b>. Câu hỏi chỉ là đưa bao nhiêu.</p>
+<p>LLM đọc và tính tiền theo <b>token</b> (mẩu chữ, thường ngắn hơn một từ). Mỗi model có giới hạn số token đọc được trong một lần, gọi là context window. README lấy ví dụ 128K token, cỡ 100 trang. Có ba lý do không gửi cả kho:</p>
+<ol><li><b>Không vừa.</b> 1 triệu đoạn thì gấp hàng nghìn lần context window.</li>
+<li><b>Đắt.</b> Mỗi câu chat trả tiền cho toàn bộ token đọc vào, kể cả 99,99% không liên quan.</li>
+<li><b>Nhiễu.</b> Đoạn trả lời bị chìm giữa hàng trăm đoạn na ná. Ít đoạn mà đúng thì LLM dễ bám hơn.</li></ol>
+<p>Ngược lại, nếu kho rất nhỏ (như 24 đoạn của POC) thì gửi hết là hoàn toàn được, và đơn giản hơn RAG. Kéo thử bên dưới để thấy ranh giới nằm ở đâu.</p>`,
+      viz(box) {
+        const S = { n: 1e6, t: 150 }, CTX = 128000, PRICE_IN = 2.5, out = el('div');
+        function draw() {
+          const all = S.n * S.t, rag = 3 * S.t + 100, fit = all <= CTX;
+          out.replaceChildren(hbars([['Gửi cả kho', all, false], ['RAG: 3 đoạn + câu hỏi', rag, true], ['Context window 128K', CTX, false]], { max: Math.max(all, CTX), fmt: fmtNum }),
+            el('div', { class: 'stat', html: `<span>Cả kho = <b>${(all / CTX).toFixed(all < CTX ? 2 : 0)}×</b> context window: <b class="${fit ? 'ok' : 'bad'}">${fit ? 'vừa' : 'không vừa'}</b></span><span>Tiền input mỗi câu hỏi: gửi cả kho ≈ <b>$${((all / 1e6) * PRICE_IN).toFixed(2)}</b>, RAG ≈ <b>$${((rag / 1e6) * PRICE_IN).toFixed(4)}</b></span>` }));
+        }
+        box.append(el('div', { class: 'row' }, [
+          select('Kho', [[24, '24 đoạn (POC)'], [1e4, '10 nghìn đoạn'], [1e6, '1 triệu đoạn']], S.n, (v) => { S.n = +v; draw(); }).node,
+          slider('Token mỗi đoạn', 50, 500, 50, S.t, (v) => { S.t = v; draw(); }).node]), out,
+          el('div', { class: 'cap', text: 'Số token mỗi đoạn và 100 token cho câu hỏi kèm hướng dẫn là số giả định. Giá $2.5 / 1 triệu token input lấy từ bảng PRICE ước tính trong rag-poc/pipeline.py, cần đối chiếu trang giá của nhà cung cấp.' }));
+        draw();
+      },
+      take: 'RAG tồn tại vì kho lớn hơn context window và vì trả tiền cho token không liên quan là lãng phí. Kho đủ nhỏ thì không cần RAG.'
+    },
+    {
+      q: 'Vậy sao phải chia ra "nạp một lần" (bước 1 đến 3) và "mỗi câu hỏi" (bước 4 đến 9)?',
+      a: `<p>Vì phần nạp rất nặng. Thử tính với 1 triệu đoạn, mỗi đoạn khoảng 150 token (số giả định): embed toàn bộ là 150 triệu token. Theo giá ước tính trong <code>pipeline.py</code> ($0.12 / 1 triệu token cho <code>embed-v4.0</code>) thì khoảng $18 mỗi lần. Cohere nhận tối đa 96 đoạn mỗi request (README), nên cần hơn 10 nghìn request. Làm việc này cho mỗi câu chat là không thể.</p>
+<p>Nhưng kết quả embed của một đoạn <b>không phụ thuộc vào câu hỏi</b>. Đoạn "đổi trong 30 ngày" có cùng một vector dù ai hỏi gì. Vậy tính một lần, lưu lại, dùng mãi. Giống <code>CREATE INDEX</code> chạy lúc deploy, còn <code>SELECT</code> chạy mỗi request.</p>
+<p>Khi khách hỏi, hệ thống chỉ embed <b>một câu</b> ngắn, tìm trong index đã dựng, rồi chấm lại vài chục đoạn. Ba việc này có chi phí gần như cố định, không tăng theo kích thước kho.</p>
+<p>Lưu ý: RAG POC xoá collection và nạp lại từ đầu mỗi lần để cho đơn giản. Hệ thống thật chỉ embed lại các đoạn vừa thay đổi rồi upsert (ghi đè theo ID).</p>`,
+      take: 'Việc gì không phụ thuộc câu hỏi thì làm trước và lưu lại. Đường nóng chỉ giữ những việc nhỏ và có giới hạn.'
+    },
+    {
+      q: 'Sao phải cắt tài liệu thành chunk? Embed nguyên một tài liệu cho gọn không được à?',
+      a: `<p>Một vector chỉ có một hướng. Nếu tài liệu "Chính sách ShopViet" nói về đổi trả, bảo hành, vận chuyển và trả góp, vector của nó phải chỉ về đâu? Nó bị kéo về <b>khoảng giữa</b> của bốn chủ đề và không gần hẳn chủ đề nào. README gọi đây là "trung bình hoá".</p>
+<p>Hệ quả: câu hỏi về đổi trả thấy tài liệu này chỉ "hơi liên quan". Một đoạn ngắn nói <i>sai</i> nhưng tập trung đúng chủ đề (ví dụ đổi trả hàng khuyến mãi) có thể vượt lên trên. Thêm nữa, kể cả tìm đúng tài liệu thì vẫn phải nhét cả tài liệu dài vào prompt.</p>
+<p>Mô hình bên dưới tính thật: mỗi mục của tài liệu là một hướng ngẫu nhiên trong 256 chiều, vector tài liệu là trung bình các mục. Kéo số mục lên và xem tài liệu tụt điểm. Cosine tụt theo khoảng 1/√(số mục).</p>
+<p>Ngược lại, chunk quá nhỏ thì câu trả lời bị cắt đôi ("đổi trong 30 ngày" ở chunk này, "cần hoá đơn gốc" ở chunk kia). Lab 06 đi sâu vào phần cân bằng này.</p>`,
+      viz(box) {
+        const d = 256, rnd = seeded(6), norm = (v) => { const n = Math.hypot(...v); return v.map((x) => x / n); };
+        const secs = Array.from({ length: 12 }, () => unitVec(d, rnd)), noise = unitVec(d, rnd), other = unitVec(d, rnd);
+        const q = norm(secs[0].map((x, i) => 0.8 * x + 0.6 * noise[i])), wrong = norm(secs[0].map((x, i) => 0.5 * x + 0.87 * other[i]));
+        const out = el('div'), stat = el('div', { class: 'stat' });
+        function draw(k) {
+          const doc = norm(secs[0].map((_, i) => secs.slice(0, k).reduce((s, v) => s + v[i], 0)));
+          const cDoc = dotp(q, doc), cWrong = dotp(q, wrong);
+          out.replaceChildren(hbars([['Chunk đúng (1 mục)', dotp(q, secs[0]), true], [`Cả tài liệu (${k} mục)`, cDoc, false], ['Chunk sai, cùng chủ đề', cWrong, false]], { max: 1, fmt: (v) => v.toFixed(3) }));
+          stat.innerHTML = cDoc < cWrong ? '<span class="bad">Cả tài liệu đã xếp sau chunk sai.</span>' : '<span class="ok">Cả tài liệu vẫn xếp trên chunk sai.</span>';
+        }
+        box.append(el('div', { class: 'row' }, [slider('Số mục trong tài liệu', 1, 12, 1, 2, draw).node]), out, stat,
+          el('div', { class: 'cap', text: 'Minh hoạ khái niệm, số tính thật trên vector ngẫu nhiên. Model thật không đơn thuần lấy trung bình, nhưng hiện tượng một vector phải đại diện nhiều ý thì loãng là cùng bản chất.' }));
+        draw(2);
+      },
+      take: 'Chunk là đơn vị tìm kiếm. Mỗi chunk nên chứa trọn một ý để vector của nó chỉ rõ về một hướng.'
+    },
+    {
+      q: 'Sao lúc lưu dùng input_type="search_document", lúc hỏi lại dùng "search_query"? Cùng một model mà?',
+      a: `<p>Vì câu hỏi và tài liệu không giống nhau, dù cùng nói về một chuyện. Câu hỏi ngắn, dạng hỏi: <i>"Tai nghe bị rè, đổi trả được không?"</i>. Đoạn trả lời dài hơn, dạng khẳng định: <i>"Hàng bị lỗi được đổi trong 30 ngày, cần hóa đơn gốc."</i></p>
+<p>README chỉ ra cái bẫy: <b>một câu hỏi thường giống một câu hỏi khác hơn là giống đoạn trả lời nó</b>. Nếu kho ShopViet có cả các câu hỏi cũ của khách, embed câu hỏi như một tài liệu bình thường sẽ kéo về những câu hỏi cũ (cùng dạng câu) thay vì đoạn chính sách (cùng nội dung).</p>
+<p><code>input_type</code> báo cho model biết vai trò của đầu vào để nó tạo vector "hỏi" và vector "đáp" sao cho <b>cặp hỏi-đáp</b> gần nhau. Một số nhà cung cấp làm việc này bằng cách tự thêm một câu hướng dẫn vào trước văn bản, ví dụ Voyage (theo README). Hai vector vẫn nằm trong cùng một không gian nên vẫn so được với nhau.</p>
+<p>Lỗi hay gặp: dùng <code>search_document</code> cho cả hai đầu, hoặc quên tham số ở một đầu. Hệ thống vẫn chạy, không báo lỗi, chỉ tìm kém đi. README ghi dùng sai <code>input_type</code> làm giảm chất lượng tìm kiếm đáng kể. Trong RAG POC, <code>app.py</code> gọi <code>embed(..., "search_document")</code> lúc lưu và <code>embed([q], "search_query")</code> lúc hỏi.</p>`,
+      take: 'Câu hỏi và tài liệu đóng hai vai khác nhau. Khai báo đúng vai để model ghép cặp hỏi-đáp, không ghép câu hỏi với câu hỏi.'
+    },
+    {
+      q: 'Có vector câu hỏi rồi, tìm "gần nhất" trong 1 triệu vector có chậm không?',
+      a: `<p>Cách thẳng nhất là so câu hỏi với từng vector (brute-force). 1 triệu vector × 1536 chiều là khoảng 1,5 tỷ phép nhân cộng cho một câu hỏi.</p>
+<p>Số đo thật từ <code>pocs/05_ann.py</code> trên laptop: 200.000 vector × 384 chiều (307 MB) mất <b>5,21 ms</b> mỗi câu hỏi bằng brute-force. 1 triệu × 1536 thì nhiều phép tính gấp 20 lần. Nếu tăng tuyến tính thì cỡ 100 ms, đây là ước lượng, không phải số đo. Còn chấp nhận được cho một người, nhưng nhiều người hỏi cùng lúc thì CPU sẽ nghẽn.</p>
+<p>Vì vậy vector database như Qdrant dựng thêm index <b>ANN</b> (Approximate Nearest Neighbor, tìm láng giềng gần đúng), mặc định là HNSW: một đồ thị nối mỗi vector với vài hàng xóm, tìm kiếm bằng cách "đi theo hàng xóm gần hơn". Nó chỉ xét một phần nhỏ của kho, đổi lại đôi khi bỏ sót vài kết quả đúng. Dựng index tốn thời gian: POC đo 39,7 giây cho 200.000 vector. Lab 05 có phần chi tiết.</p>
+<p>Chính vì tìm kiếm là <b>gần đúng</b>, và vector chỉ là bản nén của cả đoạn văn, nên ta không tin ngay top-3 của bước này.</p>`,
+      take: 'Bước tìm kiếm vector được thiết kế cho tốc độ, không cho độ chính xác tuyệt đối. Bước sau phải bù lại.'
+    },
+    {
+      q: 'Sao không lấy luôn 3 đoạn gần nhất từ vector search, mà phải lấy N đoạn rồi rerank còn K?',
+      a: `<p>Vì điểm của vector search <b>thô</b>. Mỗi đoạn bị nén thành một vector từ trước, không hề biết câu hỏi là gì. Số đo thật trong <code>pocs/03_encoders.py</code> với câu "Tai nghe của tôi bị rè, đổi trả được không?": vector search (bi-encoder) đặt đoạn đúng ở <b>hạng 15</b> trên 24 đoạn. Lấy top-3 thì mất hẳn.</p>
+<p>Reranker (cross-encoder) đọc <b>câu hỏi và đoạn cùng lúc</b>, nên thấy được quan hệ tinh hơn. Nhưng nó đắt: POC đo 4,4 ms mỗi cặp trên CPU, chấm 1 triệu đoạn mất khoảng 73 phút cho một câu hỏi. Nên chia việc:</p>
+<ul><li><b>Bước tìm</b> lấy rộng N đoạn (README gợi ý 50 đến 100), ưu tiên <b>recall</b>: đừng bỏ sót đoạn đúng.</li>
+<li><b>Bước rerank</b> chấm lại N đoạn đó, giữ K đoạn tốt nhất (3 đến 10), ưu tiên <b>precision</b>: cái giữ lại phải đúng.</li></ul>
+<p>Quy tắc quan trọng nhất: <b>reranker không thêm được đoạn mà bước tìm đã bỏ sót</b>. N quá nhỏ thì reranker tốt mấy cũng vô ích. Mô phỏng bên dưới cho thấy điều đó. Mỗi lượt có 200 đoạn, 1 đoạn đúng. Vector search chấm điểm với nhiễu lớn, reranker chấm với nhiễu nhỏ. Trình duyệt chạy 100 lượt và đếm.</p>`,
+      viz(box) {
+        const M = 200, T = 100, rnd = seeded(4), trials = [];
+        for (let t = 0; t < T; t++) {
+          const rel = Array.from({ length: M }, (_, i) => (i ? 0.75 * rnd() ** 3 : 0.9));
+          const bi = rel.map((r) => r + 0.2 * randn(rnd)), rr = rel.map((r) => r + 0.05 * randn(rnd));
+          trials.push({ order: bi.map((_, i) => i).sort((a, b) => bi[b] - bi[a]), rr });
+        }
+        const out = el('div'), stat = el('div', { class: 'stat' });
+        const rate = (N, K) => trials.filter(({ order, rr }) => { const c = order.slice(0, N); return c.includes(0) && c.filter((i) => rr[i] > rr[0]).length < K; }).length / T;
+        function draw(N) {
+          const only = rate(3, 3), rec = rate(N, N), fin = rate(N, 3);
+          out.replaceChildren(hbars([['Chỉ vector, top-3', only * 100, false], [`Đoạn đúng lọt vào N=${N}`, rec * 100, false], [`N=${N} rồi rerank, top-3`, fin * 100, true]], { max: 100, fmt: (v) => v.toFixed(0) + '%' }));
+          stat.innerHTML = `<span>Rerank ${N} cặp ≈ <b>${(N * 4.4).toFixed(0)} ms</b> trên CPU (theo số đo 4,4 ms/cặp của POC 03)</span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('N (số ứng viên)', 3, 60, 1, 30, draw).node]), out, stat,
+          el('div', { class: 'cap', text: 'Mô phỏng với số giả định: độ liên quan và mức nhiễu do lab tự đặt, không phải đo trên model thật. Phần trăm là tỉ lệ lượt mà đoạn đúng nằm trong top-3 cuối. Thanh giữa là trần: thanh cuối không bao giờ vượt nó.' }));
+        draw(30);
+      },
+      take: 'Bước tìm lo không bỏ sót, bước rerank lo xếp đúng. Chỉnh N trước khi đổ lỗi cho reranker.'
+    },
+    {
+      q: 'Có 3 đoạn tốt nhất rồi. Prompt gửi cho LLM gồm những gì? Sao phải đánh số nguồn [1], [2]?',
+      a: `<p>Prompt trong <code>rag-poc/pipeline.py</code> có ba phần:</p>
+<ol><li><b>Hướng dẫn</b>: chỉ trả lời dựa trên ngữ cảnh, trích số nguồn, nếu ngữ cảnh không có thì nói không biết.</li>
+<li><b>Ngữ cảnh</b>: K đoạn đã rerank, mỗi đoạn có số thứ tự và tên nguồn.</li>
+<li><b>Câu hỏi</b> của khách.</li></ol>
+<p>Câu "nói không biết" quan trọng không kém. Không có nó, LLM có xu hướng tự điền chỗ trống bằng kiến thức chung, ví dụ tự đoán ra một thời hạn đổi trả nghe có vẻ hợp lý. Đó là bịa (hallucination).</p>
+<p>Đánh số nguồn để <b>kiểm tra được</b>. Khách hoặc nhân viên chăm sóc khách hàng bấm [1] là thấy đúng đoạn chính sách. Đội phát triển dùng nó để đo xem mỗi ý trong câu trả lời có nằm trong ngữ cảnh không (faithfulness, ở câu sau). Không có số nguồn thì một câu trả lời sai trông y hệt một câu trả lời đúng.</p>
+<p>Chọn đoạn bên dưới để dựng prompt thật theo đúng mẫu của POC. Bỏ chọn <code>doitra-1</code> để thấy prompt thiếu bằng chứng: lúc đó câu trả lời đúng duy nhất là "không biết".</p>`,
+      viz(box) {
+        const Q = 'Tai nghe Pro X mua tuần trước bị rè, đổi trả được không và cần mang gì?';
+        const D = [['doitra-1', 'Chính sách đổi trả: hàng bị lỗi được đổi trong 30 ngày kể từ ngày nhận, cần mang theo hóa đơn gốc.'],
+          ['doitra-3', 'Phí vận chuyển khi đổi trả do ShopViet chịu nếu lỗi thuộc về nhà sản xuất.'],
+          ['tainghe-1', 'Tai nghe bị rè hoặc mất tiếng thường do kết nối Bluetooth yếu, hãy thử ghép đôi lại.'],
+          ['baohanh-1', 'Tai nghe được bảo hành 12 tháng, lỗi do nhà sản xuất sẽ được sửa hoặc thay mới miễn phí.'],
+          ['baohanh-3', 'Bảo hành bị từ chối nếu thiết bị rơi vỡ, vào nước hoặc đã bị tháo máy.']];
+        const on = new Set(['doitra-1', 'tainghe-1', 'baohanh-1']), pre = el('pre', { class: 'mono', style: 'white-space:pre-wrap;font-size:12px;margin:8px 0 0;max-height:260px;overflow:auto' }), stat = el('div', { class: 'stat' });
+        function draw() {
+          const ctx = D.filter(([id]) => on.has(id)).map(([id, t], i) => `[${i + 1}] (nguồn: ${id})\n${t}`).join('\n\n');
+          pre.textContent = 'Bạn là trợ lý của ShopViet. Chỉ trả lời dựa trên ngữ cảnh bên dưới và trích dẫn số nguồn như [1]. Nếu ngữ cảnh không có thông tin, hãy nói bạn không biết.\n\nNgữ cảnh:\n' + ctx + '\n\nCâu hỏi: ' + Q;
+          const ok = /30 ngày/.test(ctx) && /hóa đơn gốc/.test(ctx);
+          stat.innerHTML = `<span>${on.size} đoạn, <b>${pre.textContent.length}</b> ký tự</span><span class="${ok ? 'ok' : 'bad'}">${ok ? 'Có đủ bằng chứng: 30 ngày và hóa đơn gốc' : 'Thiếu bằng chứng: câu trả lời đúng là "không biết"'}</span>`;
+        }
+        const boxes = D.map(([id]) => {
+          const cb = el('input', Object.assign({ type: 'checkbox', onchange: (e) => { e.target.checked ? on.add(id) : on.delete(id); draw(); } }, on.has(id) ? { checked: '' } : {}));
+          return el('label', { class: 'ctl' }, [cb, id]);
+        });
+        box.append(el('div', { class: 'row' }, boxes), stat, pre,
+          el('div', { class: 'cap', text: 'Mẫu prompt chép từ build_prompt trong rag-poc/pipeline.py. Các đoạn lấy từ pocs/shopviet.py. Phần kiểm tra bằng chứng chỉ dò hai cụm chữ, để minh hoạ.' }));
+        draw();
+      },
+      take: 'Prompt RAG = luật chơi + bằng chứng có đánh số + câu hỏi. Đánh số để mỗi câu trả lời kiểm tra lại được.'
+    },
+    {
+      q: 'Nhiều khâu thế, câu trả lời sai thì làm sao biết sai ở khâu nào?',
+      a: `<p>Đây là điểm khó nhất của RAG: <b>không khâu nào báo lỗi</b>. Chunk cắt dở, nhầm <code>input_type</code>, N quá nhỏ, tất cả vẫn trả về HTTP 200 và một câu trả lời trôi chảy. Muốn biết thì phải đo từng khâu bằng một bộ câu hỏi có đáp án biết trước (giống test case). README đề xuất:</p>
+<div class="tbl"><table><tr><th>Khâu</th><th>Thước đo</th><th>Hỏi gì</th><th>Ví dụ ShopViet</th></tr>
+<tr><td>Tìm (bước 5)</td><td>Recall@N</td><td>Đoạn đúng có nằm trong N ứng viên không?</td><td>doitra-1 có trong 30 ứng viên không?</td></tr>
+<tr><td>Rerank (bước 6)</td><td>nDCG@K</td><td>Đoạn đúng có đứng ở hạng cao không?</td><td>doitra-1 đứng hạng 1 hay hạng 3?</td></tr>
+<tr><td>LLM (bước 8)</td><td>Faithfulness</td><td>Mỗi ý trong câu trả lời có nằm trong ngữ cảnh không?</td><td>"30 ngày" có trong đoạn [1] không, hay LLM tự nghĩ ra?</td></tr>
+<tr><td>LLM (bước 8)</td><td>Answer relevance</td><td>Câu trả lời có đúng trọng tâm câu hỏi không?</td><td>Hỏi đổi trả mà trả lời cách ghép Bluetooth là lạc đề</td></tr></table></div>
+<p>Thứ tự điều tra nên đi <b>từ trước ra sau</b>. Recall của bước tìm là trần của cả hệ thống: đoạn đúng không lọt vào N ứng viên thì không reranker hay LLM nào cứu được. Đổi LLM xịn hơn trong khi bước tìm đang bỏ sót là tốn tiền vô ích.</p>`,
+      take: 'Đo từng khâu riêng, và luôn kiểm tra bước tìm trước. Lỗi ở đầu dây chuyền không khâu sau nào sửa được.'
+    },
+    {
+      q: 'Nối lại: trong RAG POC của ShopViet, mỗi bước chạy bằng gì, và nên thử gì để thấy các ý trên?',
+      a: `<div class="tbl"><table><tr><th>Bước</th><th>RAG POC dùng</th><th>Câu hỏi liên quan</th></tr>
+<tr><td>1. Chunk</td><td>Unstructured <code>chunk_by_title</code>, tối đa 500 ký tự, chạy local</td><td>3</td></tr>
+<tr><td>2. Embed đoạn</td><td>Cohere <code>embed-v4.0</code>, 1536 chiều, <code>search_document</code></td><td>2, 4</td></tr>
+<tr><td>3. Lưu</td><td>Qdrant (Docker), thước đo cosine</td><td>5</td></tr>
+<tr><td>4. Embed câu hỏi</td><td>Cùng model, <code>search_query</code></td><td>4</td></tr>
+<tr><td>5. Tìm</td><td>Qdrant, mặc định N = 8</td><td>5, 6</td></tr>
+<tr><td>6. Rerank</td><td>Cohere <code>rerank-v3.5</code>, mặc định K = 3</td><td>6</td></tr>
+<tr><td>7, 8. Prompt và LLM</td><td>Cohere <code>command-a-03-2025</code>, prompt có trích nguồn</td><td>7</td></tr></table></div>
+<p>Ba thí nghiệm README của POC gợi ý, mỗi cái ứng với một câu ở trên:</p>
+<ul><li>Kéo <b>Chunk tối đa</b> xuống 200 rồi chunk lại: đoạn trả lời bị cắt đôi (câu 3).</li>
+<li>Giảm <b>N</b> xuống 2: đoạn đúng bị loại trước khi tới reranker (câu 6).</li>
+<li>Hỏi "Tai nghe bị rè, đổi trả được không?": so thứ hạng trước và sau rerank (câu 6).</li></ul>
+<p>Bộ dữ liệu mẫu khoảng 1.000 token, README của POC ước tính một lượt chạy đầy đủ chưa tới 0,01 USD.</p>`,
+      take: 'Mỗi khâu tồn tại để vá một giới hạn của khâu trước. Hiểu giới hạn đó thì biết khâu nào cần chỉnh khi kết quả sai.'
+    }
+  ],
   mount(stage) { mountWorkflowDiagram(stage); }
 });
 function terms(list) {
@@ -471,6 +651,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -478,7 +697,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),

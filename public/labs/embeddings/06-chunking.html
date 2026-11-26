@@ -164,6 +164,26 @@ footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
 .wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
 .wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
 .wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
 </style></head><body><div class="wrap">
 <div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="05-ann.html">← Lab trước</a><a href="07-dimensions.html">Lab sau →</a></div></div>
 <nav id="tabs" hidden></nav><main id="lessons"></main>
@@ -274,6 +294,169 @@ lesson({
     s: 'Embed cả tài liệu làm một vector: vector bị trung bình hoá giữa nhiều chủ đề nên mờ, và đưa cả tài liệu dài vào prompt thì tốn token. Chunk quá nhỏ (một câu): mất ngữ cảnh, câu "Cần hóa đơn gốc" đứng một mình không cho biết cần để làm gì.',
     p: 'Chunk càng nhỏ và overlap càng lớn thì số vector càng nhiều, tốn RAM, tiền embed và thời gian index. Cắt cố định theo số từ thì đơn giản nhưng có thể cắt giữa ý. Cắt theo cấu trúc hoặc ngữ nghĩa thông minh hơn nhưng phức tạp hơn.'
   },
+  deep: [
+    {
+      q: 'Sao phải cắt? Embed nguyên cả trang chính sách thành một vector không được à?',
+      a: `<p>Có hai lý do, một lý do "cứng" và một lý do "mềm".</p>
+<p><b>Lý do cứng: model có giới hạn đầu vào.</b> README ghi các embedding model nhận từ 256 đến 8192 token. Đưa văn bản dài hơn thì phần đuôi bị cắt mất (thường là cắt lặng lẽ, không báo lỗi) hoặc API trả lỗi. Phần bị cắt coi như chưa từng được index: hỏi gì về nó cũng không tìm ra.</p>
+<p><b>Lý do mềm: một vector chỉ là một điểm.</b> Model phải nén cả đoạn văn thành một hướng duy nhất. Nhiều model sentence-transformers làm việc này bằng <b>mean pooling</b>: lấy trung bình vector của tất cả token. Một trang nói về hoàn tiền, phí ship, bảo hành và tuyển dụng sẽ cho ra một vector "ở giữa" bốn chủ đề, không gần hẳn chủ đề nào. Câu hỏi về hoàn tiền so với vector đó sẽ được điểm thấp, có khi thua một đoạn ngắn nói về chủ đề khác nhưng "tập trung".</p>
+<p>Thí nghiệm dưới đây tính thật trong trình duyệt. Mỗi chủ đề là một vector ngẫu nhiên 384 chiều. "Tài liệu" là trung bình của N chủ đề. Câu hỏi nhắm vào chủ đề số 1.</p>`,
+      viz(box) {
+        const d = 384, rnd = seeded(6), topics = Array.from({ length: 8 }, () => unitVec(d, rnd));
+        const q = (() => { const v = topics[0].map((x) => x + 0.03 * randn(rnd)); const n = Math.hypot(...v); return v.map((x) => x / n); })();
+        const docOf = (k) => { const m = Array(d).fill(0); for (let t = 0; t < k; t++) topics[t].forEach((x, i) => { m[i] += x; }); const n = Math.hypot(...m); return m.map((x) => x / n); };
+        const cos = [1, 2, 3, 4, 5, 6, 7, 8].map((k) => dotp(q, docOf(k)));
+        const out = el('div'), stat = el('div', { class: 'stat' });
+        function draw(k) {
+          out.replaceChildren(hbars(cos.map((c, i) => [`Tài liệu gộp ${i + 1} chủ đề`, c, i + 1 === k]), { max: 1, fmt: (v) => v.toFixed(3) }));
+          stat.innerHTML = `<span>cos(câu hỏi, tài liệu ${k} chủ đề) = <b>${cos[k - 1].toFixed(3)}</b></span><span>1/√N = <b>${(1 / Math.sqrt(k)).toFixed(3)}</b></span>`;
+        }
+        const sl = slider('Số chủ đề trong tài liệu', 1, 8, 1, 4, draw);
+        box.append(el('div', { class: 'row' }, [sl.node]), out, stat,
+          el('div', { class: 'cap', text: 'Minh hoạ khái niệm bằng vector ngẫu nhiên, không phải model thật. Vì các chủ đề ngẫu nhiên gần như vuông góc nhau, cosine tụt theo đúng 1/√N: gộp 4 chủ đề thì chỉ còn khoảng 0.5.' }));
+        draw(4);
+      },
+      take: 'Một vector cho nhiều ý thì mỗi ý chỉ còn một phần tín hiệu. Cắt nhỏ để mỗi vector nói về một chuyện.'
+    },
+    {
+      q: 'Vậy cắt thật nhỏ cho chắc, mỗi câu một chunk?',
+      a: `<p>Cắt quá nhỏ thì vector rất "tập trung" nhưng <b>mất ngữ cảnh</b>. Thử đọc riêng câu này: <i>"Khách cần mang theo hóa đơn gốc và đầy đủ phụ kiện."</i> Mang theo để làm gì? Để đổi trả, để bảo hành hay để nhận hàng? Câu đó dựa vào câu trước nó để có nghĩa.</p>
+<p>Hậu quả có hai chiều:</p>
+<ul><li><b>Tìm kiếm:</b> câu hỏi "đổi hàng lỗi cần gì?" không khớp tốt với một câu không hề nhắc tới "đổi hàng".</li>
+<li><b>Trả lời:</b> dù tìm đúng, LLM chỉ nhận một mẩu. Nó thấy "30 ngày" mà không thấy "hóa đơn gốc", hoặc ngược lại.</li></ul>
+<p>Cắt nhỏ còn làm tăng số vector. README đưa công thức gần đúng: <code>số chunk ≈ tổng token / (kích thước − overlap)</code>. Giảm kích thước một nửa thì số vector gần gấp đôi: RAM, tiền embed, thời gian index đều tăng theo.</p>
+<p>Nên đây là bài toán cân bằng: chunk phải đủ lớn để tự đứng được (đọc riêng vẫn hiểu), và đủ nhỏ để chỉ nói về một ý. Giống viết hàm: không nhét cả module vào một hàm, nhưng cũng không tách mỗi dòng thành một hàm.</p>`,
+      take: 'Chunk tốt là chunk đọc riêng vẫn hiểu và chỉ nói một ý. Quá to thì loãng, quá nhỏ thì cụt.'
+    },
+    {
+      q: 'Thế cắt cứng theo số ký tự có sao không? Đơn giản mà.',
+      a: `<p>Cắt cứng không biết câu ở đâu, nên ranh giới rơi vào chỗ nào thì rơi, kể cả giữa một từ. POC <code>pocs/06_chunking.py</code> đã đo trên đoạn chính sách đổi trả ShopViet, với câu hỏi <i>"Đổi hàng lỗi cần mang theo gì và trong bao lâu?"</i>:</p>
+<div class="tbl"><table><tr><th>Cách cắt (số đo thật)</th><th>Số chunk</th><th>Chunk top-1 có đủ "30 ngày" + "hóa đơn gốc"?</th></tr>
+<tr><td>Cứng 80 ký tự, không overlap</td><td>5</td><td class="bad">Không. Top-1 là mẩu «c hoặc đã bị tháo máy.»</td></tr>
+<tr><td>Cứng 160 ký tự, overlap 20%</td><td>3</td><td class="ok">Có</td></tr>
+<tr><td>Theo câu, 3 câu một chunk</td><td>2</td><td class="ok">Có</td></tr></table></div>
+<p>Trường hợp 80 ký tự đáng xem kỹ, vì nó không hỏng theo kiểu bạn đoán. Kéo thanh trượt bên dưới về 80 ký tự, overlap 0: chunk 2 <b>có</b> chứa cả "30 ngày" lẫn "hóa đơn gốc". Nhưng nó bắt đầu bằng "30 ngày kể từ...", còn phần đầu câu "Hàng bị lỗi do nhà sản xuất được đổi mới trong" đã rơi sang chunk 1. Chính những chữ khớp với câu hỏi "đổi hàng lỗi" lại nằm ở chunk khác. Kết quả là model chọn mẩu cụt «c hoặc đã bị tháo máy.» POC không đo vì sao đúng mẩu đó thắng, nhưng bài học rõ: chunk chứa dữ kiện mà mất chủ ngữ thì vẫn khó được tìm thấy.</p>
+<p>Đây mới là 1 câu hỏi trên 1 đoạn văn, nên chỉ để thấy cơ chế, không đủ để kết luận cấu hình nào tốt nhất.</p>`,
+      viz(box) {
+        const T = 'Chính sách đổi trả của ShopViet. Hàng bị lỗi do nhà sản xuất được đổi mới trong 30 ngày kể từ ngày nhận. Khách cần mang theo hóa đơn gốc và đầy đủ phụ kiện. Hàng khuyến mãi chỉ đổi trong 7 ngày. Phí vận chuyển khi đổi trả do ShopViet chịu nếu lỗi thuộc về nhà sản xuất. Trường hợp không áp dụng: sản phẩm rơi vỡ, vào nước hoặc đã bị tháo máy.';
+        const need = ['30 ngày', 'hóa đơn gốc'], S = { size: 80, ov: 0 }, list = el('div', { class: 'chunks' }), stat = el('div', { class: 'stat' });
+        const isWord = (c) => /[\p{L}\p{N}]/u.test(c || '');
+        function draw() {
+          const step = Math.max(1, S.size - S.ov), ch = [];
+          for (let i = 0; i < T.length; i += step) { ch.push([i, Math.min(T.length, i + S.size)]); if (i + S.size >= T.length) break; }
+          let broken = 0, full = 0;
+          list.replaceChildren(...ch.map(([s, e], i) => {
+            const txt = T.slice(s, e), ok = need.every((k) => txt.includes(k));
+            const cut = isWord(T[e - 1]) && isWord(T[e]); if (cut) broken++; if (ok) full++;
+            return el('div', { class: 'ch', style: ok ? 'border-color:var(--ok)' : '' }, [
+              el('small', { text: `chunk ${i + 1} · ký tự ${s}–${e}${cut ? ' · cắt giữa từ' : ''}${ok ? ' · đủ cả hai ý' : ''}` }), el('span', { text: txt })]);
+          }));
+          stat.innerHTML = `<span>Số chunk: <b>${ch.length}</b></span><span>Chunk cắt giữa từ: <b>${broken}</b></span><span>Chunk đủ hai ý: <b class="${full ? 'ok' : 'bad'}">${full}</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Kích thước', 40, 240, 10, S.size, (v) => { S.size = v; draw(); }, (v) => v + ' ký tự').node,
+          slider('Overlap', 0, 80, 4, S.ov, (v) => { S.ov = v; draw(); }, (v) => v + ' ký tự').node]), stat, list,
+          el('div', { class: 'cap', text: 'Cắt thật trên đúng đoạn văn của POC 06, cùng thuật toán text[i:i+size] với bước size − overlap. Viền xanh là chunk chứa đủ "30 ngày" và "hóa đơn gốc". Viz không embed nên không biết chunk nào được retriever chọn, chỉ kiểm tra chunk nào có đủ dữ kiện.' }));
+        draw();
+      },
+      take: 'Cắt cứng có thể tách dữ kiện khỏi ngữ cảnh của nó. Chunk có đủ số liệu mà mất chủ ngữ thì retriever vẫn bỏ qua.'
+    },
+    {
+      q: 'Overlap cứu được chuyện đó à? Sao không để overlap 50% cho chắc?',
+      a: `<p>Overlap nghĩa là chunk sau lặp lại phần cuối của chunk trước. Nhờ vậy ranh giới có "vùng đệm". Có một quy luật đơn giản: <b>nếu câu trả lời ngắn hơn overlap, nó chắc chắn nằm trọn trong ít nhất một chunk</b>, bất kể nằm ở đâu. Nếu dài hơn overlap thì chỉ là "có xác suất".</p>
+<p>Lý do: các chunk bắt đầu cách nhau một bước <code>T = kích thước − overlap</code>. Một đoạn dài L nằm trọn trong chunk khi điểm bắt đầu của nó cách đầu chunk không quá <code>kích thước − L</code>. Với vị trí ngẫu nhiên, xác suất đó là <code>min(1, (kích thước − L + 1) / T)</code>.</p>
+<p>Còn overlap 50%? Khi overlap đã lớn hơn độ dài câu trả lời, xác suất đã là 100%. Tăng thêm chỉ làm số chunk tăng, không được gì. README ghi overlap trên 30% thường làm chi phí tăng nhanh hơn lợi ích, và top kết quả hay bị lặp các đoạn gần giống nhau.</p>`,
+      viz(box) {
+        const S = { size: 512, pct: 0, L: 120 }, N = 5000, stat = el('div', { class: 'stat' }), bars = el('div');
+        function draw() {
+          const ov = Math.round((S.size * S.pct) / 100), T = S.size - ov, p = Math.min(1, (S.size - S.L + 1) / T), n = Math.ceil((N - ov) / T);
+          bars.replaceChildren(hbars([['Xác suất câu trả lời nằm trọn', p * 100, true]], { max: 100, fmt: (v) => v.toFixed(0) + '%' }),
+            hbars([['Số chunk, tài liệu 5000 token', n, false]], { max: 100, fmt: (v) => String(v) }));
+          stat.innerHTML = `<span>Overlap = <b>${ov}</b> token, bước T = <b>${T}</b></span><span class="${ov >= S.L - 1 ? 'ok' : ''}">${ov >= S.L - 1 ? 'Overlap ≥ độ dài câu trả lời: luôn nằm trọn' : 'Overlap &lt; độ dài câu trả lời: chỉ là xác suất'}</span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Kích thước', 128, 1024, 32, S.size, (v) => { S.size = v; draw(); }, (v) => v + ' token').node,
+          slider('Overlap', 0, 60, 5, S.pct, (v) => { S.pct = v; draw(); }, (v) => v + '%').node,
+          slider('Câu trả lời dài', 20, 400, 10, S.L, (v) => { S.L = v; draw(); }, (v) => v + ' token').node]), bars, stat,
+          el('div', { class: 'cap', text: 'Tính bằng công thức, giả định câu trả lời nằm ở vị trí ngẫu nhiên và bỏ qua phần cuối tài liệu. Số chunk dùng công thức của README. Thử kích thước 512, câu trả lời 120 token, rồi kéo overlap từ 0% lên 60%.' }));
+        draw();
+      },
+      take: 'Overlap nên cỡ độ dài một ý trả lời điển hình. Nhỏ hơn thì còn rủi ro cắt đôi, lớn hơn nhiều thì chỉ tốn thêm vector.'
+    },
+    {
+      q: 'Cắt theo câu là xong chứ gì? Sao RAG POC lại dùng chunk_by_title của Unstructured?',
+      a: `<p>Cắt theo câu giữ được từng câu nguyên vẹn, nhưng nó <b>không biết chủ đề đổi ở đâu</b>. Gom 3 câu một chunk có thể lấy câu cuối của mục "Hàng lỗi" (30 ngày) dính với câu đầu của mục "Hàng khuyến mãi" (7 ngày). Chunk đó trả lời được cả hai câu hỏi một nửa, và LLM có thể lẫn "30 ngày" với "7 ngày".</p>
+<p>Tài liệu thật thường đã có sẵn ranh giới chủ đề do chính người viết đặt: <b>tiêu đề (heading)</b>. Cắt theo cấu trúc là tận dụng ranh giới đó. Unstructured làm việc này qua hai bước:</p>
+<ol><li><code>partition</code>: đọc file và tách thành các <b>element</b> có loại, ví dụ <code>Title</code> (tiêu đề), <code>NarrativeText</code> (đoạn văn), <code>ListItem</code>, <code>Table</code>.</li>
+<li><code>chunk_by_title</code>: mở chunk mới mỗi khi gặp <code>Title</code>, rồi gom các element phía sau vào cho đến khi đủ kích thước. RAG POC gọi với <code>max_characters=500</code> (trần cứng), <code>new_after_n_chars=400</code> (quá mức này thì nên mở chunk mới) và <code>combine_text_under_n_chars=120</code> (mục quá ngắn thì gộp với mục kế tiếp).</li></ol>
+<p>Bên dưới là phiên bản rút gọn chạy trên file <code>rag-poc/data/doi-tra.md</code>. Kéo trần ký tự để xem lúc nào một mục bị chia đôi.</p>`,
+      viz(box) {
+        const md = '# Chính sách đổi trả\n## Hàng lỗi do nhà sản xuất\nHàng bị lỗi do nhà sản xuất được đổi mới trong 30 ngày kể từ ngày nhận. Khách cần mang theo hóa đơn gốc và đầy đủ phụ kiện, hộp sản phẩm. Nhân viên sẽ kiểm tra tình trạng máy trong 15 phút tại cửa hàng.\n## Hàng khuyến mãi\nHàng khuyến mãi và hàng thanh lý chỉ được đổi trả trong 7 ngày và không hoàn lại phần giá trị đã được giảm. Hàng xả kho không áp dụng đổi trả trừ trường hợp lỗi kỹ thuật.\n## Phí vận chuyển khi đổi trả\nShopViet chịu phí vận chuyển hai chiều nếu lỗi thuộc về nhà sản xuất. Nếu khách đổi ý, khách chịu phí gửi hàng về, mức phí từ 30.000đ đến 60.000đ tuỳ khu vực.';
+        const els = md.split('\n').map((l) => (l.startsWith('#') ? { t: 'Title', x: l.replace(/^#+\s*/, '') } : { t: 'NarrativeText', x: l }));
+        const out = el('div', { class: 'chunks' }), stat = el('div', { class: 'stat' });
+        function chunk(max) {
+          const res = []; let cur = '';
+          const push = () => { if (cur) res.push(cur); cur = ''; };
+          for (const e of els) {
+            if (e.t === 'Title' && cur.length >= 120) push();
+            const parts = e.x.length > max ? e.x.match(/[^.]+\.?/g).map((s) => s.trim()) : [e.x];
+            for (const p of parts) { if (cur && cur.length + p.length + 2 > max) push(); cur = cur ? cur + '\n\n' + p : p; }
+          }
+          push(); return res;
+        }
+        function draw(max) {
+          const ch = chunk(max);
+          out.replaceChildren(...ch.map((c, i) => el('div', { class: 'ch', style: c.includes('30 ngày') && c.includes('hóa đơn gốc') ? 'border-color:var(--ok)' : '' }, [
+            el('small', { text: `chunk ${i + 1} · ${c.length} ký tự` }), el('span', { style: 'white-space:pre-line', text: c })])));
+          stat.innerHTML = `<span>Element: <b>${els.filter((e) => e.t === 'Title').length}</b> Title, <b>${els.filter((e) => e.t !== 'Title').length}</b> NarrativeText</span><span>Số chunk: <b>${ch.length}</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('max_characters', 150, 500, 10, 500, draw).node]), stat, out,
+          el('div', { class: 'cap', text: 'Mô phỏng rút gọn, không phải code của Unstructured: mở chunk mới ở mỗi Title (trừ khi chunk hiện tại còn dưới 120 ký tự), tách đoạn quá dài theo câu, và không vượt trần ký tự. Viền xanh là chunk chứa đủ "30 ngày" và "hóa đơn gốc".' }));
+        draw(500);
+      },
+      take: 'Heading là ranh giới chủ đề miễn phí do người viết đặt sẵn. Cắt theo nó trước, rồi mới dùng kích thước làm trần.'
+    },
+    {
+      q: 'Unstructured biết đâu là Title, đâu là bảng bằng cách nào? Sao người ta hay than PDF và bảng bị hỏng?',
+      a: `<p>Tuỳ định dạng file, Unstructured có thông tin cấu trúc nhiều hay ít:</p>
+<ul><li><b>Markdown, HTML, DOCX</b>: cấu trúc được ghi sẵn trong file (<code>##</code>, thẻ <code>&lt;h2&gt;</code>, style Heading). Đọc thẳng ra, gần như không phải đoán.</li>
+<li><b>PDF có lớp chữ</b>: RAG POC dùng <code>strategy="fast"</code> (pdfminer). PDF thực chất chỉ là các ký tự đặt ở toạ độ trên trang. Không có thẻ "đây là tiêu đề" hay "đây là ô bảng", nên mọi cấu trúc đều phải suy ra từ vị trí và cỡ chữ, và có thể sai.</li>
+<li><b>PDF scan, ảnh</b>: không có chữ, phải OCR. Ghi chú trong <code>pipeline.py</code> nói rõ: PDF scan đi qua strategy fast sẽ không ra chữ. Ảnh thì POC chạy OCR bằng tesseract tiếng Việt, không hiểu bố cục.</li></ul>
+<p><b>Bảng</b> là chỗ hỏng nặng nhất. Ý nghĩa của một ô nằm ở <b>giao của hàng và cột</b>: "12 tháng" chỉ có nghĩa khi biết nó thuộc hàng "Tai nghe" và cột "Thời hạn bảo hành". Khi bảng bị đọc thành một chuỗi chữ phẳng, cặp hàng–cột biến mất. README ghi: embed ô dữ liệu rời rạc thì retrieval thường đúng từ khoá nhưng sai ý nghĩa. Khi Unstructured nhận ra element <code>Table</code>, nó giữ thêm bản HTML của bảng (<code>text_as_html</code>), và POC có lưu trường này.</p>`,
+      viz(box) {
+        const W = [['Sản phẩm', 'Thời hạn bảo hành', 'Ghi chú'], ['Tai nghe', '12 tháng', 'Không gồm đệm tai'], ['Laptop', '24 tháng', 'Gồm pin 12 tháng'], ['Sạc và cáp', '6 tháng', 'Đổi mới nếu lỗi']];
+        const views = {
+          table: () => el('div', { class: 'tbl' }, [el('table', { html: W.map((r, i) => '<tr>' + r.map((c) => (i ? `<td>${c}</td>` : `<th>${c}</th>`)).join('') + '</tr>').join('') })]),
+          flat: () => el('p', { class: 'mono', text: W.flat().join(' ') }),
+          rows: () => el('div', {}, W.slice(1).map((r) => el('p', { class: 'mono', style: 'margin:4px 0', text: r.map((c, j) => `${W[0][j]}: ${c}`).join('; ') })))
+        };
+        const out = el('div'), note = el('div', { class: 'cap' });
+        const NOTE = { table: 'Người đọc hiểu ngay nhờ hàng và cột.', flat: 'Chuỗi phẳng: "Laptop 24 tháng Gồm pin 12 tháng" — 12 tháng là của laptop hay của pin? Hỏi "tai nghe bảo hành bao lâu" có thể khớp từ khoá "12 tháng" ở hàng Laptop.', rows: 'Mỗi hàng ghép kèm tên cột: mỗi dòng tự đứng được, có thể làm một chunk riêng hoặc gộp cả bảng.' };
+        const draw = (k) => { out.replaceChildren(views[k]()); note.textContent = NOTE[k]; };
+        box.append(el('div', { class: 'row' }, [select('Bảng sau khi đọc', [['table', 'Bảng gốc'], ['flat', 'Bị làm phẳng thành chữ'], ['rows', 'Mỗi hàng kèm tên cột']], 'table', draw).node]), out, note);
+        draw('table');
+      },
+      take: 'Định dạng càng mất cấu trúc (PDF, ảnh) thì chunk càng dễ sai. Với bảng, giữ cặp hàng–cột trong chữ được embed.'
+    },
+    {
+      q: 'Đã cắt theo heading mà chunk "Hàng khuyến mãi chỉ đổi trong 7 ngày" vẫn không biết mình thuộc tài liệu nào. Sửa sao?',
+      a: `<p>Đây là giới hạn chung của mọi cách cắt: chunk được tìm <b>độc lập</b>, nên những gì nằm ngoài chunk thì retriever không thấy. README đưa ba cách bù:</p>
+<ol><li><b>Context enrichment</b>: chèn tiêu đề tài liệu và tiêu đề mục vào đầu chữ của chunk trước khi embed, ví dụ <i>"Chính sách đổi trả — Hàng khuyến mãi: Hàng khuyến mãi chỉ được đổi trả trong 7 ngày..."</i>. Vector giờ mang cả ngữ cảnh "đổi trả". <code>chunk_by_title</code> tự có một phần hiệu ứng này vì element <code>Title</code> nằm luôn trong chữ của chunk.</li>
+<li><b>Metadata</b>: lưu <code>source</code>, <code>section</code>, <code>page</code> cạnh vector. Không làm vector tốt hơn, nhưng cho phép lọc ("chỉ tìm trong chính sách") và trích dẫn nguồn. RAG POC lưu <code>section</code> cho mỗi chunk.</li>
+<li><b>Parent-child</b>: index chunk nhỏ để tìm cho trúng, nhưng khi trả kết quả thì lấy cả mục cha (vài trăm đến hơn nghìn token) đưa cho LLM. Giống index trên một cột nhỏ của bảng SQL rồi <code>JOIN</code> lấy cả bản ghi.</li></ol>
+<p>Cái giá: chữ được embed dài hơn (tốn token embed), và phải duy trì quan hệ cha–con trong kho.</p>`,
+      take: 'Chunk không biết thế giới bên ngoài nó. Muốn nó biết thì phải chèn ngữ cảnh vào chữ hoặc vào metadata.'
+    },
+    {
+      q: 'Rốt cuộc chọn kích thước bao nhiêu? 512 token như mọi người hay nói?',
+      a: `<p>512 là <b>điểm xuất phát</b>, không phải đáp án. README gợi ý baseline 256–512 token cho văn xuôi, overlap 10–15% khi ranh giới đã sạch (theo câu, theo mục) và 20–25% cho văn dài hoặc OCR nhiều lỗi. Sau đó phải đo:</p>
+<ol><li>Gom bộ câu hỏi thật (từ log chat hoặc hỏi nhân viên CSKH), mỗi câu kèm <b>chuỗi chữ của câu trả lời đúng</b>.</li>
+<li>Với mỗi cấu hình chunk, index lại, chạy bộ câu hỏi, đo Recall@K: top K có chunk nào chứa trọn câu trả lời không.</li>
+<li>Ghi thêm số chunk (RAM, tiền embed) và số token đưa vào prompt.</li>
+<li>Chọn cấu hình rẻ nhất mà Recall còn trong ngưỡng.</li></ol>
+<p>Một bẫy hay gặp: nếu đánh nhãn đáp án bằng <b>id của chunk</b> ("đáp án là chunk số 7") thì đổi cách cắt là nhãn sai hết, vì chunk số 7 không còn tồn tại. Phải đánh nhãn bằng <b>nội dung</b>, như POC 06 kiểm tra chunk có chứa "30 ngày" và "hóa đơn gốc" hay không. Cách đánh nhãn này dùng lại được cho mọi cấu hình.</p>
+<p>Áp vào RAG POC ShopViet: tài liệu mẫu ngắn, chia mục rõ, nên <code>chunk_by_title</code> với trần 500 ký tự cho mỗi mục một chunk. README của POC gợi ý thử kéo "Chunk tối đa" xuống 200 rồi chunk lại để thấy câu trả lời bị cắt đôi. Đó chính là thí nghiệm đo kích thước, chỉ là với một câu hỏi.</p>`,
+      take: 'Chọn đơn vị theo cấu trúc, lấy 256–512 token làm baseline, rồi đo Recall@K với nhãn theo nội dung câu trả lời chứ không theo id chunk.'
+    }
+  ],
   mount(stage) {
     const sents = [
       'Cửa hàng nhận đổi trả cho hầu hết sản phẩm điện tử.',
@@ -341,6 +524,45 @@ function problem(p) {
   ]);
 }
 
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: 'Junior hỏi: vì sao?' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
 (function build() {
   const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
   lessons.forEach((l) => {
@@ -348,7 +570,7 @@ function problem(p) {
     const stage = el('div', { class: 'stage' });
     host.append(el('section', { class: 'lesson', id: l.id }, [
       el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
-      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage,
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
       el('div', { class: 'sum', html: l.summary || '' }),
       el('div', { class: 'why' }, [
         el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), l.why.c]),
