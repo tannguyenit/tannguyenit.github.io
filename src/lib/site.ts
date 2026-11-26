@@ -21,6 +21,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Để LLM trả về dữ liệu backend tin được: các mức đảm bảo, constrained decoding, JSON Schema theo provider, thiết kế schema, validate nhiều lớp và eval.',
     parts: ['Workflow tổng hợp', 'Vì sao LLM không tự ra JSON đúng', 'Constrained decoding', 'JSON Schema và các phương ngữ', 'Chất lượng và tính đúng', 'Structured output theo provider', 'Thiết kế schema và chọn format', 'Validate, retry và streaming', 'Structured output trong production']
   },
+  'tool-use': {
+    title: 'LLM - 04 - Tool Use',
+    description: 'Để LLM gọi code của bạn: vòng lặp tool call trên API stateless, tool definition là prompt, tool choice, gọi song song, provider, thiết kế tool, lỗi, side effect và eval.',
+    parts: ['Workflow tổng hợp', 'Model sinh yêu cầu gọi tool', 'Tool choice và gọi song song', 'Client, server, MCP và reasoning', 'Tool use theo provider', 'Thiết kế tool', 'Lỗi, vòng lặp và chi phí', 'Side effect và bảo mật', 'Eval và observability']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

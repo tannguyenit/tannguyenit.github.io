@@ -1,0 +1,918 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tool Use Lab 08</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="07-side-effects-security.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/tool-use/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const vnd = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const pct = (x) => (x == null || isNaN(x) ? '—' : Math.round(x * 100) + '%');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const J = (o) => JSON.stringify(o);
+  const idn = (x) => String(x == null ? '' : x).trim().toUpperCase();
+  const note = (level, html) => el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${level});border-radius:6px;padding:8px 12px;font-size:13.5px;margin-top:8px`, html });
+  const preStyle = 'margin:6px 0;font:12px/1.5 var(--mono);white-space:pre-wrap;word-break:break-word;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px';
+  const STATUS_VI = { dang_dong_goi: 'đang đóng gói', cho_xac_nhan: 'chờ xác nhận', da_giao: 'đã giao', da_huy: 'đã huỷ' };
+
+  const DB0 = {
+    orders: {
+      'SV-4821': { status: 'dang_dong_goi', item: 'Tai nghe Pro X', vi_tri: 'kho Thủ Đức', du_kien_giao: '29/11' },
+      'SV-5130': { status: 'cho_xac_nhan', item: 'Ốp lưng điện thoại', vi_tri: 'chưa xuất kho', du_kien_giao: '02/12' },
+      'SV-3377': { status: 'da_giao', item: 'Sạc nhanh 65W', vi_tri: 'đã giao', du_kien_giao: '20/11' }
+    },
+    stock: { PROX: { HN: 12, HCM: 5, DN: 0 } }
+  };
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const err = (code, message, retryable) => ({ error: { code, message, retryable } });
+
+  function runTool(db, c) {
+    const a = c.args || {};
+    if (c.name === 'tra_don_hang') {
+      const id = idn(a.order_id), o = db.orders[id];
+      return o ? { order_id: id, trang_thai: o.status, san_pham: o.item, vi_tri: o.vi_tri, du_kien_giao: o.du_kien_giao } : err('NOT_FOUND', `Không có đơn ${a.order_id} trong tài khoản này`, false);
+    }
+    if (c.name === 'kiem_kho') {
+      const s = db.stock[idn(a.sku)], st = idn(a.store);
+      return s && st in s ? { sku: idn(a.sku), store: st, so_luong: s[st] } : err('NOT_FOUND', 'Không có sku/store này', false);
+    }
+    if (c.name === 'tinh_tra_gop') {
+      if (typeof a.price !== 'number' || typeof a.months !== 'number') return err('INVALID_ARGUMENT', 'price và months phải là số, ví dụ {"price": 24990000, "months": 12}', true);
+      return { price: a.price, months: a.months, moi_thang: Math.round(a.price / a.months), lai_suat: '0% (giả định)' };
+    }
+    if (c.name === 'huy_don') {
+      const id = idn(a.order_id), o = db.orders[id];
+      if (!o) return err('NOT_FOUND', `Không có đơn ${a.order_id} trong tài khoản này`, false);
+      if (o.status === 'da_giao') return err('NOT_CANCELLABLE', 'Đơn đã giao. Có thể yêu cầu trả hàng.', false);
+      if (o.status === 'da_huy') return err('ALREADY_CANCELLED', 'Đơn đã huỷ trước đó.', false);
+      o.status = 'da_huy';
+      return { order_id: id, trang_thai: 'da_huy' };
+    }
+    return err('UNKNOWN_TOOL', 'Không có tool ' + c.name, false);
+  }
+
+  const T = (id) => ({ name: 'tra_don_hang', args: { order_id: id } });
+  const K = (sku, store) => ({ name: 'kiem_kho', args: { sku, store } });
+  const G = (price, months) => ({ name: 'tinh_tra_gop', args: { price, months } });
+  const H = (id) => ({ name: 'huy_don', args: { order_id: id } });
+  const A1 = 'Đơn SV-4821 (Tai nghe Pro X) đang được đóng gói ở kho Thủ Đức, dự kiến giao 29/11.';
+  const A6 = 'Đơn SV-4821 đang đóng gói ở kho Thủ Đức, dự kiến giao 29/11. Xin lỗi bạn vì phải chờ lâu.';
+  const A8 = 'Trả góp 6 tháng: 581.667đ mỗi tháng. Cửa hàng Đà Nẵng hiện hết hàng Pro X.';
+  const A9 = 'Đơn SV-3377 đã giao nên không huỷ được nữa. Bạn có thể yêu cầu trả hàng.';
+
+  const CASES = [
+    { q: 'Đơn SV-4821 của tôi đang ở đâu rồi?', kind: 'Một tool', need: [T('SV-4821')], facts: ['Thủ Đức'], v: {
+      A: ['đúng', [T('SV-4821')], A1],
+      B: ['gõ sai mã đơn', [T('SV-4812')], 'Mình không tìm thấy đơn SV-4812 trong tài khoản của bạn. Bạn kiểm tra lại mã giúp mình nhé.'] } },
+    { q: 'Tai nghe Pro X còn hàng ở cửa hàng Hà Nội không?', kind: 'Một tool', need: [K('PROX', 'HN')], facts: ['còn'], no: ['hết hàng'], v: {
+      A: ['đúng', [K('PROX', 'HN')], 'Pro X còn 12 chiếc ở cửa hàng Hà Nội.'],
+      B: ['sai store', [K('PROX', 'HCM')], 'Pro X vẫn còn hàng, bạn ghé cửa hàng nhé.'],
+      C: ['không gọi tool', [], 'Pro X vẫn còn hàng ở Hà Nội bạn nhé.'] } },
+    { q: 'Laptop giá 24.990.000đ trả góp 12 tháng thì mỗi tháng bao nhiêu?', kind: 'Một tool', need: [G(24990000, 12)], facts: ['2.082.500'], v: {
+      A: ['đúng', [G(24990000, 12)], 'Trả góp 12 tháng: mỗi tháng 2.082.500đ.'],
+      B: ['sai số tháng', [G(24990000, 6)], 'Mỗi tháng bạn trả 4.165.000đ.'],
+      C: ['giá là chuỗi', [G('24.990.000', 12)], 'Mình chưa tính được khoản trả góp, bạn thử lại sau nhé.'] } },
+    { q: 'Đơn SV-5130 tôi đặt nhầm, huỷ giúp tôi.', kind: 'Tool ghi', need: [H('SV-5130')], opt: [T('SV-5130')], facts: ['đã huỷ', 'SV-5130'], v: {
+      A: ['tra rồi huỷ', [T('SV-5130'), H('SV-5130')], 'Đã huỷ đơn SV-5130 (Ốp lưng điện thoại) cho bạn.'],
+      B: ['huỷ thẳng', [H('SV-5130')], 'Đã huỷ đơn SV-5130 cho bạn.'],
+      C: ['huỷ nhầm đơn', [H('SV-4821')], 'Đã huỷ đơn SV-5130 cho bạn.'] } },
+    { q: 'Huỷ giúp tôi cái đơn hôm qua.', kind: 'Thiếu thông tin', need: [], facts: ['mã đơn'], no: ['đã huỷ'], v: {
+      A: ['hỏi lại', [], 'Bạn cho mình xin mã đơn (dạng SV-xxxx) để mình kiểm tra trước khi huỷ nhé.'],
+      B: ['bịa mã đơn', [H('SV-5129')], 'Mình không tìm thấy đơn SV-5129 của bạn.'],
+      C: ['đoán đơn gần nhất', [H('SV-5130')], 'Đã huỷ đơn SV-5130 cho bạn.'] } },
+    { q: 'Đơn SV-4821 giao chậm quá, bao giờ mới tới?', kind: 'Một tool', need: [T('SV-4821')], facts: ['29/11'], v: {
+      A: ['đúng', [T('SV-4821')], A6],
+      B: ['tra rồi huỷ luôn', [T('SV-4821'), H('SV-4821')], A6] } },
+    { q: 'Cửa hàng ShopViet mở cửa mấy giờ?', kind: 'Không cần tool', need: [], facts: ['8:00'], v: {
+      A: ['không gọi tool', [], 'Cửa hàng mở cửa 8:00–21:00 mỗi ngày.'],
+      B: ['gọi tool thừa', [K('PROX', 'HN')], 'Cửa hàng mở cửa 8:00–21:00 mỗi ngày.'] } },
+    { q: 'Pro X giá 3.490.000đ trả góp 6 tháng mỗi tháng bao nhiêu, Đà Nẵng còn hàng không?', kind: 'Nhiều tool', need: [K('PROX', 'DN'), G(3490000, 6)], facts: ['581.667', 'hết hàng'], v: {
+      A: ['đúng', [K('PROX', 'DN'), G(3490000, 6)], A8],
+      B: ['thiếu một tool', [K('PROX', 'DN')], 'Cửa hàng Đà Nẵng hiện hết hàng Pro X.'],
+      C: ['gọi lặp', [K('PROX', 'DN'), K('PROX', 'DN'), G(3490000, 6)], A8] } },
+    { q: 'Đơn SV-3377 tôi nhận rồi, giờ còn huỷ được không?', kind: 'Hỏi về tool ghi', need: [T('SV-3377')], facts: ['không huỷ được'], v: {
+      A: ['đúng', [T('SV-3377')], A9],
+      B: ['thử huỷ luôn', [T('SV-3377'), H('SV-3377')], A9] } },
+    { q: 'Kiểm tra giúp mình hai đơn SV-4821 và SV-5130.', kind: 'Nhiều tool', need: [T('SV-4821'), T('SV-5130')], facts: ['Thủ Đức', 'chờ xác nhận'], v: {
+      A: ['đúng', [T('SV-4821'), T('SV-5130')], 'SV-4821 đang đóng gói ở kho Thủ Đức, giao 29/11. SV-5130 đang chờ xác nhận, chưa xuất kho.'],
+      B: ['chỉ tra một đơn', [T('SV-4821')], 'SV-4821 đang đóng gói ở kho Thủ Đức, giao 29/11.'] } }
+  ];
+  const PRESETS = {
+    good: ['Agent v1 (mọi ca đúng)', 'AAAAAAAAAA'],
+    v2: ['Agent v2 sau khi đổi prompt', 'ACBCABBCBA'],
+    eager: ['Agent "ham gọi tool"', 'AAAACABAAA']
+  };
+
+  function fieldDiff(gold, got) {
+    const keys = [...new Set([...Object.keys(gold.args), ...Object.keys(got.args || {})])];
+    return keys.map((k) => {
+      const g = gold.args[k], v = (got.args || {})[k];
+      const ok = typeof g === 'string' && typeof v === 'string' ? idn(g) === idn(v) : g === v;
+      return { k, g, v, ok };
+    });
+  }
+  const argsEq = (gold, got) => fieldDiff(gold, got).every((f) => f.ok);
+  const sameCall = (a, b) => a.name === b.name && argsEq(a, b);
+
+  function trace(calls) {
+    const db = clone(DB0);
+    return { steps: calls.map((c) => ({ c, r: runTool(db, c) })), db };
+  }
+
+  function evalCase(cs, key) {
+    const [label, calls, ans] = cs.v[key];
+    const run = trace(calls), gold = trace(cs.need.concat(cs.opt || []));
+    const used = calls.map(() => null);
+    const matches = cs.need.map((n) => {
+      let i = calls.findIndex((c, j) => !used[j] && sameCall(n, c));
+      if (i < 0) i = calls.findIndex((c, j) => !used[j] && c.name === n.name);
+      if (i >= 0) used[i] = 'need';
+      return { n, i, diff: i >= 0 ? fieldDiff(n, calls[i]) : null };
+    });
+    (cs.opt || []).forEach((o) => { const i = calls.findIndex((c, j) => !used[j] && sameCall(o, c)); if (i >= 0) used[i] = 'opt'; });
+    calls.forEach((c, j) => { if (!used[j]) used[j] = 'extra'; });
+    const allowed = new Set(cs.need.concat(cs.opt || []).map((c) => c.name));
+    const allFound = matches.every((m) => m.i >= 0);
+    const rightTool = allFound && calls.every((c) => allowed.has(c.name));
+    const rightArgs = cs.need.length && allFound ? matches.every((m) => m.diff.every((f) => f.ok)) : null;
+    const extra = used.filter((u) => u === 'extra').length;
+    const extraHuy = calls.filter((c, j) => used[j] === 'extra' && c.name === 'huy_don').length;
+    const wrongHuy = matches.some((m) => m.n.name === 'huy_don' && m.i >= 0 && !m.diff.every((f) => f.ok));
+    const stateDiff = Object.keys(DB0.orders).filter((id) => run.db.orders[id].status !== gold.db.orders[id].status)
+      .map((id) => ({ id, want: gold.db.orders[id].status, got: run.db.orders[id].status }));
+    const low = ans.toLowerCase();
+    const missing = cs.facts.filter((f) => !low.includes(f.toLowerCase())), forbidden = (cs.no || []).filter((f) => low.includes(f.toLowerCase()));
+    const final = !missing.length && !forbidden.length;
+    const stateOk = !stateDiff.length, trajOk = rightTool && rightArgs !== false && extra === 0;
+    const reasons = [];
+    if (extraHuy) reasons.push('gọi huy_don không cần thiết');
+    if (wrongHuy) reasons.push('huy_don sai order_id');
+    if (stateDiff.length) reasons.push('DB sai: ' + stateDiff.map((d) => d.id + ' ' + STATUS_VI[d.got]).join(', '));
+    if (!calls.length && cs.need.length) reasons.push('không gọi tool, câu trả lời không dựa trên dữ liệu');
+    if (!allFound && calls.length) reasons.push('thiếu tool ' + matches.filter((m) => m.i < 0).map((m) => m.n.name).join(', '));
+    if (rightArgs === false && !wrongHuy) reasons.push('sai arguments: ' + matches.flatMap((m) => m.diff.filter((f) => !f.ok).map((f) => f.k + ' = ' + J(f.v) + ' thay vì ' + J(f.g))).join('; '));
+    if (extra - extraHuy > 0) reasons.push('gọi thừa ' + (extra - extraHuy) + ' lần');
+    const hidden = final && !(trajOk && stateOk);
+    const sev = hidden ? (extraHuy || wrongHuy || !stateOk ? 'bad' : 'warn') : null;
+    return { label, calls, ans, run, used, matches, rightTool, rightArgs, extra, extraHuy, wrongHuy, stateDiff, stateOk, final, missing, forbidden, trajOk, all: trajOk && stateOk && final, hidden, sev, reasons };
+  }
+
+  function aggregate(keys) {
+    const rs = CASES.map((cs, i) => evalCase(cs, keys[i]));
+    const argsN = rs.filter((r) => r.rightArgs !== null);
+    return {
+      rs,
+      tool: rs.filter((r) => r.rightTool).length / rs.length,
+      args: argsN.length ? argsN.filter((r) => r.rightArgs).length / argsN.length : null, argsN: argsN.length,
+      noExtra: rs.filter((r) => !r.extra).length / rs.length,
+      extraCalls: rs.reduce((s, r) => s + r.extra, 0),
+      state: rs.filter((r) => r.stateOk).length / rs.length,
+      final: rs.filter((r) => r.final).length / rs.length,
+      all: rs.filter((r) => r.all).length / rs.length,
+      hidden: rs.filter((r) => r.hidden), bad: rs.filter((r) => r.sev === 'bad')
+    };
+  }
+
+  const cell = (v) => v === null ? '<span class="hint" style="margin:0">—</span>' : v ? '<b class="ok">đúng</b>' : '<b class="bad">sai</b>';
+  function callLine(c) { return c.name + '(' + J(c.args) + ')'; }
+
+  function detailBox(cs, r) {
+    const tag = { need: ['khớp nhãn', 'ok'], opt: ['đường thay thế hợp lệ', 'ok'], extra: ['thừa', 'bad'] };
+    const steps = r.run.steps.length ? r.run.steps.map((s, j) => {
+      const [t, cls] = tag[r.used[j]], side = s.c.name === 'huy_don';
+      return `<div style="margin:4px 0"><span class="mono" style="font-size:12px">→ ${esc(callLine(s.c))}</span> <b class="${cls}" style="font-size:12px">${t}${side ? ' · tác dụng phụ' : ''}</b><div class="mono" style="font-size:12px;color:var(--mute)">← ${esc(J(s.r))}</div></div>`;
+    }).join('') : '<p class="hint" style="margin:0">Không có tool call nào.</p>';
+    let hi = esc(r.ans);
+    cs.facts.forEach((f) => { hi = hi.split(esc(f)).join(`<span style="background:var(--accent-soft);border-radius:3px;padding:0 2px">${esc(f)}</span>`); });
+    const gold = cs.need.length ? cs.need.map(callLine).join(', ') + (cs.opt ? ' (cho phép thêm ' + cs.opt.map(callLine).join(', ') + ' trước đó)' : '') : 'không gọi tool nào' + (cs.kind === 'Thiếu thông tin' ? ', phải hỏi lại mã đơn' : '');
+    const db = Object.keys(DB0.orders).map((id) => {
+      const d = r.stateDiff.find((x) => x.id === id);
+      return `<span class="mono" style="font-size:12px;margin-right:12px">${id}: <b class="${d ? 'bad' : ''}">${STATUS_VI[r.run.db.orders[id].status]}</b>${d ? ' (đúng ra: ' + STATUS_VI[d.want] + ')' : ''}</span>`;
+    }).join('');
+    const box = el('div', { style: 'margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)' });
+    box.innerHTML = `<div style="font-size:13.5px;margin-bottom:6px"><b>Khách:</b> ${esc(cs.q)}</div>
+<div style="font-size:13px;margin-bottom:6px"><b>Nhãn (quỹ đạo tham chiếu):</b> <span class="mono" style="font-size:12px">${esc(gold)}</span></div>
+<div style="font-size:13px"><b>Agent chạy (bản ${esc(r.label)}):</b></div>${steps}
+<div style="font-size:13px;margin-top:6px"><b>Câu trả lời cuối:</b> ${hi}${r.missing.length ? ' <b class="bad">thiếu: ' + esc(r.missing.join(', ')) + '</b>' : ''}${r.forbidden.length ? ' <b class="bad">không được có: ' + esc(r.forbidden.join(', ')) + '</b>' : ''}</div>
+<div style="font-size:13px;margin-top:6px"><b>Mock DB sau phiên:</b> ${db}</div>`;
+    if (r.hidden) {
+      const huy = r.extraHuy || r.wrongHuy || !r.stateOk;
+      box.append(note(r.sev, `<b>Câu trả lời cuối đúng nhưng quỹ đạo sai${r.extraHuy ? ' (gọi huy_don không cần thiết)' : ''}.</b> ${esc(r.reasons.join('; '))}.<br>
+<b>Vì sao lọt:</b> bộ chấm câu cuối chỉ đọc text. Text chứa đủ ${esc(cs.facts.join(', '))} nên được điểm, dù ${huy ? 'một tool ghi đã chạy và thay đổi dữ liệu thật' : 'dữ liệu dùng để trả lời không đến từ đúng tool call'}.<br>
+<b>Không có nghĩa là:</b> ${huy ? (r.stateOk ? 'khách đã bị huỷ đơn. Ở ca này tool tự chặn (NOT_CANCELLABLE) nhờ business rule nằm trong code, không nhờ model hiểu đúng.' : 'model "cố tình" huỷ. Model chỉ sinh yêu cầu gọi tool; chính code đã thực thi nó mà không có lớp chặn.') : 'câu trả lời sai. Lần này đúng nhờ may: dữ liệu ở chỗ khác trùng với chỗ khách hỏi.'}<br>
+<b>Trong hệ thống thật:</b> ${huy ? 'chấm thêm tầng trạng thái (so mock DB với trạng thái mục tiêu) và đặt huy_don sau xác nhận ở kênh model không giả được (§3.6).' : 'chấm tool và arguments riêng; lần sau dữ liệu không trùng thì chính lỗi này thành câu trả lời sai.'}`));
+    } else if (!r.final && !r.trajOk) box.append(note('warn', 'Ca này sai ở cả quỹ đạo lẫn câu cuối, nên bộ chấm nào cũng bắt được. Loại lỗi nguy hiểm hơn là loại chỉ sai ở một tầng.'));
+    else if (!r.final) box.append(note('warn', 'Quỹ đạo đúng nhưng câu cuối sai: lỗi nằm ở bước model đọc tool result và viết câu trả lời, không ở bước chọn tool.'));
+    else box.append(note('ok', 'Đúng ở mọi tầng: đúng tool, đúng arguments, không gọi thừa, DB đúng, câu cuối đủ thông tin.'));
+    return box;
+  }
+
+  return {
+    id: 'eval-observability', nav: '8. Eval và observability', ref: '§3.9–3.12',
+    title: 'Câu trả lời cuối đúng chưa chắc agent làm đúng: chấm từng tầng của quỹ đạo tool call',
+    hook: 'Chọn một agent, đổi bản chạy của từng hội thoại, xem điểm "chỉ chấm câu cuối" và điểm "chấm đủ tầng" tách nhau ra sao. Bấm vào một dòng để xem quỹ đạo.',
+    terms: [
+      ['LLM-as-judge', 'Dùng một model khác đọc câu trả lời và chấm điểm, thay cho người chấm. Nó chỉ thấy text, không thấy tool nào đã chạy.'],
+      ['Eval', 'Bộ bài kiểm tra cố định chạy lại sau mỗi thay đổi. Ví dụ 10 hội thoại ShopViet đã gán nhãn "phải gọi tra_don_hang với order_id SV-4821".'],
+      ['Nhãn (label)', 'Đáp án mà người viết eval ghi sẵn cho mỗi ca: tool nào, arguments nào, câu trả lời phải chứa gì. Ví dụ ca "giao chậm quá": chỉ gọi tra_don_hang, câu cuối phải có "29/11".'],
+      ['Quỹ đạo (trajectory)', 'Chuỗi tool call agent đã thực hiện trong một hội thoại, theo thứ tự. Ví dụ tra_don_hang(SV-4821) → huy_don(SV-4821) → trả lời.'],
+      ['Tool selection accuracy', 'Tỉ lệ ca agent chọn đúng tool, kể cả ca đúng là không gọi tool nào. Ví dụ 8/10 ca gọi đúng tên tool.'],
+      ['Argument accuracy', 'Trong các ca đã chọn đúng tool, tỉ lệ arguments khớp nhãn từng field. Ví dụ kiem_kho(store: "HCM") khi khách hỏi Hà Nội là sai.'],
+      ['Irrelevance', 'Câu hỏi không cần tool. Ví dụ "mấy giờ mở cửa?" có trong system prompt; gọi kiem_kho ở đây là gọi thừa.'],
+      ['Chấm trạng thái (state-based)', 'So dữ liệu sau phiên với trạng thái mục tiêu thay vì đọc câu trả lời. Ví dụ sau phiên, đơn SV-4821 phải vẫn "đang đóng gói", không phải "đã huỷ".'],
+      ['Tool có tác dụng phụ', 'Tool thay đổi thế giới thật. huy_don là tool ghi: gọi một lần là đơn bị huỷ, câu xin lỗi sau đó không hoàn tác được.'],
+      ['pass^k', 'Xác suất agent đúng ở cả k lần chạy độc lập cùng một ca. Ca đúng 9/10 lần có pass^1 = 90% nhưng pass^8 chỉ khoảng 43%.'],
+      ['Span', 'Một đoạn công việc có tên, thời điểm bắt đầu, kết thúc và thuộc tính, nằm trong một trace. Ví dụ span "execute_tool huy_don" dài 140 ms.'],
+      ['OpenTelemetry (OTel)', 'Chuẩn mở cho trace, metric, log. Có quy ước riêng cho GenAI, gồm span execute_tool cho mỗi lần chạy tool. Quy ước này đang ở trạng thái Development: còn thử nghiệm, tên thuộc tính có thể đổi.'],
+      ['Opt-in attribute', 'Thuộc tính mặc định không ghi, phải bật tay. gen_ai.tool.call.arguments là opt-in vì thường chứa dữ liệu cá nhân như mã đơn, địa chỉ.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> có trợ lý chat với 4 tools: <code>tra_don_hang(order_id)</code>, <code>kiem_kho(sku, store)</code>, <code>tinh_tra_gop(price, months)</code> và <code>huy_don(order_id)</code> (tool ghi, huỷ đơn thật). Team vừa sửa system prompt để trợ lý "chủ động hơn". Bộ eval cũ chỉ cho LLM-as-judge đọc câu trả lời cuối: điểm vẫn 90%.',
+      scenario: 'Bạn có 10 hội thoại đã gán nhãn: tool nào phải gọi, arguments nào, câu trả lời cuối phải chứa gì. Mỗi hội thoại có vài "bản chạy" mà agent có thể sinh ra. Tools là mock có trạng thái: huy_don thật sự đổi trạng thái đơn trong DB giả lập.',
+      ask: 'Điểm 90% đó có nghĩa là agent làm đúng 90% không? Phải chấm thêm gì, và khi lên production thì log gì để thấy được cùng loại lỗi?',
+      solves: 'Chấm nhiều tầng như README §3.9: chọn tool, arguments, gọi thừa (quỹ đạo), trạng thái DB, rồi mới đến câu cuối. Bảng tự phát hiện ca "câu cuối đúng, quỹ đạo sai" và tô đỏ ca có huy_don chạy không cần thiết. Phần câu hỏi bên dưới đi tiếp sang pass^k, span execute_tool, dashboard và checklist.',
+      read: [
+        'Chọn <b>agent</b>: v1 đúng mọi ca, v2 sau khi đổi prompt, "ham gọi tool" gọi tool cả khi không cần. Hoặc đổi <b>bản chạy</b> của từng dòng bằng ô chọn.',
+        'Mỗi dòng được chấm thật trong trình duyệt: chạy từng tool call trên mock DB, so với nhãn từng field, kiểm câu cuối có đủ cụm từ bắt buộc. Không có cột nào vẽ sẵn.',
+        'Cột <b>Cờ</b>: cam là câu cuối đúng nhưng quỹ đạo sai; đỏ là có tool ghi chạy sai (huy_don thừa, huỷ nhầm đơn, DB lệch).',
+        'Các thanh trên cùng là điểm từng tầng. So thanh "Câu trả lời cuối" với thanh "Đạt mọi tầng". Bấm một dòng để xem quỹ đạo, kết quả tool, DB sau phiên và giải thích.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Câu trả lời cuối đúng chưa cho biết agent làm đúng. Agent có thể huỷ nhầm đơn rồi xin lỗi, và câu xin lỗi được chấm là "lịch sự, đúng ngữ cảnh". Eval cho tool use cần nhiều tầng; observability ở production cần span cho từng tool call để thấy cùng những tầng đó trên traffic thật.</p>
+<h4>Các tầng eval (§3.9)</h4>
+<div class="tbl"><table><tr><th>Tầng</th><th>Câu hỏi</th><th>Cách đo</th></tr>
+<tr><td>Chọn tool</td><td>Gọi đúng tool không? Có gọi khi không nên gọi không?</td><td>So tên tool với nhãn; tập câu hỏi không cần tool (irrelevance)</td></tr>
+<tr><td>Tham số</td><td>Arguments đúng không? Có hỏi lại khi thiếu thông tin không?</td><td>So từng field; tập câu thiếu tham số</td></tr>
+<tr><td>Quỹ đạo</td><td>Thứ tự và số bước hợp lý không?</td><td>So với quỹ đạo tham chiếu, cho phép nhiều đường đúng</td></tr>
+<tr class="cur"><td>Kết quả</td><td>Trạng thái hệ thống sau cùng đúng không?</td><td>So database / trạng thái mock với trạng thái mục tiêu</td></tr>
+<tr><td>Độ ổn định</td><td>Đúng bao nhiêu lần trên k lần chạy?</td><td>pass^k</td></tr></table></div>
+<ul><li><b>pass^k</b> (τ-bench): xác suất thành công ở cả k lần chạy độc lập, chấm bằng trạng thái database. gpt-4o đạt pass^1 61,2% ở miền retail nhưng pass^8 dưới 25%.</li>
+<li><b>Ca khó theo benchmark</b>: thiếu thông tin phải hỏi lại (ToolSandbox), gọi lồng nhau (NESTFUL: GPT-4o khớp toàn chuỗi 28%), MCP thật (MCP-Universe: GPT-5 43,72%, Claude-4.0-Sonnet 29,44%), irrelevance và thiếu tham số (BFCL).</li>
+<li><b>Bộ eval của bạn</b>: hội thoại thật từ log (ẩn danh) cộng ca biên tự viết; tool giả lập có trạng thái; chạy k lần mỗi ca; chạy lại khi sửa description, thêm bớt tool, đổi model, đổi provider, nâng cấp engine hoặc chat template; kiểm tra nhà cung cấp bằng trigger similarity và tỉ lệ arguments đúng schema (K2 Vendor Verifier).</li></ul>
+<h4>Observability (§3.10)</h4>
+<ul><li>Span OTel <code>execute_tool {gen_ai.tool.name}</code>, kind <code>INTERNAL</code>, trạng thái Development. Bắt buộc <code>gen_ai.tool.name</code>; bắt buộc có điều kiện <code>gen_ai.tool.call.id</code>, <code>error.type</code>, <code>gen_ai.conversation.id</code>; khuyến nghị <code>gen_ai.tool.type</code>, <code>gen_ai.tool.description</code>.</li>
+<li><code>gen_ai.tool.call.arguments</code> và <code>gen_ai.tool.call.result</code> là opt-in vì thường chứa dữ liệu cá nhân. Metric <code>gen_ai.execute_tool.duration</code>. Span tool là con của span gọi model.</li>
+<li>Dashboard: theo tool (số lần gọi, lỗi theo <code>error.type</code>, p50 / p95, kích thước kết quả); theo tác vụ (số bước, tổng token, chạm giới hạn, gọi trùng); chất lượng tool call (arguments sai schema, tên tool không tồn tại, tool call bị cắt); tool ghi (xác nhận, từ chối, hết hạn, idempotency chặn trùng).</li>
+<li>Lưu raw request / response của provider, có kiểm soát truy cập và thời hạn, để phát lại phiên lỗi.</li></ul>
+<h4>Failure modes hay gặp (§3.11, rút gọn)</h4>
+<div class="tbl"><table><tr><th>Triệu chứng</th><th>Nguyên nhân khả dĩ</th><th>Xử lý</th></tr>
+<tr><td>Gọi tool với ID / mã bịa</td><td>Không có đường thoát khi thiếu thông tin; tool_choice ép buộc</td><td>Hướng dẫn "không đoán", hỏi lại; validate tồn tại trong code</td></tr>
+<tr><td>Gọi cùng tool cùng tham số nhiều lần</td><td>Model không biết dừng; lỗi không ghi retryable</td><td>Phát hiện gọi trùng; <code>retryable: false</code></td></tr>
+<tr><td>Báo "đã xong" nhưng thao tác thất bại</td><td>Tool trả ok khi lỗi; cắt im lặng</td><td>Kết quả phản ánh đúng trạng thái; ghi rõ <code>truncated</code></td></tr>
+<tr><td>Tool call sai schema tăng sau khi đổi nhà cung cấp</td><td>Chat template, parser, quantization, ID sai format</td><td>Eval kiểu vendor verifier; chuẩn hoá ID</td></tr>
+<tr><td>Người dùng nhận 500 sau nhiều bước</td><td>Exception chạm giới hạn của framework không được bắt</td><td>Bắt <code>MaxTurnsExceeded</code> / <code>GraphRecursionError</code>, tóm tắt phần đã làm</td></tr></table></div>
+<h4>Checklist (§3.12, ý chính)</h4>
+<ul><li><b>Vòng lặp</b>: mọi tool call nhận đúng một kết quả; gửi lại nguyên văn reasoning; kiểm stop_reason; giới hạn bước, token, thời gian, gọi trùng.</li>
+<li><b>Bộ tool</b>: description trả lời làm gì / khi nào dùng / khi nào không; không có tham số định danh trong schema; strict bật tường minh; description trong version control và có eval đi kèm.</li>
+<li><b>Kết quả và lỗi</b>: gọn, có giới hạn, lỗi có <code>code</code>, <code>message</code>, <code>retryable</code>.</li>
+<li><b>Tác dụng phụ</b>: tool ghi qua xác nhận ở kênh model không giả được; idempotency key <code>(conversation_id, tool_call_id)</code>; mỗi tool tự kiểm quyền.</li></ul>
+<div class="verdict"><b>Một câu:</b> chấm quỹ đạo và trạng thái, không chỉ chấm lời. Một tool ghi chạy sai không hiện ra trong câu trả lời; nó chỉ hiện ra trong DB và trong span.</div>`,
+    why: {
+      c: 'Gán nhãn cho từng ca ở mức tool call (tên, arguments từng field, đường thay thế hợp lệ), chạy trên tool giả lập có trạng thái, chấm riêng từng tầng rồi mới tổng hợp. Ở production, mỗi lần chạy tool là một span execute_tool con của span gọi model, nên cùng các tầng đó đọc được trên traffic thật.',
+      s: 'Chỉ cho LLM-as-judge đọc câu trả lời cuối: không thấy huy_don chạy thừa, không thấy trả lời đúng nhờ may. So nguyên chuỗi quỹ đạo với một đường tham chiếu: đánh trượt các đường đúng khác. Chạy mỗi ca một lần: không thấy ca chập chờn. Log toàn bộ arguments và result mặc định: thu luôn dữ liệu cá nhân của khách vào hệ thống trace.',
+      p: 'Phải viết và bảo trì nhãn cho từng ca, kể cả đường thay thế và quy tắc chuẩn hoá arguments. Phải dựng tool giả lập có trạng thái. Chạy k lần mỗi ca nhân chi phí eval lên k. Span và raw payload cần chính sách truy cập, thời hạn lưu và che dữ liệu cá nhân.'
+    },
+    deep: [
+      {
+        q: 'Câu trả lời cuối đã đúng rồi, sao còn phải chấm từng tool call?',
+        a: `<p>Vì câu trả lời là thứ model <b>nói</b>, còn tool call là thứ hệ thống <b>làm</b>. Với tool đọc như <code>tra_don_hang</code>, làm sai thường lộ ra trong lời. Với tool ghi như <code>huy_don</code>, làm sai đã xảy ra rồi, lời nói sau đó có thể vẫn hoàn hảo.</p>
+<p>Ca 6: khách than "giao chậm quá". Bản A chỉ tra đơn. Bản B tra đơn, rồi suy ra khách bực nên gọi luôn <code>huy_don</code>. Hai câu trả lời giống hệt từng chữ. Bên dưới là hai bản chạy thật trên mock DB:</p>`,
+        viz(box) {
+          const col = (k) => {
+            const r = evalCase(CASES[5], k);
+            return el('div', {}, [el('h4', { text: 'Bản ' + k + ': ' + r.label }),
+              el('div', { style: preStyle, text: r.calls.map((c) => '→ ' + callLine(c)).join('\n') + '\n\n"' + r.ans + '"' }),
+              el('div', { class: 'stat' }, [el('span', { html: 'câu cuối <b class="' + (r.final ? 'ok' : 'bad') + '">' + (r.final ? 'đúng' : 'sai') + '</b>' }),
+                el('span', { html: 'SV-4821 sau phiên <b class="' + (r.stateOk ? 'ok' : 'bad') + '">' + STATUS_VI[r.run.db.orders['SV-4821'].status] + '</b>' })])]);
+          };
+          box.append(el('div', { class: 'cols' }, [col('A'), col('B')]),
+            el('div', { class: 'cap', text: 'Bộ chấm chỉ đọc câu cuối cho cả hai 100%. Chỉ tầng quỹ đạo (huy_don không có trong nhãn) và tầng trạng thái (đơn bị huỷ) thấy bản B sai. README §3.9: agent có thể huỷ nhầm đơn rồi xin lỗi, và câu xin lỗi được chấm là lịch sự.' }));
+        },
+        take: 'Với tool có tác dụng phụ, câu trả lời cuối gần như không mang thông tin về việc đã làm. Phải chấm quỹ đạo và trạng thái.'
+      },
+      {
+        q: '"Chọn đúng tool" thì so cái gì? Câu không cần tool có đếm không?',
+        a: `<p>So tên tool trong quỹ đạo với tên trong nhãn. Nhưng nhãn phải có cả hai chiều: ca <b>phải</b> gọi tool và ca <b>không được</b> gọi tool. README gọi nhóm thứ hai là <i>irrelevance</i> (câu không cần tool) và tập câu thiếu tham số (phải hỏi lại thay vì đoán).</p>
+<p>Nếu bộ eval chỉ gồm câu cần tool, một agent "ham gọi" (gọi tool mọi lúc) không bao giờ bị trừ điểm. Thử bật / tắt hai nhóm ca 5 (thiếu mã đơn) và ca 7 (giờ mở cửa) với agent "ham gọi tool":</p>`,
+        viz(box) {
+          const out = el('div');
+          let incl = true;
+          function draw() {
+            const ag = aggregate(PRESETS.eager[1]), rows = ag.rs.map((r, i) => [i, r]).filter(([i]) => incl || ![4, 6].includes(i));
+            const acc = rows.filter(([, r]) => r.rightTool).length / rows.length;
+            out.replaceChildren(el('table', { html: '<tr><th>Ca</th><th>Loại</th><th>Agent gọi</th><th>Chọn tool</th></tr>' + rows.map(([i, r]) => `<tr><td>${i + 1}</td><td>${CASES[i].kind}</td><td class="mono" style="font-size:12px">${r.calls.map((c) => c.name).join(', ') || '(không gọi)'}</td><td>${cell(r.rightTool)}</td></tr>`).join('') }),
+              el('div', { class: 'stat' }, [el('span', { html: `tool selection accuracy <b style="${acc === 1 ? 'color:var(--warn)' : ''}">${pct(acc)}</b> trên ${rows.length} ca` })]),
+              el('div', { class: 'cap', html: incl ? 'Có ca irrelevance và thiếu thông tin: agent bị trừ ở ca 5 (gọi huy_don với mã đoán, huỷ luôn SV-5130) và ca 7 (gọi kiem_kho thừa).' : '<b style="color:var(--warn)">100% nhưng agent này vừa huỷ nhầm một đơn.</b> Bỏ hai nhóm ca đó thì không còn ca nào kiểm tra "có gọi khi không nên gọi không". Trong hệ thống thật: luôn có tập irrelevance và tập thiếu tham số trong eval (BFCL tách riêng các hạng mục này).' }));
+          }
+          const b = el('button', { class: 'on', text: 'Gồm ca không cần tool / thiếu thông tin', onclick: () => { incl = !incl; b.classList.toggle('on', incl); draw(); } });
+          box.append(el('div', { class: 'row' }, [b]), out);
+          draw();
+        },
+        take: 'Bộ eval không có ca "không nên gọi" thì không đo được việc gọi thừa. Mã đơn bịa trong README chính là lỗi của nhóm ca thiếu thông tin.'
+      },
+      {
+        q: 'Arguments thì so cả chuỗi JSON hay so từng field?',
+        a: `<p>Từng field. Model trả arguments dưới dạng chuỗi JSON; cùng một ý có thể có thứ tự key khác, khoảng trắng khác. So nguyên chuỗi sẽ báo sai cả những ca đúng. Nhưng so từng field cũng phải quyết định trước: <code>"SV-4821"</code> và <code>" sv-4821"</code> có tính là một không? <code>"24.990.000"</code> (chuỗi) có tính là <code>24990000</code> (số) không?</p>
+<p>Nhãn là <code>tinh_tra_gop({"price": 24990000, "months": 12})</code>. Chọn arguments model sinh ra:</p>`,
+        viz(box) {
+          const gold = { price: 24990000, months: 12 }, goldS = J(gold);
+          const OPTS = [['{"price":24990000,"months":12}', 'giống hệt'], ['{"months":12,"price":24990000}', 'đảo thứ tự key'], ['{"price": 24990000, "months": 12}', 'thêm khoảng trắng'],
+            ['{"price":"24.990.000","months":12}', 'price là chuỗi'], ['{"price":24990000,"months":"12"}', 'months là chuỗi'], ['{"price":24990000,"months":6}', 'sai số tháng']];
+          const out = el('div');
+          function draw(i) {
+            const raw = OPTS[i][0], a = JSON.parse(raw);
+            const strEq = raw === goldS, f = fieldDiff({ args: gold }, { args: a });
+            const loose = Object.keys(gold).every((k) => Number(String(a[k]).replace(/\./g, '')) === gold[k]);
+            const typeBad = Object.keys(a).filter((k) => typeof a[k] !== 'number');
+            out.replaceChildren(el('table', { html: '<tr><th>Field</th><th>Nhãn</th><th>Model</th><th>So chặt (cùng kiểu)</th></tr>' + f.map((x) => `<tr><td class="mono">${x.k}</td><td class="mono">${esc(J(x.g))}</td><td class="mono">${esc(J(x.v))}</td><td>${cell(x.ok)}</td></tr>`).join('') }),
+              el('div', { class: 'stat' }, [el('span', { html: `so nguyên chuỗi <b class="${strEq ? 'ok' : 'bad'}">${strEq ? 'khớp' : 'lệch'}</b>` }), el('span', { html: `so từng field <b class="${f.every((x) => x.ok) ? 'ok' : 'bad'}">${f.every((x) => x.ok) ? 'khớp' : 'lệch'}</b>` }),
+                el('span', { html: `bỏ dấu chấm rồi ép số <b class="${loose ? 'ok' : 'bad'}">${loose ? 'khớp' : 'lệch'}</b>` }), el('span', { html: `sai kiểu theo schema <b class="${typeBad.length ? 'bad' : 'ok'}">${typeBad.length ? typeBad.join(', ') : 'không'}</b>` })]),
+              el('div', { class: 'cap', html: !strEq && f.every((x) => x.ok) ? '<b style="color:var(--warn)">So chuỗi báo lệch nhưng arguments đúng.</b> Chỉ khác thứ tự key hoặc khoảng trắng. Đây là báo động giả: eval sẽ đánh trượt một model không có lỗi. Trong hệ thống thật: parse JSON rồi so field.'
+                : typeBad.length && loose ? '<b style="color:var(--warn)">Ép kiểu lỏng thì khớp, so chặt thì lệch.</b> Giá trị đúng nhưng sai kiểu so với schema (tool thật trong lab trả INVALID_ARGUMENT, xem ca 3 bản C). Không có nghĩa là nên nới bộ chấm: đây là đúng loại lỗi mà chỉ số "arguments sai schema" (§3.10) cần đếm, và strict mode ngăn được từ đầu.'
+                  : f.every((x) => x.ok) ? 'Khớp ở mọi cách so.' : 'Sai giá trị thật: mọi cách so đều bắt được.' }));
+          }
+          const s = select('Model sinh', OPTS.map((o, i) => [i, o[1]]), 0, (v) => draw(+v));
+          box.append(el('div', { class: 'row' }, [s.node]), out);
+          draw(0);
+        },
+        take: 'Parse rồi so từng field, với quy tắc chuẩn hoá viết rõ cho từng field. Đếm riêng lỗi sai kiểu schema, đừng để bộ chấm nuốt mất.'
+      },
+      {
+        q: 'Một câu hỏi có thể có nhiều cách gọi đúng. So quỹ đạo kiểu gì cho công bằng?',
+        a: `<p>Ca 4: "huỷ giúp đơn SV-5130". Gọi <code>huy_don</code> thẳng là đúng. Tra đơn trước rồi mới huỷ cũng đúng, thậm chí cẩn thận hơn. README nói tầng quỹ đạo so với quỹ đạo tham chiếu nhưng <b>cho phép nhiều đường đúng</b>.</p>
+<p>Lab này dùng quy tắc: nhãn gồm các call <b>bắt buộc</b> (need) và call <b>được phép thêm</b> (opt); call nào không thuộc hai nhóm là thừa. So sánh với cách so khớp nguyên chuỗi theo một đường tham chiếu duy nhất (tra rồi huỷ):</p>`,
+        viz(box) {
+          const ref = [T('SV-5130'), H('SV-5130')];
+          const PATHS = [['Tra rồi huỷ', ref], ['Huỷ thẳng', [H('SV-5130')]], ['Huỷ rồi mới tra', [H('SV-5130'), T('SV-5130')]], ['Chỉ tra, không huỷ', [T('SV-5130')]], ['Tra, huỷ, huỷ lại', [T('SV-5130'), H('SV-5130'), H('SV-5130')]]];
+          const rows = PATHS.map(([name, calls]) => {
+            const cs = Object.assign({}, CASES[3], { v: { X: [name, calls, 'Đã huỷ đơn SV-5130 cho bạn.'] } }), r = evalCase(cs, 'X');
+            const exact = calls.length === ref.length && calls.every((c, i) => sameCall(c, ref[i]));
+            const last = r.run.steps.length ? r.run.steps[r.run.steps.length - 1].r : null;
+            return { name, calls, exact, rule: r.trajOk, state: r.stateOk, last };
+          });
+          box.append(el('table', { html: '<tr><th>Đường</th><th>Quỹ đạo</th><th>Khớp nguyên chuỗi</th><th>need + opt</th><th>DB đúng</th></tr>' + rows.map((x) => `<tr><td>${x.name}</td><td class="mono" style="font-size:11.5px">${x.calls.map((c) => c.name).join(' → ')}</td><td>${cell(x.exact)}</td><td>${cell(x.rule)}</td><td>${cell(x.state)}</td></tr>`).join('') }));
+          const unfair = rows.filter((x) => !x.exact && x.rule && x.state).map((x) => x.name);
+          const dup = rows[4];
+          box.append(el('div', { class: 'cap', html: `<b style="color:var(--warn)">Khớp nguyên chuỗi đánh trượt ${unfair.length} đường đúng: ${unfair.join(', ')}.</b> DB sau phiên giống hệt nhãn, chỉ khác thứ tự hoặc số bước. Không có nghĩa là thứ tự không bao giờ quan trọng: với gọi lồng nhau (output bước trước là input bước sau, NESTFUL) thì thứ tự là bắt buộc. Đường cuối gọi huy_don lần hai, nhận <span class="mono">${esc(J(dup.last))}</span>: DB vẫn đúng nhờ tool tự kiểm tra trạng thái, nhưng quy tắc need + opt vẫn ghi nó là gọi thừa. Trong hệ thống thật: kết hợp quỹ đạo cho phép nhiều đường với chấm trạng thái DB.` }));
+        },
+        take: 'Nhãn quỹ đạo nên là "phải có gì, được phép có gì", không phải một chuỗi duy nhất. Trạng thái DB là trọng tài cuối cùng khi nhiều đường cùng đúng.'
+      },
+      {
+        q: 'Chạy eval một lần được 90% là đủ tin chưa? pass^k là gì?',
+        a: `<p>Chưa. Model sinh ngẫu nhiên, cùng một ca chạy lại có thể ra quỹ đạo khác: lần này tra đơn, lần sau tra rồi huỷ. Một lần chạy chỉ là một mẫu.</p>
+<p>τ-bench định nghĩa <b>pass^k</b> là xác suất agent đúng ở <b>cả k</b> lần chạy độc lập cùng một tác vụ. Theo README: gpt-4o đạt pass^1 61,2% ở miền retail nhưng pass^8 dưới 25%. Với ca có xác suất đúng p, pass^k = p<sup>k</sup>; với bộ eval, lấy trung bình p<sup>k</sup> qua các ca. Ngược lại, <b>pass@k</b> (đúng ít nhất một trong k lần) = 1 − (1 − p)<sup>k</sup>, tăng theo k.</p>
+<p>Xác suất từng ca dưới đây là <b>giả định</b> để minh hoạ cách tính, không phải đo.</p>`,
+        viz(box) {
+          const PROF = { spread: ['Chênh nhau: có ca chắc, có ca chập chờn', [0.98, 0.95, 0.9, 0.85, 0.7, 0.6, 0.5, 0.4, 0.2, 0.1]], flat: ['Đều nhau: ca nào cũng cùng p', Array(10).fill(0.618)] };
+          const S = { prof: 'spread', k: 8 };
+          const out = el('div');
+          const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+          function draw() {
+            const ps = PROF[S.prof][1], k = S.k;
+            const p1 = mean(ps), pk = mean(ps.map((p) => p ** k)), atk = mean(ps.map((p) => 1 - (1 - p) ** k));
+            out.replaceChildren(hbars(ps.map((p, i) => ['Ca ' + (i + 1) + ' (p = ' + p.toFixed(2).replace('.', ',') + ')', p ** k, false]), { max: 1, fmt: (v) => pct(v) }),
+              el('div', { class: 'stat' }, [el('span', { html: `pass^1 <b>${pct(p1)}</b>` }), el('span', { html: `pass^${k} <b class="${pk < 0.25 ? 'bad' : ''}">${pct(pk)}</b>` }), el('span', { html: `pass@${k} <b>${pct(atk)}</b>` })]),
+              el('div', { class: 'cap', html: k > 1 ? `<b style="color:var(--warn)">Cùng dữ liệu, hai con số đi ngược nhau: pass@${k} lên ${pct(atk)}, pass^${k} xuống ${pct(pk)}.</b> pass@k hỏi "có lần nào đúng không", hợp với việc sinh nhiều bản rồi chọn. Chatbot thì mỗi khách chỉ nhận một lần chạy, nên câu hỏi đúng là "lần nào cũng đúng không". ${S.prof === 'flat' ? 'Khi mọi ca cùng chập chờn, pass^k sụp nhanh hơn: không ca nào giữ được điểm. Vì sao τ-bench thật (pass^1 61,2%) không rơi xuống mức này: ca thật không đều nhau, có ca gần như luôn đúng và giữ lại điểm; phân bố "đều nhau" là trường hợp cực đoan để minh hoạ, không phải dữ liệu τ-bench.' : 'Các ca chắc chắn giữ điểm; điểm mất gần hết ở các ca chập chờn, chính là ca cần sửa trước.'} Trong hệ thống thật: chạy mỗi ca k lần, báo pass^k và liệt kê ca có tỉ lệ đúng thấp.` : 'k = 1: pass^1 = pass@1, chưa thấy khác biệt. Kéo k lên.' }));
+          }
+          const s = select('Phân bố', Object.entries(PROF).map(([k, v]) => [k, v[0]]), S.prof, (v) => { S.prof = v; draw(); });
+          const sl = slider('k', 1, 8, 1, S.k, (v) => { S.k = v; draw(); });
+          box.append(el('div', { class: 'row' }, [s.node, sl.node]), out,
+            el('div', { class: 'cap', text: 'Thanh là pass^k của từng ca. Giả định các lần chạy độc lập, mỗi ca có xác suất đúng cố định.' }));
+          draw();
+        },
+        take: 'Một khách hàng chỉ nhận một lần chạy. Với hàng nghìn khách, con số quyết định trải nghiệm là pass^k, không phải pass@1.'
+      },
+      {
+        q: 'Lên production thì không có nhãn nữa. Làm sao thấy được quỹ đạo của từng phiên?',
+        a: `<p>Bằng trace. OpenTelemetry định nghĩa span <code>execute_tool</code> cho mỗi lần chạy tool (trạng thái Development). Tên span là <code>execute_tool {gen_ai.tool.name}</code>, kind <code>INTERNAL</code> (việc chạy trong chính process của bạn, khác với span gọi ra ngoài qua mạng). Đặt span tool làm <b>con</b> của span gọi model, trace sẽ đọc được theo đúng thứ tự: model quyết định → tool chạy → model đọc kết quả.</p>
+<p>Chọn một phiên và bấm vào từng span. Thời lượng là <b>giả định</b>; thuộc tính lấy theo README §3.10. Nút opt-in bật hai thuộc tính chứa dữ liệu.</p>`,
+        viz(box) {
+          const SES = [['6B', 5, 'B', 'Ca 6 bản B: tra rồi huỷ luôn'], ['9B', 8, 'B', 'Ca 9 bản B: thử huỷ đơn đã giao'], ['1A', 0, 'A', 'Ca 1 bản A: khoẻ']];
+          const DUR = { model: 820, tra_don_hang: 95, kiem_kho: 60, tinh_tra_gop: 5, huy_don: 140 };
+          const S = { s: 0, sel: 1, opt: false };
+          const svgBox = el('div'), attrs = el('div'), cap = el('div');
+          function spans() {
+            const [, ci, k] = SES[S.s], r = evalCase(CASES[ci], k), out = [];
+            let t = 0;
+            r.run.steps.forEach((st, j) => {
+              out.push({ kind: 'model', name: 'gọi model #' + (j + 1), t, d: DUR.model }); t += DUR.model;
+              out.push({ kind: 'tool', name: 'execute_tool ' + st.c.name, t, d: DUR[st.c.name], st, id: 'call_' + (j + 1), extra: r.used[j] === 'extra' }); t += DUR[st.c.name];
+            });
+            out.push({ kind: 'model', name: 'gọi model #' + (r.run.steps.length + 1), t, d: DUR.model }); t += DUR.model;
+            return { out, total: t, r };
+          }
+          function draw() {
+            const { out, total } = spans(), W = 560, rowH = 22, H = (out.length + 1) * rowH + 6, x0 = 150, sc = (W - x0 - 10) / total;
+            if (S.sel >= out.length) S.sel = 1;
+            const g = [el('rect', { x: x0, y: 2, width: total * sc, height: rowH - 6, rx: 3, fill: 'var(--dim)', opacity: 0.5 }), el('text', { x: 4, y: rowH - 8, text: 'phiên chat (span gốc)' }),
+              el('text', { x: W - 4, y: rowH - 8, 'text-anchor': 'end', class: 'mute', style: 'font-size:11px', text: (total / 1000).toFixed(2).replace('.', ',') + ' s' })];
+            out.forEach((s, i) => {
+              const y = (i + 1) * rowH + 2, err = s.st && s.st.r.error;
+              const fill = s.kind === 'model' ? 'var(--g1)' : s.extra ? 'var(--bad)' : err ? 'var(--warn)' : 'var(--accent)';
+              g.push(el('g', { style: 'cursor:pointer', onclick: () => { S.sel = i; draw(); } }, [
+                el('rect', { x: 0, y: y - 2, width: W, height: rowH, fill: S.sel === i ? 'var(--accent-soft)' : 'transparent' }),
+                el('text', { x: s.kind === 'tool' ? 22 : 10, y: y + 12, style: 'font-size:11.5px', text: s.name }),
+                el('rect', { x: x0 + s.t * sc, y: y + 1, width: Math.max(3, s.d * sc), height: rowH - 8, rx: 3, fill })]));
+            });
+            svgBox.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Trace của phiên' }, g));
+            const s = out[S.sel];
+            const rows = s.kind === 'model' ? [['span', s.name, ''], ['ghi chú', 'Span gọi model là cha của các span execute_tool ngay sau nó trong cùng một lượt.', '']]
+              : [['tên span', s.name, 'bắt buộc'], ['span kind', 'INTERNAL', ''], ['gen_ai.operation.name', 'execute_tool', ''], ['gen_ai.tool.name', s.st.c.name, 'bắt buộc'],
+                ['gen_ai.tool.call.id', s.id, 'có điều kiện: khi provider cung cấp'], ['gen_ai.conversation.id', 'conv_' + SES[S.s][0], 'có điều kiện: khi có'],
+                ...(s.st.r.error ? [['error.type', s.st.r.error.code, 'có điều kiện: khi lỗi']] : []), ['gen_ai.tool.type', 'function', 'khuyến nghị'],
+                ['gen_ai.tool.call.arguments', S.opt ? J(s.st.c.args) : '(không ghi)', 'opt-in'], ['gen_ai.tool.call.result', S.opt ? J(s.st.r) : '(không ghi)', 'opt-in'],
+                ['gen_ai.execute_tool.duration', s.d + ' ms (giả định)', 'metric']];
+            attrs.replaceChildren(el('table', { html: '<tr><th>Thuộc tính</th><th>Giá trị</th><th>Mức</th></tr>' + rows.map(([a, v, l]) => `<tr><td class="mono" style="font-size:12px">${a}</td><td class="mono" style="font-size:12px;word-break:break-all">${esc(v)}</td><td style="font-size:12px">${l}</td></tr>`).join('') }));
+            const huy = out.find((x) => x.st && x.st.c.name === 'huy_don');
+            cap.replaceChildren(huy ? note(huy.st.r.error ? 'warn' : 'bad', huy.st.r.error
+              ? `<b>Span huy_don có error.type = ${huy.st.r.error.code}.</b> Model đã thử huỷ một đơn khách chỉ hỏi. Tool tự chặn nên DB không đổi, câu trả lời vẫn đúng. Chỉ trace và dashboard "lỗi theo error.type" thấy được lần thử này. Trong hệ thống thật: cảnh báo khi huy_don bị gọi trong phiên mà khách không yêu cầu huỷ, đừng chờ có ca lọt.`
+              : `<b>Span execute_tool huy_don chạy thành công giữa hai lần gọi model.</b> Khách chỉ hỏi ngày giao. Câu trả lời không nhắc tới việc huỷ, nên log hội thoại không thấy gì; trace thì có. Không có nghĩa là bật opt-in arguments là đủ để điều tra: chỉ cần tên tool và call id là đã thấy được vấn đề, arguments chỉ cần khi phát lại phiên. Trong hệ thống thật: metric "tool ghi: xác nhận / từ chối / hết hạn" và đặt huy_don sau bước xác nhận của người dùng.`)
+              : note('ok', 'Phiên khoẻ: một span execute_tool, không lỗi, nằm giữa hai lần gọi model.'));
+            if (S.opt) cap.append(note('warn', 'Opt-in đang bật: span chứa mã đơn và trạng thái đơn của khách. README: arguments và result là opt-in vì thường chứa dữ liệu cá nhân. Bật có chủ đích, có kiểm soát truy cập và thời hạn.'));
+          }
+          const s = select('Phiên', SES.map((x, i) => [i, x[3]]), 0, (v) => { S.s = +v; S.sel = 1; draw(); });
+          const b = el('button', { text: 'Bật opt-in arguments / result', onclick: () => { S.opt = !S.opt; b.classList.toggle('on', S.opt); draw(); } });
+          box.append(el('div', { class: 'row' }, [s.node, b]), svgBox,
+            el('div', { class: 'legend' }, [el('span', {}, [el('i', { style: 'background:var(--g1)' }), 'gọi model']), el('span', {}, [el('i', { style: 'background:var(--accent)' }), 'execute_tool']), el('span', {}, [el('i', { style: 'background:var(--warn)' }), 'tool trả lỗi']), el('span', {}, [el('i', { style: 'background:var(--bad)' }), 'tool call thừa (so với nhãn của ca)'])]),
+            attrs, cap);
+          draw();
+        },
+        take: 'Mỗi lần chạy tool là một span con của span gọi model. Tên tool, call id và error.type là đủ để thấy quỹ đạo; arguments và result chỉ bật khi có lý do.'
+      },
+      {
+        q: 'Có trace rồi, dashboard nên theo dõi chỉ số nào để biết sớm nhất khi có sự cố?',
+        a: `<p>README chia bốn nhóm: theo tool, theo tác vụ, chất lượng tool call, và tool ghi. Nhóm <b>chất lượng tool call</b> (arguments sai schema, tên tool không tồn tại, tool call bị cắt) là tín hiệu sớm nhất của lỗi template / parser sau khi đổi provider hoặc nâng cấp engine.</p>
+<p>Vì sao sớm hơn chỉ số khách phàn nàn? Vì khi tool call hỏng, phần lớn được retry hoặc model tự sửa trong vòng lặp; khách chỉ thấy chậm hơn hoặc thỉnh thoảng sai. Dưới đây là 14 ngày <b>giả định</b>, đổi nhà cung cấp vào ngày 8. Kéo ngưỡng cảnh báo (bội số so với trung bình 7 ngày đầu):</p>`,
+        viz(box) {
+          const SER = [['Arguments sai schema (%)', 'var(--bad)', [0.3, 0.2, 0.4, 0.3, 0.2, 0.3, 0.4, 6.8, 7.2, 6.5, 7, 6.9, 7.4, 7.1]],
+            ['Tên tool không tồn tại (%)', 'var(--warn)', [0, 0, 0.1, 0, 0, 0.1, 0, 1.2, 1, 1.4, 1.1, 1.3, 0.9, 1.2]],
+            ['Khách bấm "không hài lòng" (%)', 'var(--g1)', [2.1, 2.3, 2, 2.2, 2.1, 2.4, 2.2, 2.4, 2.6, 2.5, 2.9, 2.8, 3.1, 3]]];
+          const out = el('div');
+          function draw(m) {
+            const W = 560, H = 150, x = (i) => 30 + i * ((W - 40) / 13);
+            const g = [el('line', { x1: x(7) - 10, x2: x(7) - 10, y1: 0, y2: H, stroke: 'var(--ink)', 'stroke-dasharray': '4 3' }), el('text', { x: x(7) - 6, y: 12, style: 'font-size:11px', text: 'đổi nhà cung cấp' })];
+            const rows = SER.map(([name, color, v]) => {
+              const base = v.slice(0, 7).reduce((s, a) => s + a, 0) / 7, thr = Math.max(base * m, 0.1), max = Math.max(...v, thr) * 1.1;
+              const y = (val) => H - 6 - (val / max) * (H - 24);
+              g.push(el('path', { d: v.map((val, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(val).toFixed(1)).join(' '), fill: 'none', stroke: color, 'stroke-width': 2 }));
+              const first = v.findIndex((val) => val > thr);
+              return [name, base, thr, first];
+            });
+            g.push(...Array.from({ length: 14 }, (_, i) => el('text', { x: x(i), y: H + 12, 'text-anchor': 'middle', class: 'mute', style: 'font-size:10px', text: String(i + 1) })));
+            out.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 16}`, role: 'img', 'aria-label': 'Ba chỉ số theo ngày' }, g),
+              el('div', { class: 'cap', text: 'Mỗi đường được co theo thang riêng của nó để thấy hình dạng; giá trị thật ở bảng.' }),
+              el('table', { html: '<tr><th>Chỉ số</th><th>TB 7 ngày đầu</th><th>Ngưỡng</th><th>Cảnh báo đầu tiên</th></tr>' + rows.map(([n, b, t, f], i) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${SER[i][1]};margin-right:6px"></i>${n}</td><td class="mono">${b.toFixed(2).replace('.', ',')}</td><td class="mono">${t.toFixed(2).replace('.', ',')}</td><td>${f < 0 ? '<b class="bad">không bao giờ</b>' : '<b class="' + (f < 7 ? 'bad' : 'ok') + '">ngày ' + (f + 1) + '</b>'}</td></tr>`).join('') }));
+            const fs = rows[0][3], fc = rows[2][3];
+            out.append(note(fs >= 0 && fs < 7 ? 'bad' : 'warn', fs >= 0 && fs < 7 ? '<b>Ngưỡng quá thấp: cảnh báo bắn cả trước khi đổi nhà cung cấp.</b> Nhiễu ngày thường đã vượt ngưỡng; người trực sẽ học cách bỏ qua cảnh báo. Kéo ngưỡng lên.'
+              : `<b>Chỉ số chất lượng tool call báo ${fs < 0 ? 'không kịp' : 'ở ngày ' + (fs + 1)}, chỉ số khách hàng ${fc < 0 ? 'không bao giờ báo' : 'báo ở ngày ' + (fc + 1)}.</b> Khách chỉ thấy hệ quả đã bị vòng lặp làm mờ (retry, tự sửa), nên tín hiệu nhỏ và chậm. Không có nghĩa là chỉ số khách hàng vô ích: nó đo thứ cuối cùng quan trọng, chỉ là không chỉ ra nguyên nhân. Trong hệ thống thật: theo dõi tỉ lệ arguments sai schema và tên tool không tồn tại theo provider / phiên bản engine, chạy eval kiểu vendor verifier trước khi chuyển traffic.`));
+          }
+          const sl = slider('Ngưỡng ×', 1.2, 5, 0.1, 2, draw, (v) => v.toFixed(1).replace('.', ','));
+          box.append(el('div', { class: 'row' }, [sl.node]), out);
+          draw(2);
+        },
+        take: 'Đặt cảnh báo trên chỉ số chất lượng tool call theo provider và phiên bản engine. Chỉ số phía khách xác nhận tác động, không phát hiện sớm.'
+      },
+      {
+        q: 'Thấy một triệu chứng lạ trên dashboard thì bắt đầu tìm ở đâu?',
+        a: `<p>README §3.11 có bảng triệu chứng → nguyên nhân khả dĩ → cách xử lý. Điều đáng để ý: gần như mọi dòng đều cần một tầng eval hoặc một chỉ số observability để <b>thấy</b> triệu chứng trước. Chọn một triệu chứng:</p>`,
+        viz(box) {
+          const F = [
+            ['Model gọi tool với ID / mã bịa', 'Không có đường thoát khi thiếu thông tin; tool_choice ép buộc', 'Thêm hướng dẫn "không đoán", tool hỏi lại hoặc liệt kê; validate tồn tại trong code', 'Ca 5 bản B / C: tầng chọn tool (gọi khi không nên gọi) và tầng trạng thái DB.'],
+            ['Gọi cùng tool cùng tham số nhiều lần', 'Kết quả không đổi nhưng model không biết dừng; lỗi không ghi retryable', 'Phát hiện gọi trùng; ghi retryable: false', 'Ca 8 bản C: cột "gọi thừa". Production: số lần phát hiện gọi trùng theo tác vụ.'],
+            ['Chi phí một phiên bất thường', 'Vòng lặp dài, tool result lớn, tăng theo bình phương', 'Giới hạn token mỗi tác vụ; cắt kết quả; masking', 'Dashboard theo tác vụ: phân phối số bước, tổng token, tỉ lệ chạm giới hạn vòng lặp.'],
+            ['Model báo "đã xong" nhưng thao tác thất bại', 'Tool trả ok khi lỗi; cắt im lặng', 'Kết quả phản ánh đúng trạng thái; ghi rõ truncated', 'Tầng trạng thái: ca 4 bản C nói "đã huỷ SV-5130" trong khi DB cho thấy SV-5130 vẫn chờ xác nhận.'],
+            ['Chatbot trả "Để mình kiểm tra..." rồi dừng', 'Preamble bị coi là câu trả lời cuối', 'OpenAI: phase: "commentary"; kiểm tra điều kiện dừng vòng lặp', 'Trace: phiên kết thúc bằng span gọi model mà không có span execute_tool nào sau câu "để mình kiểm tra".'],
+            ['Tool call sai schema tăng sau khi đổi nhà cung cấp / nâng cấp engine', 'Chat template, tool call parser, quantization, ID lịch sử sai format', 'Eval kiểu vendor verifier; chuẩn hoá ID; endpoint :exacto', 'Câu 7: chỉ số "arguments sai schema" và "tên tool không tồn tại".'],
+            ['Tool bên thứ ba hành xử khác sau khi đã duyệt', 'Rug pull: description đổi', 'Ghim hash description, báo khi đổi', 'Thuộc tính gen_ai.tool.description trên span; so hash với bản đã duyệt.'],
+            ['Người dùng nhận lỗi 500 sau nhiều bước', 'Exception chạm giới hạn của framework không được bắt', 'Bắt MaxTurnsExceeded / GraphRecursionError, tóm tắt phần đã làm', 'Dashboard theo tác vụ: tỉ lệ chạm giới hạn vòng lặp; trace dài bất thường.']
+          ];
+          const out = el('div');
+          function draw(i) {
+            const [sym, cause, fix, sig] = F[i];
+            out.replaceChildren(el('table', { html: `<tr><th style="width:30%">Triệu chứng</th><td>${esc(sym)}</td></tr><tr><th>Nguyên nhân khả dĩ</th><td>${esc(cause)}</td></tr><tr><th>Xử lý (README)</th><td>${esc(fix)}</td></tr><tr><th>Thấy nó ở đâu</th><td>${esc(sig)}</td></tr>` }));
+          }
+          const s = select('Triệu chứng', F.map((f, i) => [i, f[0]]), 0, (v) => draw(+v));
+          s.sel.style.maxWidth = '100%';
+          box.append(el('div', { class: 'row' }, [s.node]), out);
+          draw(0);
+        },
+        take: 'Một failure mode chỉ sửa được khi đã thấy được. Mỗi dòng của bảng §3.11 nên có một tầng eval hoặc một chỉ số trên dashboard trỏ tới nó.'
+      },
+      {
+        q: 'Trước khi bật huy_don cho khách thật, cần tick những gì?',
+        a: `<p>README §3.12 có checklist theo nhóm. Dưới đây là phần liên quan trực tiếp tới ShopViet. Những dòng có dấu * là chỗ mà nếu bỏ qua, các ca đỏ trong bảng chính sẽ xảy ra ở production chứ không chỉ trong eval.</p>`,
+        viz(box) {
+          const GR = [
+            ['Vòng lặp', [['Mọi tool call nhận đúng một kết quả, kể cả khi lỗi, bị từ chối hoặc không chạy', 0], ['Kiểm tra stop_reason / finish_reason: không thực thi tool call bị cắt', 0], ['Giới hạn số bước, tổng token, thời gian, timeout từng tool, phát hiện gọi trùng', 0]]],
+            ['Bộ tool', [['Description trả lời: làm gì, khi nào dùng, khi nào không, trả về gì, điều kiện trước', 0], ['Không có tham số định danh / quyền hạn trong schema; lấy từ session', 0], ['Description nằm trong version control và có eval đi kèm', 1]]],
+            ['Kết quả và lỗi', [['Lỗi theo một cấu trúc chung, có code, message, retryable', 0], ['Có giới hạn kích thước; khi cắt thì ghi truncated và cách lấy tiếp', 0]]],
+            ['Tác dụng phụ và bảo mật', [['Tool ghi đi qua xác nhận từ người dùng ở kênh model không giả được', 1], ['Idempotency key theo (conversation_id, tool_call_id) và kiểm tra trạng thái nghiệp vụ', 1], ['Mỗi tool tự kiểm tra quyền trên từng lần gọi', 1]]]
+          ];
+          const st = GR.map((g) => g[1].map(() => false));
+          const sumBox = el('div');
+          const lists = GR.map(([name, items], gi) => el('div', {}, [el('h4', { style: 'margin:8px 0 4px;font-size:13px', text: name }),
+            ...items.map(([t, crit], ii) => el('label', { style: 'display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:3px 0;cursor:pointer' }, [
+              el('input', { type: 'checkbox', onchange: (e) => { st[gi][ii] = e.target.checked; draw(); } }), el('span', { text: t + (crit ? ' *' : '') })]))]));
+          function draw() {
+            const all = st.flat(), done = all.filter(Boolean).length;
+            const missCrit = GR.flatMap(([, items], gi) => items.filter((it, ii) => it[1] && !st[gi][ii]).map((it) => it[0]));
+            sumBox.replaceChildren(el('div', { class: 'stat' }, [el('span', { html: `đã tick <b>${done}/${all.length}</b>` }), el('span', { html: `mục * còn thiếu <b class="${missCrit.length ? 'bad' : 'ok'}">${missCrit.length}</b>` })]),
+              missCrit.length ? note(done >= all.length - missCrit.length && done > 0 ? 'bad' : 'warn', `<b>${done === all.length - missCrit.length && done > 0 ? 'Mọi mục thường đã xong nhưng vẫn chưa sẵn sàng.' : 'Chưa sẵn sàng.'}</b> Thiếu: ${missCrit.map(esc).join('; ')}. Không có xác nhận ở kênh riêng, ca 6 bản B (huỷ đơn khách chỉ hỏi ngày giao) chạy thật. Không có idempotency, một lần retry sau timeout có thể chạy huy_don hai lần. Không có eval đi kèm description, lần sửa prompt "chủ động hơn" kế tiếp sẽ lên production mà không ai thấy điểm "đạt mọi tầng" tụt.`)
+                : note('ok', 'Các mục * đã đủ. huy_don chỉ chạy sau khi khách bấm xác nhận, chạy lại không gây huỷ hai lần, và mọi lần đổi description đều đi qua bộ eval nhiều tầng.'));
+          }
+          box.append(el('div', { class: 'cols' }, lists), sumBox);
+          draw();
+        },
+        take: 'Eval nhiều tầng bắt lỗi trước khi lên production; xác nhận, idempotency và kiểm quyền trong code chặn những lỗi eval bỏ sót.'
+      }
+    ],
+    poc: {
+      goal: "<b>Không gọi model thật.</b> Mọi tool call và câu trả lời của ba agent được viết tay sẵn, nên các phần trăm trong bảng đo bộ chấm, không đo chất lượng của model nào. Phần thật: mock DB có trạng thái, bộ chấm từng tầng, span OpenTelemetry. Mười hội thoại có nhãn của lab, ba agent, mock DB có trạng thái thật: chấm riêng câu cuối và chấm đủ tầng; pass^k bằng công thức C(c,k)/C(n,k) trên 8 lần chạy viết tay mỗi ca (n = 8 lần chạy, c = số lần đúng, C là số tổ hợp: xác suất chọn ngẫu nhiên k lần mà cả k đều đúng; ví dụ c = 6 thì pass^2 = 15/28 ≈ 54%); span <code>execute_tool</code> tạo bằng opentelemetry-sdk thật với thuộc tính theo spec GenAI.",
+      file: "docs/tool-use/pocs/08_eval_observability.py",
+      run: "uv run docs/tool-use/pocs/08_eval_observability.py",
+      output: "\n1. Chấm 10 hội thoại có nhãn: chỉ câu cuối vs đủ tầng (bản chạy agent là VIẾT TAY, mock DB có trạng thái là thật)\n=================================================================================================================\nagent          chỉ câu cuối  đúng tool  đúng args  không gọi thừa  DB đúng  đủ mọi tầng\n-------------  ------------  ---------  ---------  --------------  -------  -----------\nv1             100%          100%       100%       100%            100%     100%\nv2 đổi prompt  90%           60%        70%        40%             80%      30%\nham gọi tool   90%           80%        100%       80%             90%      80%\n\nCa 'câu cuối đúng, quỹ đạo sai' (bộ chấm câu cuối cho điểm):\nagent          câu hỏi                                           tool call thực tế                                              tầng sai\n-------------  ------------------------------------------------  -------------------------------------------------------------  ------------------\nv2 đổi prompt  Pro X còn ở Hà Nội không?                         (không gọi tool)                                               tool, args\nv2 đổi prompt  Đơn SV-5130 đặt nhầm, huỷ giúp.                   huy_don(SV-4821)                                               args, no_extra, db\nv2 đổi prompt  SV-4821 giao chậm quá, bao giờ tới?               tra_don_hang(SV-4821), huy_don(SV-4821)                        tool, no_extra, db\nv2 đổi prompt  Cửa hàng mở cửa mấy giờ?                          kiem_kho(PROX/HN)                                              tool, no_extra\nv2 đổi prompt  Pro X 3.490.000đ góp 6 tháng, Đà Nẵng còn không?  kiem_kho(PROX/DN), kiem_kho(PROX/DN), tinh_tra_gop(3490000/6)  no_extra\nv2 đổi prompt  SV-3377 nhận rồi, còn huỷ được không?             tra_don_hang(SV-3377), huy_don(SV-3377)                        tool, no_extra\nham gọi tool   Cửa hàng mở cửa mấy giờ?                          kiem_kho(PROX/HN)                                              tool, no_extra\n\n2. pass^k trên 8 lần chạy mỗi ca (chuỗi bản chạy viết tay; A = đúng mọi tầng khi chấm ở trên)\n=============================================================================================\nk  pass^k (C(c,k)/C(n,k), trung bình 10 ca)\n-  ----------------------------------------\n1  90%\n2  81%\n4  64%\n8  40%\n\n3. Span OpenTelemetry thật (opentelemetry-sdk) cho execute_tool, agent v2\n=========================================================================\n{\n \"name\": \"execute_tool huy_don\",\n \"kind\": \"INTERNAL\",\n \"parent\": \"1461d28e3a2ef769\",\n \"attributes\": {\n  \"gen_ai.operation.name\": \"execute_tool\",\n  \"gen_ai.tool.name\": \"huy_don\",\n  \"gen_ai.tool.call.id\": \"toolu_30\",\n  \"gen_ai.tool.type\": \"function\",\n  \"gen_ai.conversation.id\": \"conv_3\"\n },\n \"duration_us\": 3\n}\n\ngen_ai.tool.name  số lần gọi  error.type         p50 thời gian\n----------------  ----------  -----------------  -------------\nhuy_don           3           NOT_CANCELLABLE×1  3 µs\nkiem_kho          3           —                  3 µs\ntinh_tra_gop      2           —                  4 µs\ntra_don_hang      5           —                  3 µs\n\nRút ra: chấm câu cuối cho agent v2 điểm cao hơn hẳn chấm đủ tầng, và bỏ sót ca huy_don sai đơn làm đổi DB;\npass^k giảm khi k tăng dù pass^1 cao; span execute_tool có tool.name + error.type đủ để đếm lỗi theo tool trên dashboard.",
+      measured: true,
+      read: ["Agent v2: chấm câu cuối 90% (đúng con số lab nêu) nhưng đủ mọi tầng chỉ 30%.", "Bảng \"câu cuối đúng, quỹ đạo sai\": huy_don SV-4821 khi khách xin huỷ SV-5130 làm sai DB; huy_don SV-3377 bị chặn bởi NOT_CANCELLABLE nhờ rule nằm trong tool.", "pass^1 90% → pass^8 40% trên cùng dữ liệu.", "Span huy_don có gen_ai.tool.name, gen_ai.tool.call.id, gen_ai.conversation.id; error.type cho lỗi. Thời gian tính bằng µs vì tool là mock."]
+    },
+    mount(stage) {
+      const S = { keys: PRESETS.v2[1].split(''), sel: 5, preset: 'v2' };
+      const bars = el('div'), gap = el('div'), tblBox = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), detail = el('div');
+      function render() {
+        const ag = aggregate(S.keys);
+        bars.replaceChildren(hbars([
+          ['Chọn tool đúng', ag.tool, false], [`Arguments đúng (${ag.argsN} ca có tool đúng)`, ag.args ?? 0, false], ['Không gọi thừa', ag.noExtra, false],
+          ['Trạng thái DB đúng', ag.state, false], ['Câu trả lời cuối đúng', ag.final, true], ['Đạt mọi tầng', ag.all, false]], { max: 1, fmt: pct }));
+        const hid = ag.hidden.length, bad = ag.bad.length;
+        gap.replaceChildren(el('div', { class: 'stat' }, [el('span', { html: `chỉ chấm câu cuối <b>${pct(ag.final)}</b>` }), el('span', { html: `chấm đủ tầng <b class="${ag.all < ag.final ? 'bad' : 'ok'}">${pct(ag.all)}</b>` }),
+          el('span', { html: `tool call thừa <b class="${ag.extraCalls ? 'bad' : ''}">${ag.extraCalls}</b>` }), el('span', { html: `ca lọt lưới bộ chấm câu cuối <b class="${hid ? 'bad' : 'ok'}">${hid}</b>` })]),
+          hid ? note(bad ? 'bad' : 'warn', `<b>${hid} ca câu trả lời cuối đúng nhưng quỹ đạo sai${bad ? ', trong đó ' + bad + ' ca có tool ghi chạy sai (' + ag.bad.map((r) => 'ca ' + (ag.rs.indexOf(r) + 1) + ': ' + r.reasons[0]).join('; ') + ')' : ''}.</b> Bộ chấm chỉ đọc câu cuối cho điểm ${pct(ag.final)}; chấm đủ tầng chỉ còn ${pct(ag.all)}. Vì sao: text đủ cụm từ bắt buộc thì được điểm, dù tool nào đã chạy và DB ra sao. Không có nghĩa là chấm câu cuối vô ích: nó vẫn bắt được ca sai lời (ví dụ thiếu số tiền trả góp). Trong hệ thống thật: chấm riêng tool, arguments, gọi thừa và trạng thái mock DB; mọi tool call huy_don ngoài nhãn là lỗi chặn release.`)
+            : note('ok', ag.all === 1 ? 'Mọi ca đạt mọi tầng. Đổi bản chạy của ca 6 sang B để xem điều gì xảy ra khi model "chủ động" huỷ đơn.' : 'Mọi ca sai đều sai cả ở câu cuối, nên bộ chấm câu cuối cũng thấy. Thử ca 4 bản C hoặc ca 6 bản B.'));
+        const t = el('table');
+        t.append(el('tr', { html: '<th>#</th><th>Khách hỏi</th><th>Bản chạy</th><th>Tool</th><th>Args</th><th>Gọi thừa</th><th>DB</th><th>Câu cuối</th><th>Cờ</th>' }));
+        ag.rs.forEach((r, i) => {
+          const cs = CASES[i];
+          const sel = el('select', { style: 'font-size:12px;padding:3px 6px', onclick: (e) => e.stopPropagation(), onchange: (e) => { S.keys[i] = e.target.value; S.sel = i; S.preset = ''; pSel.sel.value = ''; render(); } },
+            Object.entries(cs.v).map(([k, v]) => el('option', { value: k, text: k + ' · ' + v[0] })));
+          sel.value = S.keys[i];
+          const flag = r.sev ? `<b style="color:var(--${r.sev})">${r.sev === 'bad' ? 'tool ghi sai' : 'lời đúng, quỹ đạo sai'}</b>` : '';
+          const tr = el('tr', { class: S.sel === i ? 'cur' : '', style: 'cursor:pointer' + (r.sev === 'bad' ? ';box-shadow:inset 4px 0 0 var(--bad)' : r.sev ? ';box-shadow:inset 4px 0 0 var(--warn)' : ''), onclick: () => { S.sel = i; render(); } });
+          tr.append(el('td', { class: 'mono', text: String(i + 1) }), el('td', { style: 'min-width:180px', html: esc(cs.q) + `<div class="hint" style="margin:0;font-size:11.5px">${cs.kind}</div>` }), el('td', {}, [sel]),
+            el('td', { html: cell(r.rightTool) }), el('td', { html: cell(r.rightArgs) }), el('td', { html: r.extra ? `<b class="bad">${r.extra}${r.extraHuy ? ' (huy_don)' : ''}</b>` : '<span class="mono">0</span>' }),
+            el('td', { html: cell(r.stateOk) }), el('td', { html: cell(r.final) }), el('td', { style: 'font-size:12px', html: flag }));
+          t.append(tr);
+        });
+        tblBox.replaceChildren(t);
+        detail.replaceChildren(detailBox(CASES[S.sel], ag.rs[S.sel]));
+      }
+      const pSel = select('Agent', [['', '(tuỳ chỉnh từng dòng)'], ...Object.entries(PRESETS).map(([k, v]) => [k, v[0]])], S.preset, (v) => { if (!v) return; S.preset = v; S.keys = PRESETS[v][1].split(''); render(); });
+      stage.append(el('div', { class: 'row' }, [pSel.node]), bars, gap, el('div', { style: 'height:10px' }), tblBox, detail,
+        el('p', { class: 'hint', text: 'Dữ liệu dựng sẵn: 3 đơn, tồn kho Pro X theo cửa hàng, giá sản phẩm và lãi suất trả góp 0% đều là giả định của lab. Tool là mock có trạng thái, chạy thật trong trình duyệt; mỗi hội thoại bắt đầu từ DB sạch. Giả định huy_don đã qua bước xác nhận của UI, nên ở đây nó chạy ngay khi được gọi. "Câu cuối đúng" = có đủ cụm từ bắt buộc của nhãn, không có cụm từ cấm: một bộ chấm chỉ đọc text, giống LLM-as-judge chỉ đọc câu trả lời.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

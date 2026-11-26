@@ -1,0 +1,793 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tool Use Lab 06</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="05-tool-design.html">← Lab trước</a><a href="07-side-effects-security.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/tool-use/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const estTok = (s) => (String(s).match(/\p{L}+|\p{N}+|\n[ \t]*|[ \t]+|[^\s\p{L}\p{N}]+/gu) || []).reduce((n, t) => {
+    if (/^\n/.test(t)) return n + 1;
+    if (/^[ \t]+$/.test(t)) return n + (t.length > 1 ? 1 : 0);
+    if (/^[A-Za-z]+$/.test(t)) return n + Math.ceil(t.length / 4);
+    if (/^\p{L}+$/u.test(t)) return n + Math.ceil(t.length / 2);
+    if (/^\p{N}+$/u.test(t)) return n + Math.ceil(t.length / 3);
+    return n + Math.ceil(t.length / 2);
+  }, 0);
+  const fmtT = (n) => Math.round(n).toLocaleString('vi-VN');
+  const fmtS = (s) => (Math.round(s * 10) / 10).toLocaleString('vi-VN') + ' s';
+  const usd = (v) => '$' + v.toFixed(v >= 1 ? 2 : v >= 0.01 ? 3 : 4).replace('.', ',');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const preBox = (html, extra = '') => el('pre', { class: 'mono', style: 'margin:0;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;' + extra, html });
+  const noteBox = (kind, html) => el('div', { style: `border-left:3px solid var(--${kind});padding:4px 10px;margin:6px 0;font-size:13px`, html });
+  const sortKeys = (v) => Array.isArray(v) ? v.map(sortKeys) : v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => (o[k] = sortKeys(v[k]), o), {}) : v;
+  const canon = (v) => {
+    if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { return v; } }
+    return JSON.stringify(sortKeys(v));
+  };
+
+  const PIN = 3, POUT = 15, OVERHEAD = 286, LLM_S = 1.5, BACKOFF = [1, 2, 4];
+  const TOOLS_DEF = JSON.stringify([
+    { name: 'tra_don_hang', description: 'Tra trạng thái, hãng vận chuyển, ngày dự kiến của một đơn ShopViet. Dùng khi khách hỏi về đơn đã đặt. order_id dạng SV-XXXX.', parameters: { type: 'object', properties: { order_id: { type: 'string', pattern: '^SV-\\d{4}$' } }, required: ['order_id'] } },
+    { name: 'kiem_kho', description: 'Kiểm tra số lượng còn của một SKU tại một cửa hàng. Không dùng để tra giá.', parameters: { type: 'object', properties: { sku: { type: 'string' }, store: { type: 'string', enum: ['Q1', 'Q7', 'TD', 'HN-CG'] } }, required: ['sku', 'store'] } },
+    { name: 'tinh_tra_gop', description: 'Tính số tiền trả mỗi tháng cho một mức giá và số tháng. Chỉ tính, không tạo hợp đồng.', parameters: { type: 'object', properties: { price: { type: 'integer' }, months: { type: 'integer', enum: [3, 6, 9, 12] } }, required: ['price', 'months'] } },
+    { name: 'huy_don', description: 'Huỷ một đơn chưa giao cho hãng vận chuyển. Có tác dụng phụ. Chỉ gọi khi khách yêu cầu huỷ rõ ràng.', parameters: { type: 'object', properties: { order_id: { type: 'string' } }, required: ['order_id'] } }
+  ]);
+  const SYSTEM = 'Bạn là trợ lý chăm sóc khách hàng của ShopViet, cửa hàng điện tử online. Trả lời ngắn, lịch sự, bằng tiếng Việt. Chỉ dùng thông tin từ tool; không đoán mã đơn hay SKU.';
+  const USER = 'Đơn SV-4821 của mình tới đâu rồi? Tai nghe Pro X còn ở cửa hàng Quận 1 không? Nếu mua trả góp 12 tháng thì mỗi tháng bao nhiêu?';
+  const ANSWER = 'Đơn SV-4821 đã giao cho GHN ngày 04/11, dự kiến tới ngày 06/11. Tai nghe Pro X (TN-PROX-01) còn 3 chiếc ở cửa hàng Quận 1. Trả góp 12 tháng lãi 0%: khoảng 499.167đ mỗi tháng.';
+  const PARTIAL = 'Mình đã tra được một phần thông tin bên dưới. Phần còn lại hệ thống đang không phản hồi, mình chưa trả lời chắc được; bạn hỏi lại sau ít phút giúp mình nhé.';
+  const GIVEUP = 'Đã chạm giới hạn của tác vụ. Không gọi thêm tool. Tóm tắt cho khách những gì đã tìm được và những gì còn dang dở.';
+  const PREFIX = estTok(TOOLS_DEF) + estTok(SYSTEM) + OVERHEAD, UTOK = estTok(USER);
+
+  const STEPS = [
+    { tool: 'tra_don_hang', fix: 'validation', bad: { order_id: '4821' }, good: { order_id: 'SV-4821' }, ok: { order_id: 'SV-4821', status: 'shipped', carrier: 'GHN', shipped_at: '2026-11-04T09:00:00+07:00', eta: '2026-11-06', can_cancel: false } },
+    { tool: 'kiem_kho', fix: 'notfound', bad: { sku: 'PRO-X', store: 'Q1' }, good: { sku: 'TN-PROX-01', store: 'Q1' }, ok: { sku: 'TN-PROX-01', name: 'Tai nghe Pro X', store: 'Q1', in_stock: 3 } },
+    { tool: 'tinh_tra_gop', good: { price: 5990000, months: 12 }, ok: { price: 5990000, months: 12, rate: 0, monthly_vnd: 499167 } }
+  ];
+  const ERR = {
+    validation: { label: 'Validation: order_id sai format', tool: 'tra_don_hang', code: 'INVALID_ARGUMENT', fixable: true, transient: false, raw: 'HTTP 422 Unprocessable Entity',
+      hint: { error: { code: 'INVALID_ARGUMENT', message: "order_id phải dạng SV-XXXX, nhận được '4821'", example: 'SV-4821', retryable: true } } },
+    notfound: { label: '404: SKU không tồn tại', tool: 'kiem_kho', code: 'NOT_FOUND', fixable: true, transient: false, raw: 'HTTP 404 Not Found',
+      hint: { error: { code: 'NOT_FOUND', message: "Không có SKU 'PRO-X'. SKU gần đúng: TN-PROX-01 (Tai nghe Pro X), TN-PROX-02 (Pro X Max)", retryable: true } } },
+    timeout: { label: 'Timeout: API GHN chậm', tool: 'tra_don_hang', code: 'TIMEOUT', fixable: false, transient: true, raw: 'TimeoutError: read timed out',
+      hint: { error: { code: 'TIMEOUT', message: 'Hệ thống vận chuyển tạm thời không phản hồi.', retryable: true } } },
+    unavail: { label: '503 tạm thời: dịch vụ trả góp', tool: 'tinh_tra_gop', code: 'UNAVAILABLE', fixable: false, transient: true, raw: 'HTTP 503 Service Unavailable',
+      hint: { error: { code: 'UNAVAILABLE', message: 'Dịch vụ trả góp tạm thời không phản hồi.', retryable: true } } }
+  };
+  const POL = [['raw', 'Trả lỗi thô cho model'], ['hint', 'Trả lỗi có hướng dẫn cho model'], ['retry', 'Code retry 3 lần + backoff, rồi báo model'], ['stop', 'Code xử lý, báo kết luận (retryable: false)']];
+  const stopMsg = (E) => ({ error: { code: E.code, message: E.hint.error.message + ' Không thử lại; trả lời khách với thông tin hiện có.', retryable: false } });
+  const retryMsg = (E) => ({ error: Object.assign({}, E.hint.error, { message: 'Đã thử lại 3 lần. ' + E.hint.error.message }) });
+  const repeatMsg = (tool, n) => ({ error: { code: 'REPEATED_CALL', message: `Đã gọi ${tool} với cùng tham số ${n} lần và lần nào cũng nhận cùng kết quả. Hãy thử cách khác hoặc trả lời người dùng với thông tin hiện có.`, retryable: false } });
+
+  function sim(c) {
+    const st = STEPS.map(() => ({ fixed: false, backend: 0, done: false, failed: false }));
+    const reqs = [], seen = {};
+    let hist = 0, time = 0, idx = 0, end = null, backendCalls = 0, wastedRetries = 0, wastedTime = 0, newData = PREFIX + UTOK;
+    const tryOnce = (i) => {
+      backendCalls++;
+      const s = st[i];
+      if (i === 0) {
+        if (c.on.validation && !s.fixed) return ['validation', 0.2];
+        if (c.on.timeout && c.toolTimeout < c.latency) return ['timeout', c.toolTimeout];
+        return [null, c.on.timeout ? c.latency : 0.4];
+      }
+      if (i === 1) return c.on.notfound && !s.fixed ? ['notfound', 0.3] : [null, 0.3];
+      if (c.on.unavail && s.backend < c.outage) { s.backend++; return ['unavail', 0.2]; }
+      return [null, 0.2];
+    };
+    for (;;) {
+      while (idx < STEPS.length && (st[idx].done || st[idx].failed)) idx++;
+      const input = PREFIX + UTOK + hist;
+      if (idx >= STEPS.length) {
+        const partial = st.some((s) => s.failed), text = partial ? PARTIAL : ANSWER;
+        reqs.push({ kind: 'answer', input, out: estTok(text), t: LLM_S, label: partial ? 'Trả lời một phần (có bước bỏ dở)' : 'Trả lời khách' });
+        time += LLM_S; end = partial ? 'partial' : 'answer'; break;
+      }
+      if (reqs.length >= c.maxRounds || time >= c.totalLimit) { end = reqs.length >= c.maxRounds ? 'max' : 'time'; break; }
+      const S = STEPS[idx], ss = st[idx];
+      const args = S.fix && c.on[S.fix] && !ss.fixed ? S.bad : S.good;
+      let [e, t] = tryOnce(idx), tt = t, tries = 1;
+      const first = e, pol = e ? c.pol[e] : null;
+      if (e && pol === 'retry') {
+        for (let k = 0; k < 3 && e; k++) { tt += BACKOFF[k]; [e, t] = tryOnce(idx); tt += t; tries++; }
+        if (!ERR[first].transient) { wastedRetries += 3; wastedTime += tt - t; }
+      }
+      let res, status;
+      if (!e) { res = S.ok; status = 'ok'; ss.done = true; }
+      else {
+        const E = ERR[e], p = c.pol[e];
+        res = p === 'raw' ? E.raw : p === 'stop' ? stopMsg(E) : p === 'retry' ? retryMsg(E) : E.hint;
+        status = e;
+      }
+      let resStr = typeof res === 'string' ? res : JSON.stringify(res);
+      const callStr = JSON.stringify({ name: S.tool, arguments: args });
+      if (c.detect) {
+        const key = S.tool + '|' + canon(args) + '|' + canon(resStr);
+        seen[key] = (seen[key] || 0) + 1;
+        if (seen[key] >= 3 && e) { resStr = JSON.stringify(repeatMsg(S.tool, seen[key])); status = 'repeat'; }
+      }
+      if (e) {
+        const p = c.pol[e];
+        if (status === 'repeat' || p === 'stop') ss.failed = true;
+        else if (p !== 'raw' && ERR[e].fixable) ss.fixed = true;
+      }
+      const ct = estTok(callStr), rt = estTok(resStr);
+      reqs.push({ kind: 'call', input, out: ct, tool: S.tool, args, status, err: e, resStr, tries, t: LLM_S + tt, pol: e ? c.pol[e] : null });
+      hist += ct + rt; newData += ct + rt; time += LLM_S + tt;
+    }
+    if (end === 'max' || end === 'time') {
+      const input = PREFIX + UTOK + hist + estTok(GIVEUP);
+      reqs.push({ kind: 'giveup', input, out: estTok(PARTIAL), t: LLM_S, label: 'tool_choice: none, tóm tắt phần đã làm' });
+      time += LLM_S;
+    }
+    const tin = reqs.reduce((a, r) => a + r.input, 0), tout = reqs.reduce((a, r) => a + r.out, 0);
+    let streak = 1, best = 1, bestAt = -1;
+    const calls = reqs.filter((r) => r.kind === 'call');
+    for (let i = 1; i < calls.length; i++) {
+      const same = calls[i].tool === calls[i - 1].tool && canon(calls[i].args) === canon(calls[i - 1].args) && calls[i].err && calls[i].err === calls[i - 1].err;
+      streak = same ? streak + 1 : 1;
+      if (streak > best) { best = streak; bestAt = i; }
+    }
+    return { reqs, tin, tout, cost: (tin * PIN + tout * POUT) / 1e6, time, end, backendCalls, wastedRetries, wastedTime, newData, streak: best, streakCall: bestAt >= 0 ? calls[bestAt] : null, st };
+  }
+
+  function project(r, n) {
+    const calls = r.reqs.filter((q) => q.kind === 'call');
+    const last = calls[calls.length - 1];
+    if (!last) return null;
+    const d = last.out + estTok(last.resStr);
+    let input = last.input, tin = 0;
+    for (let k = 0; k < n; k++) { tin += input; input += d; }
+    return { tin, cost: (tin * PIN + n * last.out * POUT) / 1e6 };
+  }
+
+  return {
+    id: 'errors-loops', nav: '6. Lỗi, vòng lặp, chi phí', ref: '§3.4–3.5',
+    title: 'Một lỗi 422 trả về sai cách có thể biến 6 request thành 40: lỗi nào đưa cho model, lỗi nào code tự xử lý',
+    hook: 'Bật từng loại lỗi, chọn cách xử lý cho mỗi loại, kéo giới hạn vòng lặp và timeout. Cột vàng là tool trả lỗi (vàng nối tiếp nhau là vòng lặp đang kẹt), cột đỏ là lần gọi trùng bị chặn; đường đen là tiền cộng dồn.',
+    terms: [
+      ['Tool error', 'Lỗi khi code của bạn chạy tool, ví dụ API GHN không trả lời. Model không thấy exception; nó chỉ thấy chuỗi bạn đặt vào tool result, ví dụ {"error": {"code": "TIMEOUT", ...}}.'],
+      ['is_error', 'Field riêng của Claude trong tool_result để đánh dấu kết quả là lỗi. Provider khác không có field này, nên README khuyên dùng chung một cấu trúc {"error": {"code", "message", "retryable"}}.'],
+      ['retryable', 'Cờ trong thông báo lỗi nói cho model biết gọi lại có ích không. NOT_CANCELLABLE thì retryable: false; 503 thì retryable: true. Thiếu cờ này model hay gọi lại một thao tác bị cấm cho tới khi chạm giới hạn.'],
+      ['Lỗi tạm thời (transient)', 'Lỗi tự hết nếu thử lại sau một lúc: timeout, 429, 503. Ví dụ dịch vụ trả góp 503 trong 2 lần gọi đầu rồi chạy lại bình thường.'],
+      ['Backoff', 'Chờ tăng dần giữa các lần retry: 1 s, 2 s, 4 s. Retry trong code không tốn token, chỉ tốn thời gian.'],
+      ['Round / bước', 'Một lần gửi request tới model. Mỗi tool call cần thêm một round để model đọc kết quả. Tác vụ 3 tool tuần tự cần ít nhất 4 round.'],
+      ['Max rounds', 'Số round tối đa code cho phép trong một tác vụ. README gợi ý 8–12 cho chatbot CSKH. LangGraph mặc định cho tới 10.007 super-step (bước chạy của graph; gọi model là một bước, chạy tool là một bước): gần như không có giới hạn.'],
+      ['Phát hiện gọi trùng', 'Đếm bộ (tên tool, arguments đã chuẩn hoá, kết quả). Lần thứ 3 giống hệt thì thay kết quả bằng REPEATED_CALL, retryable: false để model đổi hướng.'],
+      ['Idempotency', 'Gọi lại cùng một yêu cầu bao nhiêu lần thì kết quả vẫn như gọi một lần. Ví dụ huy_don gặp lại cùng khoá thì trả kết quả đã lưu, không huỷ và hoàn tiền lần hai. Lab 7 đi vào chi tiết.'],
+      ['Chi phí bình phương', 'Sau bước thứ i, request kế tiếp mang theo cả i kết quả đã có. 20 bước, mỗi kết quả 2.000 token: bước 1 gửi 2.000, bước 2 gửi 4.000, …, bước 20 gửi 40.000. Cộng lại 2.000 × (1 + 2 + … + 20) = 420.000 token, gấp 10,5 lần 40.000 token dữ liệu thật.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b>: khách hỏi một câu cần 3 tool tuần tự: <code>tra_don_hang("SV-4821")</code>, <code>kiem_kho("TN-PROX-01", "Q1")</code>, <code>tinh_tra_gop(5990000, 12)</code>. Model lần đầu gửi <code>order_id: "4821"</code> (thiếu SV-), đoán SKU là <code>PRO-X</code>, API GHN chậm, dịch vụ trả góp đang 503.',
+      scenario: 'Mỗi lỗi có thể đi hai đường: code tự retry, hoặc đặt vào tool result cho model đọc. Đi sai đường thì hoặc lãng phí (retry trong code một lỗi do tham số, vô ích), hoặc kẹt (model gọi lại cùng một call mãi vì không biết vì sao lỗi). Mỗi lần kẹt là một round, và mỗi round gửi lại toàn bộ lịch sử.',
+      ask: 'Với từng loại lỗi, ai nên xử lý? Cần những giới hạn nào để một lỗi không biến thành 40 request?',
+      solves: 'Hỏi một câu cho mỗi loại lỗi: "model có làm gì khác đi nếu biết lỗi này không?". Có (tham số sai, không tìm thấy): trả lỗi kèm cách sửa. Không (503, timeout): code retry với backoff trước, hết mới báo model kèm retryable. Thêm giới hạn bằng code: số round, tổng thời gian, timeout từng tool, phát hiện gọi trùng. Chạm giới hạn thì trả lời một phần, không im lặng dừng.',
+      read: ['Bảng lỗi: bật / tắt từng loại và chọn cách xử lý. Mặc định là cách README khuyên.', 'Cột là input token của từng request (ước lượng từ chuỗi thật trong lab). Phần nhạt dưới đáy là tools + system + câu hỏi; phần đậm là lịch sử gửi lại. Màu: xanh tool thành công, vàng tool lỗi, đỏ bị phát hiện gọi trùng, xanh lá trả lời, xám là request tóm tắt khi chạm giới hạn.', 'Đường đen là tiền cộng dồn với giá <b>giả định</b> $3 input / $15 output cho 1 triệu token (README tool-use không ghi giá model).', 'Bảng dưới liệt kê từng round: call, kết quả model thấy, số lần backend bị gọi.', 'Thử: đổi Validation sang "Trả lỗi thô", tắt "Phát hiện gọi trùng", rồi kéo Max rounds lên 40.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Ai xử lý lỗi nào (§3.4)</h4>
+<div class="tbl"><table>
+<tr><th>Loại lỗi</th><th>Ai xử lý</th><th>Trả cho model</th></tr>
+<tr><td>Tham số sai (format, thiếu, không tồn tại)</td><td>Model</td><td>Lỗi cụ thể + ví dụ đúng: "order_id phải dạng SV-XXXX, nhận được '4821'"</td></tr>
+<tr><td>Không tìm thấy</td><td>Model</td><td>Nói rõ không có, kèm gợi ý (3 đơn gần nhất, SKU gần đúng)</td></tr>
+<tr><td>Không được phép theo business rule</td><td>Model</td><td>Lý do và việc nên làm: "NOT_CANCELLABLE: đơn đã giao cho GHN..."</td></tr>
+<tr><td>Không có quyền (authz)</td><td>Code, rồi model</td><td>"FORBIDDEN, không thử lại." Không giải thích chi tiết quyền</td></tr>
+<tr><td>Lỗi tạm thời (timeout, 429, 503)</td><td>Code retry với backoff trước</td><td>Nếu vẫn lỗi: "... tạm thời không phản hồi. retryable: true"</td></tr>
+<tr><td>Tên tool không tồn tại</td><td>Code</td><td>Liệt kê các tool hợp lệ</td></tr>
+<tr><td>Arguments không phải JSON hợp lệ (non-strict)</td><td>Code</td><td><code>is_error</code> kèm chuỗi gốc</td></tr>
+<tr><td>Tool call bị cắt (<code>max_tokens</code>)</td><td>Code</td><td>Không thực thi; gửi lại với <code>max_tokens</code> lớn hơn</td></tr>
+<tr><td>Bug trong code (exception)</td><td>Code</td><td>Log đầy đủ; trả model lỗi chung, không lộ stack trace</td></tr>
+</table></div>
+<p>Cấu trúc chung: <code>{"error": {"code": "INVALID_ARGUMENT", "message": "...", "example": "...", "retryable": true}}</code>. <code>execute_safely</code> không bao giờ raise; <code>load_history</code> thêm kết quả <code>INTERRUPTED</code> cho tool call mồ côi.</p>
+<h4>Giới hạn bằng code (§3.5)</h4>
+<div class="tbl"><table>
+<tr><th>Giới hạn</th><th>Mục đích</th><th>Khởi điểm cho chatbot CSKH</th></tr>
+<tr><td>Số bước tối đa</td><td>Chặn vòng lặp vô hạn</td><td>8–12</td></tr>
+<tr><td>Tổng token / chi phí</td><td>Chặn phiên đắt bất thường</td><td>Vài lần p95 thực tế</td></tr>
+<tr><td>Thời gian tổng</td><td>Người dùng không chờ mãi</td><td>60–120 giây</td></tr>
+<tr><td>Timeout từng tool</td><td>Một API chậm không treo cả vòng</td><td>Nhỏ hơn timeout của request ngoài cùng</td></tr>
+<tr><td>Số lần gọi một tool</td><td>Chặn spam một tool</td><td>Tra cứu 3–5 lần mỗi tác vụ; polling cao hơn</td></tr>
+<tr><td>Gọi trùng tool + tham số + kết quả</td><td>Phát hiện vòng lặp kẹt</td><td>3 lần thì can thiệp</td></tr>
+</table></div>
+<p>Chạm giới hạn: gửi thêm một request với <code>tool_choice: "none"</code> (giữ nguyên <code>tools</code> để không mất cache) để tóm tắt phần đã làm. Chi phí tăng gần theo bình phương số bước; ba đòn bẩy: giảm số bước, giảm kích thước mỗi kết quả, cache phần lặp lại.</p>
+<div class="verdict"><b>Điều cần nhớ:</b> vòng lặp tool không có điểm dừng tự nhiên ngoài việc model quyết định trả lời. Mọi điểm dừng khác phải do code đặt ra.</div>`,
+    why: {
+      c: 'Phân loại lỗi trước khi xử lý: lỗi model sửa được thì trả về kèm cách sửa và retryable; lỗi tạm thời thì code retry với backoff, hết mới báo model; lỗi quyền và bug thì code xử lý, chỉ báo kết luận. Đặt nhiều lớp giới hạn bằng code (số bước, thời gian, timeout từng tool, gọi trùng) và trả lời một phần khi chạm giới hạn.',
+      s: 'Ném exception ra ngoài vòng lặp: tool call không có kết quả, mọi request sau đó trả 400. Trả mọi lỗi thô cho model: model không biết sửa gì, gọi lại cùng call cho tới khi chạm giới hạn. Retry mọi lỗi trong code: lỗi do tham số retry bao nhiêu lần cũng vậy, chỉ tốn thời gian. Dựa vào giới hạn mặc định của framework: LangGraph cho tới 10.007 super-step.',
+      p: 'Phải viết và bảo trì bảng mã lỗi, thông báo có ví dụ, bộ đếm gọi trùng có chuẩn hoá arguments. Một số tác vụ kết thúc bằng câu trả lời một phần thay vì câu trả lời đầy đủ. Retry trong code làm tăng độ trễ của round đó.'
+    },
+    deep: [
+      {
+        q: 'Tool lỗi thì cứ để exception bay ra ngoài vòng lặp, việc gì phải gói lỗi thành tool result?',
+        a: `<p>Vì <b>mỗi tool call phải nhận đúng một kết quả</b>. Thiếu kết quả là lỗi <code>400</code> ở mọi provider lớn. Exception bay ra ngoài sau khi bạn đã lưu assistant message chứa tool call nhưng trước khi lưu tool result: lịch sử có một tool call mồ côi.</p>
+<p>Lần sau khách nhắn tiếp, code tải lại lịch sử đó và gửi đi. Provider từ chối. README gọi đây là lịch sử "nhiễm độc": <b>mọi request từ đó trở đi đều trả 400</b>, dù lỗi gốc chỉ xảy ra một lần. Bật / tắt hai lớp phòng ngừa và xem 5 lượt tiếp theo của khách:</p>`,
+        viz(box) {
+          let safe = false, repair = false;
+          const out = el('div');
+          function draw() {
+            const msgs = [
+              ['user', 'Đơn SV-4821 tới đâu rồi?'],
+              ['assistant', 'tool_call call_1: tra_don_hang {"order_id": "SV-4821"}']
+            ];
+            let orphan = false;
+            if (safe) msgs.push(['tool', 'call_1: {"error": {"code": "INTERNAL", "message": "Tool gặp lỗi nội bộ.", "retryable": false}}']);
+            else orphan = true;
+            if (orphan && repair) { msgs.push(['tool', 'call_1: {"error": {"code": "INTERRUPTED", "message": "Thao tác bị gián đoạn, chưa rõ đã thực hiện hay chưa."}} (thêm khi load)']); orphan = false; }
+            const turns = [1, 2, 3, 4, 5].map((k) => orphan ? `<td class="bad mono">400</td>` : `<td class="ok mono">200</td>`).join('');
+            out.replaceChildren(preBox(msgs.map(([r, t]) => `<b>${r}</b>: ${esc(t)}`).join('\n') + (orphan ? '\n<span style="color:var(--bad)">(không có tool result cho call_1)</span>' : '')),
+              el('div', { class: 'tbl' }, [el('table', { html: `<tr><th>Lượt tiếp theo của khách</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr><tr><td>HTTP status</td>${turns}</tr>` })]),
+              orphan ? noteBox('bad', 'Exception (API GHN ném ConnectionError) xảy ra một lần, nhưng cả 5 lượt sau đều hỏng: lịch sử lưu trong DB đã chứa tool call không có kết quả. Không có nghĩa là provider lỗi: provider làm đúng hợp đồng "mỗi call một kết quả". Trong hệ thống thật: execute_safely không bao giờ raise, và load_history vá call mồ côi bằng INTERRUPTED.') : noteBox('ok', safe ? 'execute_safely bắt exception, ghi log, trả lỗi chung cho model. Lịch sử luôn đủ cặp.' : 'load_history vá call mồ côi. Hội thoại chạy tiếp; model được báo "chưa rõ đã thực hiện hay chưa" nên sẽ kiểm tra lại trước khi thử lại.'));
+          }
+          box.append(el('div', { class: 'row' }, [
+            el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', onchange: (e) => { safe = e.target.checked; draw(); } }), 'execute_safely (bắt mọi exception)']),
+            el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', onchange: (e) => { repair = e.target.checked; draw(); } }), 'load_history vá call mồ côi'])]), out);
+          draw();
+        },
+        take: 'Tool lỗi vẫn phải có tool result. Lỗi là một loại kết quả, không phải lý do để bỏ qua kết quả.'
+      },
+      {
+        q: 'Vậy cứ gói mọi lỗi lại đưa cho model là xong?',
+        a: `<p>Không. Model chỉ làm được một việc với thông báo lỗi: đổi tool call ở round sau. README đưa ra một câu hỏi duy nhất cho mỗi loại lỗi: <b>model có thể làm gì khác đi nếu biết lỗi này không?</b></p>
+<ul><li><code>order_id: "4821"</code> sai format: có, model thêm SV- là xong. Trả cho model kèm ví dụ đúng.</li>
+<li>API trả góp 503: không, model không sửa được server. Code retry với backoff; retry trong code không tốn round nào, không tốn token nào.</li>
+<li>Không có quyền: model không nên thử cách khác để vượt quyền. Code chặn, chỉ báo "FORBIDDEN, không thử lại", không giải thích chi tiết quyền.</li>
+<li>Bug trong code: log đầy đủ, trả lỗi chung. Stack trace trong tool result là lộ nội bộ cho model (và cho bất kỳ ai khiến model nhắc lại nó).</li></ul>
+<p>Trong hình chính, đổi 503 sang "Trả lỗi có hướng dẫn": mỗi lần dịch vụ còn lỗi là thêm một round. So với "Code retry", số token tăng dù kết quả cuối giống nhau.</p>`,
+        take: 'Lỗi model sửa được thì đưa model; lỗi model không sửa được thì code xử lý trước, model chỉ nhận kết luận.'
+      },
+      {
+        q: 'Thông báo lỗi đã rõ rồi, sao còn cần thêm retryable: false?',
+        a: `<p>Vì rõ với người đọc chưa chắc đã rõ với model. Khách nói "huỷ giúp đơn SV-4821", <code>huy_don</code> trả <code>NOT_CANCELLABLE: đơn đã giao cho GHN</code>. Không có cờ, model có thể hiểu là trục trặc tạm thời và gọi lại, mỗi lần một round. README: thiếu <code>retryable: false</code>, model sẽ thử lại một thao tác bị cấm cho đến khi chạm giới hạn vòng lặp.</p>
+<p>Lab giả định: không có cờ thì model gọi lại cho tới giới hạn; có cờ thì round sau model giải thích cho khách. Mỗi round mang thêm call + kết quả lỗi (token ước lượng từ chuỗi thật):</p>`,
+        viz(box) {
+          let lim = 12, flag = false;
+          const out = el('div');
+          const call = JSON.stringify({ name: 'huy_don', arguments: { order_id: 'SV-4821' } });
+          function draw() {
+            const err = JSON.stringify({ error: Object.assign({ code: 'NOT_CANCELLABLE', message: 'Đơn đã giao cho GHN. Có thể yêu cầu trả hàng sau khi nhận.' }, flag ? { retryable: false } : {}) });
+            const d = estTok(call) + estTok(err), base = PREFIX + UTOK;
+            const n = flag ? 2 : lim;
+            let tin = 0;
+            for (let k = 0; k < n; k++) tin += base + d * k;
+            out.innerHTML = `<p class="mono" style="font-size:12px">${esc(err)}</p><div class="stat"><span>Round <b>${n}</b></span><span>Lần gọi huy_don <b>${flag ? 1 : lim - 1}</b></span><span>Input token <b>${fmtT(tin)}</b></span><span>Tiền (giá giả định) <b>${usd((tin * PIN) / 1e6)}</b></span></div>`;
+            out.append(flag ? noteBox('ok', 'Một lần gọi, một round giải thích. Model đọc retryable: false và chuyển sang hướng "trả hàng sau khi nhận".') : noteBox('warn', `Không có cờ: ${lim - 1} lần gọi lại cùng một thao tác bị cấm, chỉ dừng vì chạm giới hạn ${lim}. Không có nghĩa là model "ngốc": thông báo không nói gọi lại vô ích. Trong hệ thống thật: mọi lỗi đều có retryable, và bộ phát hiện gọi trùng là lớp chặn thứ hai.`));
+          }
+          box.append(el('div', { class: 'row' }, [
+            el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', onchange: (e) => { flag = e.target.checked; draw(); } }), 'Có retryable: false']),
+            slider('Giới hạn round', 4, 30, 1, lim, (v) => { lim = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'retryable là một bit, nhưng là bit quyết định vòng lặp có dừng hay không.'
+      },
+      {
+        q: 'Thấy model gọi lại cùng một tool với cùng tham số là kẹt, chặn luôn được chứ?',
+        a: `<p>Chưa chắc. <code>check_job(job_id)</code> được gọi lặp chính là để chờ trạng thái đổi. README: tín hiệu kẹt là <b>cùng tool, cùng tham số, nhận cùng kết quả</b>. Bộ đếm chạy sau khi tool trả kết quả, tạo mới cho mỗi tác vụ, ngưỡng 3 (tool polling cao hơn, ví dụ 10).</p>
+<p>Còn một bẫy: OpenAI trả <code>arguments</code> là chuỗi JSON, Claude trả object. Cùng một ý định có thể ra <code>'{"order_id":"SV-4821"}'</code>, <code>'{"order_id": "SV-4821"}'</code> (thêm dấu cách) hoặc object. So chuỗi thô thì ba cái này khác nhau. Bật / tắt chuẩn hoá:</p>`,
+        viz(box) {
+          const CALLS = [
+            ['kiem_kho', '{"sku":"PRO-X","store":"Q1"}', '{"error":{"code":"NOT_FOUND"}}'],
+            ['kiem_kho', '{"store": "Q1", "sku": "PRO-X"}', '{"error":{"code":"NOT_FOUND"}}'],
+            ['check_job', '{"job_id":"J-77"}', '{"status":"running"}'],
+            ['kiem_kho', { sku: 'PRO-X', store: 'Q1' }, '{"error": {"code": "NOT_FOUND"}}'],
+            ['check_job', '{"job_id":"J-77"}', '{"status":"running"}'],
+            ['check_job', '{"job_id":"J-77"}', '{"status":"running"}'],
+            ['check_job', '{"job_id":"J-77"}', '{"status":"done","url":"/r/77.pdf"}']
+          ];
+          const LIMIT = { check_job: 10 };
+          let norm = true;
+          const out = el('div');
+          function draw() {
+            const seen = {};
+            let fired = null;
+            const rows = CALLS.map(([tool, args, res], i) => {
+              const key = tool + '|' + (norm ? canon(args) : typeof args === 'string' ? args : String(args)) + '|' + (norm ? canon(res) : res);
+              seen[key] = (seen[key] || 0) + 1;
+              const hit = seen[key] >= (LIMIT[tool] || 3);
+              if (hit && !fired) fired = i + 1;
+              return `<tr><td>${i + 1}</td><td class="mono">${tool}</td><td class="mono">${esc(typeof args === 'string' ? args : 'object ' + JSON.stringify(args))}</td><td class="mono">${esc(res)}</td><td class="mono ${hit ? 'bad' : ''}">${seen[key]}${hit ? ' → REPEATED_CALL' : ''}</td></tr>`;
+            }).join('');
+            out.innerHTML = `<div class="tbl"><table><tr><th>#</th><th>Tool</th><th>arguments nhận được</th><th>Kết quả</th><th>Đếm</th></tr>${rows}</table></div>`;
+            out.append(norm ? noteBox(fired ? 'ok' : 'warn', fired ? `Chuẩn hoá (parse chuỗi, sắp key) nên call 1, 2, 4 là một: lần thứ 3 bị chặn ở call ${fired}. check_job lặp 3 lần "running" không bị chặn vì ngưỡng riêng là 10, và lần 4 có kết quả khác.` : 'Không call nào chạm ngưỡng.') : noteBox('bad', 'Không chuẩn hoá: ba call kiem_kho cùng ý định được đếm là ba khoá khác nhau, mỗi khoá 1 lần. Bộ đếm không bao giờ bắn. Không có nghĩa là model đổi tham số: chỉ là khoảng trắng và thứ tự key khác. Trong hệ thống thật: json.loads rồi json.dumps(sort_keys=True) cho cả arguments và kết quả.'));
+          }
+          box.append(el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', checked: '', onchange: (e) => { norm = e.target.checked; draw(); } }), 'Chuẩn hoá arguments và kết quả trước khi đếm']), out);
+          draw();
+        },
+        take: 'Đếm theo (tool, arguments chuẩn hoá, kết quả), ngưỡng riêng cho tool polling. Với tool ghi, lớp chặn là idempotency, không phải đếm sau khi đã chạy.'
+      },
+      {
+        q: 'Mỗi round chỉ thêm vài trăm token, sao tổng lại tăng theo bình phương?',
+        a: `<p>Vì API stateless (provider không nhớ gì giữa hai request): sau bước thứ <i>i</i>, request kế tiếp gửi lại toàn bộ lịch sử, gồm cả <i>i</i> kết quả đã có. Ví dụ của README: 20 bước, mỗi tool result 2.000 token. Tổng phần tool result trong input là 2.000 × (1 + 2 + … + 20) = 420.000 token, gấp 10,5 lần 40.000 token tool thực sự trả về.</p>
+<p>Công thức: tổng = r × n(n + 1) / 2, hệ số so với dữ liệu thật là (n + 1) / 2. Gấp đôi số bước thì tổng gần gấp bốn. Kéo thử:</p>`,
+        viz(box) {
+          let n = 20, r = 2000;
+          const out = el('div');
+          function draw() {
+            const tot = r * n * (n + 1) / 2, raw = r * n;
+            const rows = [];
+            const pick = [...new Set([1, Math.ceil(n / 4), Math.ceil(n / 2), Math.ceil(3 * n / 4), n])];
+            pick.forEach((i) => rows.push([`request ${i}`, r * i, i === n]));
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Tool trả về thật <b>${fmtT(raw)}</b></span><span>Tổng gửi đi <b>${fmtT(tot)}</b></span><span>Gấp <b>${((n + 1) / 2).toLocaleString('vi-VN')} lần</b></span><span>Tiền phần này (giá giả định) <b>${usd((tot * PIN) / 1e6)}</b></span>` }),
+              hbars(rows, { fmt: (v) => fmtT(v) + ' token' }),
+              n === 20 && r === 2000 ? noteBox('ok', 'Đúng con số README: 420.000 token, gấp 10,5 lần.') : el('div'));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Số bước', 1, 40, 1, n, (v) => { n = v; draw(); }).node, slider('Token mỗi tool result', 100, 5000, 100, r, (v) => { r = v; draw(); }, fmtT).node]), out);
+          draw();
+        },
+        take: 'Một vòng lặp kẹt không đắt vì mỗi lần gọi đắt; nó đắt vì lần gọi thứ 40 phải mang theo 39 lần trước.'
+      },
+      {
+        q: 'Prompt caching giảm giá phần lặp lại, vậy bình phương có còn đáng lo?',
+        a: `<p>Prompt caching: provider nhớ phần đầu giống hệt nhau (prefix) của các request liên tiếp và tính giá rẻ hơn cho phần đó. Cache giảm <b>giá</b> của phần prefix, nhưng không giảm <b>độ dài</b> context mà model phải đọc. README xếp ba đòn bẩy theo thứ tự hiệu quả thường gặp:</p>
+<ol><li><b>Giảm số bước</b>: tool ở mức tác vụ, parallel call cho tra cứu độc lập, programmatic tool calling (model viết một đoạn code gọi nhiều tool, chỉ kết quả cuối quay về context; xem lab 7) cho chuỗi gọi dài.</li>
+<li><b>Giảm kích thước mỗi kết quả</b>: format gọn, cắt có hướng dẫn, masking kết quả cũ (thay tool result cũ bằng một dòng giữ chỗ, ví dụ 2.000 token kết quả kiem_kho ở bước 3 thành <code>[đã ẩn kết quả cũ]</code>; giữ nguyên tool call). JetBrains đo trên SWE-bench Verified: masking đưa chi phí Qwen3-Coder 480B từ 1,29 xuống 0,61 USD mỗi task (giảm 52,7%).</li>
+<li><b>Cache phần lặp lại</b>: giữ tools và system ổn định, lịch sử chỉ-thêm.</li></ol>
+<p>Context dài còn có giá về chất lượng: báo cáo của Chroma trên 18 model cho thấy chất lượng giảm khi input dài ra, và giảm thêm khi có nội dung gây nhiễu. 10 kết quả lỗi giống hệt nhau của một vòng lặp kẹt chính là nhiễu.</p>`,
+        take: 'Cache là đòn bẩy thứ ba. Vòng lặp kẹt cần được chặn, không cần được cache.'
+      },
+      {
+        q: 'Timeout từng tool, timeout tổng, max rounds: đặt chồng nhiều lớp vậy có thừa không?',
+        a: `<p>Mỗi lớp chặn một kiểu hỏng khác nhau. Max rounds chặn vòng lặp nhiều bước nhanh. Timeout từng tool chặn một API treo, để nó không ăn hết thời gian của cả tác vụ. Thời gian tổng (README: 60–120 giây) là thứ khách cảm nhận. README yêu cầu timeout từng tool <b>nhỏ hơn</b> timeout của request ngoài cùng.</p>
+<p>Ước lượng trường hợp xấu nhất: mỗi round tốn thời gian model + timeout tool × (1 + số lần retry trong code) + backoff. Kéo để xem bao nhiêu round thật sự vừa trong thời gian tổng:</p>`,
+        viz(box) {
+          let tot = 90, tt = 10, rr = 3;
+          const out = el('div');
+          function draw() {
+            const per = LLM_S + tt * (1 + rr) + BACKOFF.slice(0, rr).reduce((a, b) => a + b, 0);
+            const fit = Math.floor(tot / per);
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Một round xấu nhất <b>${fmtS(per)}</b></span><span>Số round vừa thời gian tổng <b class="${fit < 4 ? 'bad' : ''}">${fit}</b></span><span>Tác vụ ShopViet cần ít nhất <b>4</b> round</span>` }),
+              per > tot ? noteBox('bad', `Một round đã dài hơn thời gian tổng ${tot} s. Một API treo đủ ăn hết cả tác vụ trước khi model kịp trả lời. Trong hệ thống thật: timeout từng tool nhỏ hơn hẳn thời gian tổng, và trừ cả thời gian retry.`) : fit < 4 ? noteBox('warn', `Chỉ ${fit} round vừa trong ${tot} s nếu tool cứ treo tới timeout. Tác vụ 3 tool tuần tự cần 4 round: khách sẽ nhận câu trả lời một phần. Giảm timeout tool hoặc số lần retry trong code.`) : noteBox('ok', `Đủ ${fit} round ngay cả khi tool treo tới timeout. Giả định ${LLM_S} s mỗi lần gọi model.`));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Thời gian tổng', 30, 180, 5, tot, (v) => { tot = v; draw(); }, (v) => v + ' s').node,
+            slider('Timeout từng tool', 1, 60, 1, tt, (v) => { tt = v; draw(); }, (v) => v + ' s').node,
+            slider('Retry trong code', 0, 3, 1, rr, (v) => { rr = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Thời gian của retry trong code cũng tính vào thời gian tổng. Retry 3 lần với timeout 10 s là 40 s chờ cho một tool.'
+      },
+      {
+        q: 'Chạm giới hạn rồi thì trả "đã có lỗi xảy ra" cho nhanh, sao phải gọi model thêm lần nữa?',
+        a: `<p>Vì phần việc đã làm vẫn có giá trị: trong hình chính, khi API GHN timeout mãi, model vẫn đã có tồn kho và số tiền trả góp. Trả lỗi chung là vứt đi cả hai. README: gửi thêm một request với <code>tool_choice: "none"</code> kèm chỉ dẫn tóm tắt những gì đã tìm được và những gì còn dang dở.</p>
+<p>Chi tiết quan trọng: <b>giữ nguyên <code>tools</code></b>, chỉ đổi <code>tool_choice</code>. Bỏ tham số <code>tools</code> làm đổi prefix: tools được đặt ở đầu mỗi request, nên bỏ chúng đi thì từ byte đầu tiên request đã khác các request trước, cache của toàn bộ phần sau mất. Claude Opus 5.5, Sonnet 5.5, Fable 5.1, 5.2 và Mythos 5.1, 5.2 không nhận <code>any</code> / <code>tool</code> nhưng vẫn nhận <code>none</code>.</p>
+<p>Ở tầng framework: bắt <code>MaxTurnsExceeded</code> / <code>GraphRecursionError</code> và tóm tắt phần đã làm. Không bắt thì khách nhận lỗi 500 sau nhiều bước (README §3.11).</p>`,
+        take: 'Điểm dừng do code đặt ra vẫn nên kết thúc bằng một câu trả lời, chỉ là câu trả lời thành thật về phần chưa làm được.'
+      },
+      {
+        q: 'Với tool ghi như huy_don, timeout rồi retry trong code có an toàn không?',
+        a: `<p>Không mặc nhiên. Timeout chỉ nói "không nhận được phản hồi kịp", không nói "chưa thực hiện". Request huỷ có thể đã tới backend và thành công, chỉ phản hồi bị chậm. Retry lúc này là huỷ lần hai, hoàn tiền lần hai.</p>
+<p>Bộ đếm gọi trùng không cứu được: nó chạy <b>sau khi</b> tool đã chạy, và với tool ghi, lần chạy thứ hai đã là tác dụng phụ. README: lớp chặn cho tool ghi là <b>idempotency</b>: gửi kèm một khoá cho mỗi tool call, backend gặp lại khoá thì trả kết quả đã lưu thay vì huỷ lần nữa. Và khi vá tool call mồ côi của tool ghi, thông điệp "chưa rõ đã thực hiện hay chưa" là sự thật, để model kiểm tra trạng thái đơn trước khi thử lại. Lab tiếp theo đi vào chi tiết.</p>`,
+        take: 'Retry an toàn cho tool đọc. Với tool ghi, retry chỉ an toàn khi có idempotency key và kiểm tra trạng thái nghiệp vụ.'
+      }
+    ],
+    poc: {
+      goal: "<b>Không gọi model thật.</b> Phần 2 dùng một model giả viết tay (kịch bản cố định), nên số request trong bảng là hệ quả của kịch bản, không phải hành vi đo được của GPT hay Claude. Phần 1 tái tạo phép tính 20 bước × ~2.000 token của README với tool result thật đếm bằng tiktoken, thêm masking kết quả cũ. Phần 2 chạy vòng lặp thật: validator regex, timeout bằng ThreadPoolExecutor, retry + backoff, bộ đếm gọi trùng. Kịch bản của model giả: lỗi thô thì gọi lại y nguyên, lỗi có <code>example</code> thì sửa, <code>retryable: false</code> thì dừng bước đó. Phần thật: validator, timeout, retry, bộ đếm và token đếm bằng tiktoken.",
+      file: "docs/tool-use/pocs/06_errors_loops_cost.py",
+      run: "uv run docs/tool-use/pocs/06_errors_loops_cost.py",
+      output: "\n1. Chi phí tăng theo bình phương số bước (token thật, o200k)\n============================================================\n                                        token    so với dữ liệu trả về\n--------------------------------------  -------  ---------------------\nmỗi tool result                         2,032\ntool result thực sự trả về (20 bước)    40,640\nphần tool result GỬI ĐI qua 20 request  426,720  gấp 10.5 lần\n…nếu mỗi 10 bước che (mask) kết quả cũ  225,020  gấp 5.5 lần\nREADME §1.1: 2.000 × (1+…+20) = 420.000 token, gấp 10,5 lần. Chi phí riêng phần này ở $3.0/1M input (giả định của lab): $1.28\n\n2. Lỗi tool + cách xử lý: vòng lặp thật, model là KỊCH BẢN\n==========================================================\nKịch bản model: lỗi thô → gọi lại y nguyên; lỗi có 'example' → sửa tham số; retryable=false → dừng bước đó.\nThật: validator regex, timeout bằng ThreadPoolExecutor (tool 0,3 s, giới hạn 0,2 s), retry + backoff 0,05/0,1/0,2 s, bộ đếm trùng.\nlỗi                  cách xử lý                   đếm trùng  request  gọi backend  token input  thời gian  chi phí  kết thúc\n-------------------  ---------------------------  ---------  -------  -----------  -----------  ---------  -------  ----------------------\n422 order_id '4821'  lỗi thô cho model            không      13       12           9,218        0.00 s     $0.0314  chạm giới hạn 12 round\n422 order_id '4821'  lỗi thô cho model            có         6        5            3,762        0.00 s     $0.0131  trả lời một phần\n422 order_id '4821'  lỗi có hướng dẫn             có         5        4            3,217        0.00 s     $0.0111  trả lời đủ\n422 order_id '4821'  code retry 3 lần + backoff   có         5        7            3,217        0.37 s     $0.0111  trả lời đủ\n503 trả góp (2 lần)  lỗi thô cho model            có         6        5            3,892        0.00 s     $0.0137  trả lời đủ\n503 trả góp (2 lần)  code retry 3 lần + backoff   có         4        5            2,420        0.17 s     $0.0084  trả lời đủ\ntimeout GHN          lỗi thô cho model            có         6        5            3,786        0.63 s     $0.0132  trả lời một phần\ntimeout GHN          code xử lý, retryable=false  có         4        3            2,431        0.21 s     $0.0085  trả lời một phần\nkhông lỗi            lỗi có hướng dẫn             có         4        3            2,420        0.00 s     $0.0084  trả lời đủ\n\nRút ra: lỗi do tham số phải trả cho model kèm cách sửa (retry trong code chỉ thêm 3 lần gọi backend vô ích);\nlỗi tạm thời (503) nên retry trong code; không có bộ đếm trùng thì một lỗi thô kéo vòng lặp tới giới hạn, token input gấp nhiều lần.",
+      measured: true,
+      read: ["426.720 token tool result gửi đi so với 40.640 token trả về: gấp 10,5 lần như README §1.1; masking mỗi 10 bước còn 5,5 lần.", "422 trả thô, không có bộ đếm: 13 request (chạm giới hạn); có bộ đếm: 6; lỗi có hướng dẫn: 5, chỉ thêm 1 request so với không lỗi.", "422 mà code tự retry: 7 lần gọi backend (3 lần vô ích, thêm ~0,38 s backoff). 503 mà code retry: không thêm request nào tới model.", "Chi phí theo giả định $3 / $15 mỗi 1M token của lab; thời gian là đồng hồ thật nhưng tool là mock. Model thật có thể sửa lỗi thô nhanh hơn hoặc chậm hơn kịch bản."]
+    },
+    mount(stage) {
+      const c = {
+        on: { validation: true, notfound: true, timeout: true, unavail: true },
+        pol: { validation: 'hint', notfound: 'hint', timeout: 'retry', unavail: 'retry' },
+        maxRounds: 12, toolTimeout: 10, latency: 6, outage: 2, totalLimit: 90, detect: true
+      };
+      const chart = el('div'), stat = el('div', { class: 'stat' }), notes = el('div'), tbl = el('div');
+      const errRows = Object.entries(ERR).map(([k, E]) => {
+        const s = select('', POL, c.pol[k], (v) => { c.pol[k] = v; draw(); });
+        return el('tr', {}, [
+          el('td', {}, [el('label', { class: 'ctl' }, [el('input', Object.assign({ type: 'checkbox', onchange: (e) => { c.on[k] = e.target.checked; draw(); } }, c.on[k] ? { checked: '' } : {})), E.label])]),
+          el('td', { class: 'mono', text: E.tool }), el('td', {}, [s.node])]);
+      });
+      function draw() {
+        const r = sim(c), R = r.reqs;
+        const W = 620, H = 150, n = R.length, bw = Math.min(40, (W - 40) / Math.max(1, n));
+        const maxIn = Math.max(...R.map((q) => q.input)), base = PREFIX + UTOK;
+        const g = [];
+        let cum = 0;
+        const pts = [];
+        R.forEach((q, i) => {
+          const x = 30 + i * bw, h = (q.input / maxIn) * H, hb = (base / maxIn) * H;
+          const col = q.kind === 'answer' ? 'var(--ok)' : q.kind === 'giveup' ? 'var(--g3)' : q.status === 'ok' ? 'var(--accent)' : q.status === 'repeat' ? 'var(--bad)' : 'var(--warn)';
+          g.push(el('rect', { x: x + 1, y: 14 + H - h, width: Math.max(1, bw - 2), height: h, fill: col }, [el('title', { text: `Request ${i + 1}: ${fmtT(q.input)} input token` })]),
+            el('rect', { x: x + 1, y: 14 + H - hb, width: Math.max(1, bw - 2), height: hb, fill: 'var(--bg)', opacity: 0.55 }));
+          if (n <= 25 || i % 5 === 4) g.push(el('text', { x: x + bw / 2, y: H + 28, 'text-anchor': 'middle', class: 'mute', text: String(i + 1) }));
+          cum += (q.input * PIN + q.out * POUT) / 1e6;
+          pts.push([x + bw / 2, cum]);
+        });
+        const cmax = Math.max(cum, 1e-9);
+        const path = pts.map(([x, v], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${(14 + H - (v / cmax) * H).toFixed(1)}`).join(' ');
+        chart.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${H + 36}`, role: 'img', 'aria-label': 'Input token và tiền cộng dồn theo từng request' }, [
+          el('text', { x: 0, y: 10, class: 'mute', text: `Input token mỗi request (cao nhất ${fmtT(maxIn)})` }),
+          el('text', { x: W, y: 10, 'text-anchor': 'end', class: 'mute', text: `Tiền cộng dồn: ${usd(cum)}` }),
+          el('line', { x1: 28, x2: W, y1: 14 + H, y2: 14 + H, stroke: 'var(--line)' }), ...g,
+          el('path', { d: path, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.5 })]));
+        const endTxt = { answer: '<span class="ok">trả lời đầy đủ</span>', partial: '<span style="color:var(--warn)">trả lời một phần</span>', max: '<span class="bad">chạm max rounds</span>', time: '<span class="bad">chạm thời gian tổng</span>' }[r.end];
+        stat.innerHTML = `<span>Request tới model <b>${R.length}</b></span><span>Kết thúc <b>${endTxt}</b></span><span>Input token <b>${fmtT(r.tin)}</b></span><span>Output token <b>${fmtT(r.tout)}</b></span><span>Tiền (giá giả định) <b>${usd(r.cost)}</b></span><span>Thời gian <b>${fmtS(r.time)}</b></span><span>Backend bị gọi <b>${r.backendCalls}</b> lần</span>`;
+        tbl.innerHTML = '<div class="tbl" style="max-height:300px;overflow:auto"><table><tr><th>#</th><th>Model gửi</th><th>Model đọc lại</th><th>Backend</th><th>Input</th><th>Thời gian</th></tr>' + R.map((q, i) => {
+          if (q.kind !== 'call') return `<tr><td>${i + 1}</td><td colspan="3" class="${q.kind === 'answer' ? 'ok' : ''}">${esc(q.label)}</td><td class="mono">${fmtT(q.input)}</td><td class="mono">${fmtS(q.t)}</td></tr>`;
+          const cls = q.status === 'ok' ? 'ok' : q.status === 'repeat' ? 'bad' : '';
+          return `<tr><td>${i + 1}</td><td class="mono">${q.tool}(${esc(JSON.stringify(q.args))})</td><td class="mono ${cls}" style="${cls ? '' : 'color:var(--warn)'};max-width:260px">${esc(q.resStr.length > 140 ? q.resStr.slice(0, 140) + '…' : q.resStr)}</td><td class="mono">${q.tries}×</td><td class="mono">${fmtT(q.input)}</td><td class="mono">${fmtS(q.t)}</td></tr>`;
+        }).join('') + '</table></div>';
+        const ns = [];
+        if ((r.end === 'max' || r.end === 'time') && r.streak >= 3) {
+          const sc = r.streakCall, p40 = project(r, 40);
+          ns.push(['bad', `Vòng lặp kẹt: ${sc.tool}(${JSON.stringify(sc.args)}) được gọi ${r.streak} lần liên tiếp, lần nào cũng nhận cùng lỗi ${ERR[sc.err].code}. Vòng lặp chỉ dừng vì ${r.end === 'max' ? 'chạm max rounds ' + c.maxRounds : 'hết thời gian tổng ' + c.totalLimit + ' s'}. Vì sao: ${c.pol[sc.err] === 'raw' ? 'lỗi thô không nói sai ở đâu hay có nên gọi lại không, nên model gửi lại y nguyên' : 'thông báo nói retryable: true nhưng lỗi thực ra không tự hết'}; ${c.detect ? '' : 'bộ phát hiện gọi trùng đang tắt; '}mỗi lần gọi lại mang theo toàn bộ lịch sử. Nếu không có giới hạn và để tới 40 lần như ví dụ đầu README: ${fmtT(p40.tin)} input token, ${usd(p40.cost)} cho một phiên. Không có nghĩa là tool hỏng nặng: một lỗi 422 trả sai cách là đủ. Trong hệ thống thật: lỗi kèm cách sửa và retryable, phát hiện gọi trùng ở lần thứ 3, max rounds 8–12.`]);
+        } else if (r.end === 'max' || r.end === 'time') {
+          ns.push(['bad', `Tác vụ dừng vì ${r.end === 'max' ? 'chạm max rounds ' + c.maxRounds : 'hết thời gian tổng ' + c.totalLimit + ' s'} trước khi xong. Code gửi thêm một request tool_choice: none để model tóm tắt phần đã làm thay vì trả lỗi chung.`]);
+        }
+        if (R.some((q) => q.status === 'repeat')) ns.push(['ok', `Bộ phát hiện gọi trùng bắn ở lần thứ 3: model nhận REPEATED_CALL, retryable: false và bỏ bước đó. Câu trả lời cuối là câu trả lời một phần thay vì vòng lặp kéo tới max rounds.`]);
+        if (r.wastedRetries > 0) ns.push(['warn', `Code retry ${r.wastedRetries} lần một lỗi do tham số (${['validation', 'notfound'].filter((k) => c.on[k] && c.pol[k] === 'retry').map((k) => ERR[k].code).join(', ')}): backend bị gọi thêm, khách chờ thêm ${fmtS(r.wastedTime)} backoff, kết quả vẫn y hệt. Retry chỉ giúp lỗi tự hết theo thời gian; tham số sai thì phải để model sửa.`]);
+        const stopped = ['validation', 'notfound'].filter((k) => c.on[k] && c.pol[k] === 'stop');
+        if (stopped.length) ns.push(['warn', `${stopped.map((k) => ERR[k].code).join(', ')} được báo là retryable: false, nên model bỏ luôn bước đó dù chỉ cần thêm "SV-" hoặc chọn SKU gợi ý. Khách nhận câu trả lời thiếu cho một lỗi sửa được trong một round.`]);
+        const u = R.filter((q) => q.err === 'unavail' && q.pol !== 'retry' && q.status !== 'repeat').length;
+        if (c.on.unavail && c.pol.unavail !== 'retry' && u > 0) {
+          const extra = R.filter((q) => q.err === 'unavail').reduce((a, q) => a + q.input, 0);
+          ns.push(['warn', `503 được đưa cho model ${u} lần: mỗi lần là một round tới model, tổng ${fmtT(extra)} input token, chỉ để chờ dịch vụ hồi. Retry trong code làm cùng việc đó với 0 token.`]);
+        }
+        if (c.on.timeout && c.toolTimeout >= c.totalLimit) ns.push(['warn', `Timeout từng tool (${c.toolTimeout} s) không nhỏ hơn thời gian tổng (${c.totalLimit} s): một API treo đủ ăn hết cả tác vụ.`]);
+        if (!ns.length || r.end === 'answer') ns.push(['ok', `Xong trong ${R.length} request. Tổng input ${fmtT(r.tin)} token, trong khi dữ liệu mới thật sự (tools + system + câu hỏi + các call và kết quả, mỗi thứ một lần) chỉ ${fmtT(r.newData)} token: gấp ${(r.tin / r.newData).toFixed(1).replace('.', ',')} lần vì mỗi request gửi lại lịch sử.`]);
+        notes.replaceChildren(...ns.map((x) => noteBox(x[0], esc(x[1]))));
+      }
+      stage.append(el('h4', { text: 'Vòng lặp ShopViet: 3 tool tuần tự, 4 loại lỗi', style: 'margin:0 0 8px' }),
+        preBox(`<b>user</b>: ${esc(USER)}`),
+        el('div', { class: 'tbl' }, [el('table', {}, [el('tr', { html: '<th>Lỗi (bật để xảy ra)</th><th>Tool</th><th>Cách xử lý</th>' }), ...errRows])]),
+        el('div', { class: 'row' }, [
+          slider('Max rounds', 2, 50, 1, c.maxRounds, (v) => { c.maxRounds = v; draw(); }).node,
+          slider('Thời gian tổng', 20, 300, 5, c.totalLimit, (v) => { c.totalLimit = v; draw(); }, (v) => v + ' s').node,
+          el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', checked: '', onchange: (e) => { c.detect = e.target.checked; draw(); } }), 'Phát hiện gọi trùng (3 lần)'])]),
+        el('div', { class: 'row' }, [
+          slider('Timeout từng tool', 1, 30, 1, c.toolTimeout, (v) => { c.toolTimeout = v; draw(); }, (v) => v + ' s').node,
+          slider('API GHN phản hồi sau', 1, 30, 1, c.latency, (v) => { c.latency = v; draw(); }, (v) => v + ' s').node,
+          slider('503 kéo dài', 1, 8, 1, c.outage, (v) => { c.outage = v; draw(); }, (v) => v + ' lần gọi').node]),
+        chart, stat, notes, tbl,
+        el('div', { class: 'cap', style: 'font-size:12.5px;color:var(--mute)', text: `Token ước lượng từ chuỗi thật trong lab (tools ${fmtT(estTok(TOOLS_DEF))} + system ${fmtT(estTok(SYSTEM))} + 286 token tool-use system prompt của Claude Opus 5.5 / Sonnet 5.5 theo README §1.2 = ${fmtT(PREFIX)} token prefix). Giả định: giá $3 / $15 mỗi 1 triệu token input / output; model mất ${LLM_S} s mỗi request; gọi tuần tự, một tool mỗi round; với lỗi thô model gửi lại y nguyên call; với lỗi có hướng dẫn model sửa tham số ngay round sau; retry trong code 3 lần với backoff 1, 2, 4 s. Không tính cache.` }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

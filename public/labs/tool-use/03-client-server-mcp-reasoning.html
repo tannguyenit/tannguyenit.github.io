@@ -1,0 +1,784 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tool Use Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-tool-choice-parallel.html">← Lab trước</a><a href="04-providers.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/tool-use/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const vi = (n) => Math.round(n).toLocaleString('vi-VN');
+  const ms = (n) => vi(n) + ' ms';
+  const usd = (n) => n.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
+  const note = (kind, html) => el('div', { style: `border-left:3px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 10%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;font-size:13.5px;margin-top:10px`, html });
+  const box = (html, extra) => el('div', { class: 'mono', style: `font-size:12.5px;white-space:pre-wrap;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;margin:4px 0;${extra || ''}`, html });
+
+  const PL = { client: 'Client', server: 'Server tool', mcp: 'MCP qua provider' };
+  const TOOLS = {
+    web_search: { can: { client: 800, server: 1500, mcp: 900 }, untrusted: true, why: { client: 'API tìm kiếm ShopViet tự thuê', server: 'web search built-in của provider', mcp: 'MCP search của bên thứ ba' } },
+    kiem_kho: { can: { client: 450, mcp: 450 }, why: { server: 'Provider không có built-in tool nào đọc được kho của ShopViet' } },
+    tinh_tra_gop: { can: { client: 40, server: 2500, mcp: 40 }, why: { server: 'model viết code tính trong sandbox code execution' } },
+    tra_don_hang: { can: { client: 300, mcp: 300 }, priv: true, why: { server: 'Provider không có built-in tool nào đọc được database đơn hàng' } },
+    huy_don: { can: { client: 700, mcp: 700 }, write: true, why: { server: 'Provider không có built-in tool nào huỷ được đơn của ShopViet' } }
+  };
+  const SCN = {
+    S1: { label: 'So giá, kiểm kho, trả góp', text: 'iPhone 17 bên shop khác bán bao nhiêu? Cầu Giấy còn hàng không, trả góp 12 tháng mỗi tháng bao nhiêu?', levels: [['web_search', 'kiem_kho', 'tinh_tra_gop']] },
+    S2: { label: 'Huỷ đơn có mã', text: 'Huỷ giúp mình đơn SV-4821.', levels: [['tra_don_hang'], ['huy_don']] },
+    S3: { label: 'Hỏi tình trạng đơn', text: 'Đơn SV-4821 của mình đâu rồi?', levels: [['tra_don_hang']] }
+  };
+  const PROV = {
+    openai: { label: 'OpenAI Responses', mcp: 'mcp', approval: 'require_approval, mặc định bật', search: 0.01 },
+    claude: { label: 'Claude', mcp: 'mcp_toolset (beta)', approval: 'README không ghi cơ chế approval', search: 0.01 },
+    gemini: { label: 'Gemini (Interactions)', mcp: 'mcp_server, chỉ Streamable HTTP', approval: 'README không ghi cơ chế approval', search: null },
+    grok: { label: 'Grok', mcp: 'mcp', approval: 'không hỗ trợ require_approval', search: null }
+  };
+  const HOP = 120, APPROVE_RT = 200, MCP_NAME = 'shopviet-mcp';
+
+  function simulate(scn, place, prov, approvalNever, llm) {
+    const ev = [];
+    let t = 0, reqs = 1, searches = 0, approvals = 0, deferred = false;
+    const step = (label) => { ev.push({ lane: 'prov', s: t, e: t + llm, label, kind: 'model' }); t += llm; };
+    const provSide = (list) => {
+      if (!list.length) return;
+      let end = t;
+      list.forEach((n) => {
+        const p = place[n], d = TOOLS[n].can[p] + (p === 'mcp' ? 2 * HOP : 0);
+        if (n === 'web_search' && p === 'server') searches++;
+        if (p === 'mcp') ev.push({ lane: 'prov', s: t, e: t + HOP, label: 'gọi ra internet', kind: 'hop' }, { lane: 'mcp', s: t + HOP, e: t + d - HOP, label: n, kind: TOOLS[n].write ? 'write' : 'tool' });
+        else ev.push({ lane: 'prov', s: t, e: t + d, label: n, kind: 'server' });
+        end = Math.max(end, t + d);
+      });
+      t = end;
+    };
+    scn.levels.forEach((lv) => {
+      step('model chọn tool');
+      const C = lv.filter((n) => place[n] === 'client'), S = lv.filter((n) => place[n] === 'server'), M = lv.filter((n) => place[n] === 'mcp');
+      if (M.length && prov === 'openai' && !approvalNever) { ev.push({ lane: 'you', s: t, e: t + APPROVE_RT, label: 'duyệt', kind: 'approve' }); t += APPROVE_RT; reqs++; approvals += M.length; }
+      const mixed = prov === 'claude' && C.length && S.length;
+      provSide(mixed ? M : S.concat(M));
+      if (C.length) {
+        let end = t;
+        C.forEach((n) => { const d = TOOLS[n].can.client; ev.push({ lane: 'you', s: t, e: t + d, label: n, kind: TOOLS[n].write ? 'write' : 'tool' }); end = Math.max(end, t + d); });
+        t = end; reqs++;
+        if (mixed) { deferred = true; provSide(S); }
+      }
+    });
+    step('viết trả lời');
+    return { ev, total: t, reqs, searches, approvals, deferred };
+  }
+  function timeline(sim) {
+    const lanes = [['you', 'Backend ShopViet'], ['prov', 'Provider'], ['mcp', 'MCP server ShopViet']], W = 680, L = 140, H = 30, top = 22, total = Math.max(sim.total, 1);
+    const x = (v) => L + (v / total) * (W - L - 10);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${top + lanes.length * H + 8}`, class: 'canvas' });
+    const stp = [250, 500, 1000, 2000, 5000].find((s) => total / s <= 8) || 10000;
+    for (let v = 0; v <= total; v += stp) svg.append(el('line', { x1: x(v), x2: x(v), y1: top - 4, y2: top + lanes.length * H, style: 'stroke:var(--line)' }), el('text', { x: x(v), y: 12, 'text-anchor': 'middle', class: 'mute', style: 'font-size:10px', text: vi(v) }));
+    lanes.forEach(([, t], i) => svg.append(el('text', { x: 4, y: top + i * H + 19, style: 'font-size:11.5px', text: t })));
+    const col = { model: 'var(--g4)', tool: 'var(--accent)', server: 'var(--g1)', write: 'var(--warn)', hop: 'var(--dim)', approve: 'var(--g2)' };
+    sim.ev.forEach((e) => {
+      const i = lanes.findIndex((l) => l[0] === e.lane), w = Math.max(2, x(e.e) - x(e.s));
+      svg.append(el('rect', { x: x(e.s), y: top + i * H + 4, width: w, height: H - 8, rx: 4, style: `fill:${col[e.kind]};opacity:.85` }, [el('title', { text: `${e.label}: ${vi(e.e - e.s)} ms` })]));
+      if (w > 70) svg.append(el('text', { x: x(e.s) + 4, y: top + i * H + 19, style: 'font-size:10.5px;fill:#fff', text: e.label.slice(0, Math.floor(w / 6.5)) }));
+    });
+    return svg;
+  }
+  function diagram(place, used) {
+    const W = 680, H = 230, cols = [['client', 'Backend ShopViet', 20], ['server', 'Provider (model + server tool)', 250], ['mcp', 'MCP server ShopViet', 480]];
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'canvas' }, [el('defs', {}, [el('marker', { id: 'csm-arrow', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, [el('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--mute)' })])])]);
+    svg.append(el('rect', { x: 8, y: 8, width: 204, height: H - 16, rx: 10, style: 'fill:none;stroke:var(--ok);stroke-width:1.5;stroke-dasharray:6 4' }), el('text', { x: 16, y: 24, style: 'font-size:10.5px;fill:var(--ok)', text: 'ranh giới hạ tầng của bạn' }));
+    svg.append(el('rect', { x: 468, y: 8, width: 204, height: H - 16, rx: 10, style: 'fill:none;stroke:var(--warn);stroke-width:1.5;stroke-dasharray:6 4' }), el('text', { x: 476, y: 24, style: 'font-size:10.5px;fill:var(--warn)', text: 'của bạn, nhưng mở ra internet' }));
+    cols.forEach(([k, t, x0]) => {
+      svg.append(el('rect', { x: x0, y: 34, width: 180, height: H - 52, rx: 8, style: 'fill:var(--panel);stroke:var(--line);stroke-width:1.5' }), el('text', { x: x0 + 90, y: 54, 'text-anchor': 'middle', style: 'font-size:12px;font-weight:700', text: t }));
+      Object.keys(TOOLS).filter((n) => place[n] === k).forEach((n, i) => {
+        const on = used.includes(n), c = TOOLS[n].write ? 'var(--warn)' : k === 'server' ? 'var(--g1)' : 'var(--accent)';
+        svg.append(el('rect', { x: x0 + 14, y: 66 + i * 28, width: 152, height: 22, rx: 5, style: `fill:${on ? c : 'var(--bg)'};stroke:${c};opacity:${on ? 0.9 : 0.6}` }), el('text', { x: x0 + 90, y: 81 + i * 28, 'text-anchor': 'middle', style: `font-size:11px;${on ? 'fill:#fff' : ''}`, text: n }));
+      });
+    });
+    svg.append(el('line', { x1: 202, y1: 120, x2: 248, y2: 120, style: 'stroke:var(--mute);stroke-width:1.5', 'marker-end': 'url(#csm-arrow)', 'marker-start': 'url(#csm-arrow)' }), el('text', { x: 225, y: 112, 'text-anchor': 'middle', class: 'mute', style: 'font-size:9.5px', text: 'request' }));
+    svg.append(el('line', { x1: 432, y1: 150, x2: 478, y2: 150, style: 'stroke:var(--mute);stroke-width:1.5', 'marker-end': 'url(#csm-arrow)' }), el('text', { x: 455, y: 142, 'text-anchor': 'middle', class: 'mute', style: 'font-size:9.5px', text: 'internet' }));
+    return svg;
+  }
+
+  const RP = {
+    openai: {
+      label: 'OpenAI Responses', modes: [['keep', 'Gửi lại nguyên các item của response'], ['drop', 'Dựng lại từ role, content, tool_calls']],
+      items: [['user', 'message (user): "So sánh đơn SV-4821 và SV-4822"'], ['hidden', 'reasoning rs_01 {encrypted_content: "gAAAA..."}'], ['call', 'function_call fc_01 · call_id=call_a · tra_don_hang'], ['call', 'function_call fc_02 · call_id=call_b · tra_don_hang'], ['out', 'function_call_output · call_id=call_a'], ['out', 'function_call_output · call_id=call_b']]
+    },
+    claude: {
+      label: 'Claude (Sonnet 5.5)', modes: [['keep', 'Gửi lại nguyên văn content'], ['drop', 'Bỏ mọi thinking block'], ['dropEmpty', 'Lọc bỏ thinking block rỗng "cho gọn"'], ['editSystem', 'Giữ thinking, nhưng sửa system prompt giữa chừng']],
+      items: [['user', 'user: "So sánh đơn SV-4821 và SV-4822"'], ['hidden', 'assistant · thinking {thinking: "", signature: "EqQB..."}'], ['call', 'assistant · tool_use toolu_a · tra_don_hang'], ['call', 'assistant · tool_use toolu_b · tra_don_hang'], ['out', 'user · tool_result toolu_a'], ['out', 'user · tool_result toolu_b']]
+    },
+    gemini: {
+      label: 'Gemini 3+', modes: [['keep', 'Trả lại part đúng như đã nhận'], ['drop', 'Bỏ thought_signature'], ['copySig', 'Copy signature sang mọi function call'], ['interleave', 'Xếp lại thành FC1, FR1, FC2, FR2']],
+      items: [['user', 'user: "So sánh đơn SV-4821 và SV-4822"'], ['call', 'functionCall tra_don_hang(SV-4821) + thought_signature "Cp4B..."'], ['call', 'functionCall tra_don_hang(SV-4822) (không có signature)'], ['out', 'functionResponse #1'], ['out', 'functionResponse #2']]
+    },
+    deepseek: {
+      label: 'DeepSeek (thinking + tools)', modes: [['keep', 'Gửi lại reasoning_content mọi lượt'], ['drop', 'Bỏ reasoning_content']],
+      items: [['user', 'user: "So sánh đơn SV-4821 và SV-4822"'], ['hidden', 'assistant · reasoning_content: "Cần tra cả hai đơn rồi so ngày giao..."'], ['call', 'assistant · tool_calls [call_a, call_b]'], ['out', 'tool · call_a'], ['out', 'tool · call_b']]
+    },
+    kimi: {
+      label: 'Kimi, MiniMax, GLM', modes: [['keep', 'Gửi lại toàn bộ assistant message'], ['drop', 'Bỏ reasoning_content']],
+      items: [['user', 'user: "So sánh đơn SV-4821 và SV-4822"'], ['hidden', 'assistant · reasoning_content: "Cần tra cả hai đơn rồi so ngày giao..."'], ['call', 'assistant · tool_calls [functions.tra_don_hang:0, functions.tra_don_hang:1]'], ['out', 'tool · functions.tra_don_hang:0'], ['out', 'tool · functions.tra_don_hang:1']]
+    }
+  };
+  const CL_STRICT = ['Fable 5.2', 'Mythos 5.2', 'Mythos 5.1'], CL_SOFT = ['Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5', 'Fable 5.1'];
+  function reasonCheck(p, mode, cm, dropBlock) {
+    const items = RP[p].items.map(([k, t], i) => ({ k, t, sent: true, edited: false, i }));
+    if (mode === 'drop' || mode === 'dropEmpty') items.forEach((it) => { if (it.k === 'hidden') it.sent = false; });
+    if (p === 'gemini' && mode === 'drop') items[1].t = items[1].t.replace(' + thought_signature "Cp4B..."', '');
+    if (p === 'gemini' && mode === 'copySig') { items[2].t = 'functionCall tra_don_hang(SV-4822) + thought_signature "Cp4B..." (copy)'; items[2].edited = true; }
+    if (p === 'gemini' && mode === 'interleave') { const [u, a, b, ra, rb] = items; items.splice(0, 5, u, a, ra, b, rb); }
+    if (mode === 'editSystem') items.unshift({ k: 'sys', t: 'system: đã sửa giữa chừng (thêm khuyến mãi tháng 12)', sent: true, edited: true });
+    const sent = items.filter((x) => x.sent).length;
+    let kind = 'ok', res = 'Request hợp lệ. Model tiếp tục từ đúng phần suy luận đã làm trước khi gọi hai tool.';
+    if (mode !== 'keep') {
+      if (p === 'openai') { kind = 'bad'; res = "400 Item 'fc_01' of type 'function_call' was provided without its required 'reasoning' item: 'rs_01'."; }
+      if (p === 'claude' && mode !== 'editSystem') { kind = 'bad'; res = '400 "thinking or redacted_thinking blocks in the latest assistant message cannot be modified"'; }
+      if (p === 'claude' && mode === 'editSystem') {
+        if (dropBlock) { kind = 'warn'; res = 'Không lỗi: với prefix_mismatch_behavior: "drop_block" và beta header thinking-binding-controls-2026-08-01, API bỏ block không khớp. Model mất phần suy luận đó.'; }
+        else if (CL_STRICT.includes(cm)) { kind = 'bad'; res = `400: ${cm} coi thinking block là "bound to a different conversation".`; }
+        else { kind = 'bad'; res = `${cm}: có thể 400, hoặc không báo lỗi. Khi không báo lỗi, block mất hiệu lực vẫn đến model và vẫn bị tính tiền.`; }
+      }
+      if (p === 'gemini') { kind = 'bad'; res = mode === 'drop' ? '400 "Function call is missing a thought_signature in functionCall parts" (thông báo cộng đồng ghi nhận)' : mode === 'interleave' ? '400: function call và function response xen kẽ' : 'Vỡ quy tắc: gọi song song thì chỉ function call đầu tiên mang signature. README không ghi thông báo lỗi cụ thể cho trường hợp này.'; }
+      if (p === 'deepseek') { kind = 'bad'; res = '400: thiếu reasoning_content của lượt có tool call.'; }
+      if (p === 'kimi') { kind = 'warn'; res = 'Không có lỗi trả về, nhưng model mất tính liên tục của suy luận: ở request 2 nó thấy hai kết quả mà không còn lý do vì sao đã gọi chúng. Riêng Kimi K2.7 Code thì bắt buộc gửi lại.'; }
+    }
+    return { items, sent, kind, res };
+  }
+
+  return {
+    id: 'client-server-mcp-reasoning', nav: '3. Client, server, MCP, reasoning', ref: '§1.5–1.6',
+    title: 'Tool chạy ở đâu thì ai chịu trách nhiệm? Và vì sao bỏ một item "vô nghĩa" khỏi lịch sử lại làm reasoning model trả 400?',
+    hook: 'Đặt từng tool vào client, server hoặc MCP để xem ai thực thi, mất bao lâu và dữ liệu đi qua đâu; rồi thử bỏ phần suy luận ẩn giữa hai lượt tool.',
+    terms: [
+      ['Client tool', 'Tool do code của bạn chạy. Model trả tool call, response dừng với stop_reason tool_use, bạn chạy tra_don_hang trong backend rồi gửi kết quả ở request sau.'],
+      ['Server tool (built-in)', 'Tool do provider chạy, ví dụ web search, code execution. Kết quả đã nằm sẵn trong response, bạn không phải gửi gì thêm.'],
+      ['Container / sandbox', 'Máy ảo tạm của provider để chạy code execution. File model tạo ra nằm trong đó; response trả container ID, giống session ID: request sau gửi lại ID thì dùng tiếp đúng máy đó, không gửi thì provider tạo máy mới trống.'],
+      ['MCP', 'Model Context Protocol: chuẩn để một server công bố danh sách tool, giống một REST API có sẵn endpoint "liệt kê tool" và "gọi tool". "MCP qua provider" nghĩa là provider tự gọi MCP server của bạn hoặc bên thứ ba qua internet. Backend của bạn cũng có thể tự gọi MCP server; khi đó nó là client tool bình thường (README §2.5).'],
+      ['Approval', 'Bước duyệt trước khi provider gọi tool MCP. OpenAI mặc định bật (require_approval); Grok không hỗ trợ.'],
+      ['pause_turn', 'stop_reason của Claude khi vòng lặp server tool chạm giới hạn (mặc định 10 vòng mỗi request). Một vòng: model gọi server tool, provider chạy, model đọc kết quả. Ví dụ model cần 14 lần tìm: request 1 dừng ở vòng 10 với pause_turn, bạn gửi lại nguyên nội dung để model chạy tiếp 4 vòng còn lại.'],
+      ['Reasoning model', 'Model suy luận trước khi trả lời, ví dụ trước khi chọn gọi hai tra_don_hang song song.'],
+      ['Interleaved thinking', 'Suy luận xen giữa các tool call: nghĩ, gọi tool, đọc kết quả, nghĩ tiếp.'],
+      ['Reasoning item / thinking block / thought signature', 'Đối tượng mờ (opaque: bạn không đọc được bên trong) mà OpenAI, Claude, Gemini trả về để đại diện phần suy luận. Giống cookie phiên đã mã hoá: bạn không giải mã được, nhưng phải gửi lại nguyên văn, ví dụ {"type": "reasoning", "id": "rs_01", "encrypted_content": "gAAAA..."}.'],
+      ['Lethal trifecta', 'Ba khả năng gộp lại thành nguy hiểm: đọc dữ liệu riêng tư, đọc nội dung không tin cậy, gửi được dữ liệu ra ngoài. Ví dụ chatbot đơn hàng: tra thông tin khách + đọc review sản phẩm + gửi email là đủ ba (README §3.6).'],
+      ['Lịch sử chỉ-thêm (append-only)', 'Chỉ nối message mới vào cuối, không sửa hay xoá message cũ, system prompt, tools. Giống log ghi nối: muốn đổi thông tin thì ghi một dòng mới.']
+    ],
+    problem: {
+      example: 'Trợ lý <b>ShopViet</b> có bốn tool backend: <code>tra_don_hang</code>, <code>kiem_kho</code>, <code>tinh_tra_gop</code>, <code>huy_don</code>. Đội sản phẩm muốn thêm <code>web_search</code> để so giá với shop khác, và đội hạ tầng đề xuất đưa cả bộ tool lên một MCP server để "provider tự gọi, đỡ viết vòng lặp".',
+      scenario: 'Sau khi đổi sang reasoning model, request thứ hai của mọi câu hỏi có tool đều trả <code>400</code>. Code lưu lịch sử vào database chỉ với <code>role</code>, <code>content</code>, <code>tool_calls</code>, và dựng lại request từ đó. Cùng tuần, ai đó hỏi: nếu <code>huy_don</code> nằm trên MCP server thì ai bấm nút xác nhận?',
+      ask: 'Đặt tool ở client, server hay MCP thay đổi ai thực thi, độ trễ và ranh giới bảo mật như thế nào? Phần suy luận ẩn của reasoning model là gì mà thiếu nó request bị từ chối?',
+      solves: 'Phần trên: chọn nơi chạy cho từng tool, lab vẽ lại sơ đồ, mô phỏng dòng thời gian một câu hỏi và liệt kê ai thực thi, dữ liệu đi đâu, cổng xác nhận nằm ở đâu. Phần dưới: chọn provider và cách dựng lịch sử, lab hiện request thứ hai item theo item và kết quả theo README.',
+      read: ['Sơ đồ: khung viền xanh lá là hạ tầng bạn kiểm soát; khung viền cam là MCP server của bạn nhưng phải mở ra internet cho provider gọi. Chip đậm là tool câu hỏi hiện tại dùng.', 'Dòng thời gian: làn tím là model suy luận, xanh là tool của bạn, xanh dương là server tool, xám là chặng mạng ra internet, cam nhạt là bước duyệt, cam là tool ghi.', 'Bảng "Ai chịu trách nhiệm" đọc theo hàng: mỗi tool đang chạy ở đâu và hệ quả.', 'Phần reasoning: item gạch ngang là bị bỏ khi dựng request; ô kết quả là lỗi hoặc hệ quả README ghi nhận. Mọi độ trễ là số giả định.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Ba nơi tool có thể chạy (README §1.5)</h4>
+<div class="tbl"><table>
+<tr><th>Loại</th><th>Ai thực thi</th><th>Ví dụ</th><th>Bạn thấy gì trong response</th></tr>
+<tr><td>Client tool</td><td>Code của bạn</td><td><code>tra_don_hang</code>, <code>huy_don</code></td><td>Tool call, <code>stop_reason: tool_use</code>; bạn phải gửi kết quả</td></tr>
+<tr><td>Server tool (built-in)</td><td>Provider</td><td>Web search, code execution, file search, tool search</td><td>Block / item mô tả lần gọi và kết quả, đã nằm sẵn</td></tr>
+<tr><td>MCP qua provider</td><td>Provider gọi MCP server của bạn hoặc bên thứ ba</td><td><code>mcp</code> (OpenAI, Grok), <code>mcp_toolset</code> (Claude), <code>mcp_server</code> (Gemini)</td><td>Item lần gọi và kết quả; có thể kèm yêu cầu approval</td></tr>
+</table></div>
+<ul>
+<li>Claude: server tool chạy trong vòng lặp nội bộ, chạm giới hạn (mặc định 10 vòng) thì <code>pause_turn</code>; gửi lại kèm <code>container</code> ID nếu có.</li>
+<li>Cùng lượt có client tool và server tool chưa chạy: Claude trả <code>tool_use</code>, server tool chạy ở request sau.</li>
+<li>Web search: Claude 10 USD / 1.000 lượt + token (lượt lỗi không tính); OpenAI 10 USD / 1.000 lượt + token. <code>max_tool_calls</code> của OpenAI không áp dụng cho function tool.</li>
+<li>Approval: OpenAI mặc định cần, <code>authorization</code> không được lưu nên gửi lại mỗi request; Grok không hỗ trợ; Gemini chỉ Streamable HTTP, tên server không chứa dấu <code>-</code>.</li>
+</ul>
+<h4>Trạng thái ẩn phải gửi lại (README §1.6)</h4>
+<div class="tbl"><table>
+<tr><th>Provider</th><th>Phải gửi lại</th><th>Khi thiếu hoặc sửa</th></tr>
+<tr><td>OpenAI Responses</td><td>Mọi reasoning item, function call và output kể từ user message cuối; <code>encrypted_content</code> khi <code>store: false</code></td><td><code>400</code> thiếu reasoning item</td></tr>
+<tr><td>Claude</td><td>Mọi <code>thinking</code> và <code>redacted_thinking</code> block, nguyên văn, kể cả block rỗng</td><td><code>400</code> blocks cannot be modified</td></tr>
+<tr><td>Gemini 3+</td><td><code>thought_signature</code> trên function call part, đúng vị trí</td><td><code>400</code></td></tr>
+<tr><td>DeepSeek (thinking + tools)</td><td><code>reasoning_content</code> mọi lượt</td><td><code>400</code></td></tr>
+<tr><td>Kimi, MiniMax, GLM</td><td>Toàn bộ assistant message gồm <code>reasoning_content</code></td><td>Mất tính liên tục; Kimi K2.7 Code bắt buộc</td></tr>
+</table></div>
+<div class="verdict"><b>Quy tắc an toàn cho mọi provider:</b> lưu nguyên response của provider và dựng request tiếp theo từ chính các object đó, không phải từ bản rút gọn trong database. Giữ lịch sử chỉ-thêm.</div>`,
+    why: {
+      c: 'Giữ tool chạm dữ liệu khách và tool ghi (tra_don_hang, huy_don) ở client, nơi bạn kiểm soát danh tính, xác nhận và log. Dùng server tool cho việc provider làm tốt hơn và không cần dữ liệu riêng (web search). Với reasoning model, lưu và gửi lại nguyên văn mọi object provider trả về. Lý do: nơi tool chạy quyết định ai đứng giữa model và tác dụng phụ; còn phần suy luận ẩn là input mà provider kiểm tra.',
+      s: 'Đưa mọi tool lên MCP qua provider để bỏ vòng lặp: provider gọi huy_don thay bạn, cổng xác nhận phụ thuộc cơ chế approval của từng provider (Grok không có). Tự dựng search và sandbox cho mọi thứ: tốn công vận hành mà không thêm kiểm soát với dữ liệu công khai. Lưu lịch sử dạng rút gọn rồi dựng lại: gãy ngay khi đổi sang reasoning model.',
+      p: 'Client tool tốn một round trip mỗi đợt và bạn tự viết vòng lặp. Server tool tính tiền theo lượt và đưa nội dung không tin cậy vào context. Lưu nguyên response tốn chỗ hơn và gắn bạn với format của từng provider.'
+    },
+    deep: [
+      {
+        q: 'Client tool và server tool khác nhau thế nào khi nhìn vào response?',
+        a: `<p>Với client tool, response <b>dừng lại</b> ở tool call: <code>stop_reason: tool_use</code>, bạn phải chạy tool và gửi kết quả ở request mới. Với server tool, provider đã chạy và response chứa sẵn block / item mô tả lần gọi và kết quả (README §1.5). Bạn nhận câu trả lời hoàn chỉnh trong cùng một request.</p>
+<p>Claude có một trường hợp lai: nếu cùng lượt có cả client tool call và server tool call chưa chạy, API trả <code>stop_reason: "tool_use"</code> mà chưa thực thi server tool. Bạn gửi kết quả client tool, giữ nguyên <code>tools</code>, và server tool chạy ở request sau. Chọn tổ hợp để xem chuỗi request:</p>`,
+        viz(v) {
+          const out = el('div');
+          const draw = (k) => {
+            const seq = { c: [['request 1', 'tool_use: kiem_kho', 'bạn chạy kiem_kho'], ['request 2', 'end_turn: câu trả lời', '']], s: [['request 1', 'web search chạy trong provider → end_turn: câu trả lời', '']], cs: [['request 1', 'tool_use: kiem_kho; web_search chưa chạy', 'bạn chạy kiem_kho, giữ nguyên tools'], ['request 2', 'web search chạy trong provider → end_turn', '']] }[k];
+            let h = '<div class="tbl"><table><tr><th>Request</th><th>Response</th><th>Việc của bạn</th></tr>';
+            seq.forEach((r) => { h += `<tr><td>${r[0]}</td><td class="mono" style="font-size:12px">${esc(r[1])}</td><td>${esc(r[2]) || '<span class="ok">xong</span>'}</td></tr>`; });
+            out.innerHTML = h + '</table></div>';
+            if (k === 'cs') out.append(note('warn', 'Web search không chạy ở request 1 dù model đã quyết định gọi. Không có nghĩa nó bị bỏ qua. Trong hệ thống thật: nếu code đổi <code>tools</code> ở request 2 (ví dụ bỏ web_search vì "đã gọi rồi"), server tool không còn để chạy.'));
+          };
+          const s = select('Tổ hợp (Claude)', [['c', 'Chỉ client tool'], ['s', 'Chỉ server tool'], ['cs', 'Client + server cùng lượt']], 'cs', draw);
+          v.append(el('div', { class: 'row' }, [s.node]), out, el('div', { class: 'cap', text: 'Hành vi theo README §1.5 [20][24].' }));
+          draw('cs');
+        },
+        take: 'Client tool trả quyền điều khiển về cho bạn; server tool giữ nó ở provider cho tới khi xong hoặc chạm giới hạn.'
+      },
+      {
+        q: 'Server tool chạy trong provider thì có bị kẹt vòng lặp vô hạn không?',
+        a: `<p>Provider tự giới hạn. Claude chạy server tool trong một vòng lặp bên trong provider (model gọi tool, đọc kết quả, quyết định gọi tiếp hay trả lời), giống vòng lặp bạn tự viết cho client tool nhưng chạy ở phía họ; chạm giới hạn (mặc định 10 vòng mỗi request) thì trả <code>stop_reason: "pause_turn"</code>. Bạn gửi lại nguyên nội dung assistant để model tiếp tục, kèm <code>container</code> ID nếu có, nếu không sẽ mất file trong sandbox (README §1.5). OpenAI có <code>max_tool_calls</code> giới hạn số lần gọi built-in tool trong một response, nhưng không áp dụng cho function tool của bạn.</p>`,
+        viz(v) {
+          const out = el('div');
+          let lost = false;
+          const nS = slider('Số vòng server tool cần (giả định)', 1, 40, 1, 14, draw, (x) => x);
+          const bL = el('button', { text: 'Quên gửi container ID', onclick: () => { lost = !lost; bL.classList.toggle('on', lost); draw(); } });
+          function draw() {
+            const n = nS.get(), reqs = Math.ceil(n / 10), pauses = reqs - 1;
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Request cần gửi: <b>${reqs}</b></span><span>Số lần nhận pause_turn: <b>${pauses}</b></span>` }),
+              el('div', { style: 'display:flex;gap:3px;flex-wrap:wrap;margin-top:6px' }, Array.from({ length: n }, (_, i) => el('span', { title: 'vòng ' + (i + 1), style: `width:14px;height:14px;border-radius:3px;background:${lost && i >= 10 ? 'var(--bad)' : 'var(--g' + (1 + (Math.floor(i / 10) % 4)) + ')'}` }))),
+              pauses && lost ? note('bad', `Từ vòng 11, request mới chạy trong container mới: file model đã tạo ở ${10} vòng đầu biến mất. Không có lỗi nào báo cho bạn. Trong hệ thống thật: lưu <code>container.id</code> từ response và gửi lại ở mọi request sau.`) : pauses ? note('warn', `Code chỉ kiểm tra <code>tool_use</code> và <code>end_turn</code> sẽ coi <code>pause_turn</code> là "xong" và trả cho khách câu trả lời dở dang. Trong hệ thống thật: xử lý <code>pause_turn</code> bằng cách gửi lại nguyên nội dung assistant.`) : note('ok', 'Xong trong một request, không có pause_turn.'));
+          }
+          v.append(el('div', { class: 'row' }, [nS.node, bL]), out, el('div', { class: 'cap', text: 'Mỗi màu là một request; giới hạn 10 vòng mỗi request lấy từ README §1.5.' }));
+          draw();
+        },
+        take: 'Server tool không xoá vòng lặp, nó chỉ chuyển vòng lặp vào provider và trả lại cho bạn khi chạm giới hạn.'
+      },
+      {
+        q: 'Server tool tính tiền thế nào? Có đắt hơn tự gọi API search không?',
+        a: `<p>README §1.5: web search của Claude là 10 USD / 1.000 lượt tìm, cộng token nội dung; lượt lỗi không tính tiền. OpenAI web search là 10 USD / 1.000 lượt, cộng token nội dung tìm được tính theo giá model. Phần token phụ thuộc giá model và độ dài kết quả, lab không tính. Kéo để xem riêng phí theo lượt:</p>`,
+        viz(v) {
+          const out = el('div');
+          const sS = slider('Lượt search mỗi hội thoại (giả định)', 0, 10, 1, 2, draw, (x) => x);
+          const cS = slider('Hội thoại có search mỗi ngày (giả định)', 100, 50000, 100, 5000, draw, vi);
+          const eS = slider('Tỉ lệ lượt lỗi (giả định)', 0, 0.3, 0.01, 0.05, draw, (x) => Math.round(x * 100) + '%');
+          function draw() {
+            const n = sS.get() * cS.get(), cl = n * (1 - eS.get()) * 0.01, oa = n * 0.01;
+            out.replaceChildren(hbars([['Claude: phí lượt / ngày', cl, true], ['OpenAI: phí lượt / ngày', oa, false]], { max: Math.max(oa, 0.01), fmt: usd }),
+              el('div', { class: 'stat', html: `<span>Lượt / ngày: <b>${vi(n)}</b></span><span>Claude / 30 ngày: <b>${usd(cl * 30)}</b></span>` }),
+              sS.get() >= 5 ? note('warn', `${sS.get()} lượt mỗi hội thoại: model đang tìm lặp. Phí lượt tăng tuyến tính, còn token kết quả cộng dồn vào context của các bước sau. Trong hệ thống thật: OpenAI có <code>max_tool_calls</code> cho built-in tool; với Claude, theo dõi số lượt trong log (README §1.5, §3.5).`) : '');
+          }
+          v.append(el('div', { class: 'row' }, [sS.node, cS.node, eS.node]), out, el('div', { class: 'cap', text: 'Giá 10 USD / 1.000 lượt từ README §1.5. README không ghi OpenAI có miễn phí lượt lỗi không, nên lab tính đủ. Chưa gồm token nội dung.' }));
+          draw();
+        },
+        take: 'Server tool có hai đồng hồ tính tiền: theo lượt và theo token kết quả. Giới hạn số lượt là việc của bạn.'
+      },
+      {
+        q: 'MCP qua provider tiện vậy, sao không đưa hết tool lên đó?',
+        a: `<p>Ba lý do trong README §1.5. Thứ nhất, context phình: OpenAI nhập danh sách tool thành một item <code>mcp_list_tools</code>; xoá item đó khỏi context buộc API tải lại và tăng độ trễ. Grok ghi rõ nếu không đặt <code>allowed_tools</code>, mọi tool của server đều vào context. Thứ hai, approval khác nhau: OpenAI mặc định cần, Grok không hỗ trợ. Thứ ba, <code>authorization</code> không được OpenAI lưu nên phải gửi lại mỗi request, tức credential của bạn đi qua provider ở mọi lượt.</p>
+<p>Kéo số tool mà MCP server công bố:</p>`,
+        viz(v) {
+          const out = el('div');
+          const tj = JSON.stringify({ name: 'tra_don_hang', description: 'Tra trạng thái và vị trí giao của một đơn ShopViet theo mã đơn dạng SV-4821.', input_schema: { type: 'object', properties: { order_id: { type: 'string' } }, required: ['order_id'] } });
+          const per = Math.ceil(tj.length / 4);
+          const nS = slider('Tool trên MCP server', 4, 200, 1, 40, draw, (x) => x);
+          const aS = slider('allowed_tools', 1, 20, 1, 4, draw, (x) => x);
+          function draw() {
+            const n = nS.get(), a = Math.min(aS.get(), n);
+            out.replaceChildren(hbars([['Grok, không đặt allowed_tools', n * per, false], ['Có allowed_tools', a * per, true]], { max: n * per, fmt: (x) => vi(x) + ' token' }),
+              n > 20 ? note('warn', `${n} tool vào context ở mỗi request, khoảng ${vi(n * per)} token, trong khi câu hỏi chỉ cần ${a}. Không chỉ tốn tiền: Google khuyên giữ tập tool đang hoạt động ở 10–20 vì nhiều tool làm model chọn kém hơn (README §2.4). Trong hệ thống thật: luôn đặt <code>allowed_tools</code> cho MCP.`) : '');
+          }
+          v.append(el('div', { class: 'row' }, [nS.node, aS.node]), out, el('div', { class: 'cap', text: `Mỗi định nghĩa ước lượng ${per} token từ chuỗi JSON của tra_don_hang (ký tự / 4), không phải tokenizer thật.` }));
+          draw();
+        },
+        take: 'MCP qua provider đổi vòng lặp tự viết lấy ít kiểm soát hơn: về context, về credential, và về approval.'
+      },
+      {
+        q: 'Nếu huy_don nằm trên MCP server, ai đảm bảo khách thật sự đồng ý?',
+        a: `<p>README §3.6: xác nhận phải đến từ người dùng qua kênh model không giả được. Với client tool, bạn tự cài: model gọi <code>huy_don</code> → code không thực thi mà tạo <code>pending_action</code> → UI hiện nút → khách bấm → backend chạy. Với MCP qua provider, bước đó phụ thuộc approval của provider: OpenAI có <code>require_approval</code>, Grok không có.</p>
+<p>Thêm một lớp nữa: lethal trifecta. Bật các khả năng mà agent đang có để xem nó có đủ ba yếu tố không:</p>`,
+        viz(v) {
+          const out = el('div'), on = { priv: true, untrusted: false, exfil: false, idArg: false };
+          const L = { priv: 'Đọc dữ liệu khách (tra_don_hang)', untrusted: 'Đọc nội dung ngoài (web_search, review sản phẩm)', exfil: 'Kênh gửi ra ngoài (gửi email)', idArg: 'customer_id lấy từ arguments của model' };
+          const btns = Object.keys(on).map((k) => el('button', { text: L[k], onclick: (e) => { on[k] = !on[k]; e.target.classList.toggle('on', on[k]); draw(); } }));
+          btns.forEach((b, i) => b.classList.toggle('on', on[Object.keys(on)[i]]));
+          function draw() {
+            const n = ['priv', 'untrusted', 'exfil'].filter((k) => on[k]).length;
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Yếu tố của trifecta: <b>${n}/3</b></span>` }),
+              n === 3 ? note('bad', 'Đủ ba: một review sản phẩm chứa chỉ dẫn ẩn có thể khiến model tra thông tin khách rồi gửi đi qua email. Guardrail chặn 95% vẫn là "điểm trượt" (Simon Willison, README §3.6). Không có nghĩa model kém: không model nào đạt 0% trên AgentDojo. Trong hệ thống thật: bỏ một trong ba khả năng, hoặc dùng mẫu thiết kế như plan-then-execute, dual LLM.') : n === 2 ? note('warn', 'Thiếu một yếu tố nữa là đủ trifecta. Mỗi tool mới cần được kiểm tra xem có thêm yếu tố còn thiếu không.') : note('ok', 'Chưa có tổ hợp nguy hiểm.'),
+              on.idArg ? note('bad', 'customer_id nằm trong schema: một prompt injection có thể bảo model tra đơn của người khác. Model là "confused deputy". Trong hệ thống thật: danh tính lấy từ session phía server, với MCP thì từ token xác thực, không bao giờ từ arguments (README §3.6).') : '');
+          }
+          v.append(el('div', { class: 'row' }, btns), out);
+          draw();
+        },
+        take: 'Nơi tool chạy quyết định ai đứng giữa model và tác dụng phụ. Tool ghi và tool chạm dữ liệu riêng nên ở chỗ bạn đặt được cổng.'
+      },
+      {
+        q: 'Reasoning model "suy luận ẩn" là gì, và tại sao bản thân tôi không đọc được mà vẫn phải gửi lại?',
+        a: `<p>Reasoning model suy luận trước mỗi tool call và tiếp tục sau khi nhận kết quả (<i>interleaved thinking</i>). Phần suy luận đó thường không trả về dạng đọc được. Provider trả một đối tượng mờ: reasoning item (OpenAI), thinking block có <code>signature</code> (Claude), <code>thought_signature</code> (Gemini). Ở request sau, provider dùng chính đối tượng đó để khôi phục phần suy luận đã làm (README §1.6).</p>
+<p>Với Claude model mới, <code>display</code> mặc định là <code>"omitted"</code>: field <code>thinking</code> là chuỗi rỗng, chỉ có <code>signature</code>. Block trông "rỗng" nhưng vẫn phải gửi lại (README §2.3). Sonnet 5.5 không tắt được thinking bằng <code>disabled</code>; mức thấp nhất là <code>between_tools</code>, vẫn sinh thinking block giữa các tool call.</p>
+<p><b>Vì sao provider không tự nhớ mà bắt bạn gửi lại?</b> Vì API stateless (README §1.1): mỗi request độc lập, giống REST API không có session phía server, nên mọi thứ model cần phải nằm trong request. Có chế độ để provider giữ hộ: OpenAI với <code>store: true</code> dùng <code>previous_response_id</code> thay vì gửi lại; Gemini Interactions với <code>store: true</code> + <code>previous_interaction_id</code> (README §2.2, §2.4). Lab này xét trường hợp bạn tự lưu lịch sử.</p>
+<p>Reasoning cũng không chuyển giữa các họ model: <code>gpt-5.6-sol</code>, <code>-terra</code>, <code>-luna</code> dùng được của nhau, nhưng không chuyển giữa GPT-5.6 và GPT-5.5; API tự bỏ phần không tương thích. Fallback sang model khác giữa chừng thì model mới không thừa hưởng phần suy luận (README §2.2).</p>`,
+        take: 'Đối tượng mờ là "bộ nhớ" của model giữa hai request. Bạn không cần hiểu nó, chỉ cần không làm mất nó.'
+      },
+      {
+        q: 'Vì sao lỗi thiếu reasoning hay xuất hiện đúng lúc model gọi nhiều tool song song?',
+        a: `<p>Một báo cáo cộng đồng ghi gpt-5 "thường gọi 5–10 tool song song", và lỗi thiếu reasoning item xuất hiện khi code chia nhỏ hoặc sắp xếp lại các item đó (README §1.6). Với Gemini, chỉ function call <b>đầu tiên</b> trong batch song song mang <code>thought_signature</code>; code tự "chuẩn hoá" bằng cách copy signature sang mọi call, hoặc tách batch thành nhiều lượt, đều làm vỡ quy tắc.</p>
+<p>Kéo kích thước batch và chọn cách code xử lý:</p>`,
+        viz(v) {
+          const out = el('div');
+          const nS = slider('Số call trong batch', 1, 10, 1, 6, draw, (x) => x);
+          const mS = select('Code xử lý batch', [['keep', 'Giữ nguyên như response'], ['split', 'Tách mỗi call thành một lượt riêng'], ['copy', 'Copy signature sang mọi call (Gemini)']], 'split', draw);
+          function draw() {
+            const n = nS.get(), m = mS.sel.value;
+            const cells = Array.from({ length: n }, (_, i) => {
+              const hasSig = m === 'copy' ? true : i === 0, ok = m === 'keep' || (m === 'split' ? i === 0 : i === 0);
+              return el('div', { style: `border:1px solid var(--${ok ? 'line' : 'bad'});border-radius:6px;padding:4px 8px;font-size:12px;background:${ok ? 'var(--panel)' : 'color-mix(in srgb, var(--bad) 12%, var(--panel))'}` }, [el('div', { class: 'mono', text: 'call ' + (i + 1) }), el('div', { class: 'hint', style: 'margin:0', text: m === 'split' && i > 0 ? 'lượt riêng, không có reasoning đi trước' : hasSig ? 'có signature / reasoning đi trước' : 'không signature (đúng quy tắc)' })]);
+            });
+            const bad = m === 'keep' ? 0 : n - 1;
+            out.replaceChildren(el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px' }, cells),
+              el('div', { class: 'stat', html: `<span>Call vi phạm quy tắc: <b>${bad}</b>/${n}</span>` }),
+              bad ? note('bad', `${bad} call không còn khớp với phần suy luận mà provider gắn cho batch. Batch càng lớn, càng nhiều chỗ để code "dọn dẹp" làm hỏng. Với n = 1 thì không lộ lỗi, nên test với một tool sẽ không bắt được. Trong hệ thống thật: coi cả batch là một khối, không tách, không sắp xếp lại, không thêm signature.`) : note('ok', 'Batch đi nguyên khối: reasoning (hoặc signature trên call đầu) vẫn đứng đúng chỗ.'));
+          }
+          mS.sel.addEventListener('change', draw);
+          v.append(el('div', { class: 'row' }, [nS.node, mS.node]), out, el('div', { class: 'cap', text: 'Quy tắc theo README §1.6: OpenAI một reasoning item đứng trước các function call; Gemini signature chỉ trên call đầu của batch song song.' }));
+          draw();
+        },
+        take: 'Batch song song là một khối với phần suy luận của nó. Mọi phép biến đổi "cho gọn" đều có nguy cơ cắt rời chúng.'
+      },
+      {
+        q: 'Tôi giữ đủ thinking block rồi, chỉ sửa system prompt cho đúng khuyến mãi mới. Sao vẫn hỏng?',
+        a: `<p>Claude có preserved thinking (Fable 5.1, 5.2, Mythos 5.1, 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5) kiểm tra prefix của thinking block. Prefix là mọi thứ đứng <b>trước</b> block trong request: system prompt, tools, message cũ. Sửa bất cứ thứ gì trong đó làm block bị coi là "bound to a different conversation" (README §1.6). Ví dụ: request 1 có system "Khuyến mãi tháng 11", model sinh thinking block; request 3 bạn sửa system thành "tháng 12" và gửi lại đúng block đó: block giờ đứng sau một prefix khác với lúc nó được tạo.</p>
+<p>Khi không đặt <code>thinking.block_binding.prefix_mismatch_behavior</code>: Fable 5.2, Mythos 5.2, Mythos 5.1 trả <code>400</code>; các model còn lại có thể trả <code>400</code> hoặc không báo lỗi, và khi không báo lỗi thì block mất hiệu lực vẫn đến model và vẫn bị tính tiền. Với hội thoại đã hỏng, đặt <code>prefix_mismatch_behavior: "drop_block"</code> kèm beta header <code>thinking-binding-controls-2026-08-01</code> ở mọi request sau của hội thoại đó; không bật cho mọi hội thoại để giấu lỗi.</p>`,
+        viz(v) {
+          const out = el('div');
+          let db = false;
+          const mS = select('Model', [...CL_STRICT, ...CL_SOFT].map((m) => [m, m]), 'Sonnet 5.5', draw);
+          const bD = el('button', { text: 'prefix_mismatch_behavior: drop_block', onclick: () => { db = !db; bD.classList.toggle('on', db); draw(); } });
+          function draw() {
+            const r = reasonCheck('claude', 'editSystem', mS.sel.value, db);
+            out.replaceChildren(note(r.kind, esc(r.res) + (r.kind === 'bad' && CL_SOFT.includes(mS.sel.value) ? ' Đây là trường hợp tệ nhất: không có lỗi để bạn phát hiện. Trong hệ thống thật: giữ lịch sử chỉ-thêm; đưa thông tin thay đổi (khuyến mãi) vào message mới thay vì sửa system prompt.' : '')));
+          }
+          v.append(el('div', { class: 'row' }, [mS.node, bD]), out);
+          draw();
+        },
+        take: 'Gửi đủ block là chưa đủ: mọi thứ đứng trước block cũng phải giữ nguyên. Lịch sử chỉ-thêm giải quyết cả hai.'
+      }
+    ],
+    poc: {
+      goal: "<b>Không có model, không gọi provider nào: mọi response của provider trong script là dữ liệu viết tay (kịch bản) theo tên field README.</b> Từ đó script dựng request thứ hai của vòng lặp (gọi song song 2 tool) cho OpenAI Responses, Claude, Gemini 3 và DeepSeek, rồi dựng lại theo cách hay gặp: chỉ giữ role / content / tool_calls. Validator là code thật viết theo README §1.6; các dòng \"400 ...\" là validator in ra theo quy tắc README, không phải API thật trả về. Chữ ký thinking của Claude được mô phỏng bằng sha256 của prefix, không phải cách Anthropic thật sự ký.",
+      file: "docs/tool-use/pocs/03_client_server_mcp_reasoning.py",
+      run: "uv run docs/tool-use/pocs/03_client_server_mcp_reasoning.py",
+      output: "\nRequest thứ 2 của vòng lặp, dựng theo nhiều cách, chạy qua validator viết theo README §1.6 / Phần 2\n===================================================================================================\nResponse của provider là dữ liệu VIẾT TAY theo tên field README; validator là code thật, không gọi API.\nRiêng Claude: chữ ký thinking được mô phỏng bằng sha256 của prefix (system, tools, messages trước nó).\nprovider  cách dựng lịch sử                            field bị mất                                                   kết quả validator\n--------  -------------------------------------------  -------------------------------------------------------------  -----------------------------------------------------------------------------------------------------\nopenai    gửi lại nguyên văn                           —                                                              hợp lệ\n          dựng lại từ DB role/content/tool_calls       encrypted_content                                              400 Item 'fc_01' of type 'function_call' was provided without its required 'reasoning' item: 'rs_01'.\n          tỉa: giữ reasoning, bỏ call + output sau nó  arguments, call_id, name, output                               400 Item 'rs_01' of type 'reasoning' was provided without its required following item.\n          tỉa cả nhóm reasoning + call + output        arguments, call_id, encrypted_content, id, name, output, type  hợp lệ\nclaude    gửi lại nguyên văn                           —                                                              hợp lệ\n          dựng lại từ DB role/content/tool_calls       signature, thinking                                            400 \"thinking or redacted_thinking blocks in the latest assistant message cannot be modified\"\n          lọc thinking rỗng 'cho gọn'                  signature, thinking                                            400 \"thinking or redacted_thinking blocks in the latest assistant message cannot be modified\"\ngemini    gửi lại nguyên văn                           —                                                              hợp lệ\n          dựng lại từ DB role/content/tool_calls       thought_signature                                              400 \"Function call is missing a thought_signature in functionCall parts\" (thông báo cộng đồng)\n          copy signature sang mọi FC                   —                                                              Vi phạm: gọi song song chỉ FC đầu mang signature (README không ghi mã lỗi cụ thể)\n          xếp FC1, FR1, FC2, FR2                       —                                                              400: FC và FR xen kẽ; phải là FC1, FC2, FR1, FR2\ndeepseek  gửi lại nguyên văn                           —                                                              hợp lệ\n          dựng lại từ DB role/content/tool_calls       reasoning_content                                              400: thiếu reasoning_content ở lượt có tool_calls (thinking + tools)\n\nClaude preserved thinking: sửa system prompt giữa chừng (thinking giữ nguyên văn)\n=================================================================================\nmodel                          kết quả\n-----------------------------  -----------------------------------------------------------------------------------\nSonnet 5.5                     Sonnet 5.5: có thể 400, hoặc im lặng — block vô hiệu vẫn đến model và vẫn tính tiền\nHaiku 5.5                      Haiku 5.5: có thể 400, hoặc im lặng — block vô hiệu vẫn đến model và vẫn tính tiền\nFable 5.2                      400 (bound to a different conversation)\nMythos 5.1                     400 (bound to a different conversation)\n(mọi model, system không đổi)  hợp lệ\n\nRút ra: phần suy luận ẩn (reasoning item, thinking + signature, thought_signature, reasoning_content) không nằm trong\nrole/content/tool_calls; lưu lịch sử theo 3 field đó là tự xoá nó và request 2 bị từ chối. Lưu và gửi lại nguyên response.",
+      measured: true,
+      read: ["Cột field bị mất: dựng lại từ role / content / tool_calls làm rơi đúng encrypted_content, thinking + signature, thought_signature, reasoning_content; cả bốn provider đều 400.", "OpenAI: giữ reasoning nhưng bỏ call + output theo sau cũng 400; tỉa cả nhóm thì hợp lệ.", "Claude: lọc thinking block rỗng \"cho gọn\" cũng 400. Sửa system giữa chừng: Fable 5.2, Mythos 5.1 trả 400, các model còn lại có thể im lặng.", "Phần client / server tool / MCP của lab (ai thực thi, độ trễ, approval) không có POC vì cần provider thật."]
+    },
+    mount(stage) {
+      const S = { scn: 'S2', prov: 'openai', never: false, place: { web_search: 'server', kiem_kho: 'client', tinh_tra_gop: 'client', tra_don_hang: 'client', huy_don: 'mcp' }, rp: 'openai', rm: 'drop', cm: 'Sonnet 5.5', db: false };
+      const msgBox = el('div', { style: 'padding:8px 12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-size:14px;margin-bottom:6px' });
+      const ctl = el('div'), diaBox = el('div'), tlBox = el('div'), stat = el('div', { class: 'stat' }), tbl = el('div'), cap = el('div');
+      const nevB = el('button', { text: 'OpenAI: require_approval "never"', onclick: () => { S.never = !S.never; render(); } });
+      function setPlace(n, p) { S.place[n] = p; render(); }
+      function render() {
+        const scn = SCN[S.scn], used = scn.levels.flat(), P = PROV[S.prov], llm = llmS.get();
+        msgBox.innerHTML = '<b>Khách:</b> ' + esc(scn.text);
+        nevB.classList.toggle('on', S.never); nevB.style.display = S.prov === 'openai' ? '' : 'none';
+        ctl.replaceChildren(...Object.keys(TOOLS).map((n) => el('div', { class: 'row', style: 'margin-bottom:6px' }, [
+          el('span', { class: 'mono', style: `min-width:120px;font-size:13px;${used.includes(n) ? 'font-weight:700' : 'color:var(--mute)'}`, text: n }),
+          ...Object.keys(PL).map((p) => { const ok = TOOLS[n].can[p] != null; const b = el('button', { text: PL[p], title: ok ? `${ms(TOOLS[n].can[p])} (giả định)` + (TOOLS[n].why[p] ? ' · ' + TOOLS[n].why[p] : '') : TOOLS[n].why[p], onclick: () => ok && setPlace(n, p) }); b.disabled = !ok; b.classList.toggle('on', S.place[n] === p); return b; }),
+          el('span', { class: 'hint', style: 'margin:0', text: TOOLS[n].can[S.place[n]] != null && TOOLS[n].why[S.place[n]] ? TOOLS[n].why[S.place[n]] : '' })])));
+        diaBox.replaceChildren(diagram(S.place, used));
+        const sim = simulate(scn, S.place, S.prov, S.never, llm);
+        tlBox.replaceChildren(timeline(sim));
+        const fee = sim.searches * (P.search || 0);
+        stat.innerHTML = `<span>Tổng thời gian: <b>${ms(sim.total)}</b></span><span>Request bạn gửi: <b>${sim.reqs}</b></span><span>Lần duyệt MCP: <b>${sim.approvals}</b></span><span>Phí web search: <b>${P.search == null ? (sim.searches ? 'README không ghi' : '0') : usd(fee)}</b></span>`;
+        let h = '<div class="tbl"><table><tr><th>Tool</th><th>Nơi chạy</th><th>Ai thực thi</th><th>Dữ liệu đi đâu</th><th>Cổng kiểm soát</th></tr>';
+        used.forEach((n) => {
+          const p = S.place[n], T = TOOLS[n];
+          const who = p === 'client' ? 'Code của bạn' : p === 'server' ? 'Provider' : `Provider gọi ${MCP_NAME} (${P.mcp})`;
+          const data = p === 'client' ? 'Ở trong backend; chỉ kết quả đi vào context' : p === 'server' ? 'Tham số rời hệ thống của bạn tới tool của provider' + (T.untrusted ? '; nội dung web không tin cậy vào thẳng context' : '') : 'Provider gửi tham số và authorization qua internet tới MCP server';
+          const gate = p === 'client' ? (T.write ? 'pending_action + nút xác nhận do bạn dựng' : 'Kiểm tra quyền từ session') : p === 'server' ? 'Giới hạn của provider (10 vòng / pause_turn ở Claude)' : (S.prov === 'openai' ? (S.never ? 'Đã tắt approval' : 'require_approval mặc định bật') : P.approval);
+          h += `<tr><td class="mono">${n}</td><td>${PL[p]}</td><td>${esc(who)}</td><td>${esc(data)}</td><td class="${p === 'mcp' && T.write && (S.prov === 'grok' || S.never) ? 'bad' : ''}">${esc(gate)}</td></tr>`;
+        });
+        tbl.innerHTML = h + '</table></div>';
+        const parts = [], real = 'Trong hệ thống thật: ';
+        const wm = used.filter((n) => TOOLS[n].write && S.place[n] === 'mcp');
+        if (wm.length && (S.prov === 'grok' || (S.prov === 'openai' && S.never))) parts.push(note('bad', `<b>huy_don chạy mà không qua cổng nào của bạn.</b> ${S.prov === 'grok' ? 'Grok không hỗ trợ require_approval' : 'Approval đã bị tắt'}, nên khi model quyết định huỷ, provider gọi thẳng MCP server và đơn bị huỷ trong cùng response. Không có nghĩa MCP không an toàn: lỗi nằm ở việc đặt tool ghi ra ngoài chỗ bạn kiểm soát. ${real}giữ huy_don ở client với pending_action, hoặc để MCP server tự đòi xác nhận từ khách trước khi ghi (README §1.5, §3.6).`));
+        else if (wm.length && S.prov === 'openai') parts.push(note('warn', `Approval của OpenAI thêm ${sim.approvals} lần duyệt và ${sim.approvals} request. Người hoặc code duyệt phải là bạn: nếu code tự động "approve all", cổng này không còn ý nghĩa. ${real}approval cho tool ghi phải đến từ thao tác của khách (README §3.6).`));
+        else if (wm.length) parts.push(note('warn', `${P.label}: ${P.approval}. Bạn mất chỗ đặt pending_action trong vòng lặp của mình. ${real}nếu dùng MCP cho tool ghi, MCP server phải tự kiểm tra xác nhận của khách.`));
+        if (used.some((n) => TOOLS[n].priv && S.place[n] === 'mcp')) parts.push(note('warn', `tra_don_hang trên MCP: request tới MCP server đến từ provider, không phải từ session của khách. ${real}MCP server xác định khách từ token xác thực${S.prov === 'openai' ? ' (OpenAI không lưu authorization, phải gửi lại mỗi request)' : ''}, không từ order_id hay customer_id model điền.`));
+        if (S.prov === 'gemini' && used.some((n) => S.place[n] === 'mcp') && MCP_NAME.includes('-')) parts.push(note('bad', `Tên server <code>${MCP_NAME}</code> chứa dấu "-": remote MCP của Gemini không nhận tên như vậy, và chỉ nhận server Streamable HTTP, không SSE (README §1.5). ${real}đổi thành <code>shopviet_mcp</code>.`));
+        if (sim.deferred) parts.push(note('warn', 'Claude: client tool và server tool cùng một đợt, nên web_search chưa chạy ở response đầu mà chạy ở request sau khi bạn gửi kết quả client tool. Giữ nguyên tools ở request đó.'));
+        if (used.includes('tinh_tra_gop') && S.place.tinh_tra_gop === 'server') parts.push(note('warn', `Một phép chia trả góp chạy trong sandbox code execution mất ${ms(TOOLS.tinh_tra_gop.can.server)} (giả định) thay vì ${ms(TOOLS.tinh_tra_gop.can.client)} ở backend. Không sai, nhưng đắt cho việc đơn giản; code execution đáng giá khi phép tính thay đổi theo câu hỏi.`));
+        if (used.includes('web_search') && S.place.web_search !== 'client') parts.push(note('warn', 'Kết quả web search là nội dung không tin cậy, nằm sẵn trong response: model đọc nó trước khi bạn kịp lọc. Kết hợp với tool đọc dữ liệu khách và một kênh gửi ra ngoài là đủ lethal trifecta (README §3.6).'));
+        if (!parts.length) parts.push(note('ok', 'Mọi tool của câu hỏi này chạy ở chỗ bạn kiểm soát được danh tính và xác nhận. Cái giá là mỗi đợt tool thêm một request từ backend.'));
+        cap.replaceChildren(...parts);
+      }
+      const llmS = slider('Model mỗi bước (giả định)', 300, 5000, 100, 1500, render, ms);
+      const sS = select('Câu hỏi', Object.entries(SCN).map(([k, s]) => [k, s.label]), S.scn, (x) => { S.scn = x; render(); });
+      const pS = select('Provider', Object.entries(PROV).map(([k, p]) => [k, p.label]), S.prov, (x) => { S.prov = x; render(); });
+      const preset = select('Đặt nhanh', [['', 'chọn...'], ['client', 'Mọi tool ở client'], ['mcp', 'Mọi tool lên MCP'], ['mix', 'Đề xuất: ghi/riêng tư ở client, search ở server']], '', (x) => {
+        Object.keys(TOOLS).forEach((n) => { if (x === 'client') S.place[n] = 'client'; if (x === 'mcp') S.place[n] = 'mcp'; if (x === 'mix') S.place[n] = n === 'web_search' ? 'server' : 'client'; });
+        preset.sel.value = ''; render();
+      });
+
+      const rItems = el('div'), rRes = el('div'), rStat = el('div', { class: 'stat' });
+      const modeSel = el('select'), cmSel = select('Model Claude', [...CL_STRICT, ...CL_SOFT].map((m) => [m, m]), S.cm, (x) => { S.cm = x; renderR(); });
+      modeSel.addEventListener('change', () => { S.rm = modeSel.value; renderR(); });
+      const dbB = el('button', { text: 'drop_block + beta header', onclick: () => { S.db = !S.db; renderR(); } });
+      function fillModes() {
+        modeSel.replaceChildren(...RP[S.rp].modes.map(([v, t]) => el('option', { value: v, text: t })));
+        if (!RP[S.rp].modes.some((m) => m[0] === S.rm)) S.rm = RP[S.rp].modes[1][0];
+        modeSel.value = S.rm;
+      }
+      function renderR() {
+        const ed = S.rp === 'claude' && S.rm === 'editSystem';
+        cmSel.node.style.display = ed ? '' : 'none'; dbB.style.display = ed ? '' : 'none'; dbB.classList.toggle('on', S.db);
+        const r = reasonCheck(S.rp, S.rm, S.cm, S.db);
+        rItems.replaceChildren(...r.items.map((it) => el('div', { class: 'mono', style: `font-size:12px;padding:4px 8px;margin:3px 0;border-radius:5px;border:1px solid var(--${!it.sent ? 'bad' : it.edited ? 'warn' : it.k === 'hidden' ? 'g4' : 'line'});${it.sent ? '' : 'text-decoration:line-through;opacity:.6'}`, text: (it.sent ? '' : '[bỏ] ') + (it.edited ? '[sửa] ' : '') + it.t })));
+        rStat.innerHTML = `<span>Item gửi đi: <b>${r.sent}</b>/${r.items.length}</span><span>Đối tượng ẩn: <b>${r.items.filter((i) => i.k === 'hidden').length || (S.rp === 'gemini' ? 'signature trên call 1' : 0)}</b></span>`;
+        const extra = r.kind === 'bad' && S.rm === 'drop' ? ` Vì sao: code dựng lại lịch sử từ những field nó biết (role, content, tool_calls) và vô tình bỏ đúng phần provider cần. Không có nghĩa tool call sai: hai call và hai kết quả đều đủ. Trong hệ thống thật: lưu nguyên response của provider, dựng request sau từ chính các object đó (README §1.6).` : r.kind === 'bad' && S.rm === 'dropEmpty' ? ' Block có thinking rỗng vì display mặc định là "omitted" trên model mới, nhưng signature trong đó vẫn là thứ API kiểm tra. Trong hệ thống thật: không lọc block theo nội dung; nếu lọc theo type, giữ cả thinking lẫn redacted_thinking (README §2.3).' : '';
+        rRes.replaceChildren(note(r.kind, '<b>Request 2:</b> ' + esc(r.res) + extra));
+      }
+      const rpS = select('Provider', Object.entries(RP).map(([k, p]) => [k, p.label]), S.rp, (x) => { S.rp = x; fillModes(); renderR(); });
+      fillModes();
+
+      stage.append(el('h4', { text: '1. Tool chạy ở đâu: client, server hay MCP?', style: 'margin:0 0 8px;font-size:14px' }),
+        el('div', { class: 'row' }, [sS.node, pS.node, preset.node, nevB]), el('div', { class: 'row' }, [llmS.node]), msgBox, ctl, diaBox, tlBox,
+        el('div', { class: 'legend', html: '<span><i style="background:var(--g4)"></i>model</span><span><i style="background:var(--accent)"></i>tool của bạn</span><span><i style="background:var(--g1)"></i>server tool</span><span><i style="background:var(--dim)"></i>chặng internet</span><span><i style="background:var(--g2)"></i>duyệt MCP</span><span><i style="background:var(--warn)"></i>tool ghi</span>' }),
+        stat, el('h4', { text: 'Ai chịu trách nhiệm', style: 'margin:12px 0 4px;font-size:13px' }), tbl, cap,
+        el('h4', { text: '2. Reasoning model: bỏ phần suy luận ẩn giữa hai lượt tool', style: 'margin:22px 0 8px;font-size:14px;border-top:1px solid var(--line);padding-top:16px' }),
+        el('div', { class: 'row' }, [rpS.node, el('label', { class: 'ctl' }, ['Cách dựng request 2', modeSel]), cmSel.node, dbB]),
+        el('div', { class: 'hint', style: 'margin:0 0 4px', text: 'Lịch sử gửi trong request 2 (sau khi chạy hai tra_don_hang song song):' }), rItems, rStat, rRes,
+        el('p', { class: 'hint', text: `Độ trễ giả định: chặng internet ${HOP} ms mỗi chiều, duyệt MCP ${APPROVE_RT} ms (chưa tính thời gian người bấm), tool như trong tooltip của từng nút. Lỗi và hành vi lấy từ README §1.5, §1.6, §2.3; không gọi API thật.` }));
+      render(); renderR();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
