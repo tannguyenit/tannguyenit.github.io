@@ -1,0 +1,769 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model Routing Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-routing-fallback-behavior.html">← Lab trước</a><a href="05-classifier-priority-batch.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/model-routing/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson({
+  id: 'gateways-cloud', nav: '4. Gateway & cloud', ref: '§2.1–2.2',
+  title: 'Cùng một chuỗi fallback, mỗi gateway hiểu "lỗi" theo một cách',
+  hook: 'Chọn chuỗi model, bật tắt vài tham số trong request, chọn nền tảng. Xem config sinh ra, và đi theo request SV-4821 qua từng bước để đếm số request thật gửi đi.',
+  terms: [
+    ['LLM gateway', 'Một proxy đứng giữa ứng dụng và provider. Ứng dụng gọi gateway, gateway gọi Claude, OpenAI, Gemini. Ví dụ: ShopViet gọi http://gateway/chat, gateway quyết định gửi tới claude-sonnet-5-5 hay gpt-6.1-sol.'],
+    ['Fallback trigger', 'Loại lỗi làm gateway chuyển sang model kế tiếp. Portkey mặc định chuyển với mọi status không phải 2xx, nên cả 400 cũng bị chuyển. Claude fallbacks chỉ chuyển khi model từ chối.'],
+    ['Deployment (LiteLLM)', 'Một cấu hình model cụ thể trong LiteLLM, ví dụ anthropic/claude-sonnet-5-5 với key và rpm riêng. Nhiều deployment cùng model_name tạo thành một nhóm.'],
+    ['Cooldown', 'Thời gian một deployment bị tạm ngừng nhận request sau khi lỗi. LiteLLM mặc định cho nguội 5 giây ngay khi gặp 429 nếu bạn chưa đặt allowed_fails.'],
+    ['Refusal', 'Model từ chối trả lời nhưng HTTP vẫn là 200, kèm stop_reason: "refusal". Gateway nào chỉ nhìn status code sẽ coi đây là thành công.'],
+    ['Server-side fallbacks (Claude)', 'Tham số fallbacks gửi kèm request Claude, kèm beta header server-side-fallback-2026-07-01. Model chính từ chối thì API tự chạy lại trên model khác trong cùng lời gọi.'],
+    ['usage.iterations', 'Mảng trong response Claude ghi token của từng lần thử khi có fallback phía server. usage ở cấp trên cùng chỉ tính lần thử cuối, nên cộng iterations mới ra hoá đơn thật.'],
+    ['Cross-region inference', 'Bedrock tự chọn region còn capacity trong một vùng (US, EU, APAC) hoặc toàn cầu (global). Ví dụ request từ Singapore có thể được xử lý ở Tokyo.'],
+    ['Inference profile', 'ID đại diện cho tập region mà Bedrock được phép chọn. Profile global rẻ hơn khoảng 10% nhưng dữ liệu có thể đi ra ngoài vùng.'],
+    ['Session affinity', 'Ghim mọi request của một hội thoại vào cùng model hoặc deployment đã phục vụ lượt đầu, để giữ prompt cache. LiteLLM giữ mặc định 3.600 giây, Azure model router hết hạn sau 30 phút không có request thành công.']
+  ],
+  problem: {
+    example: '<b>ShopViet</b> (cửa hàng điện tử online) có trợ lý chat gọi <code>claude-sonnet-5-5</code> trên Claude API. Sau sự cố 529 lúc 20:00, team muốn đặt một gateway phía trước để có chuỗi fallback: Sonnet 5.5, rồi Sonnet 5, rồi <code>gpt-6.1-sol</code> của OpenAI. Request mẫu là <b>SV-4821</b>: khách hỏi "Đơn SV-4821 của tôi tới đâu rồi?", request có tool <code>tra_don_hang</code>.',
+    scenario: 'Bốn gateway và một tính năng của Claude đều có chữ "fallback", nhưng mỗi nơi kích hoạt bởi một tập lỗi khác nhau. Cùng một chuỗi, cùng một request, đổi nền tảng thì số request gửi đi, hoá đơn và lỗi lộ ra đều khác.',
+    ask: 'Với chuỗi và request của ShopViet, nền tảng nào chuyển model khi gặp 529, 429, 400 hay refusal, và config trông ra sao?',
+    solves: 'Lab dựng config của chuỗi theo từng nền tảng từ bảng ở README §2.1, kiểm request với bảng capability của model, rồi mô phỏng SV-4821 đi qua chuỗi. Bộ chọn bên dưới gợi ý nơi đặt fallback theo hạ tầng ShopViet đang có.',
+    read: ['Hàng trên: bảng "lỗi nào kích hoạt fallback" của nền tảng đang chọn. Ô <span class="ok">có</span> là chuyển model, ô <span class="bad">không</span> là trả lỗi cho ứng dụng, ô ? là README không nói rõ, ô "(POC)" là hành vi đo bằng LiteLLM thật trong POC cuối trang.', 'Chọn chuỗi (tối đa 4 bước) và tham số của request. Khung config là dạng rút gọn để so sánh, đối chiếu tài liệu gateway trước khi copy.', 'Danh sách kiểm tra được tính từ chuỗi bạn chọn: dòng đỏ là lỗi chắc chắn, dòng cam là rủi ro.', 'Phần "Đi theo SV-4821" đếm số request thật gửi lên provider cho từng kịch bản lỗi.', 'Bộ chọn cuối trang gợi ý nơi đặt fallback theo hạ tầng ShopViet.']
+  },
+  summary: `<h3>Tóm tắt bài</h3>
+<p>Gateway gom routing, retry, fallback, quota và log vào một chỗ. Điều đầu tiên cần biết ở mỗi gateway là <b>lỗi nào kích hoạt fallback theo mặc định</b>.</p>
+<div class="tbl"><table>
+<tr><th>Nền tảng</th><th>Mặc định kích hoạt fallback khi</th><th>Điều chỉnh</th></tr>
+<tr><td>LiteLLM Router</td><td>Deployment lỗi (kết nối, 404, 429...) thì thử deployment <code>order</code> kế, hết thì sang <code>fallbacks</code></td><td><code>context_window_fallbacks</code>, <code>content_policy_fallbacks</code>, <code>retry_policy</code>. POC đo bản 1.111.0: chuyển cả <code>400</code>, refusal về như thành công</td></tr>
+<tr><td>OpenRouter <code>models</code></td><td>Bất kỳ lỗi nào: context, moderation, rate limit, downtime</td><td>Danh sách model theo thứ tự</td></tr>
+<tr><td>Portkey</td><td>Mọi status không phải 2xx</td><td><code>strategy.on_status_codes</code></td></tr>
+<tr><td>Cloudflare AI Gateway</td><td>Request lỗi hoặc quá timeout</td><td>Thứ tự trong mảng request</td></tr>
+<tr class="cur"><td>Claude <code>fallbacks</code></td><td><b>Chỉ</b> khi model từ chối. Rate limit, quá tải, lỗi server trả về nguyên trạng</td><td><code>"default"</code> hoặc tối đa 3 model</td></tr>
+</table></div>
+<h4>Những chi tiết hay bị bỏ qua</h4>
+<ul>
+<li>LiteLLM: <code>simple-shuffle</code> (chọn deployment trong nhóm theo <code>weight</code>, <code>rpm</code>, <code>tpm</code>) là mặc định; mỗi mức <code>order</code> có lượt retry riêng; chưa đặt <code>allowed_fails</code> thì deployment nguội 5 giây khi gặp 429, khi quá 50% request lỗi trong phút, hoặc gặp 401, 404, 408. <code>max_parallel_requests</code> đếm trong từng process, hết slot thì trả 429 ngay, không xếp hàng.</li>
+<li>OpenRouter tính tiền theo model thực phục vụ (trường <code>model</code> của response). Endpoint Messages nhận <code>fallbacks</code> tối đa 3 mục và kích hoạt trên mọi lỗi, không chỉ refusal.</li>
+<li>Portkey mặc định chuyển cả <code>400</code>: tốn thêm request và che bug thật. Đặt <code>on_status_codes</code> tường minh.</li>
+<li>Cloudflare: mỗi bước trong mảng có body riêng; header <code>cf-aig-step</code> cho biết bước nào đã phục vụ.</li>
+<li>Claude <code>fallbacks</code>: request phải hợp lệ với mọi model trong danh sách; Haiku 5.5 không có fallback phía server; cộng <code>usage.iterations</code> để ra chi phí thật; sticky routing khoảng 1 giờ (hội thoại đã fallback một lần thì các lượt sau đi thẳng tới model fallback).</li>
+</ul>
+<h4>Cloud provider</h4>
+<div class="tbl"><table>
+<tr><th>Nền tảng</th><th>Cơ chế</th><th>Điều cần nhớ</th></tr>
+<tr><td>AWS Bedrock</td><td>Cross-region inference qua inference profile (US, EU, APAC hoặc global)</td><td>Global rẻ hơn khoảng 10%, không giữ dữ liệu trong vùng; không dùng được với Provisioned Throughput; AWS vẫn khuyên thêm retry và fallback ở ứng dụng</td></tr>
+<tr><td>Bedrock Intelligent Prompt Routing</td><td>Chọn giữa đúng hai model cùng họ theo <code>responseQualityDifference</code></td><td>Chỉ tối ưu cho prompt tiếng Anh: ShopViet phải đo trước</td></tr>
+<tr><td>Azure Foundry model router</td><td>Một deployment, chế độ Balanced, Cost, Quality</td><td>Ít nhất hai model để có failover; session affinity hết hạn sau 30 phút; reasoning model bỏ qua <code>temperature</code></td></tr>
+<tr><td>Vertex AI</td><td>Endpoint theo region và global endpoint</td><td>Global sẵn sàng cao hơn một region; có ràng buộc lưu trú thì dùng region kèm chuỗi fallback riêng</td></tr>
+</table></div>
+<div class="verdict"><b>Gateway không giải quyết được gì:</b> nó dịch format và chuyển request, nhưng không biết request dùng tính năng mà model đích không hỗ trợ, không giữ được cache hay thinking block qua model, và không biết output ở model fallback có đủ tốt hay không.</div>`,
+  why: {
+    c: 'Chọn nền tảng theo ngữ nghĩa fallback trước, tính năng sau. Đọc bảng "lỗi nào kích hoạt fallback", đặt danh sách status code tường minh, dùng Claude <code>fallbacks</code> cho refusal và một chuỗi riêng (gateway hoặc code) cho lỗi hạ tầng. Ở cloud, bật cross-region hoặc global endpoint để giảm rủi ro một region.',
+    s: 'Tin rằng "có gateway là có fallback": Claude <code>fallbacks</code> không xử lý 529, Portkey mặc định chuyển cả 400. Đổi <code>base_url</code> sang OpenRouter mà giữ nguyên code: cùng tên <code>fallbacks</code> nhưng kích hoạt trên mọi lỗi. Chỉ dựa vào cross-region inference: AWS tự ghi rằng vẫn cần retry và fallback ở ứng dụng.',
+    p: 'Thêm một tầng có thể tự retry (phải tắt retry ở SDK hoặc ở gateway). Một chỗ nữa phải cấu hình đúng, log và theo dõi. Mỗi lần đổi nền tảng phải đọc lại ngữ nghĩa fallback. Chi phí của model thực phục vụ, cache write mới sau mỗi lần chuyển model, và các lần thử bị từ chối vẫn tính vào hoá đơn.'
+  },
+  deep: [
+    {
+      q: 'Gateway là gì? Gọi thẳng SDK của Claude có gì không đủ?',
+      a: `<p>Gọi thẳng SDK thì ứng dụng ShopViet biết đúng một provider. Muốn thêm OpenAI, bạn thêm SDK thứ hai, viết thêm phần dịch request, phần retry, phần log. Gateway là một proxy làm các việc đó ở một chỗ: ứng dụng gửi một request, gateway quyết định gửi tới đâu, retry thế nào, chuyển model khi nào, và ghi log.</p>
+<p>Nhưng gateway thêm một tầng có thể <b>retry</b>. SDK retry, gateway retry, ứng dụng retry: số request nhân với nhau. README nêu ví dụ ba tầng, mỗi tầng ba lần thử, thành 27 request cho một lần bấm. Kéo thanh trượt để thấy con số.</p>`,
+      viz(box) {
+        const S = { app: 3, gw: 3, sdk: 3 }, out = el('div', { class: 'stat' }), cap = el('div', { class: 'cap' });
+        function draw() {
+          const n = S.app * S.gw * S.sdk;
+          out.innerHTML = `<span>Ứng dụng ${S.app} × gateway ${S.gw} × SDK ${S.sdk}</span><span>Một lần bấm tối đa <b class="${n > 6 ? 'bad' : 'ok'}">${n}</b> request lên provider</span>`;
+          cap.innerHTML = n > 6 ? '<b class="bad">Bất thường:</b> provider đang quá tải nhận thêm ' + n + ' request cho mỗi người dùng bấm. Vì sao: mỗi tầng không biết tầng dưới đã retry. Không có nghĩa là retry sai, mà là có quá nhiều chỗ retry. Trong hệ thống thật: chọn một tầng làm chủ, đặt <code>max_retries=0</code> ở SDK, và đặt trần cho cả chuỗi (README gợi ý 4–6 lần).' : 'Chỉ một tầng retry thật sự. Đây là cấu hình README khuyên: một nơi retry, các tầng khác tắt.';
+        }
+        const sl = (lab, k) => slider(lab, 1, 4, 1, S[k], (v) => { S[k] = v; draw(); }, (v) => v + ' lần thử').node;
+        box.append(el('div', { class: 'row' }, [sl('Ứng dụng', 'app'), sl('Gateway', 'gw'), sl('SDK', 'sdk')]), out, cap);
+        draw();
+      },
+      take: 'Gateway có ích khi nó là nơi duy nhất retry. Đặt gateway mà quên tắt retry ở SDK là nhân số request lên provider đang quá tải.'
+    },
+    {
+      q: 'Vì sao phải đọc "lỗi nào kích hoạt fallback" trước mọi tính năng khác?',
+      a: `<p>Vì lỗi khác nhau cần cách xử lý khác nhau (README phần Tra cứu nhanh). Quá tải thì chuyển model là đúng. <code>400</code> do request sai thì model nào cũng sẽ từ chối, chuyển chỉ tốn thêm request và giấu bug. Hết spend cap thì mọi model trong cùng tổ chức đều bị chặn.</p>
+<p>Giả sử trong 1.000 request của ShopViet có một tỷ lệ lỗi như bảng dưới (tỷ lệ giả định). Hình tính số request gửi thêm và số lỗi <code>400</code> bị "che" (được chuyển sang model khác thay vì báo cho dev) với chuỗi 3 bước.</p>`,
+      viz(box) {
+        const mix = [['529 quá tải', 'e529', 20], ['429 rate limit', 'e429', 10], ['400 request sai', 'e400', 8], ['Refusal (HTTP 200)', 'eref', 3]];
+        const plats = [['Portkey mặc định', (e) => e !== 'eref'], ['Portkey on_status_codes [429, 529]', (e) => e === 'e429' || e === 'e529'], ['OpenRouter', () => true], ['Claude fallbacks', (e) => e === 'eref']];
+        const rows = plats.map(([n, f]) => {
+          let extra = 0, hidden = 0, unhandled = 0;
+          mix.forEach(([, e, c]) => {
+            if (f(e)) { if (e === 'e400') { extra += c * 2; hidden += c; } else extra += c; } else if (e !== 'e400') unhandled += c;
+          });
+          return `<tr><td>${n}</td><td class="mono">${extra}</td><td class="mono ${hidden ? 'bad' : 'ok'}">${hidden}</td><td class="mono ${unhandled ? 'bad' : 'ok'}">${unhandled}</td></tr>`;
+        }).join('');
+        box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Nền tảng</th><th>Request gửi thêm</th><th>Lỗi 400 bị chuyển đi</th><th>Lỗi cần fallback mà không được chuyển</th></tr>' + rows })]),
+          el('div', { class: 'cap', text: 'Tỷ lệ lỗi giả định trên 1.000 request: 20 lần 529, 10 lần 429, 8 lần 400, 3 refusal. Giả định model thứ hai phục vụ được các lỗi hạ tầng; 400 thì cả 3 bước đều từ chối nên mỗi request sai tốn thêm 2 request.' }));
+      },
+      take: 'Không có nền tảng nào đúng cho mọi loại lỗi. Claude fallbacks lo refusal, một chuỗi có danh sách status code tường minh lo lỗi hạ tầng.'
+    },
+    {
+      q: 'LiteLLM cho deployment "nguội" 5 giây khi gặp 429. Nghe hợp lý, có bẫy gì?',
+      a: `<p>Theo README, khi chưa đặt <code>allowed_fails</code>, LiteLLM cho deployment nguội 5 giây ngay khi gặp <code>429</code>, khi quá 50% request lỗi trong phút hiện tại, hoặc khi gặp <code>401</code>, <code>404</code>, <code>408</code>. Trong lúc nguội, request đi sang deployment khác cùng nhóm hoặc sang <code>fallbacks</code>.</p>
+<p>Bẫy thứ nhất: một <code>429</code> lẻ cũng làm cả deployment ngừng nhận request 5 giây. Nếu nhóm chỉ có một deployment Sonnet 5.5, toàn bộ traffic dồn sang fallback trong 5 giây đó. Bẫy thứ hai: <code>max_parallel_requests</code>. Nếu bạn đặt <code>rpm</code> mà không đặt giới hạn song song, LiteLLM tự suy ra giới hạn theo từng process; hết slot thì trả <code>429</code> ngay, không xếp hàng, và giới hạn không chia sẻ giữa worker.</p>
+<p>Hình dưới giả lập 60 giây traffic của ShopViet, mỗi giây 4 request, Sonnet 5.5 trả 429 lẻ tẻ (tỷ lệ chọn được, giả định). Ô cam là giây deployment đang nguội và request bị đẩy sang fallback.</p>`,
+      viz(box) {
+        const S = { p: 3 }, grid = el('div', { class: 'grid60' }), out = el('div', { class: 'stat' });
+        const cells = Array.from({ length: 60 }, () => el('span'));
+        grid.append(...cells);
+        function draw() {
+          const rnd = seeded(4821); let cool = -1, moved = 0, hits = 0;
+          cells.forEach((c, t) => {
+            const inCool = t <= cool;
+            let got429 = false;
+            for (let k = 0; k < 4; k++) { const r = rnd(); if (!inCool && r < S.p / 100) got429 = true; }
+            if (inCool) moved += 4;
+            if (got429) { hits++; cool = t + 5; }
+            c.className = inCool ? 'lit' : (got429 ? 'pre' : '');
+          });
+          grid.classList.add('slow');
+          out.innerHTML = `<span>Số lần gặp 429: <b>${hits}</b></span><span>Request bị đẩy sang fallback: <b class="${moved > 40 ? 'bad' : ''}">${moved}</b> / 240</span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Xác suất 429 mỗi request (giả định)', 0, 10, 1, S.p, (v) => { S.p = v; draw(); }, (v) => v + '%').node]), grid, out,
+          el('div', { class: 'cap', text: 'Mỗi ô là một giây. Ô viền là giây gặp 429, ô cam là giây deployment đang nguội 5 giây (mặc định của LiteLLM khi chưa đặt allowed_fails). Chỉ 3% request bị 429 cũng có thể đẩy một phần lớn traffic sang fallback, nơi không có prompt cache.' }));
+        draw();
+      },
+      take: 'Mặc định cooldown của LiteLLM phản ứng mạnh với 429 lẻ. Đặt allowed_fails và cooldown_time theo trace thật, và có nhiều deployment trong nhóm trước khi dựa vào cooldown.'
+    },
+    {
+      q: 'OpenRouter tính tiền theo model nào khi đã fallback?',
+      a: `<p>Theo model <b>thực phục vụ</b>, ghi ở trường <code>model</code> của response. README nêu ví dụ: liệt kê model <code>:free</code> trước, model trả phí sau, thì khi model free lỗi bạn trả giá trả phí. Muốn chắc chắn miễn phí thì chỉ liệt kê model <code>:free</code>.</p>
+<p>Cũng vậy với chuỗi của ShopViet: Sonnet 5.5 rồi <code>gpt-6.1-sol</code> có cùng giá niêm yết (2 USD input, 10 USD output mỗi triệu token, theo Cost Optimization §2.1). Nhưng nếu model fallback là Opus 5.5 (4 và 20 USD) thì mỗi request được fallback phục vụ đắt gấp đôi. Hình tính hoá đơn ngày theo tỷ lệ fallback.</p>`,
+      viz(box) {
+        const P = { sonnet: [2, 10], opus: [4, 20], gpt: [2, 10], haiku: [0.10, 0.50] }, N = { sonnet: 'Sonnet 5.5', opus: 'Opus 5.5', gpt: 'gpt-6.1-sol', haiku: 'Haiku 5.5' };
+        const S = { f: 'opus', r: 5 }, out = el('div', { class: 'stat' });
+        const cost = (p) => (20000 * (3000 * p[0] + 300 * p[1])) / 1e6;
+        function draw() {
+          const base = cost(P.sonnet), mixc = (1 - S.r / 100) * base + (S.r / 100) * cost(P[S.f]);
+          out.innerHTML = `<span>Chỉ Sonnet 5.5: <b>$${base.toFixed(2)}</b>/ngày</span><span>Có ${S.r}% fallback sang ${N[S.f]}: <b>$${mixc.toFixed(2)}</b>/ngày</span><span>Chênh <b class="${mixc > base * 1.05 ? 'bad' : 'ok'}">${(((mixc - base) / base) * 100).toFixed(1)}%</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [select('Model fallback', Object.keys(N).filter((k) => k !== 'sonnet').map((k) => [k, N[k]]), S.f, (v) => { S.f = v; draw(); }).node,
+          slider('Tỷ lệ fallback', 0, 50, 1, S.r, (v) => { S.r = v; draw(); }, (v) => v + '%').node]), out,
+          el('div', { class: 'cap', text: 'Giá niêm yết từ Cost Optimization §2.1 (06/11/2026). 20.000 request/ngày, 3.000 input và 300 output token mỗi request là giả định. Chưa tính cache: fallback còn làm mất prompt cache, nên chi phí thật cao hơn.' }));
+        draw();
+      },
+      take: 'Đọc trường model của response để biết ai đã trả lời và ai đã tính tiền. Model fallback đắt hơn biến một sự cố capacity thành sự cố chi phí.'
+    },
+    {
+      q: 'Claude cũng có tham số fallbacks. Bật nó lên là đủ, không cần gateway?',
+      a: `<p>Không. Fallback phía server của Claude <b>chỉ</b> chạy khi model chính từ chối. README trích nguyên văn: "A rate limit, overload, or server error on the requested model is returned to you as-is". Lúc 20:00 ShopViet nhận <code>529</code>, tham số <code>fallbacks</code> không làm gì cả.</p>
+<p>Thêm vài điều kiện: request phải hợp lệ với <b>mọi</b> model trong danh sách, nếu không API từ chối ngay từ đầu; danh sách tối đa 3 model; Haiku 5.5 không có fallback phía server; model fallback đang bị rate limit thì không được thử và refusal trả về kèm <code>stop_details.recommended_model</code>.</p>
+<p>Còn một bẫy nữa: OpenRouter cũng nhận <code>fallbacks</code> trên endpoint Messages, cùng tên và cùng shape, nhưng kích hoạt trên mọi lỗi. Đổi <code>base_url</code> là đổi hành vi mà code không đổi một dòng.</p>`,
+      viz(box) {
+        const errs = [['529 overloaded_error', 'Trả 529 cho ứng dụng', 'Chuyển sang model kế'], ['429 rate_limit_error', 'Trả 429 cho ứng dụng', 'Chuyển sang model kế'], ['400 invalid_request_error', 'Trả 400', 'Chuyển sang model kế (tốn thêm request)'], ['Refusal, HTTP 200', 'Chạy lại trên model fallback trong cùng lời gọi', 'Chuyển sang model kế']];
+        box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Model chính trả</th><th>Claude API + fallbacks</th><th>OpenRouter /api/v1/messages + fallbacks</th></tr>' + errs.map(([e, a, b]) => `<tr><td class="mono">${e}</td><td class="${a.startsWith('Trả') && !e.startsWith('400') ? 'bad' : ''}">${a}</td><td>${b}</td></tr>`).join('') })]),
+          el('div', { class: 'cap', text: 'Cùng request body, cùng tham số fallbacks. Chỉ khác base_url. Theo README §2.1 và §2.2.' }));
+      },
+      take: 'Claude fallbacks lo refusal, không lo uptime. Chuỗi cho lỗi hạ tầng vẫn phải có, ở gateway hoặc trong code.'
+    },
+    {
+      q: 'Khi Claude đã tự fallback, tính tiền thế nào cho đúng?',
+      a: `<p>Response cho biết ai đã trả lời qua ba chỗ: trường <code>model</code> ở cấp trên cùng, một content block <code>fallback</code> đánh dấu chỗ chuyển model, và <code>usage.iterations</code> ghi từng lần thử. README nhấn mạnh: <b>usage ở cấp trên cùng chỉ tính lần thử đã tạo ra message trả về</b>. Lần thử bị từ chối vẫn có thể bị tính tiền (refusal giữa stream tính input và phần output đã stream).</p>
+<p>Ví dụ dưới là một response rút gọn với token giả định. Kéo thanh trượt để đổi phần output mà Sonnet 5.5 đã sinh trước khi từ chối giữa chừng.</p>`,
+      viz(box) {
+        const S = { out1: 180 }, pre = el('pre', { class: 'mono', style: 'font-size:12px;overflow-x:auto;margin:0 0 8px' }), stat = el('div', { class: 'stat' });
+        const p55 = [2, 10], p5 = [2, 10];
+        function draw() {
+          const it = [{ m: 'claude-sonnet-5-5', i: 4200, o: S.out1, p: p55 }, { m: 'claude-sonnet-5', i: 4200, o: 320, p: p5 }];
+          pre.textContent = JSON.stringify({ model: 'claude-sonnet-5', stop_reason: 'end_turn', usage: { input_tokens: 4200, output_tokens: 320, iterations: it.map((x, k) => ({ type: k ? 'fallback_message' : 'message', model: x.m, input_tokens: x.i, output_tokens: x.o })) } }, null, 2);
+          const c = (x) => (x.i * x.p[0] + x.o * x.p[1]) / 1e6, top = c(it[1]), all = c(it[0]) + c(it[1]);
+          stat.innerHTML = `<span>Đọc usage cấp trên: <b>$${top.toFixed(5)}</b></span><span>Cộng iterations: <b>$${all.toFixed(5)}</b></span><span>Báo cáo thiếu <b class="bad">${(((all - top) / all) * 100).toFixed(0)}%</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Output trước khi từ chối', 0, 600, 20, S.out1, (v) => { S.out1 = v; draw(); }, (v) => v + ' token').node]), pre, stat,
+          el('div', { class: 'cap', text: 'Shape rút gọn để minh hoạ, xem tài liệu Claude cho tên trường đầy đủ. Giá Sonnet 5.5 lấy từ Cost Optimization §2.1; giá Sonnet 5 không có trong bảng đó, ở đây giả định bằng Sonnet 5.5. Giả định toàn bộ input của lần thử đầu bị tính tiền.' }));
+        draw();
+      },
+      take: 'Dashboard chi phí phải cộng usage.iterations. Đọc usage cấp trên cùng là báo cáo thấp hơn hoá đơn đúng bằng phần bị từ chối.'
+    },
+    {
+      q: 'ShopViet chạy trên AWS. Bật cross-region inference của Bedrock có thay được chuỗi fallback không?',
+      a: `<p>Không thay được, nhưng giảm một loại rủi ro. Inference profile cho Bedrock tự chọn region còn capacity: profile theo vùng (US, EU, APAC) chọn trong vùng đó, profile global chọn bất kỳ region thương mại nào. Global rẻ hơn khoảng 10% và không giữ dữ liệu trong một vùng. Không có phí routing thêm; CloudTrail ghi region thực xử lý ở <code>additionalEventData.inferenceRegion</code>.</p>
+<p>Hai giới hạn: inference profile <b>không hỗ trợ Provisioned Throughput</b>, và chính AWS khuyên "add bounded retries and multi-Region or multi-model fallback in your application". Cross-region giảm rủi ro một region, không giảm rủi ro model bị quá tải trên toàn vùng, request sai hay refusal.</p>`,
+      viz(box) {
+        const S = { res: 'no', pt: 'no', spend: 3000 }, out = el('div', { class: 'stat' }), note = el('div', { class: 'cap' });
+        function draw() {
+          let prof, ok = true, msg;
+          if (S.pt === 'yes') { prof = 'Không dùng inference profile (Provisioned Throughput ở một region)'; msg = 'Provisioned Throughput không dùng được với inference profile cross-region. Phải chọn: capacity đặt trước ở một region, hay phân phối qua nhiều region.'; ok = false; } else if (S.res === 'yes') { prof = 'Profile theo vùng (ví dụ APAC)'; msg = 'Có yêu cầu lưu trú dữ liệu nên dùng profile theo vùng, không hưởng mức giảm của global.'; } else { prof = 'Profile global'; msg = 'Không có ràng buộc lưu trú: global rẻ hơn khoảng 10% và có nhiều region để chọn hơn.'; }
+          const save = S.res === 'no' && S.pt === 'no' ? S.spend * 0.1 : 0;
+          out.innerHTML = `<span>Chọn: <b>${prof}</b></span><span>Tiết kiệm ước tính: <b>$${save.toFixed(0)}</b>/tháng</span>`;
+          note.innerHTML = (ok ? '' : '<b class="bad">Xung đột:</b> ') + msg + ' Dù chọn gì, vẫn cần chuỗi fallback ở ứng dụng.';
+        }
+        box.append(el('div', { class: 'row' }, [select('Lưu trú dữ liệu', [['no', 'Không ràng buộc'], ['yes', 'Phải ở trong vùng']], S.res, (v) => { S.res = v; draw(); }).node,
+          select('Provisioned Throughput', [['no', 'Không'], ['yes', 'Đang dùng']], S.pt, (v) => { S.pt = v; draw(); }).node,
+          slider('Chi tiêu Bedrock', 500, 20000, 500, S.spend, (v) => { S.spend = v; draw(); }, (v) => '$' + v).node]), out, note);
+        draw();
+      },
+      take: 'Cross-region inference là lớp phòng thủ cho sự cố region. Chuỗi fallback ở ứng dụng vẫn là lớp phòng thủ cho mọi thứ còn lại.'
+    },
+    {
+      q: 'Azure model router tự chọn model cho từng request. Hội thoại dài thì có vấn đề gì?',
+      a: `<p>Chat Completions là stateless, nên router có thể chọn model khác ở lượt sau của cùng hội thoại. Đổi model là mất prompt cache, và giọng trả lời có thể đổi giữa chừng. Session affinity (preview) yêu cầu router thử lại model cũ trước, nhưng theo README nó "doesn't inspect cache state or guarantee a cache hit", và liên kết hết hạn sau <b>30 phút</b> không có request thành công. Chính sách, an toàn, khả năng, quota và fallback được ưu tiên hơn affinity.</p>
+<p>Thêm: chọn tập con model thì phải có ít nhất hai model, nếu không failover bị tắt; model reasoning bỏ qua <code>temperature</code> và <code>top_p</code> khi được router chọn. Hình dưới là một khách ShopViet hỏi rải rác trong buổi tối. Kéo khoảng nghỉ giữa các lượt để thấy lượt nào mất affinity.</p>`,
+      viz(box) {
+        const S = { gap: 20 }, row = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' }), out = el('div', { class: 'stat' });
+        const gaps = [0, 4, 12, 1, 25, 3, 40, 2];
+        function draw() {
+          let lost = 0;
+          row.replaceChildren(...gaps.map((g, i) => {
+            const gg = i === 0 ? 0 : Math.round(g * S.gap / 20), brk = i > 0 && gg > 30;
+            if (brk) lost++;
+            return el('div', { style: `border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;background:${brk ? 'color-mix(in srgb, var(--warn) 20%, var(--bg))' : 'var(--bg)'}` },
+              [el('b', { text: 'Lượt ' + (i + 1) }), el('div', { class: 'mono', text: i ? `+${gg} phút` : 'bắt đầu' }), el('div', { text: brk ? 'affinity hết hạn' : 'giữ model cũ' })]);
+          }));
+          out.innerHTML = `<span>Lượt có thể đổi model: <b class="${lost ? 'bad' : 'ok'}">${lost}</b> / ${gaps.length - 1}</span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Hệ số khoảng nghỉ', 5, 60, 5, S.gap, (v) => { S.gap = v; draw(); }, (v) => (v / 20).toFixed(2) + '×').node]), row, out,
+          el('div', { class: 'cap', text: 'Khoảng nghỉ giữa các lượt là giả định. Ngưỡng 30 phút lấy từ README §2.2. Kể cả khi còn affinity, router vẫn có thể đổi model vì quota hay fallback.' }));
+        draw();
+      },
+      take: 'Router stateless chọn lại ở mỗi request. Muốn giữ model cho cả hội thoại thì lưu model đang phục vụ vào state của hội thoại, đừng chỉ trông vào affinity.'
+    },
+    {
+      q: 'Vậy gateway rốt cuộc không làm được gì?',
+      a: `<p>Gateway dịch được format request và chuyển request sang provider khác. Nó <b>không</b> biết:</p>
+<ul><li>request của bạn dùng tính năng mà model đích không hỗ trợ (forced <code>tool_choice</code> ở Sonnet 5.5, <code>between_tools</code> ở model khác Sonnet 5.5, <code>temperature</code> trên API version <code>2026-10-21</code>);</li>
+<li>cách giữ prompt cache hay thinking block qua model: cache Claude tách theo model, thinking block của model này có thể bị model kia bỏ lặng lẽ;</li>
+<li>output ở model fallback có đủ tốt cho tác vụ của bạn hay không.</li></ul>
+<p>Bảng kiểm tra trong hình chính tính đúng những điều này từ chuỗi bạn chọn. Gateway nào cũng sẽ gửi request đi; bảng kiểm tra cho bạn biết trước bước nào sẽ <code>400</code>. Phần giữ request tương thích có ở Lab 6.</p>`,
+      take: 'Gateway giải bài toán đường đi, không giải bài toán tương thích. README §1.5 vẫn áp dụng nguyên vẹn khi có gateway.'
+    }
+  ],
+  poc: {
+    goal: "Render config của chuỗi Sonnet 5.5 → Sonnet 5 → gpt-6.1-sol cho LiteLLM, Portkey, OpenRouter, Cloudflare và Claude <code>fallbacks</code>, kiểm lỗi tĩnh; rồi nạp đúng file YAML LiteLLM đó vào <b>LiteLLM Router 1.111.0 thật</b> trỏ tới server giả, tiêm lỗi vào Sonnet 5.5 và đếm request thật. <b>Portkey, OpenRouter, Cloudflare và fallback phía server của Claude chỉ được render và kiểm, không chạy.</b>",
+    file: "docs/model-routing/pocs/04_gateways_cloud.py",
+    run: "uv run docs/model-routing/pocs/04_gateways_cloud.py",
+    needs: "chỉ <code>uv</code> và CPU, miễn phí; lần đầu <code>uv</code> cài LiteLLM (khoảng 60 gói).",
+    output: "Phần 1: render config của chuỗi cho 5 nền tảng (chỉ render và kiểm, KHÔNG chạy Portkey/OpenRouter/Cloudflare/Claude thật).\nPhần 2: LiteLLM 1.111.0 THẬT, nạp đúng file YAML vừa render, gọi server giả 127.0.0.1 (Claude /v1/messages,\nOpenAI /v1/chat/completions). Lỗi tiêm vào Sonnet 5.5; đếm request thật server nhận.\n\n== 1. Config render cho cùng chuỗi Sonnet 5.5 → Sonnet 5 → gpt-6.1-sol ==\nLiteLLM (YAML):\n  model_list:\n    - model_name: shopviet-chat\n      litellm_params:\n        model: anthropic/claude-sonnet-5-5\n        api_base: BASE\n        api_key: sk-fake\n        order: 1\n    - model_name: shopviet-chat\n      litellm_params:\n        model: anthropic/claude-sonnet-5\n        api_base: BASE\n        api_key: sk-fake\n        order: 2\n    - model_name: shopviet-chat\n      litellm_params:\n        model: openai/gpt-6.1-sol\n        api_base: BASE/v1\n        api_key: sk-fake\n        order: 3\n  router_settings:\n    routing_strategy: simple-shuffle\n    num_retries: 1\n    allowed_fails: 3\n    cooldown_time: 30\nPortkey: 301 byte JSON hợp lệ\n   - on_status_codes [429, 503] thiếu 529: Claude quá tải KHÔNG chuyển model\n   - một body chung cho mọi target: thinking between_tools tới Sonnet 5 và OpenAI\nOpenRouter (Messages): 461 byte JSON hợp lệ\n   - 2 mục fallbacks (tối đa 3); kích hoạt trên MỌI lỗi, kể cả 400 và 429\nCloudflare (Universal): 1166 byte JSON hợp lệ\n   - ổn: mỗi bước có body riêng; log header cf-aig-step\nClaude fallbacks: 434 byte JSON hợp lệ\n   - ['gpt-6.1-sol'] không phải model Claude: fallbacks phía server chỉ sang model Claude\n   - chỉ refusal kích hoạt; 529/429/5xx trả nguyên trạng\n\n== 2. LiteLLM Router thật, nạp YAML trên (num_retries 1, allowed_fails 3, cooldown 30 s) ==\nSonnet 5.5 trả                    Kết quả cho ứng dụng                Request  Thứ tự server nhận                              Thời gian\n--------------------------------  ----------------------------------  -------  ----------------------------------------------  ---------\n529 liên tục                      claude-sonnet-5 (stop)              3        sonnet-5-5:529, sonnet-5-5:529, sonnet-5:200    0,22 s\n429 retry-after: 2                claude-sonnet-5 (stop)              3        sonnet-5-5:429, sonnet-5-5:429, sonnet-5:200    0,03 s\n400 request sai                   claude-sonnet-5 (stop)              2        sonnet-5-5:400, sonnet-5:200                    0,02 s\n404 model retire                  claude-sonnet-5 (stop)              2        sonnet-5-5:404, sonnet-5:200                    0,02 s\nrefusal (HTTP 200)                claude-sonnet-5-5 (content_filter)  1        sonnet-5-5:200                                  0,01 s\ntreo (timeout 2 s)                claude-sonnet-5 (stop)              3        sonnet-5-5:hang, sonnet-5-5:hang, sonnet-5:200  4,11 s\nkhoẻ, gửi thinking between_tools  claude-sonnet-5-5 (stop)            1        sonnet-5-5:200                                  0,01 s\n529 + thinking between_tools      lỗi UnsupportedParamsError          3        sonnet-5-5:529, sonnet-5-5:529, sonnet-5:400    0,03 s\nLiteLLM có tự chèn temperature/top_p/top_k vào body không (ứng dụng không truyền): không\n\n== 3. Cooldown mặc định của LiteLLM sau 429 (router_settings không đặt allowed_fails) ==\n3 request liền nhau: ['claude-sonnet-5 (stop)', 'claude-sonnet-5 (stop)', 'claude-sonnet-5 (stop)']\n   server nhận: sonnet-5-5:429, sonnet-5:200, sonnet-5:200, sonnet-5:200\n2 request cách 6 s: ['claude-sonnet-5 (stop)', 'claude-sonnet-5-5 (stop)']\n   server nhận: sonnet-5-5:429, sonnet-5:200, sonnet-5-5:200\nServer giả đã dừng.\n\nRút ra: config tĩnh đã lộ lỗi trước khi chạy (Portkey [429, 503] thiếu 529, Claude fallbacks không sang được OpenAI, body chung\ngửi between_tools cho model không nhận). Chạy LiteLLM thật thì thấy hành vi mà bảng README để '?': 400 VẪN được chuyển sang\nmodel kế (che bug), 429 retry-after: 2 bị retry lại sau vài ms chứ không chờ 2 s, refusal HTTP 200 về tay ứng dụng như thành\ncông (finish_reason content_filter), deployment bị nguội ~5 s sau 429. Đọc lại ngữ nghĩa fallback mỗi khi đổi nền tảng.",
+    measured: true,
+    read: ["Phần 1: Portkey <code>on_status_codes [429, 503]</code> thiếu 529 nên lúc Claude quá tải không chuyển model; Claude <code>fallbacks</code> không sang được gpt-6.1-sol.", "Phần 2: LiteLLM chuyển cả <b>400</b> sang Sonnet 5 (che bug); 429 kèm <code>retry-after: 2</code> bị retry sau vài ms, không chờ 2 s.", "Phần 2: refusal là HTTP 200 nên về tay ứng dụng như thành công (<code>finish_reason: content_filter</code>), không có fallback; LiteLLM không tự chèn <code>temperature</code>.", "<b>Đo thật vs dựng sẵn:</b> Phần 1 chỉ render và kiểm config tĩnh, KHÔNG gọi Portkey, OpenRouter, Cloudflare hay Claude thật. Phần 2–3 là LiteLLM Router thật chạy code thật, nhưng provider là server giả: lỗi (529, 429, 400, refusal, treo) do script tiêm vào, nên số request và thứ tự là đo thật, còn tần suất lỗi thì không.", "Phần 3: sau một 429, Sonnet 5.5 bị bỏ qua cho các request liền sau và được dùng lại sau 6 s, khớp cooldown 5 s mặc định README nêu."]
+  },
+  mount(stage) {
+    const M = {
+      sonnet55: { id: 'claude-sonnet-5-5', or: 'anthropic/claude-sonnet-5.5', ll: 'anthropic/claude-sonnet-5-5', label: 'Sonnet 5.5 · Claude API', prov: 'anthropic', claude: true, bucket: 'Sonnet 5.5 (Claude API)', forced: false, think: ['adaptive', 'between_tools'] },
+      sonnet55b: { id: 'claude-sonnet-5-5', or: 'anthropic/claude-sonnet-5.5', ll: 'bedrock/<sonnet-5.5 inference profile>', label: 'Sonnet 5.5 · Bedrock', prov: 'bedrock', claude: true, bucket: 'Sonnet 5.5 (quota AWS)', forced: false, think: ['adaptive', 'between_tools'] },
+      sonnet5: { id: 'claude-sonnet-5', or: 'anthropic/claude-sonnet-5', ll: 'anthropic/claude-sonnet-5', label: 'Sonnet 5 · Claude API', prov: 'anthropic', claude: true, bucket: 'Sonnet 5 (Claude API)', forced: true, think: ['adaptive', 'disabled'] },
+      haiku55: { id: 'claude-haiku-5-5', or: 'anthropic/claude-haiku-5.5', ll: 'anthropic/claude-haiku-5-5', label: 'Haiku 5.5 · Claude API', prov: 'anthropic', claude: true, bucket: 'Haiku 5.5 (Claude API)', forced: true, think: ['adaptive', 'disabled'] },
+      opus55: { id: 'claude-opus-5-5', or: 'anthropic/claude-opus-5.5', ll: 'anthropic/claude-opus-5-5', label: 'Opus 5.5 · Claude API', prov: 'anthropic', claude: true, bucket: 'Opus 5.5 (Claude API)', forced: false, think: ['adaptive'] },
+      opus48: { id: 'claude-opus-4-8', or: 'anthropic/claude-opus-4.8', ll: 'anthropic/claude-opus-4-8', label: 'Opus 4.8 · Claude API', prov: 'anthropic', claude: true, bucket: 'Opus 4.x (Claude API)', forced: true, think: ['adaptive', 'disabled'] },
+      opus47: { id: 'claude-opus-4-7', or: 'anthropic/claude-opus-4.7', ll: 'anthropic/claude-opus-4-7', label: 'Opus 4.7 · Claude API', prov: 'anthropic', claude: true, bucket: 'Opus 4.x (Claude API)', forced: null, think: null },
+      gpt: { id: 'gpt-6.1-sol', or: 'openai/gpt-6.1-sol', ll: 'openai/gpt-6.1-sol', label: 'gpt-6.1-sol · OpenAI', prov: 'openai', claude: false, bucket: 'gpt-6.1-sol (OpenAI)', forced: true, think: null },
+      gemini: { id: 'gemini-3.8-flash', or: 'google/gemini-3.8-flash', ll: 'gemini/gemini-3.8-flash', label: 'Gemini 3.8 Flash · Google', prov: 'google', claude: false, bucket: 'Gemini 3.8 Flash (Google)', forced: true, think: null }
+    };
+    const PL = { litellm: 'LiteLLM Router', portkey: 'Portkey', openrouter: 'OpenRouter (Messages)', cloudflare: 'Cloudflare AI Gateway', claude: 'Claude fallbacks (phía server)' };
+    const ERR = [['e529', '529 overloaded (Claude)'], ['e503', '503 quá tải (OpenAI, Gemini)'], ['e429', '429 rate limit'], ['e400', '400 request sai'], ['e404', '404 model retire'], ['eto', 'Timeout'], ['eref', 'Refusal (HTTP 200)'], ['ectx', 'Vượt context window']];
+    const S = { plat: 'portkey', chain: ['sonnet55', 'sonnet5', 'gpt', ''], forced: false, temp: false, btw: true, codes: 'none' };
+    const CODES = { none: null, oai: [429, 503], full: [429, 500, 503, 529] };
+    function trig(p, e) {
+      if (p === 'claude') return e === 'eref' ? 'y' : 'n';
+      if (p === 'openrouter') return 'y';
+      if (p === 'cloudflare') return e === 'eref' ? 'n' : 'y';
+      if (p === 'portkey') {
+        if (e === 'eref') return 'n';
+        const c = CODES[S.codes];
+        if (!c) return e === 'eto' ? '?' : 'y';
+        const st = { e529: 529, e503: 503, e429: 429, e400: 400, e404: 404, ectx: 400, eto: null }[e];
+        return st == null ? '?' : (c.includes(st) ? 'y' : 'n');
+      }
+      return { e529: 'y', e503: 'y', e429: 'y', e400: 'y', e404: 'y', eto: 'y', eref: 'n', ectx: 'y' }[e];
+    }
+    const LL_POC = { e400: 1, eto: 1, eref: 1 };
+    const chain = () => S.chain.filter(Boolean).map((k) => ({ k, ...M[k] }));
+    const overridable = () => S.plat === 'cloudflare' || S.plat === 'claude' || S.plat === 'openrouter';
+    function invalidAt(m, i) {
+      const why = [];
+      if (S.forced && m.forced === false) why.push('forced tool_choice không được nhận');
+      if (S.forced && m.forced === null) why.push('README không ghi model này có nhận forced tool_choice hay không');
+      if (S.temp && m.claude) why.push('temperature bị từ chối trên API version 2026-10-21');
+      if (S.btw && m.k !== 'sonnet55' && m.k !== 'sonnet55b' && !(overridable() && i > 0)) why.push(m.claude ? 'thinking between_tools chỉ Sonnet 5.5 nhận' : 'between_tools là tham số riêng của Claude');
+      return why;
+    }
+    const body = (m, i) => {
+      const b = { model: S.plat === 'openrouter' ? m.or : m.id, max_tokens: 1024 };
+      if (S.btw) b.thinking = { type: (m.k === 'sonnet55' || m.k === 'sonnet55b' || !(overridable() && i > 0)) ? 'between_tools' : 'adaptive' };
+      if (S.temp) b.temperature = 0.2;
+      b.tools = ['<tra_don_hang>'];
+      if (S.forced) b.tool_choice = { type: 'any' };
+      b.messages = [{ role: 'user', content: 'Đơn SV-4821 của tôi tới đâu rồi?' }];
+      return b;
+    };
+    function config() {
+      const c = chain();
+      if (!c.length) return '';
+      const j = (o) => JSON.stringify(o, null, 2);
+      if (S.plat === 'litellm') {
+        return 'model_list:\n' + c.map((m, i) => `  - model_name: shopviet-chat\n    litellm_params:\n      model: ${m.ll}\n      order: ${i + 1}` + (S.temp ? '\n      temperature: 0.2' : '')).join('\n') +
+          '\nrouter_settings:\n  routing_strategy: simple-shuffle\n  num_retries: 1\n  allowed_fails: 3\n  cooldown_time: 30';
+      }
+      if (S.plat === 'portkey') {
+        const st = { mode: 'fallback' };
+        if (CODES[S.codes]) st.on_status_codes = CODES[S.codes];
+        return j({ strategy: st, targets: c.map((m) => ({ provider: m.prov, override_params: { model: m.id } })) }) + '\n\n// body gửi chung cho mọi target:\n' + j(Object.assign(body(c[0], 0), { model: undefined }));
+      }
+      if (S.plat === 'openrouter') {
+        const b = body(c[0], 0);
+        b.fallbacks = c.slice(1).map((m, i) => { const f = { model: m.or }; if (S.btw && m.k !== 'sonnet55' && m.k !== 'sonnet55b') f.thinking = { type: 'adaptive' }; return f; });
+        return '// POST /api/v1/messages\n' + j(b);
+      }
+      if (S.plat === 'cloudflare') {
+        return '// Universal endpoint: mảng request, mỗi bước body riêng\n' + j(c.map((m, i) => ({ provider: m.prov, endpoint: m.claude ? 'v1/messages' : '<chat endpoint>', headers: { authorization: '<key>' }, query: body(m, i) })));
+      }
+      const b = body(c[0], 0);
+      b.fallbacks = c.slice(1).map((m) => { const f = { model: m.id }; if (S.btw && m.k !== 'sonnet55' && m.k !== 'sonnet55b') f.thinking = { type: 'adaptive' }; return f; });
+      return '// header anthropic-beta: server-side-fallback-2026-07-01\n' + j(b);
+    }
+    function checks() {
+      const c = chain(), out = [];
+      if (!c.length) return [['bad', 'Chuỗi rỗng.']];
+      c.forEach((m, i) => { const w = invalidAt(m, i); if (w.length) out.push(['bad', `Bước ${i + 1} (${m.label}) sẽ 400: ${w.join('; ')}.`]); });
+      if (S.btw && overridable()) out.push(['ok', 'Nền tảng này cho ghi đè thinking theo từng bước, nên các bước sau được đổi sang adaptive.']);
+      if (S.btw && !overridable() && c.some((m) => m.k !== 'sonnet55' && m.k !== 'sonnet55b')) out.push(['warn', `Config ${PL[S.plat]} ở đây gửi cùng body cho mọi bước. README không mô tả cách ghi đè tham số theo model cho nền tảng này; kiểm tài liệu của nó.`]);
+      for (let i = 1; i < c.length; i++) if (c[i].bucket === c[i - 1].bucket && c[i].id !== c[i - 1].id) out.push(['bad', `Bước ${i} và ${i + 1} dùng chung bucket rate limit "${c[i].bucket}". Fallback vì 429 không giải quyết được gì.`]);
+      for (let i = 1; i < c.length; i++) if (c.slice(0, i).some((x) => x.k === c[i].k)) out.push(['warn', `Bước ${i + 1} lặp lại ${c[i].label}.`]);
+      if (c.some((m, i) => i && m.id === c[0].id && m.prov !== c[0].prov)) out.push(['ok', 'Cùng model ở nền tảng khác (ví dụ Bedrock) có quota riêng: hợp lệ cho fallback vì 429.']);
+      if (S.plat === 'claude') {
+        if (c.some((m) => !m.claude)) out.push(['bad', 'Claude fallbacks chạy trên Claude API, chỉ chuyển sang model Claude. Model của provider khác cần chuỗi riêng.']);
+        if (c[0].k === 'haiku55') out.push(['bad', 'Haiku 5.5 không có fallback phía server (README §2.2).']);
+        if (c[0].prov === 'bedrock') out.push(['bad', 'Fallback phía server có trên Claude API và Claude Models on Google Cloud. Trên Bedrock dùng middleware BetaRefusalFallbackMiddleware của SDK.']);
+        if (c.length - 1 > 3) out.push(['bad', `${c.length - 1} model fallback: tối đa 3.`]);
+        if (c.some((m, i) => invalidAt(m, i).length)) out.push(['bad', 'Request phải hợp lệ với mọi model trong danh sách: chỉ cần một model không nhận, API từ chối cả request ngay từ đầu, kể cả khi model chính nhận.']);
+        out.push(['warn', 'Chỉ refusal kích hoạt fallback. 529, 429, 5xx trả nguyên trạng cho ShopViet: vẫn cần chuỗi cho lỗi hạ tầng.']);
+      }
+      if (S.plat === 'openrouter') {
+        if (c.length - 1 > 3) out.push(['bad', `${c.length - 1} mục fallbacks trên endpoint Messages: tối đa 3.`]);
+        out.push(['warn', 'Kích hoạt trên mọi lỗi, kể cả 400 và 429. Tính tiền theo model thực phục vụ, đọc trường model.']);
+      }
+      if (S.plat === 'portkey') {
+        if (!CODES[S.codes]) out.push(['warn', 'Chưa đặt on_status_codes: mọi non-2xx kể cả 400 đều được chuyển sang target kế, tốn request và che bug.']);
+        else if (c.some((m) => m.claude) && !CODES[S.codes].includes(529)) out.push(['bad', `on_status_codes ${JSON.stringify(CODES[S.codes])} thiếu 529. Claude báo quá tải bằng 529, không phải 503: lúc 20:00 Portkey sẽ không chuyển model.`]);
+      }
+      if (S.plat === 'litellm') out.push(['warn', 'Mỗi mức order có lượt retry riêng trước khi sang mức kế. Đặt num_retries ở một chỗ và tắt retry ở SDK.']);
+      if (S.plat === 'cloudflare') out.push(['ok', 'Header cf-aig-step của response cho biết bước nào đã phục vụ: log nó.']);
+      if (c.length > 1) out.push(['warn', 'Mỗi lần chuyển model là mất prompt cache: cache Claude tách theo model.']);
+      return out;
+    }
+    function trace(sc) {
+      const c = chain(), lines = []; let n = 0, had400 = false;
+      if (!c.length) return { lines: ['Chuỗi rỗng.'], n: 0, had400, failed: true };
+      if (S.plat === 'claude' && (c.some((m, i) => invalidAt(m, i).length) || c.some((m) => !m.claude))) return { lines: ['Request 1 → Claude API: 400 ngay từ đầu vì có model trong danh sách không nhận request.'], n: 1, had400: true, failed: true };
+      for (let i = 0; i < c.length; i++) {
+        const m = c[i], inv = invalidAt(m, i); n++;
+        let e;
+        if (inv.length) { e = 'e400'; had400 = true; } else if (i === 0 && sc !== 'ok') e = sc === 'over' ? (m.claude ? 'e529' : 'e503') : sc; else { lines.push(`Request ${n} → ${m.label}: 200, trả lời xong.`); return { lines, n, had400, failed: false }; }
+        const name = ERR.find((x) => x[0] === e)[1], t = trig(S.plat, e);
+        if (e === 'eref') {
+          lines.push(`Request ${n} → ${m.label}: HTTP 200, stop_reason "refusal".`);
+          if (t === 'y' && i + 1 < c.length) { lines.push(`  ${PL[S.plat]} chuyển sang bước ${i + 2}.`); continue; }
+          lines.push(t === '?' ? '  README không nói rõ nền tảng này xử lý refusal; nếu không, ứng dụng nhận refusal như thành công.' : t === 'y' ? '  Hết chuỗi.' : '  Nền tảng coi HTTP 200 là thành công: ShopViet nhận refusal, không có fallback.');
+          return { lines, n, had400, failed: true };
+        }
+        lines.push(`Request ${n} → ${m.label}: ${name}${inv.length ? ' (' + inv[0] + ')' : ''}.`);
+        if (t === 'y' && i + 1 < c.length) { lines.push(`  ${PL[S.plat]} chuyển sang bước ${i + 2}.`); continue; }
+        lines.push(t === '?' ? '  README không nói rõ nền tảng này có chuyển với lỗi này; giả định trả lỗi cho ứng dụng.' : t === 'y' ? '  Hết chuỗi, trả lỗi cho ứng dụng.' : '  Không phải lỗi kích hoạt fallback: trả lỗi cho ứng dụng.');
+        return { lines, n, had400, failed: true };
+      }
+      return { lines, n, had400, failed: true };
+    }
+    const matrix = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), pre = el('pre', { class: 'mono', style: 'font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;max-height:340px' });
+    const chk = el('div'), tr = el('div'), cap = el('div', { class: 'hint' });
+    const codesSel = select('on_status_codes', [['none', 'không đặt (mặc định)'], ['oai', '[429, 503]'], ['full', '[429, 500, 503, 529]']], S.codes, (v) => { S.codes = v; render(); });
+    function render() {
+      codesSel.node.style.display = S.plat === 'portkey' ? '' : 'none';
+      const lab = { y: '<b class="ok">có</b>', n: '<b class="bad">không</b>', '?': '<span style="color:var(--mute)">?</span>' };
+      matrix.innerHTML = '<table><tr><th>Lỗi từ model</th>' + Object.keys(PL).map((p) => `<th style="${p === S.plat ? 'background:var(--accent-soft)' : ''}">${PL[p]}</th>`).join('') + '</tr>' +
+        ERR.map(([e, n]) => '<tr><td>' + n + '</td>' + Object.keys(PL).map((p) => `<td style="${p === S.plat ? 'background:var(--accent-soft)' : ''}">${lab[trig(p, e)]}${p === 'litellm' && LL_POC[e] ? ' <small style="color:var(--mute)">(POC)</small>' : ''}</td>`).join('') + '</tr>').join('') + '</table>';
+      pre.textContent = config();
+      chk.replaceChildren(...checks().map(([k, t]) => el('div', { style: `font-size:13px;padding:4px 8px;margin:3px 0;border-left:3px solid var(--${k === 'ok' ? 'ok' : k === 'bad' ? 'bad' : 'warn'});background:var(--bg)` , text: t })));
+      const sc = [['ok', 'Bình thường'], ['over', '20:00, model chính quá tải'], ['e429', 'Model chính 429'], ['eref', 'Model chính từ chối']];
+      tr.replaceChildren(...sc.map(([k, n]) => {
+        const r = trace(k);
+        return el('div', { style: 'border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0;background:var(--bg)' }, [
+          el('div', { html: `<b>${n}</b> · gửi <b class="${r.n > 2 ? 'bad' : ''}">${r.n}</b> request · ${r.failed ? '<b class="bad">người dùng không nhận được câu trả lời</b>' : '<b class="ok">có câu trả lời</b>'}${r.had400 ? ' · <b class="bad">có 400</b>' : ''}` }),
+          el('pre', { class: 'mono', style: 'font-size:12px;margin:4px 0 0;white-space:pre-wrap', text: r.lines.join('\n') })]);
+      }));
+      const t400 = trace('ok');
+      if (t400.n > 1 && t400.had400) cap.innerHTML = `<b class="bad">Bất thường:</b> ngày bình thường, không sự cố nào, SV-4821 vẫn tốn ${t400.n} request. Vì sao: request sai ở model chính (400) và ${PL[S.plat]} chuyển cả 400 sang model kế, nơi request cũng sai hoặc may mắn chạy được. Không có nghĩa là model chính đang lỗi. Trong hệ thống thật: 400 là FATAL, sửa request; đặt danh sách status code tường minh để 400 lộ ra ở log thay vì bị nuốt.`;
+      else if (t400.failed) cap.innerHTML = '<b class="bad">Bất thường:</b> ngày bình thường, không sự cố nào, mà SV-4821 không có câu trả lời. Vì sao: request không hợp lệ với một hoặc nhiều model trong chuỗi, và nền tảng không (hoặc không thể) chuyển 400 sang model nhận được nó. Không có nghĩa là provider đang lỗi. Trong hệ thống thật: dựng body theo bảng capability của từng model (Lab 6) và chạy request với mọi model trong CI.';
+      else cap.textContent = 'Đổi nền tảng, bật forced tool_choice hoặc temperature để thấy cùng một request đi đường khác nhau.';
+    }
+    const opts = [['', '—'], ...Object.entries(M).map(([k, m]) => [k, m.label])];
+    const cb = (label, key) => { const i = el('input', { type: 'checkbox' }); i.checked = S[key]; i.addEventListener('change', () => { S[key] = i.checked; render(); }); return el('label', { class: 'ctl' }, [i, label]); };
+    const chainSel = S.chain.map((v, i) => select('Bước ' + (i + 1), i === 0 ? opts.slice(1) : opts, v, (x) => { S.chain[i] = x; render(); }).node);
+    const helper = el('div'), hout = el('div');
+    const H = { cloud: 'none', res: 'no', host: 'hosted', why: 'both', body: 'yes', quota: 'no' };
+    function advise() {
+      const r = [];
+      if (H.why === 'refusal') r.push(['Claude fallbacks phía server', 'Lý do duy nhất là refusal: bật fallbacks "default" hoặc danh sách tối đa 3 model trên Claude API; có fallback credit, không trả thêm tiền ghi cache.']);
+      else r.push(['Claude fallbacks cho refusal + một chuỗi cho lỗi hạ tầng', 'fallbacks phía server không xử lý 529, 429, 5xx. Lỗi hạ tầng cần gateway hoặc code ở §3.1.']);
+      if (H.cloud === 'aws') r.push([H.res === 'yes' ? 'Bedrock inference profile theo vùng' : 'Bedrock inference profile global', (H.res === 'yes' ? 'Giữ dữ liệu trong vùng.' : 'Rẻ hơn khoảng 10%, nhiều region hơn.') + ' Không dùng được với Provisioned Throughput. Trên Bedrock dùng middleware của SDK cho refusal.']);
+      if (H.cloud === 'gcp') r.push([H.res === 'yes' ? 'Vertex AI endpoint region hoặc multi-region' : 'Vertex AI global endpoint', H.res === 'yes' ? 'Có ràng buộc lưu trú: dùng region cụ thể kèm chuỗi fallback riêng.' : 'Global endpoint sẵn sàng cao hơn một region.']);
+      if (H.cloud === 'azure') r.push(['Microsoft Foundry model router', 'Chọn ít nhất hai model để có failover. Đổi chế độ hay tập model mất tới 5 phút. Ghim model trong state hội thoại nếu cần giữ cache.']);
+      if (H.why !== 'refusal') {
+        if (H.host === 'self') r.push(['LiteLLM Router (tự host)', 'order, fallbacks, context_window_fallbacks; đặt allowed_fails và cooldown_time; nhớ max_parallel_requests đếm theo process.']);
+        else if (H.body === 'yes') r.push(['Cloudflare AI Gateway, Universal endpoint', 'Mỗi bước có body riêng, nên ghi đè thinking hay bỏ tool_choice theo model được. Log cf-aig-step.']);
+        else r.push(['OpenRouter hoặc Portkey', 'OpenRouter: một key cho nhiều provider, tính tiền theo model thực phục vụ, fallback trên mọi lỗi. Portkey: đặt on_status_codes tường minh, có 529 nếu dùng Claude.']);
+      }
+      if (H.quota === 'yes') r.push(['Quota theo tenant', 'Cloudflare dynamic routes (beta) có budget và rate limit theo user, project, team; hoặc token bucket trong ứng dụng (Lab 7).']);
+      hout.replaceChildren(...r.map(([t, d], i) => el('div', { style: `border:1px solid ${i ? 'var(--line)' : 'var(--accent)'};border-radius:6px;padding:8px 10px;margin:6px 0;background:var(--bg)` }, [el('b', { text: t }), el('div', { style: 'font-size:13px', text: d })])),
+        el('div', { class: 'hint', text: 'Dù chọn gì: gateway không giữ cache, thinking block hay chất lượng qua model. Bảng capability và eval nhánh fallback vẫn là việc của bạn.' }));
+    }
+    const hs = (lab, k, o) => select(lab, o, H[k], (v) => { H[k] = v; advise(); }).node;
+    helper.append(el('div', { class: 'row' }, [hs('Hạ tầng', 'cloud', [['none', 'Không gắn cloud'], ['aws', 'AWS'], ['gcp', 'Google Cloud'], ['azure', 'Azure']]), hs('Lưu trú dữ liệu', 'res', [['no', 'Không ràng buộc'], ['yes', 'Phải trong vùng']]), hs('Vận hành gateway', 'host', [['hosted', 'Dịch vụ hosted'], ['self', 'Tự host trong VPC']])]),
+      el('div', { class: 'row' }, [hs('Fallback vì', 'why', [['both', 'Lỗi hạ tầng và refusal'], ['refusal', 'Chỉ refusal']]), hs('Body riêng theo model', 'body', [['yes', 'Cần'], ['no', 'Không cần']]), hs('Quota theo tenant ở gateway', 'quota', [['no', 'Không'], ['yes', 'Có']])]), hout);
+    stage.append(
+      el('h4', { text: 'Lỗi nào kích hoạt fallback (README §2.1)', style: 'margin:0 0 6px' }), matrix,
+      el('div', { class: 'cap', html: '<b class="bad">Bất thường ở cột LiteLLM (đo bằng LiteLLM 1.111.0 thật trong POC, ô ghi "(POC)"):</b> README để trống, nhưng chạy thật thì (1) <code>400</code> request sai vẫn bị chuyển sang Sonnet 5, (2) <code>429</code> kèm <code>retry-after: 2</code> bị retry lại sau vài mili giây chứ không chờ 2 giây, (3) refusal là HTTP 200 nên về tay ứng dụng như thành công, chỉ khác <code>finish_reason: content_filter</code>. Vì sao: Router coi mọi exception là lý do thử deployment kế, và chỉ nhìn status code chứ không đọc nội dung. Không có nghĩa là LiteLLM hỏng: đó là mặc định, và README không hứa gì khác. Trong hệ thống thật: phân loại lỗi trước gateway (400 là FATAL, Lab 6), tự kiểm <code>finish_reason</code>/<code>stop_reason</code> trong ứng dụng, và đừng tin gateway tôn trọng <code>retry-after</code> khi chưa đo.' }),
+      el('h4', { text: 'Chuỗi fallback của ShopViet', style: 'margin:18px 0 6px' }),
+      el('div', { class: 'row' }, chainSel),
+      el('div', { class: 'row' }, [select('Nền tảng', Object.entries(PL), S.plat, (v) => { S.plat = v; render(); }).node, codesSel.node]),
+      el('div', { class: 'row' }, [cb('tool_choice: any (ép gọi tra_don_hang)', 'forced'), cb('temperature: 0.2', 'temp'), cb('thinking: between_tools', 'btw')]),
+      el('div', { class: 'cols' }, [el('div', {}, [el('h4', { html: 'Config <small>(rút gọn, minh hoạ)</small>' }), pre]), el('div', {}, [el('h4', { text: 'Kiểm tra chuỗi' }), chk])]),
+      el('h4', { text: 'Đi theo SV-4821 qua chuỗi', style: 'margin:18px 0 6px' }), tr, cap,
+      el('h4', { text: 'Bộ chọn: đặt fallback ở đâu', style: 'margin:22px 0 6px' }), helper,
+      el('p', { class: 'hint', text: 'Bảng trigger và giới hạn lấy từ README §2.1–2.2. Ô ? là README không khẳng định; ô "(POC)" ở cột LiteLLM là hành vi đo bằng LiteLLM 1.111.0 thật trên server giả (pocs/04_gateways_cloud.py), không phải từ README. Capability của model theo README §1.5 và §3.2; Opus 4.7 không có trong bảng capability nên được đánh dấu là chưa rõ. ID của Bedrock, OpenRouter, Gemini trong config là minh hoạ.' }));
+    render(); advise();
+  }
+});
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

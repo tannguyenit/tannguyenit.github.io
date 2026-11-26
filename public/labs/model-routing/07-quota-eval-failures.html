@@ -1,0 +1,758 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model Routing Lab 07</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="06-fallback-compat-breaker.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/model-routing/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson({
+  id: 'quota-eval-failures', nav: '7. Quota, eval & failure modes', ref: '§3.4–3.7',
+  title: 'Một đối tác chạy batch làm khách lẻ nhận 429, và nhánh fallback "chạy tốt" vẫn trả sai một nửa câu tra đơn',
+  hook: 'Kéo cường độ của tenant ồn ào, bật quota theo tenant và xem ai nhận 429. Sau đó chấm Sonnet 5.5 và model fallback trên cùng 16 câu có nhãn, ngay trong trình duyệt.',
+  terms: [
+    ['Tenant', 'Một nhóm người dùng hoặc một khách hàng dùng chung hệ thống. Ở ShopViet: chat khách lẻ, công cụ CSKH nội bộ, và một đối tác B2B gọi API để viết mô tả sản phẩm.'],
+    ['Quota theo tenant', 'Phần rate limit bạn chia cho từng tenant trong ứng dụng, ví dụ khách lẻ 50%, CSKH 25%, B2B 25% của 2.000.000 input token mỗi phút.'],
+    ['Token bucket', 'Một "xô" chứa token, được rót thêm đều đặn theo thời gian, mỗi request lấy ra số token nó dùng. Xô cạn thì request bị từ chối. Claude tính rate limit theo cách này: nạp liên tục, không reset theo phút tròn.'],
+    ['Noisy neighbor', 'Tenant ồn ào: một tenant dùng quá nhiều làm cạn tài nguyên chung, các tenant khác bị ảnh hưởng dù không làm gì sai.'],
+    ['Workspace (Claude), project (OpenAI)', 'Cách provider cô lập rate limit và chi tiêu. Mỗi workspace có RPM, ITPM, OTPM, spend limit riêng thấp hơn giới hạn tổ chức; giới hạn tổ chức vẫn luôn áp dụng.'],
+    ['Labelled set', 'Tập câu hỏi có đáp án hoặc tiêu chí chấm biết trước. Ví dụ câu "Đơn SV-4821 tới đâu?" phải sinh tool call JSON có order_id là SV-4821.'],
+    ['Grader', 'Hàm chấm output. Ở đây là regex và JSON.parse: output phải chứa "7 ngày", phải parse được thành JSON có đúng key, không dài quá 400 ký tự.'],
+    ['Nhánh fallback', 'Phần traffic do model fallback phục vụ. Ít request, nên dễ bị quên khi đổi prompt, và lỗi của nó không hiện trên dashboard tỷ lệ lỗi.'],
+    ['usage.iterations, fallback_message', 'Khi Claude tự fallback phía server, mỗi lần thử ghi một mục trong usage.iterations; mục fallback_message là lần do model fallback trả lời. Đếm nó để biết tỷ lệ fallback.']
+  ],
+  problem: {
+    example: '<b>ShopViet</b> dùng chung một tổ chức Claude cho ba tenant: chat khách lẻ, công cụ CSKH nội bộ, và đối tác B2B gọi API viết lại mô tả sản phẩm. Tối thứ sáu, đối tác B2B đẩy 10 request mỗi giây, mỗi request 8.000 token. Cùng tuần đó, team bật chuỗi fallback Sonnet 5.5 sang <code>gpt-6.1-sol</code> và dashboard báo "100% request thành công".',
+    scenario: 'Rate limit của provider áp cho cả tổ chức: một tenant làm cạn bucket thì mọi tenant nhận 429, fallback sang model rút từ cùng bucket không cứu được, còn fallback sang bucket khác chỉ cứu được khi đợt burst đủ ngắn. Còn "100% thành công" chỉ nói HTTP 200, không nói nhánh fallback có trả lời đúng hay không.',
+    ask: 'Làm sao để tenant ồn ào không làm hỏng khách lẻ, và làm sao biết nhánh fallback có đủ tốt?',
+    solves: 'Hình một mô phỏng token bucket của tổ chức trong 120 giây, có và không có quota theo tenant ở ứng dụng. Hình hai chấm Sonnet 5.5 và gpt-6.1-sol trên 16 câu có nhãn bằng regex và JSON.parse, tách theo nhóm tác vụ, rồi tính chất lượng hệ thống theo tỷ lệ fallback.',
+    read: ['Hình một: mỗi hàng là một tenant, mỗi cột là một giây. Xanh lá: phục vụ. Xanh dương: phục vụ qua model fallback. Đỏ: 429 từ provider. Xám: bị quota của chính ShopViet từ chối, có thông báo rõ.', 'Đường dưới cùng là mức token còn trong bucket của tổ chức.', 'Hình hai: bảng chấm từng câu; chọn một câu để xem hai output và từng tiêu chí.', 'Dòng cảnh báo đỏ xuất hiện khi một nhóm tác vụ tụt mạnh ở nhánh fallback dù tổng nhìn ổn, hoặc khi bạn chỉ đếm HTTP 200.', 'Output của hai model là ví dụ dựng sẵn, không phải output thật. Grader thì chạy thật trong trình duyệt.']
+  },
+  summary: `<h3>Tóm tắt bài</h3>
+<h4>Quota theo tenant (§3.4)</h4>
+<ul><li>Phía provider: Claude workspaces (RPM, ITPM, OTPM và chi tiêu riêng; giới hạn tổ chức luôn áp dụng; không đặt spend limit cho workspace mặc định; header <code>anthropic-workspace-id</code>), OpenAI projects (hard spend limit theo project trả 429), Cloudflare dynamic routes (budget, rate limit theo user, project, team).</li>
+<li>Phía ứng dụng: token bucket theo tenant trước khi gọi provider; ước lượng input token trước khi gửi, trừ vào bucket, hoàn phần chênh khi có <code>usage</code>. Tenant hết quota nhận lỗi của bạn, rõ ràng, không làm hỏng người khác.</li>
+<li>LiteLLM <code>max_parallel_requests</code> đếm trong từng process, trả 429 ngay khi hết slot: tổng song song thực bằng giới hạn nhân số worker.</li></ul>
+<h4>Eval khi route sang model khác (§3.5)</h4>
+<ol><li>Lấy mẫu prompt từ traffic thật, giữ phân phối theo tác vụ.</li><li>Chạy qua ba cấu hình: router, luôn model mạnh nhất, bảng tĩnh.</li><li>Chấm bằng grader hoặc LLM judge đã hiệu chỉnh, so theo cặp.</li><li>Giữ router khi rẻ hơn rõ rệt mà chất lượng không giảm quá ngưỡng. Mỗi lần chỉ đổi một đòn bẩy.</li></ol>
+<p>Ba bẫy: nhiễu lớn hơn hiệu ứng (5,37% cặp model-câu hỏi đổi kết quả khi chạy lại); baseline chọn trên chính dữ liệu kiểm tra (False Floors); router huấn luyện trên phân phối khác. Nhánh fallback đo riêng: tỷ lệ request do fallback phục vụ, chất lượng, chi phí thật (cộng <code>usage.iterations</code>), p95 và p99, refusal tách khỏi lỗi.</p>
+<p><b>Log mỗi request:</b> model được yêu cầu, model thực trả lời, <code>stop_reason</code>, số lần thử và lý do, <code>request-id</code>, header rate limit còn lại, thời gian chờ backoff. Không log <code>fallback_credit_token</code> cùng nội dung nhạy cảm ở nơi nhiều người đọc.</p>
+<h4>Failure modes hay gặp nhất (§3.6, chọn lọc)</h4>
+<div class="tbl"><table>
+<tr><th>Triệu chứng</th><th>Nguyên nhân</th><th>Xử lý</th></tr>
+<tr><td>Vẫn 429 dù đã fallback</td><td>Hai model chung bucket (Opus 4.8 và 4.7)</td><td>Fallback sang bucket khác</td></tr>
+<tr><td>Retry kéo dài, mọi lần 429, không có <code>retry-after</code></td><td>Hết spend cap</td><td><code>FATAL</code>, báo động</td></tr>
+<tr><td>Một request thành 20–30 request</td><td>Retry ở SDK, gateway, ứng dụng nhân nhau</td><td>Một tầng retry; trần cho cả chuỗi</td></tr>
+<tr><td>Refusal không được fallback</td><td>Refusal là HTTP 200</td><td>Kiểm <code>stop_reason</code> ở mọi response</td></tr>
+<tr><td>Chi phí báo cáo thấp hơn hoá đơn</td><td>Bỏ sót <code>usage.iterations</code></td><td>Cộng <code>usage.iterations</code></td></tr>
+<tr><td>Chất lượng giảm ở một nhóm khách</td><td>Router không thấy nhóm đó khi huấn luyện; Bedrock routing chỉ tối ưu tiếng Anh</td><td>Eval theo nhóm; giữ baseline</td></tr>
+<tr><td>Chuỗi trỏ tới model đã retire</td><td>Model fallback ít được gọi</td><td>Test chuỗi trong CI; alert khi có 404</td></tr>
+<tr><td>Breaker mở vì người dùng gửi request sai</td><td>Đếm 400 là lỗi của model</td><td>Chỉ đếm lỗi <code>RETRY</code></td></tr>
+<tr><td>Tool call hoặc text bị lặp sau khi stream lỗi</td><td>Fallback sau khi đã gửi token</td><td>Chỉ fallback khi chưa gửi gì</td></tr>
+</table></div>
+<div class="verdict"><b>Checklist (§3.7)</b> có năm nhóm: phân loại lỗi, retry, chuỗi fallback, vận hành, router. Bản tương tác ở câu hỏi cuối.</div>`,
+  why: {
+    c: 'Cô lập tenant bằng workspace hoặc project ở provider cộng token bucket theo tenant ở ứng dụng, để tenant hết quota nhận lỗi rõ ràng của ShopViet thay vì làm cả tổ chức nhận 429. Eval nhánh fallback như eval model chính, tách theo nhóm tác vụ, và log model thực trả lời cho mọi request.',
+    s: 'Dựa vào fallback để chống noisy neighbor: model fallback cùng bucket thì cũng cạn; khác bucket thì cứu được một đợt burst ngắn, nhưng tenant ồn ào cũng fallback và rút tiếp xô thứ hai, nên burst dài hơn là cạn nốt. Đo nhánh fallback bằng tỷ lệ HTTP 200: refusal, JSON sai và câu trả lời thiếu ý đều là 200. So router với baseline sau một lần chạy: nhiễu giữa hai lần chạy có thể lớn hơn hiệu ứng.',
+    p: 'Phải ước lượng token trước khi gửi và hoàn lại sau, phải chọn cách chia quota (và tranh luận về nó). Một bộ eval nữa phải chạy định kỳ trên model ít được gọi. Log và dashboard thêm trường: model thực trả lời, stop_reason, số lần thử, usage.iterations.'
+  },
+  deep: [
+    {
+      q: 'Đã có workspace riêng cho mỗi tenant. Sao khách lẻ vẫn có thể nhận 429?',
+      a: `<p>Vì <b>giới hạn tổ chức luôn áp dụng</b>, kể cả khi tổng giới hạn các workspace lớn hơn (README §3.4). Workspace chỉ đặt trần thấp hơn cho từng phần; nó không đặt trước capacity cho ai. Nếu ba workspace được đặt 1,2M + 1,2M + 1,2M ITPM trong tổ chức 2M ITPM, hai workspace chạy hết công suất là đủ làm cạn tổ chức.</p>
+<p>Muốn workspace thật sự cô lập thì tổng giới hạn các workspace không vượt giới hạn tổ chức. Kéo các thanh trượt bên dưới.</p>`,
+      viz(box) {
+        const S = { a: 1000, b: 500, c: 500 }, out = el('div', { class: 'stat' }), cap = el('div', { class: 'cap' });
+        function draw() {
+          const sum = S.a + S.b + S.c, over = sum > 2000;
+          out.innerHTML = `<span>Tổng giới hạn workspace: <b class="${over ? 'bad' : 'ok'}">${(sum / 1000).toFixed(2).replace('.', ',')}M</b> ITPM</span><span>Giới hạn tổ chức: <b>2M</b> ITPM</span>`;
+          cap.innerHTML = over ? `<b class="bad">Không cô lập:</b> khi B2B và CSKH dùng hết giới hạn của mình (${((S.b + S.c) / 1000).toFixed(2).replace('.', ',')}M), khách lẻ chỉ còn ${Math.max(0, (2000 - S.b - S.c) / 1000).toFixed(2).replace('.', ',')}M chứ không phải ${(S.a / 1000).toFixed(2).replace('.', ',')}M như đã đặt.` : 'Tổng không vượt giới hạn tổ chức: mỗi workspace chạy hết công suất vẫn không lấn phần của workspace khác.';
+        }
+        const sl = (l, k) => slider(l, 0, 2000, 100, S[k], (v) => { S[k] = v; draw(); }, (v) => (v / 1000).toFixed(1).replace('.', ',') + 'M').node;
+        box.append(el('div', { class: 'row' }, [sl('Khách lẻ', 'a'), sl('CSKH', 'b'), sl('B2B', 'c')]), out, cap,
+          el('div', { class: 'hint', text: 'Giới hạn tổ chức 2.000.000 ITPM là mức Start của Sonnet 5.5 (README §1.2). Workspace mặc định không đặt spend limit được.' }));
+        draw();
+      },
+      take: 'Workspace là trần, không phải phần đặt trước. Cô lập thật cần tổng các trần không vượt giới hạn tổ chức, hoặc quota ở ứng dụng.'
+    },
+    {
+      q: 'Trung bình mỗi phút còn dưới giới hạn. Sao vẫn bị 429?',
+      a: `<p>Vì Claude tính bằng token bucket, nạp lại liên tục, không reset theo phút tròn (README §1.2). Một đợt burst ngắn lấy token nhanh hơn tốc độ nạp; nếu xô cạn trước khi kịp nạp lại, request bị từ chối, dù cả phút cộng lại vẫn dưới giới hạn.</p>
+<p>Hình dưới gửi 60 giây traffic: nền đều, cộng một đợt burst do job B2B khởi động. Dung lượng xô ở đây là giả định (README không công bố), chọn bằng thanh trượt theo "số giây nạp".</p>`,
+      viz(box) {
+        const S = { burst: 8, cap: 10 }, svg = el('svg', { class: 'canvas', viewBox: '0 0 560 140', role: 'img', 'aria-label': 'Mức token trong bucket theo giây' }), out = el('div', { class: 'stat' }), cap = el('div', { class: 'cap' });
+        function draw() {
+          const lim = 2e6, rate = lim / 60, capT = rate * S.cap; let lvl = capT, used = 0, rej = 0; const L = [];
+          for (let s = 0; s < 60; s++) {
+            lvl = Math.min(capT, lvl + rate);
+            const want = 15000 + (s >= 20 && s < 20 + S.burst ? 120000 : 0);
+            if (lvl >= want) { lvl -= want; used += want; } else { const take = Math.max(0, lvl); used += take; rej += want - take; lvl = 0; }
+            L.push(lvl);
+          }
+          const X = (s) => 20 + s * 9, Y = (v) => 120 - (v / capT) * 100;
+          svg.replaceChildren(el('line', { x1: 20, x2: 560, y1: 120, y2: 120, stroke: 'var(--line)' }),
+            el('path', { d: L.map((v, s) => (s ? 'L' : 'M') + X(s) + ' ' + Y(v).toFixed(1)).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 }),
+            el('rect', { x: X(20), y: 10, width: S.burst * 9, height: 110, fill: 'var(--warn)', opacity: 0.12 }),
+            el('text', { x: X(20) + 2, y: 22, fill: 'var(--warn)', text: 'burst' }), el('text', { x: 22, y: 136, class: 'mute', text: '0 s' }), el('text', { x: 520, y: 136, class: 'mute', text: '60 s' }));
+          const avg = used + rej;
+          out.innerHTML = `<span>Tổng muốn gửi trong phút: <b>${fmtNum(Math.round(avg / 1000) * 1000)}</b> / 2M</span><span>Token bị từ chối: <b class="${rej ? 'bad' : 'ok'}">${fmtNum(Math.round(rej / 1000) * 1000)}</b></span>`;
+          cap.innerHTML = rej > 0 && avg <= lim ? '<b class="bad">Bất thường:</b> cả phút chưa dùng tới giới hạn mà vẫn có 429. Vì sao: xô cạn trong đợt burst, nạp lại không kịp. Không có nghĩa là giới hạn bị tính sai. Trong hệ thống thật: dàn đều job lớn (hoặc đưa vào batch), và quota ở ứng dụng nên cũng là token bucket chứ không phải bộ đếm theo phút.' : 'Đường xanh là token còn trong xô; xô nạp 33.333 token mỗi giây (2M ITPM chia 60).';
+        }
+        box.append(el('div', { class: 'row' }, [slider('Burst B2B kéo dài', 0, 20, 1, S.burst, (v) => { S.burst = v; draw(); }, (v) => v + ' s').node, slider('Dung lượng xô (giả định)', 2, 60, 1, S.cap, (v) => { S.cap = v; draw(); }, (v) => v + ' s nạp').node]), svg, out, cap);
+        draw();
+      },
+      take: 'Rate limit đo theo nhịp, không chỉ theo tổng. Burst ngắn đủ làm cạn xô; dàn đều tải là cách rẻ nhất để tránh.'
+    },
+    {
+      q: 'Quota tính bằng token, mà phải trừ trước khi gửi. Làm sao biết trước request tốn bao nhiêu token?',
+      a: `<p>Ước lượng. README §3.4: ước lượng input token trước khi gửi (bằng endpoint đếm token, hoặc theo số ký tự), trừ vào bucket của tenant, rồi hoàn lại phần chênh khi có <code>usage</code> thực. Endpoint <code>count_tokens</code> của Claude miễn phí nhưng có rate limit riêng; ước lượng theo ký tự thì nhanh nhưng thô.</p>
+<p>Một bẫy riêng của tiếng Việt (Cost Optimization §2.1): cùng đoạn văn ở dạng Unicode NFD (dấu tách thành ký tự riêng, hay gặp khi copy từ macOS hoặc PDF) tốn gần gấp ba token so với NFC. Hình dưới đếm số ký tự thật của chuỗi ở hai dạng bằng <code>String.normalize</code> trong trình duyệt.</p>`,
+      viz(box) {
+        const T = ['Tai nghe của tôi bị rè ở tai trái, đổi trả được không?', 'Đơn SV-4821 của tôi tới đâu rồi?', 'Máy lỗi đã bảo hành hai lần trong ba mươi ngày, lần thứ ba có được đổi mới không?'];
+        const S = { i: 0, form: 'NFC' }, out = el('div', { class: 'stat' }), cap = el('div', { class: 'cap' });
+        function draw() {
+          const s = T[S.i].normalize(S.form), nfc = T[S.i].normalize('NFC').length, nfd = T[S.i].normalize('NFD').length;
+          const est = Math.ceil(s.length / 3), real = Math.ceil(nfc / 3.2) * (S.form === 'NFD' ? 3 : 1);
+          out.innerHTML = `<span>Ký tự NFC: <b>${nfc}</b></span><span>Ký tự NFD: <b>${nfd}</b></span><span>Trừ trước (ký tự ÷ 3): <b>${est}</b></span><span>usage thực (giả định): <b>${real}</b></span><span>Hoàn lại: <b class="${est - real < 0 ? 'bad' : 'ok'}">${est - real}</b></span>`;
+          cap.innerHTML = est - real < 0 ? '<b class="bad">Thiếu:</b> ước lượng thấp hơn usage thực, bucket của tenant bị trừ âm sau khi có usage. Vì sao: chuỗi NFD tốn token hơn hẳn mà ước lượng theo ký tự không thấy hết. Trong hệ thống thật: chuẩn hoá NFC mọi văn bản trước khi đưa vào prompt, và cho phép bucket âm tạm thời rồi trừ vào lần sau.' : 'Ước lượng dư một chút thì không sao: phần dư được hoàn lại khi có usage.';
+        }
+        box.append(el('div', { class: 'row' }, [select('Câu', T.map((t, i) => [i, t.slice(0, 40) + '…']), S.i, (v) => { S.i = +v; draw(); }).node, select('Dạng Unicode', [['NFC', 'NFC'], ['NFD', 'NFD (copy từ PDF)']], S.form, (v) => { S.form = v; draw(); }).node]), out, cap,
+          el('div', { class: 'hint', text: 'Số ký tự là số thật tính trong trình duyệt. Quy tắc ký tự ÷ 3 và usage thực là giả định; hệ số gần gấp ba của NFD lấy từ số đo tiktoken ở Cost Optimization §2.1.' }));
+        draw();
+      },
+      take: 'Trừ trước bằng ước lượng, hoàn lại bằng usage thật. Chuẩn hoá NFC trước khi ước lượng, nếu không ước lượng sẽ hụt.'
+    },
+    {
+      q: 'LiteLLM có max_parallel_requests. Đặt nó là đủ quota rồi?',
+      a: `<p>Chưa. README §2.1 và §3.4: giới hạn này đếm <b>trong từng process</b>, không chia sẻ giữa worker hay pod, và request đến khi hết slot bị <code>429</code> ngay, không có hàng đợi. Với nhiều worker, tổng song song thực bằng giới hạn nhân số worker. Nếu không đặt mà có <code>rpm</code> hay <code>tpm</code>, LiteLLM tự suy ra giới hạn theo từng process; một deployment chỉ đặt <code>rpm: 2</code> chỉ chạy song song được 2 request mỗi worker.</p>`,
+      viz(box) {
+        const S = { lim: 20, w: 8 }, out = el('div', { class: 'stat' });
+        function draw() {
+          const tot = S.lim * S.w;
+          out.innerHTML = `<span>Bạn nghĩ: <b>${S.lim}</b> request song song</span><span>Thực tế: <b class="${S.w > 1 ? 'bad' : 'ok'}">${tot}</b> (${S.lim} × ${S.w} worker)</span><span>Request thứ ${S.lim + 1} trong một worker: <b class="bad">429 ngay</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('max_parallel_requests', 1, 50, 1, S.lim, (v) => { S.lim = v; draw(); }).node, slider('Số worker', 1, 32, 1, S.w, (v) => { S.w = v; draw(); }).node]), out);
+        draw();
+      },
+      take: 'Giới hạn trong process vừa quá lỏng ở tổng (nhân số worker) vừa quá chặt ở từng worker (429 không xếp hàng). Quota theo tenant cần một store dùng chung.'
+    },
+    {
+      q: 'Router phân loại đúng 90%. Vậy chất lượng giảm tối đa 10%?',
+      a: `<p>Không. README §3.5: "Router có độ chính xác phân loại 90% vẫn có thể làm hỏng sản phẩm nếu 10% sai đều rơi vào ca khó nhất". Câu dễ bị gửi nhầm sang model mạnh chỉ tốn thêm tiền. Câu khó bị gửi nhầm sang model yếu thì sai. Cùng 90%, phân bố của 10% sai quyết định chất lượng.</p>
+<p>Hình dưới lấy 100 câu, 30 câu khó (giả định). Model yếu đúng 40% câu khó, model mạnh đúng 90% (giả định, cùng bộ số với Lab 5).</p>`,
+      viz(box) {
+        const S = { acc: 90, hardShare: 80 }, out = el('div', { class: 'stat' });
+        function draw() {
+          const wrong = 100 - S.acc, toHard = Math.min(30, Math.round((wrong * S.hardShare) / 100)), toEasy = wrong - toHard;
+          const hardStrong = 30 - toHard;
+          const q = (70 - toEasy) * 0.95 + toEasy * 0.97 + hardStrong * 0.90 + toHard * 0.40;
+          const best = 70 * 0.97 + 30 * 0.90;
+          out.innerHTML = `<span>Câu khó gửi nhầm model yếu: <b>${toHard}</b></span><span>Câu dễ gửi nhầm model mạnh: <b>${toEasy}</b></span><span>Câu đúng: <b>${q.toFixed(1)}</b> / 100</span><span>Luôn model mạnh: <b>${best.toFixed(1)}</b></span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Router phân loại đúng', 50, 100, 1, S.acc, (v) => { S.acc = v; draw(); }, (v) => v + '%').node, slider('Phần sai rơi vào câu khó', 0, 100, 10, S.hardShare, (v) => { S.hardShare = v; draw(); }, (v) => v + '%').node]), out);
+        draw();
+      },
+      take: 'Độ chính xác phân loại không phải chất lượng. Đo thứ người dùng nhận: câu trả lời cuối, chi phí, độ trễ.'
+    },
+    {
+      q: 'Router thắng baseline 2 điểm. Đủ để bật router chưa?',
+      a: `<p>Chưa chắc. Trong paper của Lee, 5,37% cặp model-câu hỏi đổi kết quả khi chạy lại y hệt. Chênh một hai điểm sau một lần chạy chưa chứng minh được gì: hãy chạy lặp và báo khoảng tin cậy.</p>
+<p>Bẫy thứ hai: baseline chọn trên chính dữ liệu kiểm tra. False Floors (Bhatti và Vaddina, tháng 10/2026) chỉ ra sai lệch do cách chọn này là 0,003–0,030 harm trên HELM Safety với split ngẫu nhiên và 0,045–0,113 với category giữ lại, tương đương toàn bộ phần thua kém được quy cho routing; trên AgentDojo, sai lệch tăng 7–9 lần khi giữ lại suite. Kết luận của tác giả: "Scored honestly under shift, routing buys little on these benchmarks". Chọn baseline trên dev, đo trên test tách riêng, và có một tập test từ thời điểm khác hoặc nhóm khách khác.</p>
+<p>Hình dưới chạy hai lần <b>cùng một hệ thống</b> 300 lần, mỗi câu có 5,37% khả năng đổi kết quả giữa hai lần chạy, và đo chênh lệch điểm.</p>`,
+      viz(box) {
+        const S = { n: 294 }, out = el('div', { class: 'stat' }), hist = el('div', { style: 'display:flex;align-items:flex-end;gap:2px;height:80px' });
+        function draw() {
+          const rnd = seeded(537), diffs = [];
+          for (let k = 0; k < 300; k++) { let d = 0; for (let i = 0; i < S.n; i++) if (rnd() < 0.0537) d += rnd() < 0.5 ? 1 : -1; diffs.push((d / S.n) * 100); }
+          diffs.sort((a, b) => a - b);
+          const lo = diffs[7], hi = diffs[292], B = 21, mx = Math.max(4, Math.ceil(Math.max(Math.abs(diffs[0]), Math.abs(diffs[299])))), bins = new Array(B).fill(0);
+          diffs.forEach((d) => bins[Math.min(B - 1, Math.max(0, Math.floor(((d + mx) / (2 * mx)) * B)))]++);
+          const top = Math.max(...bins);
+          hist.replaceChildren(...bins.map((b, i) => el('span', { style: `flex:1;height:${(b / top) * 80}px;border-radius:2px;background:${Math.abs((i + 0.5) / B * 2 * mx - mx) >= 2 ? 'var(--warn)' : 'var(--accent)'}` })));
+          const big = diffs.filter((d) => Math.abs(d) >= 2).length;
+          out.innerHTML = `<span>95% lần chạy lại chênh trong <b>${lo.toFixed(1)} … +${hi.toFixed(1)}</b> điểm</span><span>Chênh từ 2 điểm trở lên: <b class="${big ? 'bad' : 'ok'}">${((big / 300) * 100).toFixed(0)}%</b> số lần</span>`;
+        }
+        box.append(el('div', { class: 'row' }, [slider('Số câu trong tập', 40, 2000, 20, S.n, (v) => { S.n = v; draw(); }).node]), hist, out,
+          el('div', { class: 'cap', text: 'Không có router nào ở đây: hai lần chạy y hệt nhau. Cột cam là các lần chênh từ 2 điểm trở lên, hoàn toàn do nhiễu. Tỷ lệ 5,37% lấy từ README §3.5; giả định câu đổi kết quả đổi theo hai chiều như nhau.' }));
+        draw();
+      },
+      take: 'Với vài trăm câu, chênh 2 điểm có thể là nhiễu thuần. Chạy lặp, báo khoảng tin cậy, và tách dev với test.'
+    },
+    {
+      q: 'Dashboard báo 0% lỗi 5xx. Vậy nhánh fallback ổn?',
+      a: `<p>Không nói được. README §3.5 liệt kê những gì phải đo riêng cho nhánh fallback: tỷ lệ request do model fallback phục vụ (đọc trường <code>model</code> và <code>log</code> của vòng fallback; với Claude, đếm mục <code>fallback_message</code> trong <code>usage.iterations</code>), chất lượng trên nhánh fallback, chi phí thật (cộng <code>usage.iterations</code>), p95 và p99, và refusal như một tín hiệu riêng.</p>
+<p>Refusal là HTTP 200, nên dashboard dựng trên tỷ lệ lỗi không bao giờ thấy nó. Anthropic khuyên phát một event cho mỗi refusal và một event cho mỗi response do fallback phục vụ, rồi cảnh báo khi chênh lệch giữa hai số tăng. Hình dưới là 20 dòng log của ShopViet (dữ liệu dựng sẵn); dashboard được tính từ log.</p>`,
+      viz(box) {
+        const LOG = [];
+        const r = seeded(4821);
+        for (let i = 0; i < 20; i++) {
+          const u = r(); let row;
+          if (u < 0.6) row = { m: 'claude-sonnet-5-5', st: 'end_turn', it: 1, http: 200 };
+          else if (u < 0.75) row = { m: 'claude-sonnet-5', st: 'end_turn', it: 2, http: 200, fb: true };
+          else if (u < 0.85) row = { m: 'claude-sonnet-5-5', st: 'refusal', it: 1, http: 200 };
+          else if (u < 0.93) row = { m: 'claude-sonnet-5', st: 'max_tokens', it: 2, http: 200, fb: true };
+          else row = { m: 'claude-sonnet-5-5', st: 'end_turn', it: 1, http: 200 };
+          LOG.push({ id: 'SV-' + (4821 + i), ...row });
+        }
+        const err = LOG.filter((x) => x.http >= 500).length, ref = LOG.filter((x) => x.st === 'refusal').length, fb = LOG.filter((x) => x.fb).length, cut = LOG.filter((x) => x.st === 'max_tokens').length;
+        const att = LOG.reduce((s, x) => s + x.it, 0);
+        box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>ID</th><th>model thực trả lời</th><th>stop_reason</th><th>số lần thử</th><th>HTTP</th></tr>' + LOG.map((x) => `<tr><td class="mono">${x.id}</td><td class="mono">${x.m}</td><td class="${x.st === 'end_turn' ? '' : 'bad'}">${x.st}</td><td class="mono">${x.it}</td><td class="mono">${x.http}</td></tr>`).join('') })]),
+          el('div', { class: 'stat', html: `<span>Lỗi 5xx: <b class="ok">${err}</b></span><span>Refusal: <b class="bad">${ref}</b></span><span>Do fallback phục vụ: <b>${fb}</b> (${((fb / 20) * 100).toFixed(0)}%)</span><span>Bị cắt (max_tokens): <b class="bad">${cut}</b></span><span>Tổng lần thử: <b>${att}</b> cho 20 request</span>` }),
+          el('div', { class: 'cap', html: `<b class="bad">Bất thường:</b> dashboard lỗi báo 0, nhưng ${ref} khách nhận refusal và ${cut} khách nhận câu trả lời bị cắt sau fallback (tokenizer khác, thinking tính vào max_tokens; failure mode 15). Vì sao: cả hai đều là HTTP 200. Trong hệ thống thật: kiểm stop_reason ở mọi response, dashboard tách refusal khỏi lỗi, và chi phí cộng cả ${att - 20} lần thử thêm.` }));
+      },
+      take: 'Tỷ lệ request thành công không nói được fallback có ổn hay không. Log model thực trả lời và stop_reason cho mọi request, và dựng dashboard từ đó.'
+    },
+    {
+      q: 'Gặp triệu chứng lạ lúc sự cố. Tra nguyên nhân ở đâu?',
+      a: `<p>README §3.6 gom 25 failure mode thường gặp, mỗi dòng có triệu chứng, nguyên nhân và cách xử lý. Phần lớn chung một gốc: đổi model là đổi tham số hợp lệ, bucket rate limit, cache, thinking block và ngữ nghĩa lỗi, mà code không biết. Chọn một triệu chứng để xem.</p>`,
+      viz(box) {
+        const F = [
+          ['Fallback sang Opus 5.5 hoặc Sonnet 5.5 nhận 400 tool_choice', 'Model đích không hỗ trợ forced tool use', 'Lọc chuỗi theo capability; hoặc auto cộng strict: true'],
+          ['Model fallback nhận 400 về thinking', 'between_tools, disabled hay budget_tokens không hợp lệ ở model đích', 'Ghi đè thinking theo model; dùng adaptive'],
+          ['Mọi request Claude 400 sau khi nâng SDK hoặc gateway', 'API version 2026-10-21 từ chối temperature, top_p, top_k', 'Bỏ ba tham số khỏi request và cấu hình thư viện trung gian'],
+          ['Vẫn 429 liên tục dù đã fallback', 'Hai model chung bucket, ví dụ Opus 4.8 và 4.7', 'Fallback sang bucket khác'],
+          ['Retry kéo dài, mọi lần 429, không có retry-after', 'Hết spend cap (enforced_spend_limit_reached)', 'FATAL; báo động; không retry, không fallback'],
+          ['"Hết hạn mức" nhưng lỗi là 400', 'Spend limit tự đặt thấp hơn trần', 'Nhận diện riêng theo message; báo động'],
+          ['Một request thành 20–30 request', 'Retry ở SDK, gateway và ứng dụng nhân nhau', 'Một tầng retry; max_retries=0 ở SDK; trần cho cả chuỗi'],
+          ['Người dùng chờ hai phút rồi mới nhận lỗi', 'SDK chờ retry-after dài, timeout 10 phút mỗi lần thử', 'Deadline cho cả chuỗi; không chờ khi retry-after vượt ngưỡng'],
+          ['Refusal không được fallback', 'Code chỉ bắt exception; refusal là HTTP 200', 'Kiểm stop_reason; bật fallbacks phía server'],
+          ['Đã bật fallbacks mà 529 vẫn đến tay người dùng', 'Fallback phía server của Claude chỉ xử lý refusal', 'Thêm chuỗi fallback cho lỗi hạ tầng'],
+          ['Đổi base_url sang OpenRouter, fallback cả khi rate limit', 'fallbacks của OpenRouter kích hoạt trên mọi lỗi', 'Đọc lại ngữ nghĩa fallback khi đổi nền tảng'],
+          ['400 do request sai vẫn bị gửi sang model khác', 'Portkey mặc định fallback với mọi non-2xx', 'Đặt on_status_codes tường minh'],
+          ['Chi phí tăng mạnh trong giờ có sự cố', 'Cache tách theo model; fallback ghi lại prefix vào cache mới', 'Chấp nhận và theo dõi; refusal dùng fallback credit'],
+          ['Chi phí báo cáo thấp hơn hoá đơn', 'Đọc usage cấp trên cùng, bỏ sót usage.iterations', 'Cộng usage.iterations'],
+          ['Output bị cắt sau fallback, stop_reason max_tokens', 'Tokenizer khác; thinking tính vào max_tokens', 'Đếm lại token với model đích; tăng max_tokens'],
+          ['Model fallback như "quên" các lượt trước', 'Thinking block model cũ không đọc được ở model mới, bị bỏ lặng lẽ', 'Ghim hội thoại vào một model'],
+          ['Mất reasoning khi chuyển sang key tài khoản khác dù cùng model', 'Block của Fable 5.2, Mythos 5.2, Sonnet 5.5, Haiku 5.5 ràng buộc theo tài khoản', 'Replay qua đúng tài khoản đã tạo ra nó'],
+          ['400 "The block is bound to a different conversation" sau fallback', 'Đổi system hoặc tools theo model đích giữa hội thoại', 'Lịch sử append-only; hoặc prefix_mismatch_behavior: "drop_block"'],
+          ['Router gửi gần hết traffic sang model mạnh', 'Ngưỡng quá thấp, hoặc chế độ Quality', 'Đo phân bố trường model; chỉnh ngưỡng trên dữ liệu thật'],
+          ['Chất lượng giảm ở một nhóm khách sau khi bật router', 'Router không thấy nhóm đó khi huấn luyện; Bedrock routing chỉ tối ưu tiếng Anh', 'Eval theo nhóm; giữ baseline ngoài router'],
+          ['Model đổi giữa các lượt của cùng hội thoại', 'Router stateless chọn lại mỗi request', 'Session affinity hoặc ghim model trong state hội thoại'],
+          ['Chuỗi trỏ tới model đã retire, sự cố đầu tiên mới lộ', 'Model fallback ít được gọi, 404 không ai thấy', 'Test chuỗi trong CI; alert khi có 404'],
+          ['Breaker mở vì người dùng gửi request sai', 'Đếm 400 là lỗi của model', 'Chỉ đếm lỗi RETRY'],
+          ['Một worker vẫn dồn request vào model đã sập', 'Breaker trong bộ nhớ từng process', 'Chấp nhận với ít worker; nhiều worker dùng trạng thái chung'],
+          ['Tool call hoặc text bị lặp sau khi stream lỗi giữa chừng', 'Retry hoặc fallback sau khi đã gửi token cho client', 'Chỉ fallback khi chưa gửi gì; nếu không thì báo lỗi hoặc đệm output']];
+        const card = el('div');
+        const draw = (i) => card.replaceChildren(el('div', { style: 'border:1px solid var(--line);border-radius:6px;padding:8px 12px;background:var(--panel)' }, [
+          el('div', { html: `<b>#${+i + 1} Triệu chứng:</b> ${F[i][0]}` }), el('div', { html: `<b class="bad">Nguyên nhân:</b> ${F[i][1]}` }), el('div', { html: `<b class="ok">Xử lý:</b> ${F[i][2]}` })]));
+        box.append(el('div', { class: 'row' }, [select('Triệu chứng', F.map((f, i) => [i, (i + 1) + '. ' + f[0]]), 0, draw).node]), card, el('div', { class: 'cap', text: 'Rút gọn từ bảng README §3.6, giữ thứ tự số.' }));
+        draw(0);
+      },
+      take: 'Phần lớn failure mode là "đổi model nhưng code tưởng không đổi gì". Bảng capability, phân loại lỗi và log model thực trả lời chặn được đa số.'
+    },
+    {
+      q: 'Trước khi bật chuỗi fallback cho production, kiểm những gì?',
+      a: `<p>Checklist ở README §3.7, năm nhóm. Tick những mục ShopViet đã làm; hình đếm mục còn thiếu theo nhóm. Mục nào còn thiếu ở nhóm "Phân loại lỗi" và "Retry" thì nên làm trước, vì chúng quyết định số request thật gửi lên provider lúc sự cố.</p>`,
+      viz(box) {
+        const G = [
+          ['Phân loại lỗi', ['Ba nhóm RETRY, NEXT, FATAL, phân theo status và mã lỗi trong body', 'Hết spend cap và spend limit tự đặt được nhận diện riêng, có alert', 'stop_reason được kiểm ở mọi response: refusal, max_tokens, model_context_window_exceeded, pause_turn']],
+          ['Retry', ['Chỉ một tầng retry; SDK max_retries=0 khi ứng dụng hoặc gateway retry', 'Backoff có jitter; tôn trọng retry-after; không chờ khi vượt ngưỡng hoặc deadline', 'Trần số lần thử và deadline cho cả chuỗi; timeout lấy từ phần deadline còn lại', 'Test với mock lỗi đếm được tổng số request thực gửi đi']],
+          ['Chuỗi fallback', ['Model fallback ở bucket rate limit khác model chính', 'Bảng capability; ghi đè theo model; request với mỗi model chạy trong CI', 'Không còn temperature, top_p, top_k trong request Claude, kể cả cấu hình gateway', 'Hội thoại đã fallback được ghim vào model fallback', 'Streaming chỉ fallback khi chưa gửi output', 'Bật fallbacks phía server cho refusal; biết nó không xử lý lỗi hạ tầng']],
+          ['Vận hành', ['Breaker theo model hoặc bucket, chỉ đếm lỗi hạ tầng, cooldown không ngắn hơn retry-after', 'Quota theo tenant: workspace hoặc project, token bucket ở ứng dụng', 'Log model yêu cầu, model thực trả lời, stop_reason, các lần thử, request-id', 'Dashboard: tỷ lệ fallback theo model, refusal tách khỏi lỗi, chi phí cộng usage.iterations, p95 và p99']],
+          ['Router', ['Đã đo bảng tĩnh theo loại tác vụ và một model mạnh với effort thấp', 'Eval cả hệ thống trên traffic thật, chạy lặp, baseline chọn trên dev, đo trên test', 'Theo dõi phân bố model theo ngày; eval lại khi pool model đổi']]];
+        const done = G.map((g) => g[1].map(() => false)), sum = el('div', { class: 'stat' });
+        const upd = () => { sum.innerHTML = G.map((g, i) => { const left = done[i].filter((x) => !x).length; return `<span>${g[0]}: <b class="${left ? 'bad' : 'ok'}">${left ? 'thiếu ' + left : 'đủ'}</b></span>`; }).join(''); };
+        box.append(...G.map((g, i) => el('div', { style: 'margin-bottom:8px' }, [el('b', { text: g[0] }), ...g[1].map((t, j) => {
+          const c = el('input', { type: 'checkbox' }); c.addEventListener('change', () => { done[i][j] = c.checked; upd(); });
+          return el('label', { class: 'ctl', style: 'color:var(--ink);margin:2px 0' }, [c, t]);
+        })])), sum);
+        upd();
+      },
+      take: 'Fallback tốt là fallback đã được thử trước sự cố: trong CI, trong eval, và trên dashboard.'
+    }
+  ],
+  poc: {
+    goal: "Phần 1: server asyncio thật giữ token bucket ITPM của tổ chức, ba tenant là client asyncio thật trong 30 s; B2B đẩy 10 req/s × 8.000 token; ba cấu hình chạy song song (không gì cả, fallback sang bucket khác, quota theo tenant ở ứng dụng). Phần 2: grader thật (<code>json.loads</code>, regex, độ dài) chấm 16 câu. <b>Dung lượng xô 10 s là giả định; 16 output là output viết tay của lab, không phải output model thật.</b>",
+    file: "docs/model-routing/pocs/07_quota_eval_failures.py",
+    run: "uv run docs/model-routing/pocs/07_quota_eval_failures.py",
+    needs: "chỉ <code>uv</code> và CPU, miễn phí, khoảng 30 s. Server giả chạy trên 127.0.0.1 và tự dừng.",
+    output: "Phần 1: server asyncio thật trên 127.0.0.1 giữ token bucket ITPM của tổ chức (2.000.000/phút, xô 10 s nạp: GIẢ ĐỊNH);\n3 tenant là client asyncio thật gửi request HTTP theo nhịp, 30 s thời gian thật; B2B đẩy 10 req/s × 8.000 token\ntừ giây 5 đến 25. Ba cấu hình chạy song song, mỗi cấu hình một server riêng.\nPhần 2: grader thật (json.loads, regex, độ dài) chấm 16 output VIẾT TAY của lab 07 (không phải output model thật).\n\n== 1. Tenant ồn ào: B2B đẩy 10 req/s × 8.000 token, ba cấu hình ==\nCấu hình                                  Tenant         Request  Phục vụ  Qua fallback  429 provider  ShopViet từ chối  Được phục vụ\n----------------------------------------  -------------  -------  -------  ------------  ------------  ----------------  ------------\nKhông quota, không fallback               Chat khách lẻ  180      171      0             9             0                 95%\n                                          CSKH nội bộ    60       54       0             6             0                 90%\n                                          Đối tác B2B    201      69       0             132           0                 34%\nFallback sang gpt-6.1-sol (bucket khác)   Chat khách lẻ  180      171      9             0             0                 100%\n                                          CSKH nội bộ    60       54       6             0             0                 100%\n                                          Đối tác B2B    201      69       98            34            0                 83%\nQuota theo tenant ở ứng dụng (50/25/25%)  Chat khách lẻ  180      180      0             0             0                 100%\n                                          CSKH nội bộ    60       60       0             0             0                 100%\n                                          Đối tác B2B    201      34       0             0             167               17%\nMọi server đã dừng.\n\n== 2. Eval nhánh fallback: Sonnet 5.5 vs gpt-6.1-sol trên 16 câu có nhãn (output viết tay) ==\nID       Nhóm              Sonnet 5.5                     gpt-6.1-sol (fallback)\n-------  ----------------  -----------------------------  ----------------------\nSV-4901  Tool call (JSON)  đạt                            không parse được JSON\nSV-4902  Tool call (JSON)  đạt                            sai key order_id\nSV-4904  Tool call (JSON)  đạt                            không parse được JSON\nSV-4908  Chính sách        đạt                            thiếu miễn phí\nSV-4910  Tư vấn            đạt                            dài 484 > 400 ký tự\nSV-4916  Khiếu nại         thiếu chuyển|kỹ thuật|quản lý  đạt\n(chỉ in câu có ít nhất một bên trượt)\nNhóm              Sonnet 5.5  Fallback, prompt gốc  Fallback, prompt sửa riêng\n----------------  ----------  --------------------  --------------------------\nTool call (JSON)  4/4         1/4                   4/4\nChính sách        4/4         3/4                   3/4\nTư vấn            4/4         3/4                   3/4\nKhiếu nại         3/4         4/4                   4/4\nTổng              15/16       11/16                 14/16\nDashboard đếm HTTP 200: 16/16 = 100% cho CẢ HAI model.\nChất lượng hệ thống khi 10% traffic đi fallback: 91,2% — trông gần như model chính.\nKhoảng tin cậy 95% (Wilson) cho fallback 11/16: 44–86%: 16 câu chỉ đủ thấy nhóm hỏng, không đủ xếp hạng.\n\nRút ra: không có quota, B2B rút cạn bucket chung và khách lẻ nhận 429 dù không làm gì sai. Fallback sang bucket khác cứu\nđược khách lẻ trong đợt burst 20 s này, nhưng B2B dồn ~100 request × 8.000 token sang bucket thứ hai và vẫn nhận 429: burst dài\nhơn là cạn nốt. Quota theo tenant ở ứng dụng giữ khách lẻ nguyên vẹn, B2B nhận lỗi rõ ràng của chính ShopViet.\nỞ eval, HTTP 200 báo 100% trong khi nhánh fallback hỏng 3/4 câu tool call; tổng theo tỷ lệ fallback (91,2%) che mất điều đó.\nChấm theo nhóm, và sửa prompt riêng cho model fallback (11/16 → 14/16).",
+    measured: true,
+    read: ["Không quota: khách lẻ nhận 9 lần 429 vì B2B rút cạn bucket chung.", "Fallback sang bucket khác cứu khách lẻ trong đợt 20 s này, nhưng B2B dồn gần 100 request sang bucket thứ hai và vẫn nhận 34 lần 429.", "Quota theo tenant: khách lẻ và CSKH 100%, B2B bị chính ShopViet từ chối 167 request với lỗi rõ ràng.", "Eval: HTTP 200 là 16/16 cho cả hai model; grader cho fallback 11/16, hỏng 3/4 câu tool call; tổng có trọng số 10% fallback là 91,2% che mất điều đó. Prompt viết riêng cho model fallback nâng lên 14/16 (tool call 4/4).", "<b>Đo thật vs dựng sẵn:</b> Phần 1 là server và client asyncio thật, HTTP thật, đếm thật; dung lượng xô 10 s, nhịp và kích thước request là giả định, và không gọi provider thật. Phần 2 là grader thật (json.loads, regex, độ dài) nhưng chấm <b>output viết tay</b> của lab, kể cả output của 'prompt sửa riêng': không có model nào được gọi, nên 11/16 và 14/16 minh hoạ cách chấm, không phải điểm thật của gpt-6.1-sol."]
+  },
+  mount(stage) {
+    const ORG = 2e6, RATE = ORG / 60, T = 120;
+    const TEN = [{ n: 'Chat khách lẻ', rps: 6, tok: 3000, share: 0.5 }, { n: 'CSKH nội bộ', rps: 2, tok: 4000, share: 0.25 }, { n: 'Đối tác B2B', rps: 0.5, tok: 8000, share: 0.25 }];
+    const S = { burst: 10, quota: false, fb: 'none', b2bShare: 25 };
+    function sim() {
+      const rnd = seeded(4821), shares = [0.5, 0.25, 0.25];
+      if (S.quota) { const b = S.b2bShare / 100; shares[2] = b; shares[0] = (1 - b) * (2 / 3); shares[1] = (1 - b) / 3; }
+      const org = { lvl: ORG }, org2 = { lvl: ORG }, tb = shares.map((sh) => ({ lvl: ORG * sh, cap: ORG * sh, rate: RATE * sh }));
+      const st = TEN.map(() => ({ ok: 0, fb: 0, r429: 0, quota: 0, sent: 0, extra: 0 })), cells = TEN.map(() => []), lvls = [];
+      for (let s = 0; s < T; s++) {
+        org.lvl = Math.min(ORG, org.lvl + RATE); org2.lvl = Math.min(ORG, org2.lvl + RATE);
+        tb.forEach((b) => { b.lvl = Math.min(b.cap, b.lvl + b.rate); });
+        const q = [];
+        TEN.forEach((t, i) => { const r = i === 2 && s >= 20 && s < 80 ? S.burst : t.rps; let n = Math.floor(r); if (rnd() < r - n) n++; for (let k = 0; k < n; k++) q.push(i); });
+        for (let k = q.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [q[k], q[j]] = [q[j], q[k]]; }
+        const c = TEN.map(() => ({ ok: 0, fb: 0, r429: 0, quota: 0 }));
+        q.forEach((i) => {
+          const tok = TEN[i].tok;
+          if (S.quota) { if (tb[i].lvl < tok) { c[i].quota++; st[i].quota++; return; } tb[i].lvl -= tok; }
+          st[i].sent++;
+          if (org.lvl >= tok) { org.lvl -= tok; c[i].ok++; st[i].ok++; return; }
+          if (S.fb === 'same') { st[i].extra++; st[i].sent++; c[i].r429++; st[i].r429++; return; }
+          if (S.fb === 'other') { st[i].extra++; st[i].sent++; if (org2.lvl >= tok) { org2.lvl -= tok; c[i].fb++; st[i].fb++; return; } }
+          c[i].r429++; st[i].r429++;
+        });
+        c.forEach((x, i) => cells[i].push(x));
+        lvls.push(org.lvl);
+      }
+      return { st, cells, lvls };
+    }
+    const svg = el('svg', { class: 'canvas', viewBox: '0 0 560 230', role: 'img', 'aria-label': 'Kết quả request theo tenant theo giây' });
+    const tbl = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), cap = el('div', { class: 'hint' });
+    function render() {
+      const R = sim(), X = (s) => 110 + s * 3.7, rowH = 44;
+      const kids = [];
+      TEN.forEach((t, i) => {
+        const y0 = 8 + i * (rowH + 8);
+        kids.push(el('text', { x: 0, y: y0 + rowH / 2 + 4, text: t.n }));
+        R.cells[i].forEach((c, s) => {
+          const tot = c.ok + c.fb + c.r429 + c.quota; if (!tot) return;
+          let y = y0 + rowH;
+          [['ok', 'var(--ok)'], ['fb', 'var(--g1)'], ['r429', 'var(--bad)'], ['quota', 'var(--dim)']].forEach(([k, col]) => {
+            if (!c[k]) return; const h = (c[k] / tot) * rowH; y -= h;
+            kids.push(el('rect', { x: X(s), y, width: 3.4, height: h, fill: col }));
+          });
+        });
+      });
+      const yB = 8 + 3 * (rowH + 8), Yl = (v) => yB + 34 - (v / ORG) * 30;
+      kids.push(el('text', { x: 0, y: yB + 22, class: 'mute', text: 'Bucket tổ chức' }), el('line', { x1: X(0), x2: X(T), y1: yB + 34, y2: yB + 34, stroke: 'var(--line)' }),
+        el('path', { d: R.lvls.map((v, s) => (s ? 'L' : 'M') + X(s).toFixed(1) + ' ' + Yl(v).toFixed(1)).join(' '), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 1.6 }),
+        el('rect', { x: X(20), y: 2, width: X(80) - X(20), height: yB - 4, fill: 'var(--warn)', opacity: 0.06 }), el('text', { x: X(20) + 2, y: yB - 4, fill: 'var(--warn)', text: 'B2B chạy job 20–80 s' }));
+      svg.replaceChildren(...kids);
+      tbl.innerHTML = '<table><tr><th>Tenant</th><th>Phục vụ</th><th>Qua fallback</th><th>429 từ provider</th><th>Quota ShopViet từ chối</th><th>Lần thử thêm</th></tr>' + R.st.map((x, i) => {
+        const tot = x.ok + x.fb + x.r429 + x.quota, pct = tot ? ((x.ok + x.fb) / tot) * 100 : 100;
+        return `<tr><td>${TEN[i].n}</td><td class="mono ${pct < 95 ? 'bad' : 'ok'}">${pct.toFixed(0)}%</td><td class="mono">${x.fb}</td><td class="mono ${x.r429 ? 'bad' : ''}">${x.r429}</td><td class="mono">${x.quota}</td><td class="mono">${x.extra}</td></tr>`;
+      }).join('') + '</table>';
+      const chat = R.st[0], cTot = chat.ok + chat.fb + chat.r429 + chat.quota, cPct = ((chat.ok + chat.fb) / cTot) * 100, msgs = [];
+      if (!S.quota && chat.r429 > 0 && S.burst > 2) msgs.push(`<b class="bad">Bất thường:</b> khách lẻ không gửi thêm request nào, nhưng chỉ ${cPct.toFixed(0)}% được phục vụ và nhận ${chat.r429} lần 429. Vì sao: rate limit áp cho cả tổ chức; job B2B lấy token nhanh hơn tốc độ nạp, xô cạn, và request đến sau, của ai cũng vậy, bị từ chối. Không có nghĩa là khách lẻ dùng quá mức. Trong hệ thống thật: workspace riêng ở provider và token bucket theo tenant ở ứng dụng.`);
+      if (S.fb === 'same' && R.st.some((x) => x.extra)) msgs.push(`<b class="bad">Fallback không cứu:</b> ${R.st.reduce((s, x) => s + x.extra, 0)} lần thử thêm sang model cùng bucket, tất cả đều 429. Model fallback rút từ đúng cái xô vừa cạn (failure mode 4).`);
+      if (S.fb === 'other' && !S.quota) msgs.push(chat.r429 === 0
+        ? `Fallback sang bucket khác cứu trọn khách lẻ trong đợt này (${chat.fb} request qua xô thứ hai). Nhưng B2B cũng fallback (${R.st[2].fb} request) và đang rút xô thứ hai; kéo "B2B lúc chạy job" lên cao hơn để thấy xô đó cạn nốt. POC đo cùng điều này: đợt burst 20 s cứu trọn khách lẻ, B2B vẫn nhận 34 lần 429. Không có nghĩa là fallback chống được noisy neighbor: nó chỉ mua thời gian. Khách lẻ cũng được phục vụ bằng model khác: mất cache, chất lượng khác (xem hình eval bên dưới).`
+        : `<b class="bad">Bất thường:</b> đã fallback sang bucket khác mà khách lẻ vẫn nhận ${chat.r429} lần 429. Vì sao: B2B cũng fallback (${R.st[2].fb} request) và burst đủ dài để rút cạn cả xô thứ hai. Với burst ngắn hơn, fallback cứu được khách lẻ (POC: đợt 20 s cứu trọn). Trong hệ thống thật: fallback chỉ mua thời gian; cô lập tenant bằng quota mới giải quyết tận gốc.`);
+      if (S.quota && R.st[2].quota > 0) msgs.push(`Có quota: B2B bị ShopViet từ chối ${R.st[2].quota} request với thông báo rõ ("vượt quota, thử lại sau"), khách lẻ được phục vụ ${cPct.toFixed(0)}%. Lỗi nằm đúng chỗ của nó.`);
+      if (S.quota && cPct < 99 && R.st[0].quota > 0) msgs.push(`<b style="color:var(--warn)">Lưu ý:</b> phần chia cho B2B lớn quá (${S.b2bShare}%), khách lẻ bị chính quota của mình chặn ${R.st[0].quota} request. Chia quota là quyết định sản phẩm, không chỉ kỹ thuật.`);
+      if (!msgs.length) msgs.push('Kéo "B2B lúc chạy job" lên trên 2 request/giây để thấy bucket tổ chức cạn.');
+      cap.innerHTML = msgs.join('<br>');
+      bS.node.style.display = S.quota ? '' : 'none';
+    }
+    const cb = (lab, k) => { const i = el('input', { type: 'checkbox' }); i.checked = S[k]; i.addEventListener('change', () => { S[k] = i.checked; render(); }); return el('label', { class: 'ctl' }, [i, lab]); };
+    const bS = slider('Quota chia cho B2B', 5, 80, 5, S.b2bShare, (v) => { S.b2bShare = v; render(); }, (v) => v + '%');
+
+    const ITEMS = [
+      ['SV-4901', 'tool', 'Đơn SV-4821 của tôi tới đâu rồi?', { json: { tool: 'tra_don_hang', order_id: 'SV-4821' } }, '{"tool": "tra_don_hang", "order_id": "SV-4821"}', 'Đây là lời gọi tool: {"tool": "tra_don_hang", "order_id": "SV-4821"}', '{"tool": "tra_don_hang", "order_id": "SV-4821"}'],
+      ['SV-4902', 'tool', 'Huỷ đơn SV-4840 giúp tôi.', { json: { tool: 'huy_don', order_id: 'SV-4840' } }, '{"tool": "huy_don", "order_id": "SV-4840"}', '{"tool": "huy_don", "orderId": "SV-4840"}', '{"tool": "huy_don", "order_id": "SV-4840"}'],
+      ['SV-4903', 'tool', 'Đơn SV-4833 đã thanh toán chưa?', { json: { tool: 'tra_thanh_toan', order_id: 'SV-4833' } }, '{"tool": "tra_thanh_toan", "order_id": "SV-4833"}', '{"tool": "tra_thanh_toan", "order_id": "SV-4833"}'],
+      ['SV-4904', 'tool', 'Đổi địa chỉ giao đơn SV-4810 sang 12 Lê Lợi, Quận 1.', { json: { tool: 'doi_dia_chi', order_id: 'SV-4810' } }, '{"tool": "doi_dia_chi", "order_id": "SV-4810", "address": "12 Lê Lợi, Quận 1"}', 'json\n{"tool": "doi_dia_chi", "order_id": "SV-4810", "address": "12 Lê Lợi, Quận 1"}', '{"tool": "doi_dia_chi", "order_id": "SV-4810", "address": "12 Lê Lợi, Quận 1"}'],
+      ['SV-4905', 'policy', 'Tai nghe mua 5 ngày có đổi trả được không?', { must: [/7 ngày/, /hộp|phụ kiện/] }, 'Được ạ. ShopViet nhận đổi trả trong 7 ngày kể từ khi nhận hàng, bạn giữ đủ hộp và phụ kiện giúp mình nhé.', 'Được, bạn có thể đổi trong 7 ngày, vui lòng giữ hộp.'],
+      ['SV-4906', 'policy', 'Bảo hành laptop bao lâu?', { must: [/12 tháng/] }, 'Laptop tại ShopViet được bảo hành 12 tháng tại hãng.', 'Laptop được bảo hành 12 tháng chính hãng.'],
+      ['SV-4907', 'policy', 'Đổi trả có cần hộp không?', { must: [/hộp/] }, 'Có ạ, bạn cần giữ hộp và phụ kiện đi kèm.', 'Bạn nên giữ nguyên hộp và phụ kiện khi đổi trả.'],
+      ['SV-4908', 'policy', 'Phí đổi size ốp lưng là bao nhiêu?', { must: [/miễn phí/] }, 'Đổi size ốp lưng trong 7 ngày là miễn phí.', 'Phí đổi là free nếu trong 7 ngày.'],
+      ['SV-4909', 'advice', 'Laptop X14 hay X15 pin lâu hơn?', { must: [/X14/], max: 400 }, 'X14 pin lâu hơn khoảng 2 giờ khi làm văn phòng vì màn nhỏ và chip tiết kiệm điện hơn.', 'X14 thường pin lâu hơn nhờ màn hình nhỏ hơn.'],
+      ['SV-4910', 'advice', 'Màn 144Hz hay 240Hz cho card đồ hoạ tầm trung?', { must: [/144Hz/], max: 400 }, 'Với card tầm trung, chọn 144Hz: card khó đạt 240 khung hình mỗi giây ở game bắn súng mới, nên 240Hz ít khác biệt.', 'Đây là một câu hỏi rất hay và phụ thuộc vào nhiều yếu tố. Trước hết, tần số quét là số lần màn hình làm mới mỗi giây. Màn 240Hz mượt hơn màn 144Hz nếu card đồ hoạ xuất đủ khung hình. Tuy nhiên với card tầm trung, trong nhiều tựa game bắn súng hiện đại, bạn khó đạt được 240 khung hình mỗi giây ở thiết lập cao. Ngoài ra còn cần cân nhắc độ phân giải, thời gian phản hồi, tấm nền IPS hay VA, ngân sách và nhu cầu sử dụng khác. Vì vậy, nếu bạn ưu tiên giá trị, 144Hz là lựa chọn hợp lý.'],
+      ['SV-4911', 'advice', 'Tai nghe rè ở tai trái khi nối Bluetooth với laptop.', { must: [/Bluetooth|driver/] }, 'Bạn thử xoá kết nối Bluetooth rồi ghép lại, và cập nhật driver Bluetooth của laptop.', 'Thử cập nhật driver Bluetooth và ghép nối lại.'],
+      ['SV-4912', 'advice', 'SSD gắn thêm không hiện trong Windows.', { must: [/Disk Management|Quản lý đĩa|khởi tạo/] }, 'Mở Quản lý đĩa (Disk Management), khởi tạo ổ mới và tạo phân vùng.', 'Vào Disk Management để khởi tạo ổ và gán ký tự.'],
+      ['SV-4913', 'complaint', 'Nhận máy bị trầy, tôi muốn hoàn tiền.', { must: [/xin lỗi/i, /hoàn tiền/], not: [/không thể/] }, 'ShopViet xin lỗi bạn. Mình đã tạo yêu cầu hoàn tiền, bạn gửi ảnh vết trầy giúp mình nhé.', 'Rất xin lỗi bạn, mình sẽ hỗ trợ hoàn tiền ngay khi nhận ảnh.'],
+      ['SV-4914', 'complaint', 'Bị trừ tiền hai lần cho đơn SV-4877.', { must: [/SV-4877/, /xin lỗi/i] }, 'ShopViet xin lỗi bạn. Mình đã chuyển đơn SV-4877 cho kế toán để hoàn khoản trừ trùng.', 'Xin lỗi bạn, đơn SV-4877 đã được ghi nhận, kế toán sẽ hoàn khoản trừ trùng.'],
+      ['SV-4915', 'complaint', 'Voucher không áp được dù đơn đã thanh toán.', { must: [/xin lỗi/i] }, 'Mình xin lỗi vì bất tiện. Mình sẽ hoàn phần chênh lệch voucher vào ví ShopViet.', 'Xin lỗi bạn, mình sẽ kiểm tra và hoàn chênh lệch.'],
+      ['SV-4916', 'complaint', 'Hàng bảo hành về lại lỗi y như cũ.', { must: [/chuyển|kỹ thuật|quản lý/] }, 'Bạn vui lòng mang máy tới cửa hàng gần nhất.', 'Mình xin lỗi, mình sẽ chuyển trường hợp này cho bộ phận kỹ thuật và quản lý cửa hàng.']];
+    const CAT = { tool: 'Tool call (JSON)', policy: 'Chính sách', advice: 'Tư vấn', complaint: 'Khiếu nại' };
+    function grade(out, c) {
+      const why = [];
+      if (c.json) {
+        let o = null; try { o = JSON.parse(out); } catch (e) { why.push('không parse được JSON'); }
+        if (o) Object.entries(c.json).forEach(([k, v]) => { if (o[k] !== v) why.push(`thiếu hoặc sai key ${k}`); });
+      }
+      (c.must || []).forEach((r) => { if (!r.test(out)) why.push('thiếu ' + r.source.replace(/\\/g, '')); });
+      (c.not || []).forEach((r) => { if (r.test(out)) why.push('có ' + r.source); });
+      if (c.max && out.length > c.max) why.push(`dài ${out.length} ký tự > ${c.max}`);
+      return why;
+    }
+    const E = { share: 10, http: false, fixed: false, pick: 0 };
+    const etbl = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), ecat = el('div'), estat = el('div', { class: 'stat' }), ecap = el('div', { class: 'hint' }), edetail = el('div');
+    function erender() {
+      const rows = ITEMS.map(([id, cat, q, c, p, f, f2]) => {
+        const fo = E.fixed && f2 ? f2 : f, gp = E.http ? [] : grade(p, c), gf = E.http ? [] : grade(fo, c);
+        return { id, cat, q, c, p, fo, gp, gf };
+      });
+      etbl.innerHTML = '<table><tr><th>ID</th><th>Nhóm</th><th>Câu hỏi</th><th>Sonnet 5.5</th><th>gpt-6.1-sol (fallback)</th></tr>' + rows.map((r) =>
+        `<tr><td class="mono">${r.id}</td><td>${CAT[r.cat]}</td><td>${r.q}</td><td class="${r.gp.length ? 'bad' : 'ok'}">${r.gp.length ? 'sai: ' + r.gp.join('; ') : 'đạt'}</td><td class="${r.gf.length ? 'bad' : 'ok'}">${r.gf.length ? 'sai: ' + r.gf.join('; ') : 'đạt'}</td></tr>`).join('') + '</table>';
+      const P = rows.filter((r) => !r.gp.length).length / rows.length, F = rows.filter((r) => !r.gf.length).length / rows.length, sys = (1 - E.share / 100) * P + (E.share / 100) * F;
+      const pair = { both: 0, onlyP: 0, onlyF: 0, none: 0 };
+      rows.forEach((r) => { const a = !r.gp.length, b = !r.gf.length; pair[a && b ? 'both' : a ? 'onlyP' : b ? 'onlyF' : 'none']++; });
+      estat.innerHTML = `<span>Sonnet 5.5: <b>${(P * 100).toFixed(0)}%</b></span><span>Fallback: <b class="${F < P - 0.1 ? 'bad' : ''}">${(F * 100).toFixed(0)}%</b></span><span>Hệ thống với ${E.share}% fallback: <b>${(sys * 100).toFixed(1)}%</b></span><span>Theo cặp: cả hai đạt ${pair.both}, chỉ chính ${pair.onlyP}, chỉ fallback ${pair.onlyF}, cả hai sai ${pair.none}</span>`;
+      const cats = Object.keys(CAT).map((k) => { const rr = rows.filter((r) => r.cat === k), a = rr.filter((r) => !r.gp.length).length / rr.length, b = rr.filter((r) => !r.gf.length).length / rr.length; return [k, a, b]; });
+      ecat.replaceChildren(...cats.map(([k, a, b]) => el('div', { style: 'margin-bottom:6px' }, [el('div', { class: 'hint', style: 'margin:0', html: `<b>${CAT[k]}</b>${a - b >= 0.5 ? ' <b class="bad">tụt ' + ((a - b) * 100).toFixed(0) + ' điểm</b>' : ''}` }),
+        hbars([['Sonnet 5.5', a * 100, false], ['gpt-6.1-sol', b * 100, a - b < 0.5]], { max: 100, fmt: (v) => v.toFixed(0) + '%' })])));
+      const worst = cats.filter(([, a, b]) => a - b >= 0.5), msgs = [], gap = (P - F) * 100;
+      if (E.http) msgs.push('<b class="bad">Bất thường:</b> cả hai model đạt 100%. Vì sao: bạn đang chỉ đếm HTTP 200, mà JSON sai, thiếu ý, sai ngôn ngữ đều là 200. Không có nghĩa là fallback ổn. Trong hệ thống thật: dashboard tỷ lệ thành công không thay được eval nhánh fallback.');
+      else if (worst.length) msgs.push(`<b class="bad">Bất thường:</b> ${gap < 15 ? 'tổng chỉ chênh ' + gap.toFixed(0) + ' điểm, nhưng' : 'fallback thấp hơn ' + gap.toFixed(0) + ' điểm, phần lớn do'} nhóm ${worst.map(([k, a, b]) => CAT[k] + ' (' + (a * 100).toFixed(0) + '% xuống ' + (b * 100).toFixed(0) + '%)').join(', ')} tụt mạnh. Vì sao: model fallback bọc JSON trong lời dẫn hoặc đổi tên key, nên parser của ShopViet không đọc được tool call; trung bình chung che mất điều đó. Không có nghĩa là model fallback kém ở mọi việc: nó đạt cả câu khiếu nại mà Sonnet 5.5 trả lời sai. Trong hệ thống thật: eval theo nhóm tác vụ, và chỉnh prompt hoặc dùng structured output cho model fallback như cho model chính. POC chấm lại 16 câu (output viết tay): với prompt gốc, fallback đạt 11/16; với output giả định sau khi sửa prompt riêng cho gpt-6.1-sol, lên 14/16, nhóm tool call từ 1/4 lên 4/4. HTTP 200 thì 16/16 ở cả hai.`);
+      else msgs.push('Không nhóm nào tụt từ 50 điểm trở lên. Với 4 câu mỗi nhóm, mỗi câu là 25 điểm: tập thật cần lớn hơn nhiều trước khi kết luận.');
+      ecap.innerHTML = msgs.join('<br>');
+      const r = rows[E.pick];
+      const box = (name, out, why) => el('div', { style: 'border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--bg);min-width:0' }, [el('b', { text: name }), el('pre', { class: 'mono', style: 'white-space:pre-wrap;font-size:12px;margin:4px 0', text: out }), el('div', { class: why.length ? 'bad' : 'ok', style: 'font-size:12.5px', text: why.length ? why.join('; ') : 'đạt mọi tiêu chí' })]);
+      const crit = [r.c.json ? 'JSON có ' + Object.entries(r.c.json).map(([k, v]) => k + '="' + v + '"').join(', ') : '', ...(r.c.must || []).map((x) => 'chứa ' + x.source.replace(/\\/g, '')), ...(r.c.not || []).map((x) => 'không chứa ' + x.source), r.c.max ? 'tối đa ' + r.c.max + ' ký tự' : ''].filter(Boolean);
+      edetail.replaceChildren(el('div', { class: 'hint', style: 'margin:0 0 6px', text: 'Tiêu chí: ' + crit.join(' · ') }), el('div', { class: 'cols' }, [box('Sonnet 5.5', r.p, r.gp), box('gpt-6.1-sol', r.fo, r.gf)]));
+    }
+    const ecb = (lab, k) => { const i = el('input', { type: 'checkbox' }); i.checked = E[k]; i.addEventListener('change', () => { E[k] = i.checked; erender(); }); return el('label', { class: 'ctl' }, [i, lab]); };
+    stage.append(
+      el('h4', { text: 'Một tenant ồn ào và bucket chung của tổ chức', style: 'margin:0 0 6px' }),
+      el('div', { class: 'row' }, [slider('B2B lúc chạy job', 0, 20, 1, S.burst, (v) => { S.burst = v; render(); }, (v) => v + ' request/s').node, cb('Quota theo tenant ở ứng dụng', 'quota'), bS.node]),
+      el('div', { class: 'row' }, [select('Khi gặp 429', [['none', 'Trả lỗi'], ['same', 'Fallback sang model cùng bucket'], ['other', 'Fallback sang model bucket khác']], S.fb, (v) => { S.fb = v; render(); }).node]),
+      svg, el('div', { class: 'legend' }, [el('span', { html: '<i style="background:var(--ok)"></i>Phục vụ' }), el('span', { html: '<i style="background:var(--g1)"></i>Qua fallback' }), el('span', { html: '<i style="background:var(--bad)"></i>429 từ provider' }), el('span', { html: '<i style="background:var(--dim)"></i>Quota ShopViet từ chối' })]),
+      tbl, cap,
+      el('p', { class: 'hint', text: 'Giới hạn tổ chức 2.000.000 ITPM là mức Start của Sonnet 5.5 (README §1.2). Dung lượng xô bằng một phút nạp, nhịp và kích thước request của từng tenant là giả định. Quota ở ứng dụng là token bucket theo tenant, chia khách lẻ và CSKH theo tỷ lệ 2:1 phần còn lại. Thứ tự request trong mỗi giây xáo ngẫu nhiên bằng seed cố định.' }),
+      el('h4', { text: 'Eval nhánh fallback trên 16 câu có nhãn', style: 'margin:24px 0 6px' }),
+      el('div', { class: 'row' }, [slider('Tỷ lệ request do fallback phục vụ', 0, 50, 1, E.share, (v) => { E.share = v; erender(); }, (v) => v + '%').node]),
+      el('div', { class: 'row' }, [ecb('Chỉ đếm HTTP 200 (như dashboard lỗi)', 'http'), ecb('Prompt fallback đã chỉnh cho tool call', 'fixed')]),
+      estat, ecap, el('div', { class: 'cols', style: 'margin-top:8px' }, [el('div', {}, [ecat]), el('div', {}, [select('Xem chi tiết câu', ITEMS.map((x, i) => [i, x[0] + ' · ' + x[2].slice(0, 30)]), 0, (v) => { E.pick = +v; erender(); }).node, edetail])]),
+      etbl,
+      el('p', { class: 'hint', text: 'Output của hai model là ví dụ dựng sẵn để minh hoạ các kiểu lỗi hay gặp, không phải output thật. Grader (JSON.parse, regex, giới hạn độ dài) chạy thật trong trình duyệt. Chính sách 7 ngày, 12 tháng là dữ liệu ví dụ của ShopViet.' }));
+    render(); erender();
+  }
+});
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

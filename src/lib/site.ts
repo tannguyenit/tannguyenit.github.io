@@ -81,6 +81,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Khi nào cho model suy nghĩ lâu hơn: thinking token, effort và budget, reasoning trong hội thoại nhiều lượt, khác biệt giữa provider, chi phí, độ trễ và đo xem reasoning có thật sự giúp.',
     parts: ['Workflow tổng hợp', 'Thinking token: tính phí nhưng không thấy', 'Tác vụ nào cần, effort và budget', 'Reasoning trong hội thoại nhiều lượt', 'Reasoning theo provider', 'Effort, prompt, tool và JSON', 'Chi phí, eval và failure modes']
   },
+  'model-routing': {
+    title: 'LLM - 16 - Model Routing',
+    description: 'Routing và fallback giữa các model: rate limit, retry và jitter, routing theo độ khó và chi phí, gateway, cloud provider, circuit breaker, quota theo tenant và eval sau khi fallback.',
+    parts: ['Workflow tổng hợp', 'Một điểm lỗi và rate limit', 'Retry, backoff và jitter', 'Routing và hệ quả khi fallback', 'Gateway và cloud provider', 'Router classifier, priority và batch', 'Chuỗi fallback, tương thích và circuit breaker', 'Quota theo tenant, eval và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
