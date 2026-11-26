@@ -46,6 +46,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Trả từng phần response qua SSE: TTFT, cách SSE hoạt động, event của từng provider, relay qua proxy và CDN, tool call và JSON khi stream, lỗi giữa chừng, huỷ, UI và đo đạc.',
     parts: ['Workflow tổng hợp', 'Vì sao stream và SSE', 'Giao thức, event và usage', 'Streaming theo provider', 'Relay qua proxy và CDN', 'Tool call, JSON và reasoning khi stream', 'Lỗi giữa chừng và huỷ', 'UI và moderation', 'Observability và failure modes']
   },
+  'multimodal': {
+    title: 'LLM - 10 - Multimodal',
+    description: 'Model đọc ảnh, PDF và âm thanh thế nào: patch và token, chi phí theo provider, PDF và audio, giới hạn của vision, tiền xử lý, trích xuất có cấu trúc, cache và eval.',
+    parts: ['Workflow tổng hợp', 'Patch, tile và token của ảnh', 'PDF và âm thanh', 'Những gì vision model còn kém', 'Multimodal theo provider', 'Tiền xử lý, pipeline và trích xuất', 'RAG, chi phí, eval và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
