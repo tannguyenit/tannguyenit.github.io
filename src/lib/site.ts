@@ -51,6 +51,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Model đọc ảnh, PDF và âm thanh thế nào: patch và token, chi phí theo provider, PDF và audio, giới hạn của vision, tiền xử lý, trích xuất có cấu trúc, cache và eval.',
     parts: ['Workflow tổng hợp', 'Patch, tile và token của ảnh', 'PDF và âm thanh', 'Những gì vision model còn kém', 'Multimodal theo provider', 'Tiền xử lý, pipeline và trích xuất', 'RAG, chi phí, eval và failure modes']
   },
+  'evaluation': {
+    title: 'LLM - 11 - Evaluation',
+    description: 'Biết hệ thống LLM tốt lên hay tệ đi: golden dataset, grader bằng code và LLM-as-judge, phương sai và cỡ mẫu, eval cho RAG và agent, regression trong CI và A/B online.',
+    parts: ['Workflow tổng hợp', 'Vì sao thử vài câu không phải eval', 'Phương sai và cỡ mẫu', 'Benchmark và grader bằng code', 'LLM-as-judge', 'Eval cho RAG, agent và extraction', 'Dataset, gán nhãn, regression và CI', 'Eval online, chi phí và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
