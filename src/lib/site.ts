@@ -7,7 +7,7 @@ export const site = {
 
 export const series: Record<string, { title: string; description: string; parts?: string[] }> = {
   embeddings: {
-    title: 'Embeddings cho backend developer',
+    title: 'LLM - 01 - Embedding',
     description: 'Từ "embedding là gì" đến một hệ thống tìm kiếm chạy thật, mỗi bài có lab tương tác và một ví dụ xuyên suốt.',
     parts: ['Workflow tổng hợp', 'Embedding là gì', 'Cosine, dot và L2', 'Bi-encoder và cross-encoder', 'Retrieve rồi rerank', 'ANN và HNSW', 'Chunking', 'Số chiều và quantization', 'Hybrid search và RRF']
   },
