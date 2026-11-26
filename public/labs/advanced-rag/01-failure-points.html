@@ -1,0 +1,649 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 01</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="00-workflow.html">← Lab trước</a><a href="02-long-context-agentic.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flag = (kind, html) => el('div', { style: `border-left:4px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 9%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+  const check = (label, on, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = on; i.addEventListener('change', () => onChange(i.checked)); return { node: el('label', { class: 'ctl', style: 'font-size:13px' }, [i, label]), input: i }; };
+  const pc = (x) => (x * 100).toFixed(0) + '%';
+  const NS = [5, 10, 20, 50];
+
+  const FP = {
+    ok: { name: 'Đúng', stage: '-', col: 'var(--ok)' },
+    ref: { name: 'Từ chối', stage: 'Generation', col: 'var(--dim)' },
+    FP1: { name: 'FP1 Missing content', stage: 'Corpus', col: 'var(--g4)', fix: 'prompt cho phép "không có trong tài liệu", nhóm eval câu không có đáp án (§1.1)' },
+    FP2: { name: 'FP2 Không vào top-N', stage: 'Retrieval', col: 'var(--bad)', fix: 'hybrid BM25 + RRF, tăng số candidate, sửa chunk (§2.1, §2.3)' },
+    FP3: { name: 'FP3 Không vào top-k', stage: 'Rerank / ghép context', col: 'var(--warn)', fix: 'rerank top-N, chọn k bằng đo (§2.2)' },
+    FP4: { name: 'FP4 Not extracted', stage: 'Generation', col: 'var(--g1)', fix: 'giảm số đoạn, đặt đoạn tốt nhất ở đầu, metadata cho bản cũ (§3.6)' },
+    FP5: { name: 'FP5 Wrong format', stage: 'Generation', col: 'var(--mute)', fix: 'sửa prompt / structured output, không phải retrieval' },
+    FP6: { name: 'FP6 Incorrect specificity', stage: 'Generation', col: 'var(--mute)', fix: 'sửa prompt, ví dụ mẫu về độ chi tiết' },
+    FP7: { name: 'FP7 Incomplete', stage: 'Retrieval + generation', col: 'var(--accent)', fix: 'decomposition, multi-query, đo recall theo từng phần (§2.1)' }
+  };
+
+  const T = [
+    { q: 'Đơn SV-4821 giao ngày nào?', type: 'tra cứu', parts: [[31, 2]], note: 'Mã đơn gần như vô nghĩa với embedding: SV-4821, SV-4812, SV-4128 trông như nhau, nên dense xếp đoạn đúng hạng 31. Reranker đọc nguyên văn mã nên kéo lên hạng 2.' },
+    { q: 'Laptop mua online đổi trả trong mấy ngày?', type: 'tra cứu', parts: [[2, 2]], use: 'conflict', note: 'Bản 2025 (15 ngày) đứng hạng 1, bản 2026 (7 ngày) hạng 2.' },
+    { q: 'Pin ZenBook Z14 bảo hành mấy tháng?', type: 'tra cứu', parts: [[14, 3]] },
+    { q: 'Tai nghe tặng kèm Galaxy S30 đổi trả bao lâu?', type: 'nhiều bước', parts: [[1, 1], [4, 2], [38, 3]] },
+    { q: 'ShopViet có bán xe máy điện không?', type: 'không có đáp án', parts: [] },
+    { q: 'Giao tới Đà Lạt mất mấy ngày?', type: 'tra cứu', parts: [[1, 1]] },
+    { q: 'So sánh bảo hành Galaxy S30 và iPhone 17', type: 'so sánh', parts: [[2, 1], [9, 2]] },
+    { q: 'Liệt kê điều kiện trả góp 0% thành gạch đầu dòng', type: 'tra cứu', parts: [[3, 1]], use: 'format', note: 'Model trả một đoạn văn liền, người dùng yêu cầu gạch đầu dòng.' },
+    { q: 'Laptop gaming nào dưới 25 triệu?', type: 'tra cứu', parts: [[2, 1]], use: 'spec', note: 'Model trả lời "ShopViet có nhiều mẫu laptop gaming", không nêu model nào.' },
+    { q: 'Cửa hàng Cầu Giấy mở cửa mấy giờ?', type: 'tra cứu', parts: [[6, 1]] },
+    { q: 'Có giao hàng tới Côn Đảo không?', type: 'không có đáp án', parts: [] },
+    { q: 'Đơn trên 5 triệu có miễn phí lắp điều hoà không?', type: 'tra cứu', parts: [[7, 4]], noise: 6 },
+    { q: 'Hoàn tiền về thẻ tín dụng mất bao lâu?', type: 'tra cứu', parts: [[1, 1]], noise: 6 },
+    { q: 'Rơi vỡ màn hình có được bảo hành không?', type: 'tra cứu', parts: [[12, 2]] },
+    { q: 'Đổi sang máy khác màu trong bao lâu?', type: 'tra cứu', parts: [[2, 1]] },
+    { q: 'SKU BL-200 là sản phẩm gì?', type: 'tra cứu', parts: [[0, 1]], note: 'Mã SKU không có nghĩa với embedding; đoạn đúng không nằm trong top-50 của dense.' },
+    { q: 'Chính sách bảo hành 2025 và 2026 khác gì nhau?', type: 'so sánh', parts: [[1, 1], [27, 2]] },
+    { q: 'Kích hoạt bảo hành điện tử thế nào?', type: 'tra cứu', parts: [[3, 1]], noise: 8 },
+    { q: 'Có thu cũ đổi mới MacBook không?', type: 'tra cứu', parts: [[4, 3]] },
+    { q: 'Giá iPhone 17 hôm nay bao nhiêu?', type: 'không có đáp án', parts: [], note: 'Giá nằm trong database sản phẩm, không nằm trong kho tài liệu (README §2.6: text-to-SQL).' }
+  ];
+
+  function classify(t, s) {
+    const out = { inPool: 0, inCtx: 0, n: t.parts.length, pos: [] };
+    if (!t.parts.length) {
+      const c = s.refuse ? 'ok' : 'FP1';
+      return Object.assign(out, { c, claims: s.refuse ? 0 : 2, unsup: s.refuse ? 0 : 2 });
+    }
+    t.parts.forEach(([r, rr]) => {
+      const pool = r > 0 && r <= s.N, pos = s.rerank ? rr : r;
+      if (pool) out.inPool++;
+      if (pool && pos <= s.k) { out.inCtx++; out.pos.push(pos); } else out.pos.push(0);
+    });
+    const distract = Math.max(0, s.k - out.inCtx);
+    let c;
+    if (out.inCtx === 0) c = out.inPool === 0 ? 'FP2' : (out.n > 1 ? 'FP7' : 'FP3');
+    else if (out.inCtx < out.n) c = 'FP7';
+    else if (t.noise && distract >= t.noise) c = 'FP4';
+    else if (t.use === 'conflict') c = 'FP4';
+    else if (t.use === 'format') c = 'FP5';
+    else if (t.use === 'spec') c = 'FP6';
+    else c = 'ok';
+    out.distract = distract;
+    const retrievalFail = c === 'FP2' || c === 'FP3' || c === 'FP7';
+    if (s.refuse && (c === 'FP2' || c === 'FP3')) return Object.assign(out, { c: 'ref', why: c, claims: 0, unsup: 0 });
+    const claims = 2, unsup = c === 'ok' || c === 'FP5' || c === 'FP6' ? 0 : t.use === 'conflict' && c === 'FP4' ? 0 : retrievalFail && c === 'FP7' ? 1 : 2;
+    return Object.assign(out, { c, claims, unsup });
+  }
+
+  function evaluate(s) {
+    const rows = T.map((t) => Object.assign({ t }, classify(t, s)));
+    const ans = rows.filter((r) => r.n);
+    const recN = ans.reduce((a, r) => a + r.inPool / r.n, 0) / ans.length;
+    const recK = ans.reduce((a, r) => a + r.inCtx / r.n, 0) / ans.length;
+    const prec = ans.reduce((a, r) => a + r.inCtx / s.k, 0) / ans.length;
+    const claims = rows.reduce((a, r) => a + r.claims, 0), unsup = rows.reduce((a, r) => a + r.unsup, 0);
+    const faith = claims ? 1 - unsup / claims : 1;
+    const acc = rows.filter((r) => r.c === 'ok').length / rows.length;
+    const count = {};
+    Object.keys(FP).forEach((k) => { count[k] = rows.filter((r) => r.c === k).length; });
+    return { rows, recN, recK, prec, faith, acc, count, s };
+  }
+  const S = (o) => Object.assign({ N: 20, k: 5, rerank: false, refuse: false }, o);
+  const dominant = (e) => Object.keys(FP).filter((k) => k !== 'ok' && k !== 'ref').sort((a, b) => e.count[b] - e.count[a])[0];
+
+  return {
+    id: 'failure-points', nav: '1. Điểm hỏng', ref: '§1.1–1.2',
+    title: 'Một con số "accuracy" không cho biết sửa tầng nào; bảy điểm hỏng, mỗi điểm một phép đo, thì có',
+    hook: 'Kéo N (số candidate), k (số đoạn vào prompt), bật rerank và cho phép nói "không có". Hai mươi trace ShopViet tự phân loại lại vào FP1–FP7, và metric của từng tầng tính lại ngay.',
+    terms: [
+      ['Trace', 'Bản ghi một câu hỏi đi qua pipeline: câu hỏi, đoạn đúng đứng hạng mấy ở retrieval, hạng mấy sau rerank, vào context không, model trả lời gì.'],
+      ['Điểm hỏng (failure point)', 'Tầng mà câu trả lời bắt đầu sai. Barnett và cộng sự (2024) rút ra bảy điểm FP1–FP7 từ ba hệ RAG thật.'],
+      ['Recall@N', 'Tỉ lệ đoạn đúng nằm trong N candidate của retrieval. Câu có 2 phần, tìm được 1 trong top-20: Recall@20 = 0,5 cho câu đó.'],
+      ['Recall@k', 'Tỉ lệ đoạn đúng thật sự vào prompt (k đoạn sau rerank). Recall@50 = 0,85 mà Recall@10 = 0,70 nghĩa là 15% rơi ở rerank.'],
+      ['nDCG@k', 'Điểm cho thứ tự trong k đoạn: đoạn đúng ở hạng 1 được điểm cao hơn ở hạng 5. Recall@k chỉ hỏi "có trong top-k không", nDCG hỏi thêm "đứng hạng mấy".'],
+      ['Context precision', 'Trong k đoạn đưa vào prompt, bao nhiêu phần là đoạn đúng. k = 10 có 1 đoạn đúng: precision 0,1, chín đoạn còn lại là nhiễu.'],
+      ['Faithfulness', 'Tỉ lệ khẳng định trong câu trả lời có đoạn context ủng hộ. Model trả lời "có, 15 ngày" từ đoạn bản 2025: faithful (có nguồn) nhưng sai.'],
+      ['Từ chối đúng', 'Câu không có đáp án trong corpus, model trả lời "tài liệu không có thông tin này". Với nhóm câu này, từ chối là câu trả lời đúng.'],
+      ['Nhiễu (distractor)', 'Đoạn trong context không phải đoạn đúng. Thêm đoạn nhiễu có thể làm model bỏ qua đoạn đúng (lost in the middle, Bài 2).']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> vừa nâng cấp trợ lý chat lên pipeline có retrieval N = 20, đưa k = 5 đoạn vào prompt. Dashboard báo "accuracy 25%" trên 20 câu lấy từ log khiếu nại. Mỗi người trong team đề xuất một cách: đổi embedding model, thêm reranker, tăng k lên 20, đổi sang model đắt hơn.',
+      scenario: 'Không ai biết đề xuất nào đúng, vì con số 25% gộp mọi loại lỗi: câu không có đáp án trong kho, đoạn đúng không được lấy về, lấy về rồi nhưng bị cắt, có trong prompt mà model không dùng, đúng nội dung sai định dạng.',
+      ask: 'Từng câu sai hỏng ở tầng nào? Nhóm lỗi nào lớn nhất? Và khi chỉnh một núm (N, k, rerank, prompt), lỗi biến mất hay chỉ chuyển sang tầng khác?',
+      solves: 'Gắn nhãn đoạn đúng cho từng câu, rồi hỏi lần lượt theo tầng: có trong corpus? có trong top-N? có trong top-k? model có dùng? Đúng thứ tự của README §3.1. Mỗi tầng một metric (README §1.2): Recall@N cho retrieval, Recall@k và precision cho rerank, faithfulness cho generation.',
+      read: [
+        'Lưới 20 ô là 20 trace. Màu ô là điểm hỏng hiện tại. Bấm một ô để xem đường đi của trace đó qua từng tầng.',
+        'Thanh ngang đếm số trace theo điểm hỏng. Dòng metric tính Recall@N, Recall@k, context precision, faithfulness và độ đúng từ chính 20 trace đó.',
+        'Khung "Nên sửa tầng nào" tự đọc nhóm lỗi lớn nhất và cặp Recall@N / Recall@k theo quy tắc README §1.2.',
+        'Dữ liệu trace là dựng sẵn cho lab (hạng của đoạn đúng ở retrieval và sau rerank, ngưỡng nhiễu của vài câu). Phép phân loại và metric được tính thật trong trình duyệt.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Bảy điểm hỏng của Barnett và cộng sự (2024), rút từ ba hệ RAG thật (README §1.1). Mỗi điểm ứng với một tầng, nên biết điểm hỏng là biết phải sửa ở đâu.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Tên trong paper</th><th>Tầng</th><th>Đo bằng</th></tr>
+<tr><td>FP1</td><td>Missing Content</td><td>Corpus</td><td>Nhóm câu cố ý không có đáp án, tỉ lệ từ chối đúng</td></tr>
+<tr><td>FP2</td><td>Missed the Top Ranked Documents</td><td>Retrieval</td><td>Recall@N trên câu có nhãn đoạn đúng</td></tr>
+<tr><td>FP3</td><td>Not in Context</td><td>Ghép context</td><td>Đoạn đúng có trong prompt cuối cùng không</td></tr>
+<tr><td>FP4</td><td>Not Extracted</td><td>Generation</td><td>Tỉ lệ sai trên câu mà đoạn đúng đã có trong context</td></tr>
+<tr><td>FP5</td><td>Wrong Format</td><td>Generation</td><td>Kiểm tra định dạng</td></tr>
+<tr><td>FP6</td><td>Incorrect Specificity</td><td>Generation</td><td>Rubric độ chi tiết</td></tr>
+<tr><td>FP7</td><td>Incomplete</td><td>Retrieval và generation</td><td>Recall theo từng phần của câu hỏi</td></tr>
+</table></div>
+<h4>Ba tầng, ba metric (README §1.2)</h4>
+<div class="tbl"><table><tr><th>Tầng</th><th>Việc</th><th>Metric</th><th>Đầu ra (thí nghiệm Anthropic)</th></tr>
+<tr><td>Retrieval</td><td>Không bỏ sót</td><td>Recall@N</td><td>150 candidate</td></tr>
+<tr><td>Rerank</td><td>Đưa cái đúng lên đầu</td><td>nDCG@k, Recall@k</td><td>20 đoạn</td></tr>
+<tr><td>Generation</td><td>Dùng đúng và chỉ dùng context</td><td>Faithfulness, độ đúng</td><td>Câu trả lời có trích dẫn</td></tr></table></div>
+<p>Ngoài bảy điểm của paper, hệ doanh nghiệp hay gặp: chunk cắt ngang câu trả lời, khác thuật ngữ ("SLA" và "cam kết thời gian phản hồi"), phiên bản cũ cạnh tranh bản mới, index lỗi thời, nội dung độc hại trong corpus.</p>
+<div class="verdict"><b>Quy trình (README §3.1):</b> lấy 50–100 câu sai, gán điểm hỏng, đếm, chọn kỹ thuật rẻ nhất cho nhóm lớn nhất, đo lại trên cùng tập cộng một tập câu đang đúng.</div>`,
+    why: {
+      c: 'Đo tách theo tầng: Recall@N của retrieval, Recall@k sau rerank, đoạn đúng có trong prompt không, rồi mới tới độ đúng và faithfulness. Hai bước đầu không cần LLM, chạy được trong CI cho mọi thay đổi chunking hay embedding (README §3.5).',
+      s: 'Một con số accuracy end-to-end: dễ báo cáo nhưng không chỉ ra tầng nào hỏng. LLM judge chấm "câu trả lời tốt không" cho mọi câu: đắt, và vẫn không tách retrieval khỏi generation. Sửa theo cảm giác (đổi model, tăng k): có thể chuyển lỗi sang tầng khác mà accuracy không đổi.',
+      p: 'Phải gán nhãn đoạn đúng cho từng câu eval, và giữ nhãn đó khi corpus thay đổi. Phải có nhóm câu không có đáp án. Paper nhấn mạnh: kiểm chứng một hệ RAG chỉ làm được khi hệ đã vận hành, vì không đoán trước được người dùng hỏi gì, nên tập trace phải lấy từ log thật.'
+    },
+    deep: [
+      {
+        q: 'Dashboard đã có accuracy. Sao phải tách thành bảy loại lỗi?',
+        a: `<p>Vì cùng một con số accuracy có thể đến từ những nguyên nhân hoàn toàn khác nhau, cần cách sửa khác nhau. README §1.1: "Nếu bạn chỉ có một con số accuracy của câu trả lời, bạn không biết sửa tầng nào."</p>
+<p>Hình dưới chạy 20 trace qua bốn cấu hình. Cả bốn cùng accuracy, nhưng nhóm lỗi lớn nhất khác nhau, nên tầng cần sửa khác nhau.</p>`,
+        viz(box) {
+          const cfgs = [S({ N: 10, k: 5 }), S({ N: 20, k: 5 }), S({ N: 50, k: 10 }), S({ N: 5, k: 1, refuse: true })];
+          const rows = cfgs.map((s) => { const e = evaluate(s), d = dominant(e);
+            return `<tr><td class="mono">N=${s.N}, k=${s.k}${s.rerank ? ', rerank' : ''}${s.refuse ? ', từ chối' : ''}</td><td class="mono">${pc(e.acc)}</td><td>${FP[d].name} (${e.count[d]})</td><td>${FP[d].stage}</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Cấu hình</th><th>Accuracy</th><th>Nhóm lỗi lớn nhất</th><th>Tầng cần sửa</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: 'Tính trên 20 trace dựng sẵn của lab. "từ chối" nghĩa là prompt cho phép nói không có trong tài liệu.' }));
+        },
+        take: 'Mỗi điểm hỏng cần một phép đo riêng. Accuracy là kết quả, không phải chẩn đoán.'
+      },
+      {
+        q: 'FP1: corpus không có đáp án mà model vẫn trả lời. Sao model không tự biết mà nói "không biết"?',
+        a: `<p>Vì retrieval luôn trả về k đoạn, kể cả khi không đoạn nào liên quan. Hỏi "có giao tới Côn Đảo không", top-5 vẫn có năm đoạn về giao hàng: Đà Lạt, Đà Nẵng, nội thành... Prompt bảo "trả lời câu hỏi dựa trên context", model cố trả lời từ những gì có.</p>
+<p>Sửa gần như không tốn gì: prompt cho phép nói "không có trong tài liệu", và có thể thêm ngưỡng điểm retrieval (README Tra cứu nhanh). Nhưng phải đo được: eval cần một nhóm câu <b>cố ý không có đáp án</b> (README §3.5). Không có nhóm đó, FP1 không bao giờ hiện trên dashboard.</p>
+<p>Bật "Cho phép nói không có" ở hình chính: 3 câu FP1 thành đúng. Cùng lúc, các câu FP2, FP3 chuyển thành "Từ chối": vẫn chưa trả lời được, nhưng không còn bịa. Accuracy tăng ít, faithfulness tăng nhiều.</p>`,
+        take: 'Câu "không biết" đúng lúc là một câu trả lời đúng. Đo nó bằng tỉ lệ từ chối đúng trên nhóm không có đáp án.'
+      },
+      {
+        q: 'FP2 và FP3 đều là "không có đoạn đúng trong prompt". Tách ra làm gì?',
+        a: `<p>Vì cách sửa ngược nhau. FP2: đoạn đúng không nằm trong N candidate, không tầng nào phía sau thấy nó; phải sửa retrieval (hybrid, chunk, embedding). FP3: đoạn đúng đã nằm trong N candidate nhưng xếp dưới hạng k; reranker hoặc tăng k sửa được.</p>
+<p>Đặt Recall@N cạnh Recall@k là biết (README §1.2). Hình dưới tính hai trường hợp của README:</p>`,
+        viz(box) {
+          const cases = [['A', 0.85, 0.70], ['B', 0.50, 0.45]];
+          box.append(...cases.map(([n, rN, rk]) => el('div', { style: 'margin-bottom:10px' }, [
+            el('b', { text: `Trường hợp ${n}`, style: 'font-size:13px' }),
+            hbars([['Recall@50 (retrieval)', rN, true], ['Recall@10 (sau rerank)', rk, false], ['Mất ở retrieval', 1 - rN, false], ['Mất ở rerank', rN - rk, false]], { max: 1, fmt: (v) => v.toFixed(2) }),
+            el('div', { class: 'cap', html: rN >= 0.8 ? `Mất ở rerank ${((rN - rk) * 100).toFixed(0)}% → retrieval ổn, sửa rerank hoặc số đoạn đưa vào prompt.` : `Một nửa đáp án chưa bao giờ tới reranker → <b>sửa reranker không giúp gì</b>; sửa chunk, embedding, hoặc thêm BM25.` })])),
+            el('div', { class: 'cap', text: 'Trường hợp A (0,85 / 0,70) và B (Recall@50 = 0,50) lấy từ README §1.2; Recall@10 = 0,45 của trường hợp B là số giả định để vẽ.' }));
+        },
+        take: 'Recall@N thấp: sửa retrieval. Recall@N cao mà Recall@k thấp: sửa rerank hoặc k.'
+      },
+      {
+        q: 'Vậy cứ tăng k lên 20 cho chắc, đoạn đúng nào cũng vào prompt?',
+        a: `<p>Tăng k làm Recall@k tăng, nhưng mỗi đoạn thêm là thêm nhiễu (README §1.2). Anthropic thử 5, 10, 20 chunk và thấy 20 tốt nhất trên bộ dữ liệu của họ, kèm lưu ý nhiều thông tin hơn có thể làm model phân tâm và nên tự thử trên use case của mình [21].</p>
+<p>Trong 20 trace, ba câu có ngưỡng nhiễu (giả định): khi số đoạn nhiễu trong context vượt ngưỡng, model bỏ qua đoạn đúng. Hình dưới quét k từ 1 tới 15, N = 50, mặc định có rerank:</p>`,
+        viz(box) {
+          const out = el('div');
+          const draw = (rr) => {
+            const rows = []; let best = { k: 1, acc: -1 };
+            for (let k = 1; k <= 15; k++) { const e = evaluate(S({ N: 50, k, rerank: rr })); rows.push([k, e]); if (e.acc > best.acc) best = { k, acc: e.acc }; }
+            out.innerHTML = `<div class="tbl"><table><tr><th>k</th><th>Recall@k</th><th>Precision</th><th>FP4 (nhiễu)</th><th>Accuracy</th></tr>${rows.map(([k, e]) => `<tr${k === best.k ? ' class="cur"' : ''}><td class="mono">${k}</td><td class="mono">${pc(e.recK)}</td><td class="mono">${pc(e.prec)}</td><td class="mono">${e.rows.filter((r) => r.c === 'FP4' && r.t.noise).length}</td><td class="mono">${pc(e.acc)}</td></tr>`).join('')}</table></div>
+<div class="cap">Dòng tô màu: k cho accuracy cao nhất (${best.k}). Sau đó Recall@k vẫn tăng nhưng accuracy giảm vì các câu có ngưỡng nhiễu chuyển sang FP4.</div>`;
+          };
+          const c = check('Có rerank', true, draw);
+          box.append(el('div', { class: 'row' }, [c.node]), out);
+          draw(true);
+        },
+        take: 'k là một núm đánh đổi recall lấy nhiễu. Chọn k bằng đo trên tập eval của bạn, không bằng "càng nhiều càng chắc". Vì sao model bỏ qua đoạn đúng giữa context dài: Bài 2.'
+      },
+      {
+        q: 'Reranker đắt hơn retrieval. Bật nó lên thì sửa được những loại lỗi nào?',
+        a: `<p>Chỉ FP3: đoạn đúng đã nằm trong N candidate nhưng xếp dưới k. Reranker đọc câu hỏi và từng candidate cùng lúc, xếp lại, đưa đoạn đúng lên trong top-k. Nó không sửa FP2 (đoạn không có trong N), không sửa FP1, FP5, FP6.</p>
+<p>N là núm vặn chính: N lớn thì Recall@N cao hơn, nhưng độ trễ rerank tăng gần tuyến tính theo số candidate (README §2.2). Với reranker tính theo token như Voyage, số token = token query × số tài liệu + tổng token tài liệu. Hình dưới tính Recall@N trên 20 trace và tiền rerank mỗi query theo giá <code>rerank-3</code> $0,05 / triệu token (README §2.2):</p>`,
+        viz(box) {
+          const qTok = 50, dTok = 300, price = 0.05;
+          const rows = NS.concat([100, 150]).map((n) => { const e = evaluate(S({ N: n, k: 5, rerank: true })); const tk = qTok * n + dTok * n;
+            return `<tr><td class="mono">${n}</td><td class="mono">${pc(e.recN)}</td><td class="mono">${pc(e.acc)}</td><td class="mono">${tk.toLocaleString('vi-VN')}</td><td class="mono">$${(tk * price / 1e6).toFixed(5)}</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>N</th><th>Recall@N</th><th>Accuracy (k=5, rerank)</th><th>Token rerank</th><th>Tiền / query</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: 'Công thức và giá Voyage rerank-3 từ README §2.2; ví dụ README: 100 tài liệu × 300 token, query 50 token = 35.000 token ≈ $0,00175. Recall trên trace dựng sẵn ngừng tăng sau N = 50 vì hạng xa nhất của đoạn đúng trong tập là 38.' }));
+        },
+        take: 'Chọn N nhỏ nhất mà Recall@N không còn tăng đáng kể (README §2.2). Rerank không cứu được đoạn retrieval không mang về.'
+      },
+      {
+        q: 'FP4: đoạn đúng nằm ngay trong prompt mà model vẫn trả lời sai. Sao lại thế?',
+        a: `<p>Hai nguyên nhân hay gặp (README §3.6). Một: <b>nhiễu</b>, đáp án nằm giữa context dài, xung quanh là nhiều đoạn gần đúng; model trả lời tốt nhất khi thông tin ở đầu hoặc cuối context. Hai: <b>đoạn mâu thuẫn</b>, như chính sách đổi trả 2025 ("15 ngày") và 2026 ("7 ngày") cùng có trong context, bản cũ đứng trước.</p>
+<p>Trường hợp hai đáng chú ý: câu trả lời "15 ngày" là <b>faithful</b>, nó có đoạn nguồn ủng hộ. Faithfulness cao không có nghĩa là đúng. Trong lab, trace này được tính là faithful mà sai.</p>
+<p>Retrieval tốt hơn không giúp gì cho FP4 (README §3.1). Sửa: giảm số đoạn, sắp đoạn tốt nhất lên đầu, metadata ngày hiệu lực để lọc bản cũ.</p>`,
+        take: 'FP4 là lỗi của tầng generation và tầng ghép context, không phải của retrieval. Nếu phần lớn lỗi là FP4, đừng mua embedding tốt hơn.'
+      },
+      {
+        q: 'FP5 và FP6 có phải lỗi RAG không, hay là lỗi prompt?',
+        a: `<p>Là lỗi của tầng generation: nội dung đúng, nhưng sai định dạng (FP5: yêu cầu gạch đầu dòng, trả đoạn văn) hoặc sai độ chi tiết (FP6: hỏi laptop gaming dưới 25 triệu, trả lời "có nhiều mẫu"). Chúng nằm trong danh sách vì người dùng vẫn thấy câu trả lời sai.</p>
+<p>Điểm quan trọng: kéo N, k hay bật rerank ở hình chính, hai trace FP5, FP6 không đổi. Không núm retrieval nào sửa được chúng. Sửa bằng prompt, ví dụ mẫu, hoặc structured output.</p>`,
+        take: 'Khi đếm điểm hỏng, tách FP5, FP6 ra trước để không tính chúng vào "retrieval kém".'
+      },
+      {
+        q: 'FP7: câu so sánh chỉ được trả lời một nửa. Đo thế nào cho đúng?',
+        a: `<p>Câu "so sánh bảo hành 2025 và 2026" cần hai đoạn. Nếu chỉ đo "có ít nhất một đoạn đúng trong top-k", câu này được tính là retrieval thành công, dù câu trả lời thiếu một nửa. Phải đo recall <b>theo từng phần</b> của câu hỏi (README Tra cứu nhanh).</p>
+<p>Trong lab, Recall@N và Recall@k tính theo phần: câu 3 phần tìm được 2 thì đóng góp 0,67. Sửa bằng decomposition hoặc multi-query: một query cho mỗi phần (README §2.1). Với câu nhiều bước như quà tặng Galaxy S30, phần thứ ba chỉ tìm được sau khi đọc kết quả phần đầu: đó là việc của agentic RAG (Bài 2).</p>`,
+        take: 'Nhóm câu nhiều phần cần metric riêng. Trộn chung vào một tập, chúng kéo trung bình xuống mà không ai biết vì sao.'
+      },
+      {
+        q: 'Bắt đầu từ đâu với hệ thật: tập 20 câu này lấy ở đâu ra?',
+        a: `<p>README §3.1:</p>
+<ol><li>Lấy 50–100 câu trả lời sai từ log hoặc eval. Với mỗi câu, hỏi: tài liệu đúng có trong corpus không, có trong top-50 không, có trong context không, model có dùng không.</li><li>Đếm. Nếu 60% lỗi là FP2, sửa retrieval. Nếu phần lớn là FP4, retrieval tốt hơn không giúp gì.</li><li>Chọn kỹ thuật rẻ nhất cho nhóm lỗi lớn nhất, theo thứ tự ở Tra cứu nhanh.</li><li>Đo lại trên cùng tập, cộng một tập câu đang trả lời đúng, để chắc kỹ thuật mới không làm hỏng chỗ đang chạy tốt.</li></ol>
+<p>Tập eval nên chia theo loại câu (README §3.5): tra cứu, nhiều phần, nhiều bước, tổng hợp, không có đáp án, quyền. Hai mươi trace của lab có bốn loại đầu và nhóm không có đáp án.</p>`,
+        take: 'Gán nhãn đoạn đúng là việc thủ công đắt nhất, và là việc biến "đoán" thành "đo".'
+      }
+    ],
+    poc: {
+      goal: "14 trace có nhãn đi qua retrieval thật (hybrid BM25 + embedding, rerank cross-encoder). Hạng của đoạn đúng, Recall@N, Recall@k, precision và faithfulness (quote có nguyên văn trong context) đều tính thật. <b>Viết tay</b>: nhãn đoạn đúng, quote câu trả lời, và quy tắc 'model' (đủ đoạn đúng thì trả lời đúng, thiếu thì bịa hoặc từ chối).",
+      file: "docs/advanced-rag/pocs/01_failure_points.py",
+      run: "uv run docs/advanced-rag/pocs/01_failure_points.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ.",
+      output: "14 trace có nhãn. Xếp hạng THẬT: hybrid BM25 + paraphrase-multilingual-MiniLM-L12-v2 (thật, CPU), rerank cross-encoder mmarco (CPU).\nViết tay: nhãn đoạn đúng, quote của câu trả lời, và quy tắc 'model': đủ đoạn đúng thì trả lời đúng (trừ nhãn FP4/FP5/FP6),\nthiếu thì vẫn trả lời (bịa) hoặc từ chối nếu prompt cho phép. Faithfulness = quote có nguyên văn trong context (kiểm thật).\n\n== Từng trace, N=10, k=3, không rerank ==\nCâu hỏi                                         đoạn đúng     top-N  top-k  điểm hỏng  context\n----------------------------------------------  ------------  -----  -----  ---------  ------------------\nĐơn SV-4821 giao ngày nào?                      o4821         1/1    1/1    đúng       o4128,o4821,o4812\nLaptop mua online được đổi trả trong mấy ngày?  r26           1/1    0/1    FP3        r25,r24,r27\nTai nghe tặng kèm Galaxy S30 đổi trả bao lâu?   s30,gift,rph  2/3    1/3    FP7        s30,o4812,t_hdr\nPin ZenBook Z14 bảo hành mấy tháng?             t_hdr,t_z14   2/2    1/2    FP7        t_z14,w26,w25\nShopViet có bán xe máy điện không?              -             0/0    0/0    FP1        wgen,r24,rph\nGiao tới Đà Lạt mất mấy ngày?                   ship2         1/1    1/1    đúng       ship2,ship1,o4821\nSo sánh bảo hành laptop 2025 và 2026            w25,w26       2/2    2/2    đúng       w25,w26,t_hdr\nLiệt kê điều kiện trả góp 0% thành gạch đầu dò  inst1         1/1    1/1    FP5        inst1,r26fee,rhp\nHoàn tiền về tài khoản mất bao lâu?             refund        1/1    1/1    đúng       refund,care3,inst2\nHuỷ gói Care+ thì được hoàn phí trong bao lâu?  care3         1/1    1/1    đúng       care1,care3,inst2\nSKU BL-200 là sản phẩm gì?                      s30           1/1    1/1    đúng       s30,z14,wgen\nCó giao hàng tới Côn Đảo không?                 -             0/0    0/0    FP1        ship2,ship1,o4821\nPin laptop bị chai thì được thay miễn phí khôn  w26b          1/1    1/1    FP6        w26b,w25,w26\nPhí đổi trả khi không lỗi là bao nhiêu?         r26fee        1/1    1/1    đúng       r26fee,rhp,care2\n\n== Quét cấu hình: mỗi tầng một metric ==\nCấu hình                 Recall@N  Recall@k  Precision  Faithful  Accuracy  Điểm hỏng còn lại\n-----------------------  --------  --------  ---------  --------  --------  ---------------------------------\nN=5 k=3                  0.94      0.82      0.33       0.72      50%       FP7×2, FP1×2, FP3×1, FP5×1, FP6×1\nN=10 k=3                 0.97      0.82      0.33       0.72      50%       FP7×2, FP1×2, FP3×1, FP5×1, FP6×1\nN=20 k=3                 1.00      0.82      0.33       0.72      50%       FP7×2, FP1×2, FP3×1, FP5×1, FP6×1\nN=20 k=3 rerank          1.00      0.90      0.36       0.78      50%       FP7×2, FP1×2, FP4×1, FP5×1, FP6×1\nN=20 k=5 rerank          1.00      0.90      0.22       0.78      50%       FP7×2, FP1×2, FP4×1, FP5×1, FP6×1\nN=20 k=5 rerank từ chối  1.00      0.90      0.22       0.78      64%       FP7×2, FP4×1, FP5×1, FP6×1\n\nRút ra: N 5 → 20 đưa Recall@N 0.94 → 1.00 mà accuracy vẫn 50%: chỗ hỏng không nằm ở retrieval.\nBật rerank: Recall@k 0.82 → 0.90; trace đổi trả laptop đi từ FP3 sang FP4 (bản 2026 vào context nhưng bản 2025 đứng trên),\naccuracy vẫn 50%: lỗi chuyển tầng chứ không biến mất. Câu trả lời '15 ngày' có quote thật trong context, nên faithfulness không bắt được.\nCho phép từ chối: FP1 ×2 thành đúng, accuracy 50% → 64%. FP5/FP6 giữ nguyên ở mọi cấu hình: không núm retrieval nào sửa được.",
+      measured: true,
+      read: ["Bảng trace: mỗi câu có hạng thật của đoạn đúng ở top-N và top-k, rồi điểm hỏng. Không câu nào là FP2 ở N ≥ 20 trên corpus nhỏ này.", "Quét cấu hình: N 5 → 20 đưa Recall@N 0,94 → 1,00 mà accuracy đứng yên 50%.", "Bật rerank: Recall@k 0,82 → 0,90 nhưng trace đổi trả laptop đi từ FP3 sang FP4 (bản 2026 vào context, bản 2025 đứng trên): lỗi chuyển tầng, accuracy không đổi.", "Cho phép từ chối chỉ sửa FP1 (50% → 64%); FP5, FP6 không đổi ở mọi cấu hình."]
+    },
+    mount(stage) {
+      const s = S({});
+      let sel = 0;
+      const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin:10px 0' });
+      const detail = el('div'), bars = el('div'), stat = el('div', { class: 'stat' }), verdict = el('div'), flags = el('div');
+
+      function traceDetail(r) {
+        const t = r.t, steps = [];
+        if (!t.parts.length) steps.push(['Corpus', '<b class="bad">không có đáp án</b>']);
+        else {
+          steps.push(['Corpus', '<b class="ok">có</b>']);
+          t.parts.forEach(([rk, rr], j) => {
+            const pool = rk > 0 && rk <= s.N, pos = s.rerank ? rr : rk;
+            steps.push([`Phần ${j + 1}`, `retrieval hạng <b>${rk || '> 50'}</b> → ${pool ? `<span class="ok">trong top-${s.N}</span>` : `<span class="bad">ngoài top-${s.N}</span>`}${pool ? ` → ${s.rerank ? 'sau rerank hạng <b>' + rr + '</b>' : 'giữ hạng ' + rk} → ${pos <= s.k ? '<span class="ok">vào prompt</span>' : `<span class="bad">bị cắt ở k = ${s.k}</span>`}` : ''}`]);
+          });
+          steps.push(['Context', `${r.inCtx}/${r.n} phần, ${r.distract} đoạn nhiễu${t.noise ? ` (ngưỡng nhiễu của câu này: ${t.noise}, giả định)` : ''}`]);
+        }
+        const fp = FP[r.c];
+        detail.replaceChildren(el('div', { style: `border:1px solid var(--line);border-left:4px solid ${fp.col};border-radius:6px;padding:10px 12px;background:var(--bg)`, html:
+          `<div style="font-weight:700">${esc(t.q)} <small style="color:var(--mute);font-weight:400">(${t.type})</small></div><ul style="margin:6px 0;padding-left:18px;font-size:13px">${steps.map(([a, b]) => `<li><b>${a}:</b> ${b}</li>`).join('')}</ul>` +
+          `<div style="font-size:13px">Kết quả: <b style="color:${fp.col}">${fp.name}</b>${r.c === 'ref' ? ' (lẽ ra ' + FP[r.why].name + ', nhưng model nói "không có" thay vì bịa)' : ''}${fp.fix ? ' · Sửa: ' + fp.fix : ''}</div>` +
+          (t.note ? `<div class="hint" style="margin-top:4px">${esc(t.note)}</div>` : '') }));
+      }
+
+      function render() {
+        const e = evaluate(s);
+        grid.replaceChildren(...e.rows.map((r, i) => {
+          const fp = FP[r.c];
+          return el('button', { type: 'button', title: r.t.q, style: `text-align:left;font:inherit;font-size:12px;padding:6px 8px;border-radius:6px;cursor:pointer;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-left:5px solid ${fp.col};${i === sel ? 'outline:2px solid var(--accent);' : ''}`, onclick: () => { sel = i; render(); } },
+            [el('div', { text: r.t.q.length > 44 ? r.t.q.slice(0, 42) + '…' : r.t.q }), el('div', { text: fp.name, style: `font:500 11px var(--mono);color:${fp.col};margin-top:2px` })]);
+        }));
+        traceDetail(e.rows[sel]);
+        bars.replaceChildren(hbars(Object.keys(FP).filter((k) => e.count[k] || k === 'ok').map((k) => [FP[k].name, e.count[k], k === e.rows[sel].c]), { max: T.length, fmt: (v) => v + '/' + T.length }));
+        stat.innerHTML = `<span>Recall@${s.N} (retrieval): <b>${pc(e.recN)}</b></span><span>Recall@${s.k} (vào prompt): <b>${pc(e.recK)}</b></span><span>Context precision: <b>${pc(e.prec)}</b></span><span>Faithfulness: <b>${pc(e.faith)}</b></span><span>Accuracy: <b>${pc(e.acc)}</b></span>`;
+        const d = dominant(e), gap = e.recN - e.recK;
+        verdict.replaceChildren(el('div', { style: 'border:1px dashed var(--line);border-radius:6px;padding:8px 12px;margin-top:10px;font-size:13.5px', html:
+          `<b>Nên sửa tầng nào:</b> nhóm lớn nhất là <b style="color:${FP[d].col}">${FP[d].name}</b> (${e.count[d]}/${T.length} trace), tầng ${FP[d].stage}. Thử trước: ${FP[d].fix}.<br>` +
+          (e.recN < 0.7 ? `Recall@${s.N} = ${pc(e.recN)}: một phần lớn đáp án chưa bao giờ tới rerank, sửa retrieval trước (README §1.2, trường hợp B).` : gap > 0.1 ? `Recall@${s.N} = ${pc(e.recN)} nhưng Recall@${s.k} = ${pc(e.recK)}: ${pc(gap)} rơi giữa retrieval và prompt, sửa rerank hoặc k (trường hợp A).` : `Recall@${s.N} và Recall@${s.k} gần nhau: retrieval và rerank không còn là nút cổ chai, xem các lỗi tầng generation.`) }));
+
+        const f = [];
+        const prevK = s.k > 1 ? evaluate(Object.assign({}, s, { k: s.k - 1 })) : null;
+        if (prevK && e.recK > prevK.recK - 1e-9 && e.acc < prevK.acc) f.push(flag('warn', `<b>Recall@k không giảm mà accuracy giảm</b> khi tăng k từ ${s.k - 1} lên ${s.k} (${pc(prevK.acc)} → ${pc(e.acc)}). Đoạn thêm vào là nhiễu, và ${e.rows.filter((r) => r.c === 'FP4' && r.t.noise).length} câu có ngưỡng nhiễu đã chuyển sang FP4. Không có nghĩa retrieval kém đi: tầng retrieval còn tốt hơn, tầng generation kém đi.<br>Trong hệ thống thật: chọn k bằng quét trên tập eval; với context dài, đặt đoạn tốt nhất ở đầu (README §3.6).`));
+        if (s.rerank && e.count.FP2 > 0) f.push(flag('bad', `<b>Rerank đang bật nhưng còn ${e.count.FP2} trace FP2.</b> Đoạn đúng của chúng không nằm trong ${s.N} candidate, reranker không bao giờ thấy. ${s.N < 50 ? 'Tăng N giúp một phần; ' : ''}trace SKU BL-200 nằm ngoài cả top-50 của dense.<br>Trong hệ thống thật: hybrid BM25 cho mã, SKU (README §2.1); rerank chỉ sau khi Recall@N đủ cao.`));
+        if (s.refuse && e.count.ref > 0) f.push(flag('ok', `<b>${e.count.ref} trace chuyển sang "Từ chối".</b> Accuracy không tăng vì chúng vẫn chưa được trả lời, nhưng faithfulness tăng: model không bịa nữa. Ba câu không có đáp án giờ là đúng.`));
+        if (!s.refuse && e.count.FP1) f.push(flag('warn', `<b>${e.count.FP1} câu không có đáp án trong corpus vẫn được trả lời.</b> Không núm retrieval nào sửa được chúng: N, k hay rerank đều không đổi số này.<br>Trong hệ thống thật: prompt cho phép "không có trong tài liệu", và luôn có nhóm câu không có đáp án trong eval (README §3.5).`));
+        if (e.prec < 0.15) f.push(flag('warn', `<b>Context precision chỉ ${pc(e.prec)}:</b> trung bình hơn ${Math.round((1 - e.prec) * 10)}/10 đoạn trong prompt là nhiễu. Bạn trả tiền token cho chúng ở mỗi request.`));
+        flags.replaceChildren(...f);
+      }
+
+      const nS = slider('N (candidate)', 0, NS.length - 1, 1, NS.indexOf(s.N), (v) => { s.N = NS[v]; render(); }, (v) => NS[v]);
+      const kS = slider('k (vào prompt)', 1, 15, 1, s.k, (v) => { s.k = v; render(); });
+      const rC = check('Rerank', s.rerank, (v) => { s.rerank = v; render(); });
+      const fC = check('Cho phép nói "không có"', s.refuse, (v) => { s.refuse = v; render(); });
+      stage.append(el('div', { class: 'row' }, [nS.node, kS.node]), el('div', { class: 'row' }, [rC.node, fC.node]), grid, detail,
+        el('h4', { text: 'Đếm theo điểm hỏng', style: 'margin:14px 0 4px' }), bars, stat, verdict, flags,
+        el('p', { class: 'hint', text: 'Hai mươi trace dựng sẵn cho lab: hạng của từng phần đáp án ở retrieval (thang top-50) và sau rerank, cách model dùng đoạn đúng (đúng, mâu thuẫn, sai định dạng, sai độ chi tiết), ngưỡng nhiễu của ba câu. Đều là giả định. Phân loại theo thứ tự README §3.1 và metric theo README §1.2 được tính thật trong trình duyệt. Faithfulness: mỗi câu trả lời 2 khẳng định; câu bịa hoặc lấy từ đoạn nhiễu có khẳng định không được ủng hộ.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,781 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 08</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="07-symptoms-updates-permissions.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const flag = (kind, html) => el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${kind});border-radius:6px;padding:8px 12px;margin-top:10px;font-size:13.5px`, html });
+  const tbl = (html) => el('div', { class: 'sum tbl', style: 'border:0;margin:8px 0 0;padding:0' }, [el('table', { html })]);
+  const n0 = (v) => Math.round(v).toLocaleString('vi-VN');
+  const pct = (v) => (v * 100).toFixed(0) + '%';
+  const usd = (v) => '$' + (v >= 100 ? n0(v) : v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(4) : v.toFixed(6));
+  const ms = (v) => v >= 1000 ? (v / 1000).toFixed(2) + ' s' : Math.round(v) + ' ms';
+  const estTok = (s) => Math.ceil(s.length / 3);
+  const check = (label, on, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = on; i.addEventListener('change', () => onChange(i.checked)); return el('label', { class: 'ctl', style: 'display:flex;gap:6px;align-items:center' }, [i, label]); };
+
+  const GM = {
+    haiku: { name: 'Claude Haiku 5.5', i: 0.1, o: 0.5, hi: { at: 100000, i: 0.5, o: 2.5 }, sp: 'small' },
+    luna: { name: 'gpt-6-luna', i: 0.1, o: 0.5, sp: 'small' },
+    flashlite: { name: 'Gemini 3.5 Flash-Lite', i: 0.3, o: 2.5, sp: 'small' },
+    flash: { name: 'Gemini 3.8 Flash', i: 1.5, o: 7.5, promo: { i: 0.75, o: 3.75 }, sp: 'mid' },
+    terra: { name: 'gpt-6.1-terra', i: 1, o: 5, sp: 'mid' },
+    sonnet: { name: 'Claude Sonnet 5.5', i: 2, o: 10, sp: 'large' },
+    opus: { name: 'Claude Opus 5.5', i: 4, o: 20, sp: 'large' }
+  };
+  const SPEED = { small: { ttft: 300, tps: 150 }, mid: { ttft: 450, tps: 100 }, large: { ttft: 700, tps: 60 } };
+  const RERANK = {
+    off: { name: 'Không rerank' },
+    v3: { name: 'Voyage rerank-3 ($0,05 / 1M token)', perM: 0.05 },
+    v3l: { name: 'Voyage rerank-3-lite ($0,02 / 1M token)', perM: 0.02 },
+    co: { name: 'Cohere Rerank 3.5 trên Bedrock ($2,00 / 1.000 query)', perQ: 0.002 }
+  };
+  const RETR = {
+    self: { name: 'Tự host (vector + BM25)', perQ: 0, lat: 15 },
+    openai: { name: 'OpenAI file_search ($2,50 / 1.000 lần gọi)', perQ: 0.0025, lat: 250 },
+    bedrock: { name: 'Bedrock Knowledge Base Retrieve ($1,00 / 1.000)', perQ: 0.001, lat: 250 }
+  };
+  const QUESTION = 'Laptop đơn SV-4821 nhận ngày 22/11, đổi trả có mất phí không?';
+  function llm(mk, inTok, outTok, promo) {
+    const m = GM[mk], useHi = m.hi && inTok > m.hi.at, pr = useHi ? m.hi : promo && m.promo ? m.promo : m;
+    const sp = SPEED[m.sp];
+    return { cost: (inTok * pr.i + outTok * pr.o) / 1e6, lat: sp.ttft + inTok / 50 + (outTok / sp.tps) * 1000, useHi, pr };
+  }
+  function budget(S) {
+    const qTok = estTok(QUESTION), st = [];
+    if (S.rw !== 'off') { const r = llm(S.rw, 250 + qTok, 40, S.promo); st.push({ k: 'rewrite', name: 'Viết lại query (' + GM[S.rw].name + ')', tok: (250 + qTok) + ' in / 40 out', cost: r.cost, lat: r.lat, src: '§2.1 Cost opt; token giả định' }); }
+    st.push({ k: 'embed', name: 'Embed query', tok: String(qTok), cost: 0, lat: 30, src: 'README §3.4: rất nhỏ, vài chục ms' });
+    const R = RETR[S.retr];
+    st.push({ k: 'search', name: 'Tìm kiếm: ' + R.name, tok: S.N + ' candidate', cost: R.perQ, lat: R.lat, src: S.retr === 'self' ? 'README §3.4: hạ tầng, vài ms tới vài chục ms' : 'README §3.4 [37][39]; độ trễ giả định' });
+    let rrTok = 0, rrTokRw = 0;
+    if (S.rr !== 'off') {
+      const qR = S.rrq === 'hist' ? S.hist : qTok, rr = RERANK[S.rr];
+      rrTok = qR * S.N + S.N * S.docTok; rrTokRw = qTok * S.N + S.N * S.docTok;
+      const cost = rr.perM ? rrTok * rr.perM / 1e6 : rr.perQ;
+      st.push({ k: 'rerank', name: 'Rerank ' + S.N + ' candidate', tok: rr.perM ? n0(rrTok) + ' token' : '1 query', cost, lat: 40 + 0.6 * S.N * Math.max(1, (qR + S.docTok) / 350), src: 'README §2.2 [17][39]; độ trễ giả định' });
+    }
+    const genIn = 600 + S.k * S.chunkTok + qTok, g = llm(S.gen, genIn, S.out, S.promo);
+    st.push({ k: 'gen', name: 'Generation (' + GM[S.gen].name + ')', tok: n0(genIn) + ' in / ' + S.out + ' out', cost: g.cost, lat: g.lat, src: '§2.1 Cost opt; tốc độ giả định', g });
+    const cost = st.reduce((a, s) => a + s.cost, 0), lat = st.reduce((a, s) => a + s.lat, 0);
+    return { st, cost, lat, rrTok, rrTokRw, genIn, g, qTok };
+  }
+  const COL = { rewrite: 'var(--g1)', embed: 'var(--g2)', search: 'var(--g3)', rerank: 'var(--g4)', gen: 'var(--accent)' };
+
+  const PIPES = { A: 'A. Dense top-50 → 5 đoạn (cơ bản)', B: 'B. Hybrid (BM25 + dense) + rerank → 5 đoạn', C: 'C. Hybrid + rerank → 12 đoạn' };
+  const GROUPS = { lookup: 'Tra cứu một sự kiện', multi: 'Nhiều phần / so sánh', none: 'Không có đáp án', perm: 'Quyền' };
+  const QS = [
+    { q: 'Laptop đổi trả trong mấy ngày?', g: 'lookup', A: [1, 1, 'ok'], B: [1, 1, 'ok'], C: [1, 1, 'ok'] },
+    { q: 'Phí đổi trả khi không lỗi là bao nhiêu?', g: 'lookup', A: [1, 1, 'ok'], B: [1, 1, 'ok'], C: [1, 1, 'wrong'] },
+    { q: 'Bảo hành laptop bao lâu?', g: 'lookup', A: [1, 1, 'ok'], B: [1, 1, 'ok'], C: [1, 1, 'ok'] },
+    { q: 'Đơn SV-4821 giao mấy ngày ở Hà Nội?', g: 'lookup', A: [0, 0, 'wrong'], B: [1, 1, 'ok'], C: [1, 1, 'ok'] },
+    { q: 'Trả góp 0% áp dụng cho đơn từ bao nhiêu?', g: 'lookup', A: [1, 0, 'wrong'], B: [1, 1, 'ok'], C: [1, 1, 'ok'] },
+    { q: 'Gói ShopCare Pro có hoàn tiền không?', g: 'lookup', A: [0, 0, 'wrong'], B: [0, 0, 'wrong'], C: [0, 0, 'wrong'] },
+    { q: 'So sánh bảo hành laptop 2025 và 2026', g: 'multi', A: [0.5, 0.5, 'partial'], B: [1, 0.5, 'partial'], C: [1, 1, 'ok'] },
+    { q: 'Đổi trả laptop và điện thoại khác gì nhau?', g: 'multi', A: [1, 1, 'ok'], B: [1, 1, 'ok'], C: [1, 1, 'ok'] },
+    { q: 'Phí giao hàng nội thành và ngoại thành Hà Nội?', g: 'multi', A: [0.5, 0.5, 'partial'], B: [1, 0.5, 'partial'], C: [1, 1, 'ok'] },
+    { q: 'ShopViet có bán ô tô điện không?', g: 'none', A: 'refuse', B: 'refuse', C: 'refuse' },
+    { q: 'Chính sách đổi trả năm 2028 thế nào?', g: 'none', A: 'answer', B: 'answer', C: 'answer' },
+    { q: 'Cửa hàng ShopViet ở Đà Lạt mở mấy giờ?', g: 'none', A: 'refuse', B: 'answer', C: 'answer' },
+    { q: 'Thưởng Tết nhân viên kho bao nhiêu? (tài khoản CSKH)', g: 'perm', A: 'refuse', B: 'leak', C: 'leak' },
+    { q: 'Biên bản kỷ luật kho Q3 ghi gì? (tài khoản CSKH)', g: 'perm', A: 'refuse', B: 'refuse', C: 'leak' }
+  ];
+  const CLS = { ok: ['đúng', 'ok'], fp2: ['FP2: không vào top-50 (retrieval)', 'bad'], fp3: ['FP3: rơi khỏi context (rerank / k)', 'warn'], fp4: ['FP4: có trong context, trả lời sai (generation)', 'bad'], fp1: ['FP1: không có đáp án, vẫn trả lời', 'bad'], leak: ['Rò rỉ quyền', 'bad'] };
+  function classify(q, p) {
+    const v = q[p];
+    if (q.g === 'none') return v === 'refuse' ? 'ok' : 'fp1';
+    if (q.g === 'perm') return v === 'leak' ? 'leak' : 'ok';
+    if (v[2] === 'ok') return 'ok';
+    if (v[0] < 1) return 'fp2';
+    if (v[1] < 1) return 'fp3';
+    return 'fp4';
+  }
+  function evalPipe(p) {
+    const by = {};
+    Object.keys(GROUPS).concat(['all']).forEach((g) => { by[g] = { n: 0, rec: 0, ctx: 0, ans: 0, ok: 0, fp2: 0, fp3: 0, fp4: 0, fp1: 0, leak: 0 }; });
+    QS.forEach((q) => {
+      const c = classify(q, p);
+      [q.g, 'all'].forEach((g) => { const b = by[g]; b.n++; if (c === 'ok') b.ok++; else b[c]++; if (Array.isArray(q[p])) { b.ans++; b.rec += q[p][0]; b.ctx += q[p][1]; } });
+    });
+    return by;
+  }
+
+  const CHECK = [
+    ['m1', 'Đo lường', 'Recall@N của retrieval được đo tách khỏi chất lượng câu trả lời.'], ['m2', 'Đo lường', 'Tập eval chia theo loại câu hỏi, có nhóm không có đáp án và nhóm quyền.'],
+    ['m3', 'Đo lường', 'Mỗi kỹ thuật trong pipeline có số liệu eval cho thấy nó giúp trên dữ liệu của bạn.'], ['m4', 'Đo lường', 'Độ trễ p95 và chi phí đo theo từng tầng, có span trong trace.'],
+    ['r1', 'Retrieval', 'Hybrid search với RRF; tham số k và trọng số được ghi lại.'], ['r2', 'Retrieval', 'Rerank trên số candidate đã đo, query đưa vào reranker là câu hỏi đã viết lại.'],
+    ['r3', 'Retrieval', 'Chunk có đủ ngữ cảnh (contextual, parent–child, hoặc chia theo heading); bảng giữ header.'], ['r4', 'Retrieval', 'Biến đổi query và agentic RAG chỉ bật qua routing, có giới hạn vòng và ngân sách.'],
+    ['d1', 'Dữ liệu và quyền', 'Filter quyền nằm trong truy vấn; tập quyền lấy từ hệ thống định danh lúc request.'], ['d2', 'Dữ liệu và quyền', 'Contextual retrieval, GraphRAG và cache không trộn nội dung giữa các mức quyền.'],
+    ['d3', 'Dữ liệu và quyền', 'Đồng bộ phát hiện được sửa và xoá; hash gồm phiên bản pipeline.'], ['d4', 'Dữ liệu và quyền', 'Có quy trình index lại toàn bộ song song và chuyển bằng alias.'],
+    ['a1', 'Câu trả lời', 'Trích dẫn dùng id do hệ thống cấp, kiểm tra được bằng Citations API hoặc quote matching.'], ['a2', 'Câu trả lời', 'Không bật citations cùng structured output trên Claude.'],
+    ['a3', 'Câu trả lời', 'Model được phép nói "không có trong tài liệu".'], ['a4', 'Câu trả lời', 'Giá, giới hạn và tên model đã kiểm tra lại trên trang chính thức trước khi đưa vào dự toán.']
+  ];
+  const FM = [
+    ['Trả lời khi không có tài liệu liên quan', 'Prompt cho phép "không có trong tài liệu"; đo tỉ lệ từ chối đúng', ['a3', 'm2']],
+    ['Đáp án có trong corpus nhưng không được lấy về', 'Hybrid + RRF; contextual retrieval; tăng số candidate', ['r1', 'r3']],
+    ['Lấy về rồi nhưng model không dùng', 'Rerank, giảm số đoạn, đặt đoạn tốt nhất ở đầu', ['r2']],
+    ['Chính sách cũ cạnh tranh với chính sách mới', 'Gắn ngày hiệu lực, filter hoặc ưu tiên bản mới', ['d3']],
+    ['HyDE kéo retrieval về sai thực thể', 'Giữ nhánh query gốc, trộn RRF với trọng số thấp cho HyDE', ['r1', 'r4']],
+    ['Rerank chậm hoặc đắt bất thường', 'Rerank bằng câu hỏi đã viết lại; giảm candidate', ['r2']],
+    ['Chi phí tăng vọt sau khi bật agentic RAG', 'Giới hạn vòng và token; routing', ['r4']],
+    ['GraphRAG tốn kém mà chất lượng không tăng', 'Routing theo loại câu hỏi; đo riêng từng nhóm', ['m2', 'm3']],
+    ['Trích dẫn trỏ vào đoạn không tồn tại', 'Citations API, search_result, hoặc quote matching', ['a1']],
+    ['Bật citations cùng JSON output bị lỗi 400', 'Parse dòng "tên: giá trị" kèm citation, hoặc field source_quote', ['a2']],
+    ['Ít hơn k kết quả sau khi lọc quyền', 'Pre-filter trong truy vấn, lấy dư rồi lọc', ['d1']],
+    ['Người dùng đọc được nội dung tài liệu không có quyền', 'Filter trong truy vấn; khoá cache gồm tập quyền; graph theo mức quyền', ['d1', 'd2']],
+    ['Tài liệu đã xoá vẫn xuất hiện', 'So danh sách nguồn với index; lọc danh sách đã xoá ở tầng ứng dụng', ['d3']],
+    ['Chất lượng giảm sau khi đổi prompt contextual hoặc embedding model', 'Phiên bản pipeline trong hash; index lại toàn bộ; dựng index song song', ['d3', 'd4']],
+    ['Chunk bảng không có nghĩa', 'Chia theo dòng, lặp lại header và caption', ['r3']],
+    ['SQL do model sinh đọc nhầm bảng hoặc sửa dữ liệu', 'Role chỉ SELECT trên view được duyệt; parse và kiểm tra SQL', []]
+  ];
+
+  return {
+    id: 'cost-eval', nav: '8. Chi phí, eval, failure', ref: '§3.4–3.7',
+    title: 'Một câu hỏi của khách tốn bao nhiêu mili giây và bao nhiêu tiền ở từng tầng, và ba pipeline cùng đúng 8/14 câu thì cái nào tốt hơn?',
+    hook: 'Bật tắt từng tầng (viết lại query, rerank), đổi model, số candidate và số đoạn để xem độ trễ và chi phí tách theo tầng. Bên dưới, chọn hai pipeline để so trên 14 câu hỏi có nhãn: cùng một con số tổng, khác hẳn khi tách theo nhóm và theo tầng hỏng.',
+    terms: [
+      ['Tầng (stage)', 'Một bước trong pipeline: viết lại query, embed, tìm kiếm, rerank, generation. Mỗi tầng có chi phí và độ trễ riêng, và mỗi tầng một span trong trace.'],
+      ['Đường găng (critical path)', 'Chuỗi bước người dùng phải chờ tuần tự. Viết lại query nằm trên đường găng: retrieval chưa bắt đầu được cho tới khi LLM viết xong query mới.'],
+      ['Span / trace', 'Trace là nhật ký một request; span là một dòng trong đó, ghi một tầng bắt đầu lúc nào, chạy bao lâu, bao nhiêu token. Ví dụ: "rerank: 420 ms, 35.000 token".'],
+      ['TTFT', 'Time to first token: thời gian từ lúc gửi request tới khi model trả token đầu tiên. Sau đó model sinh tiếp với tốc độ token/giây; tổng thời gian generation ≈ TTFT + số token output / tốc độ.'],
+      ['FP1–FP4', 'Điểm hỏng theo Barnett và cộng sự (2024), README §1.1. FP1: không có đáp án mà vẫn trả lời. FP2: đáp án không vào top-k. FP3: đã lấy về nhưng bị bỏ khi ghép prompt. FP4: có trong prompt mà model không dùng.'],
+      ['p95', 'Độ trễ mà 95% request nhanh hơn. Trung bình 800 ms có thể đi kèm p95 3 giây; người dùng nhớ những lần 3 giây.'],
+      ['Candidate (N)', 'Số tài liệu retrieval đưa sang reranker. N = 100 nghĩa là reranker chấm 100 cặp (câu hỏi, tài liệu).'],
+      ['k', 'Số đoạn cuối cùng đưa vào prompt. k = 5, mỗi đoạn 400 token là 2.000 token context.'],
+      ['Recall@N', 'Tỉ lệ câu hỏi có tài liệu đúng nằm trong N kết quả đầu. Đo không cần LLM: chỉ so id tài liệu với nhãn.'],
+      ['Faithfulness', 'Câu trả lời có bám vào context không, hay thêm thứ context không nói. Cần LLM judge hoặc người chấm.'],
+      ['Tập eval theo nhóm', 'Chia câu hỏi theo loại: tra cứu, so sánh, nhiều bước, tổng hợp, không có đáp án, quyền. Một con số trung bình che mất nhóm thắng và nhóm thua.'],
+      ['LLM chấm so cặp', 'Đưa hai câu trả lời cho LLM hỏi "câu nào tốt hơn". Thiên lệch theo vị trí và độ dài; Zeng và cộng sự cho thấy đủ để đảo kết quả.'],
+      ['Agentic RAG', 'Model tự quyết khi nào tìm và tìm gì, nhiều vòng. Anthropic ghi khoảng 4 lần token so với chat (một agent), khoảng 15 lần (nhiều agent).']
+    ],
+    problem: {
+      example: 'Trợ lý ShopViet nhận khoảng 20.000 câu hỏi mỗi ngày (giả định). Câu mẫu: "Laptop đơn <b>SV-4821</b> nhận ngày 22/11, đổi trả có mất phí không?". Đội vừa thêm viết lại query, hybrid và rerank. Hoá đơn tăng, p95 tăng, và bảng eval tổng vẫn ghi 8/14 câu đúng như trước.',
+      scenario: 'Không ai biết độ trễ tăng ở tầng nào, tiền đi đâu. Ba cấu hình pipeline đều đạt 57% trên tập 14 câu, nên có người kết luận "rerank không giúp gì" và đề xuất gỡ ra. Không ai để ý một câu hỏi bằng tài khoản CSKH đã nhận được bảng thưởng Tết của kho.',
+      ask: 'Mỗi tầng tốn bao nhiêu? Và đọc kết quả eval thế nào để biết sửa retrieval hay sửa generation?',
+      solves: 'Dự toán chi phí và độ trễ theo tầng với giá thật từ README; đo theo span; eval theo nhóm câu hỏi và theo tầng hỏng (Recall@N, có trong context, đúng), có nhóm không có đáp án và nhóm quyền.',
+      read: [
+        'Phần 1: mỗi tầng là một khúc màu trên hai thanh (độ trễ, chi phí mỗi câu hỏi). Bảng bên dưới ghi token, tiền, mili giây và nguồn của từng con số.',
+        'Giá model lấy từ README Cost optimization §2.1 (06/11/2026); giá reranker và dịch vụ tìm kiếm managed từ README RAG nâng cao §2.2, §3.4. Độ trễ của từng tầng (TTFT, tốc độ sinh, rerank theo N), token system prompt và token viết lại là <b>giả định</b> để minh hoạ. Token câu hỏi ước tính ký tự/3.',
+        'Phần 2: 14 câu hỏi có nhãn, chia 4 nhóm. Mỗi câu có: tài liệu đúng có trong top-50 không, có trong context không, câu trả lời đúng không (dữ liệu dựng sẵn). Phân loại tầng hỏng và mọi tỉ lệ được tính trong trình duyệt.',
+        'Khung cam, đỏ là điều bất thường được phát hiện từ dữ liệu, kèm giải thích và cách xử lý.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Độ trễ và chi phí theo tầng (§3.4)</h4>
+<div class="tbl"><table><tr><th>Tầng</th><th>Chi phí</th><th>Độ trễ</th></tr>
+<tr><td>Embed query</td><td>Rất nhỏ</td><td>Vài chục ms qua API</td></tr>
+<tr><td>Vector search + BM25</td><td>Hạ tầng</td><td>Vài ms tới vài chục ms</td></tr>
+<tr><td>Biến đổi query</td><td>Một lần gọi LLM</td><td>Thêm một lần gọi LLM trên đường găng</td></tr>
+<tr><td>Rerank qua API</td><td>Voyage ~$0,0018 cho 100 tài liệu 300 token; Cohere trên Bedrock $2,00 / 1.000 query</td><td>Tăng theo số candidate</td></tr>
+<tr><td>Agentic RAG</td><td>~4× token so với chat (một agent), ~15× (nhiều agent)</td><td>Nhiều vòng, cộng dồn</td></tr>
+<tr><td>Contextual retrieval</td><td>Một lần lúc index, $1,02 / triệu token tài liệu (giá 2024)</td><td>Không thêm lúc query</td></tr>
+<tr><td>GraphRAG</td><td>Index rất đắt (~75% ở bước trích graph); global search hàng trăm nghìn token mỗi câu</td><td>Global search chậm</td></tr>
+<tr><td>Generation</td><td>Phần lớn tổng chi phí</td><td>Phần lớn tổng độ trễ</td></tr></table></div>
+<div class="tbl"><table><tr><th>Dịch vụ managed</th><th>Lưu trữ</th><th>Truy vấn</th></tr>
+<tr><td>OpenAI vector store + file_search</td><td>1 GB đầu miễn phí, sau đó $0,10 / GB / ngày</td><td>$2,50 / 1.000 lần gọi tool, cộng token kết quả</td></tr>
+<tr><td>Gemini File Search</td><td>Miễn phí</td><td>Embedding query miễn phí; token tài liệu tìm được tính như context</td></tr>
+<tr><td>Bedrock Managed Knowledge Base</td><td>$5,00 / GB dữ liệu thô / tháng</td><td>$1,00 / 1.000 Retrieve; agentic $4,00 / 1.000 cộng các Retrieve bên dưới</td></tr></table></div>
+<p>Giá model (Cost optimization §2.1, 06/11/2026, USD / 1M token input / output): Haiku 5.5 0,10 / 0,50 (gấp 5 khi prompt vượt 100.000 token), Sonnet 5.5 2 / 10, Opus 5.5 4 / 20, gpt-6-luna 0,10 / 0,50, gpt-6.1-terra 1 / 5, Gemini 3.5 Flash-Lite 0,30 / 2,50, Gemini 3.8 Flash 0,75 → 1,50 / 3,75 → 7,50 (tăng từ 01/01/2027). Mỗi tầng một span trong trace.</p>
+<h4>Eval cho RAG nâng cao (§3.5)</h4>
+<ul><li>Chia tập theo nhóm: tra cứu, nhiều phần, nhiều bước, tổng hợp, không có đáp án, quyền (tỉ lệ không rò rỉ phải là 100%).</li>
+<li>Thứ tự đo: Recall@N (không cần LLM) → nDCG@k, Recall@k sau rerank → tài liệu đúng có trong prompt cuối không (FP3) → độ đúng, faithfulness, trích dẫn → nhóm không có đáp án và quyền → chi phí, p95 theo nhóm. Bước 1–2 chạy trong CI; bước 4 khi đổi prompt hoặc model.</li>
+<li>RAGAS: tên metric đổi qua phiên bản; đọc định nghĩa trước khi đặt ngưỡng. LLM chấm so cặp thiên lệch: ưu tiên câu hỏi có đáp án kiểm tra được; với câu tổng hợp, rubric, đổi vị trí và chấm hai lần, người kiểm một mẫu.</li></ul>
+<h4>Failure modes và checklist (§3.6–3.7)</h4>
+<p>Câu hỏi 9 bên dưới có bảng triệu chứng và checklist tương tác lấy từ README. Nhóm checklist: đo lường, retrieval, dữ liệu và quyền, câu trả lời.</p>
+<div class="verdict"><b>Hai câu cần nhớ:</b> generation thường là phần lớn tiền và thời gian, nhưng tầng rẻ cấu hình sai (rerank bằng cả hội thoại, tìm kiếm managed tính theo lần gọi) có thể vượt nó; một con số accuracy chung không cho biết sửa tầng nào, và có thể che một lỗi rò rỉ quyền.</div>`,
+    why: {
+      c: 'Dự toán theo tầng bằng giá của đúng model và đúng dịch vụ, dùng giá sau khuyến mãi; đo p95 theo span. Rerank bằng câu hỏi đã viết lại, N chọn theo Recall@N. Eval theo nhóm và theo tầng hỏng, có nhóm không có đáp án và nhóm quyền; Recall@N chạy trong CI mỗi thay đổi retrieval.',
+      s: 'Nhìn tổng hoá đơn tháng: không biết tầng nào tăng. Một con số accuracy: ba pipeline cùng 57% mà khác hẳn nhau, và một trong số đó rò rỉ quyền. Chỉ dùng LLM chấm so cặp: thiên lệch vị trí đủ đảo kết quả. Dùng giá khuyến mãi để dự toán: hoá đơn tháng sau gấp đôi.',
+      p: 'Phải gán nhãn tài liệu đúng cho từng câu hỏi (công đọc tay) và giữ tập eval cập nhật. Phải instrument từng tầng thành span. Mọi con số giá trong lab là ảnh chụp tháng 11/2026; phải kiểm lại trang chính thức trước khi đưa vào dự toán.'
+    },
+    deep: [
+      {
+        q: 'Hoá đơn tháng đã có tổng rồi, sao phải tách chi phí và độ trễ theo từng tầng?',
+        a: `<p>Vì khi tổng tăng, bạn cần biết <b>tầng nào</b> tăng để sửa đúng chỗ. README §3.4: mỗi tầng một span trong trace (embed, search, rerank, generate), để biết độ trễ tăng ở đâu khi nó tăng.</p>
+<p>Ví dụ dưới là trace của cùng một câu hỏi ở lượt 1 và lượt 8 của hội thoại, khi code đưa cả lịch sử hội thoại vào reranker. Không tầng nào báo lỗi; chỉ span rerank phình ra. Số mili giây dùng mô hình độ trễ giả định của hình chính (Voyage rerank-3, 100 candidate × 300 token, Haiku 5.5 generation).</p>`,
+        viz(box) {
+          const out = el('div');
+          function draw(turn) {
+            const hist = turn === 1 ? estTok(QUESTION) : 250 * turn;
+            const b = budget({ rw: 'haiku', retr: 'self', rr: 'v3', rrq: 'hist', hist, N: 100, docTok: 300, k: 8, chunkTok: 400, gen: 'haiku', out: 250, promo: false });
+            const W = 560, X = (v) => 10 + (v / Math.max(b.lat, 1)) * (W - 20);
+            let t = 0;
+            const bars = b.st.map((s, i) => { const x = X(t); t += s.lat; return el('g', {}, [el('rect', { x, y: 8 + i * 22, width: Math.max(2, X(t) - x), height: 16, rx: 3, fill: COL[s.k] }), el('text', { x: Math.min(x + 4, W - 150), y: 20 + i * 22, class: 'mute', text: s.k + ' ' + ms(s.lat) })]); });
+            out.replaceChildren(el('svg', { class: 'canvas', viewBox: `0 0 ${W} ${12 + b.st.length * 22}`, role: 'img', 'aria-label': 'Trace theo span' }, bars),
+              el('div', { class: 'stat', html: `<span>Token query đưa vào reranker: <b>${n0(hist)}</b></span><span>Token reranker: <b>${n0(b.rrTok)}</b></span><span>Tổng độ trễ: <b>${ms(b.lat)}</b></span>` }),
+              turn > 1 ? flag('warn', `<b>Lượt ${turn}: span rerank ${ms(b.st.find((s) => s.k === 'rerank').lat)}, ở lượt 1 chỉ khoảng ${ms(budget({ rw: 'haiku', retr: 'self', rr: 'v3', rrq: 'hist', hist: estTok(QUESTION), N: 100, docTok: 300, k: 8, chunkTok: 400, gen: 'haiku', out: 250, promo: false }).st.find((s) => s.k === 'rerank').lat)}.</b> Tổng độ trễ tăng mà không có lỗi nào; chỉ trace theo span mới chỉ ra thủ phạm. Trong hệ thống thật: một span mỗi tầng, ghi token đầu vào của từng span.`) : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Lượt hội thoại', 1, 12, 1, 8, draw).node]), out);
+          draw(8);
+        },
+        take: 'Tổng cho biết "có vấn đề". Span cho biết "vấn đề ở đâu".'
+      },
+      {
+        q: 'Rerank Voyage tính theo token. Sao README nói đưa cả hội thoại vào reranker thì đắt gấp gần bảy lần?',
+        a: `<p>Vì công thức tính token của Voyage là <b>token query × số tài liệu + tổng token tài liệu</b>. Query bị nhân với số tài liệu: reranker chấm từng cặp (query, tài liệu), mỗi cặp đều đọc lại query.</p>
+<p>Ví dụ của README: 100 tài liệu × 300 token, query 50 token: 100 × 50 + 100 × 300 = 35.000 token, khoảng $0,00175 với <code>rerank-3</code>. Query 2.000 token (cả lịch sử hội thoại) thành 230.000 token, đắt gấp gần bảy lần. Kéo độ dài query.</p>`,
+        viz(box) {
+          const out = el('div');
+          function draw(q) {
+            const base = 100 * 50 + 100 * 300, tok = 100 * q + 100 * 300;
+            out.replaceChildren(hbars([['Query 50 token', base, false], ['Query ' + n0(q) + ' token', tok, true]], { fmt: (v) => n0(v) + ' token · ' + usd(v * 0.05 / 1e6) }),
+              el('div', { class: 'stat', html: `<span>Gấp: <b class="${tok / base > 2 ? 'bad' : ''}">${(tok / base).toFixed(1)}×</b></span><span>Mỗi tháng với 20.000 câu/ngày: <b>${usd(tok * 0.05 / 1e6 * 20000 * 30)}</b> so với ${usd(base * 0.05 / 1e6 * 20000 * 30)}</span>` }),
+              tok / base > 2 ? flag('bad', `<b>Query ${n0(q)} token làm reranker đọc ${n0(100 * q)} token chỉ cho phần query, nhiều hơn cả ${n0(100 * 300)} token tài liệu.</b> Không có nghĩa reranker đắt; nghĩa là đầu vào sai. Trong hệ thống thật: rerank bằng câu hỏi đã viết lại (độc lập, đủ ý), không bằng cả hội thoại.`) : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Token query', 50, 4000, 50, 2000, draw, n0).node]), out);
+          draw(2000);
+        },
+        take: 'Ở reranker, query không phải chi phí một lần: nó bị nhân với số candidate.'
+      },
+      {
+        q: 'Lấy 300 candidate cho chắc có đáp án, rồi rerank. Sai ở đâu?',
+        a: `<p>Không sai, nhưng có giá. README §2.2: độ trễ rerank tăng gần tuyến tính theo số candidate, nên N là núm vặn chính. Không có N đúng chung: đo Recall@N và p95 độ trễ ở vài giá trị N trên tập eval của bạn, rồi chọn <b>N nhỏ nhất mà Recall@N không còn tăng đáng kể</b>. Thí nghiệm của Anthropic dùng 150.</p>
+<p>Đường cong Recall@N dưới đây là <b>dữ liệu giả định</b> cho một tập eval của ShopViet; độ trễ dùng mô hình giả định của hình chính. Chỉnh ngưỡng "tăng đáng kể".</p>`,
+        viz(box) {
+          const NS = [10, 25, 50, 75, 100, 150, 200, 300], REC = [0.62, 0.74, 0.83, 0.87, 0.89, 0.9, 0.905, 0.908];
+          const out = el('div');
+          function draw(th) {
+            let pick = NS[NS.length - 1];
+            for (let i = 0; i < NS.length - 1; i++) if ((REC[i + 1] - REC[i]) * 100 < th) { pick = NS[i]; break; }
+            const lat = (n) => 40 + 0.6 * n * Math.max(1, (estTok(QUESTION) + 300) / 350);
+            out.replaceChildren(tbl('<tr><th>N</th><th>Recall@N (giả định)</th><th>Tăng so với N trước</th><th>Độ trễ rerank (giả định)</th></tr>' + NS.map((n, i) => `<tr style="${n === pick ? 'background:var(--accent-soft)' : ''}"><td class="mono">${n}${n === pick ? ' ← chọn' : ''}</td><td class="mono">${REC[i].toFixed(3)}</td><td class="mono">${i ? '+' + ((REC[i] - REC[i - 1]) * 100).toFixed(1) + ' điểm' : '-'}</td><td class="mono">${ms(lat(n))}</td></tr>`).join('')),
+              flag('warn', `<b>Từ N = ${pick} lên 300: Recall@N chỉ tăng ${((REC[REC.length - 1] - REC[NS.indexOf(pick)]) * 100).toFixed(1)} điểm, độ trễ rerank tăng ${ms(lat(300) - lat(pick))}.</b> Đường cong phẳng dần là điều thường thấy, nhưng điểm gãy của bạn phải tự đo. Trong hệ thống thật: đo Recall@N và p95 ở vài N trên tập eval thật, ghi lại N đã chọn và lý do.`));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Ngưỡng "tăng đáng kể"', 0.5, 5, 0.5, 1, draw, (v) => v + ' điểm').node]), out);
+          draw(1);
+        },
+        take: 'N lớn hơn mua thêm recall bằng độ trễ. Mua tới chỗ recall hết tăng thì dừng.'
+      },
+      {
+        q: 'Dùng dịch vụ RAG managed cho đỡ việc thì tiền tính thế nào?',
+        a: `<p>Ba dịch vụ trong README tính tiền theo ba cách khác nhau (tháng 11/2026):</p>
+<ul><li><b>OpenAI vector store + file_search</b>: 1 GB đầu miễn phí, sau đó $0,10 / GB / ngày, tính trên chunk đã parse và embedding; $2,50 / 1.000 lần gọi tool, cộng token kết quả đưa vào model.</li>
+<li><b>Gemini File Search</b>: lưu trữ miễn phí, embedding query miễn phí; token tài liệu tìm được tính như context; index tính theo giá embedding (README không ghi con số, lab không tính).</li>
+<li><b>Bedrock Managed Knowledge Base</b>: $5,00 / GB dữ liệu thô / tháng; $1,00 / 1.000 lần Retrieve.</li></ul>
+<p>Kéo dung lượng và số câu hỏi. Lab dùng cùng một con số GB cho cả ba, dù OpenAI tính trên dữ liệu đã parse cộng embedding còn Bedrock tính trên dữ liệu thô; đó là giả định để so được.</p>`,
+        viz(box) {
+          const S = { gb: 5, q: 20000 }, out = el('div');
+          function draw() {
+            const oa = Math.max(0, S.gb - 1) * 0.1 * 30 + S.q * 30 * 2.5 / 1000, gm = 0, br = S.gb * 5 + S.q * 30 * 1 / 1000;
+            out.replaceChildren(hbars([['OpenAI file_search', oa, false], ['Bedrock Knowledge Base', br, false], ['Gemini File Search (chưa tính index)', gm, false]], { fmt: (v) => usd(v) + '/tháng' }),
+              flag('warn', `<b>Phần truy vấn chiếm ${pct((S.q * 30 * 2.5 / 1000) / Math.max(oa, 1e-9))} hoá đơn OpenAI.</b> Phí theo lần gọi không đổi theo độ dài câu hỏi, nên với câu hỏi ngắn và model rẻ, nó có thể lớn hơn cả generation (thử chọn tìm kiếm OpenAI và gpt-6-luna ở hình chính). Chưa tính token kết quả đưa vào model, và chưa tính phần index của Gemini. Trong hệ thống thật: so cả chi phí lẫn quyền kiểm soát (chunking, rerank, cách xoá, phân quyền; README §3.4).`));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Dung lượng (GB)', 1, 100, 1, S.gb, (v) => { S.gb = v; draw(); }).node, slider('Câu hỏi mỗi ngày', 1000, 100000, 1000, S.q, (v) => { S.q = v; draw(); }, n0).node]), out);
+          draw();
+        },
+        take: 'Managed rẻ để bắt đầu, nhưng phí theo lần gọi nhân với mọi câu hỏi. Tính nó như một tầng.'
+      },
+      {
+        q: 'Agentic RAG cho model tự tìm nhiều vòng. Tiền tăng bao nhiêu?',
+        a: `<p>README §3.4 dẫn số của Anthropic: agentic RAG tốn khoảng <b>4 lần token</b> so với chat (một agent), khoảng <b>15 lần</b> (nhiều agent). Độ trễ cộng dồn theo số vòng. Đó là lý do README chỉ bật agentic qua routing, cho câu hỏi nhiều bước, có giới hạn vòng và ngân sách.</p>
+<p>Hình dưới nhân phần generation của cấu hình mặc định (Sonnet 5.5, 8 đoạn × 400 token, 250 token output) với hệ số đó, và cho chỉnh tỉ lệ câu hỏi đi vào nhánh agentic.</p>`,
+        viz(box) {
+          const S = { share: 10 }, out = el('div');
+          const b = budget({ rw: 'off', retr: 'self', rr: 'v3', rrq: 'rw', hist: 0, N: 100, docTok: 300, k: 8, chunkTok: 400, gen: 'sonnet', out: 250, promo: false });
+          function draw() {
+            const g = b.g.cost, day = 20000, mix = (m) => day * 30 * (g * (1 - S.share / 100) + g * m * S.share / 100);
+            out.replaceChildren(hbars([['Không agentic', mix(1), false], ['Routing ' + S.share + '% sang 1 agent (~4×)', mix(4), true], ['Routing ' + S.share + '% sang nhiều agent (~15×)', mix(15), false], ['Mọi câu đi nhiều agent', day * 30 * g * 15, false]], { fmt: (v) => usd(v) + '/tháng' }),
+              el('p', { class: 'hint', text: 'Generation mỗi câu thường: ' + usd(g) + ' (Sonnet 5.5, giá §2.1 Cost optimization). 20.000 câu/ngày là giả định.' }),
+              flag('warn', `<b>Bật nhiều agent cho mọi câu: ${usd(day * 30 * g * 15)}/tháng, so với ${usd(mix(1))} không agentic.</b> README §3.6: "Chi phí tăng vọt sau khi bật agentic RAG" do không giới hạn vòng, không có ngân sách. Trong hệ thống thật: routing để chỉ câu khó vào vòng agentic; giới hạn vòng và token mỗi câu.`));
+          }
+          box.append(el('div', { class: 'row' }, [slider('Tỉ lệ câu vào nhánh agentic', 0, 100, 5, S.share, (v) => { S.share = v; draw(); }, (v) => v + '%').node]), out);
+          draw();
+        },
+        take: 'Agentic là nhân hệ số lên phần đắt nhất. Chỉ trả hệ số đó cho câu hỏi cần nó.'
+      },
+      {
+        q: 'Ba pipeline cùng đúng 8/14 câu. Vậy rerank không giúp gì, gỡ đi được chưa?',
+        a: `<p>Chưa. README §3.5: một tập trộn lẫn che mất chỗ kỹ thuật thắng hoặc thua; trung bình hai nhóm có thể ra con số không đổi. Bảng ở hình chính (phần 2) có ba pipeline đều 8/14, nhưng:</p>
+<ul><li>B thắng A ở nhóm tra cứu (5/6 so với 3/6): hybrid lấy được mã đơn SV-4821 mà dense bỏ sót, rerank đưa "trả góp 0%" lên top-5.</li>
+<li>B thua A ở nhóm không có đáp án và nhóm quyền: BM25 khớp chữ "Đà Lạt" trong tài liệu giao hàng nên model trả lời thay vì từ chối, và nhánh BM25 mới thêm chưa gắn filter quyền.</li></ul>
+<p>Hình dưới vẽ cùng dữ liệu theo nhóm.</p>`,
+        viz(box) {
+          const rows = [];
+          ['A', 'B', 'C'].forEach((p) => { const e = evalPipe(p); rows.push([p + ' · tổng', e.all.ok / e.all.n, false]); Object.keys(GROUPS).forEach((g) => rows.push(['   ' + p + ' · ' + GROUPS[g], e[g].ok / e[g].n, g === 'perm' && e[g].leak > 0])); });
+          box.append(hbars(rows, { max: 1, fmt: pct }), flag('bad', '<b>Dòng "Quyền" của B và C dưới 100%: có rò rỉ.</b> Với nhóm quyền, con số duy nhất chấp nhận được là 100% không rò rỉ. Một pipeline rò rỉ không được so "điểm" với pipeline khác; nó bị chặn. Trong hệ thống thật: nhóm quyền chạy trong CI, fail là chặn deploy.'));
+        },
+        take: 'Con số tổng bằng nhau không có nghĩa pipeline bằng nhau. Tách theo nhóm trước khi kết luận.'
+      },
+      {
+        q: 'Sao README bảo đo Recall@N trước, chấm câu trả lời sau, chứ không chấm câu trả lời luôn?',
+        a: `<p>Ba lý do. <b>Rẻ</b>: Recall@N chỉ so id tài liệu trả về với nhãn, không gọi LLM. <b>Nhanh và xác định</b>: chạy lại ra đúng con số cũ, nên chạy được trong CI cho mọi thay đổi chunking, embedding hay retrieval. <b>Chỉ đúng tầng</b>: câu trả lời sai mà Recall@50 cũng thấp thì sửa prompt vô ích.</p>
+<p>Chấm câu trả lời (độ đúng, faithfulness) cần LLM judge, tốn token, và có phương sai. README đặt nó ở bước 4, chạy khi đổi prompt hoặc model. Ước lượng chi phí một lần chạy eval với Sonnet 5.5 làm judge (token mỗi lần chấm là giả định).</p>`,
+        viz(box) {
+          const S = { n: 200, runs: 20 }, out = el('div');
+          function draw() {
+            const judge = S.n * (3000 * 2 + 200 * 10) / 1e6;
+            out.replaceChildren(tbl(`<tr><th>Bước</th><th>Lần gọi LLM mỗi lần chạy</th><th>Tiền mỗi lần chạy</th><th>Mỗi tháng (${S.runs} lần chạy/ngày)</th></tr><tr><td>1–2. Recall@N, nDCG@k</td><td class="mono">0</td><td class="mono">$0</td><td class="mono">$0</td></tr><tr><td>4. Độ đúng + faithfulness (judge Sonnet 5.5, 3.000 in / 200 out mỗi câu)</td><td class="mono">${n0(S.n)}</td><td class="mono">${usd(judge)}</td><td class="mono">${usd(judge * S.runs * 30)}</td></tr>`),
+              S.runs >= 20 ? flag('warn', `<b>Chạy judge cho mọi commit: ${usd(judge * S.runs * 30)}/tháng, và mỗi lần ra con số hơi khác.</b> Không có nghĩa judge không đáng; nghĩa là chạy nó đúng lúc. Trong hệ thống thật: Recall@N trong CI cho mọi thay đổi retrieval; judge khi đổi prompt hoặc model.`) : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Số câu eval', 50, 1000, 50, S.n, (v) => { S.n = v; draw(); }).node, slider('Số lần chạy mỗi ngày', 1, 50, 1, S.runs, (v) => { S.runs = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Đo rẻ và xác định trước, đo đắt và có nhiễu sau. Và đo đắt chỉ khi thứ nó đo vừa đổi.'
+      },
+      {
+        q: 'Câu hỏi tổng hợp không có đáp án đúng duy nhất. Cho LLM so hai câu trả lời, chọn câu tốt hơn, được không?',
+        a: `<p>README §3.5 cảnh báo: phần lớn các tuyên bố "GraphRAG tốt hơn" đến từ việc cho LLM so hai câu trả lời, và Zeng và cộng sự cho thấy cách này thiên lệch đủ để đảo kết quả. Một nguồn thiên lệch đơn giản là <b>vị trí</b>: judge hơi nghiêng về câu đứng trước.</p>
+<p>Mô phỏng dưới: hai pipeline chất lượng <b>ngang nhau</b>, 100 câu hỏi, judge chọn câu đứng trước với xác suất bạn chỉnh (giả định, không phải số đo của paper). Pipeline mới luôn được đặt trước, so với cách đổi vị trí và chấm hai lần.</p>`,
+        viz(box) {
+          const out = el('div');
+          function draw(p) {
+            const rnd = seeded(42); let fixed = 0, swapA = 0, ties = 0;
+            for (let i = 0; i < 100; i++) {
+              if (rnd() < p / 100) fixed++; else if (rnd() < 0.5) fixed++;
+              const a1 = rnd() < p / 100 ? 1 : rnd() < 0.5 ? 1 : 0, a2 = rnd() < p / 100 ? 0 : rnd() < 0.5 ? 0 : 1;
+              if (a1 === 1 && a2 === 1) swapA++; else if (a1 !== a2) ties++;
+            }
+            const swapLose = 100 - swapA - ties;
+            out.replaceChildren(hbars([['Luôn đặt pipeline mới trước: mới thắng', fixed, true], ['Đổi vị trí, chấm hai lần: mới thắng cả hai', swapA, false], ['Đổi vị trí: hai lần chấm mâu thuẫn (hoà)', ties, false], ['Đổi vị trí: cũ thắng cả hai', swapLose, false]], { max: 100, fmt: (v) => v + '/100' }),
+              fixed >= 60 ? flag('bad', `<b>Pipeline mới "thắng" ${fixed}/100 dù hai pipeline ngang nhau.</b> Toàn bộ chênh lệch đến từ vị trí. Đổi vị trí và chấm hai lần biến phần lớn số đó thành hoà. Không có nghĩa LLM judge vô dụng. Trong hệ thống thật: ưu tiên câu hỏi có đáp án kiểm tra được; với câu tổng hợp, rubric từng tiêu chí, đổi vị trí và chấm hai lần, người kiểm một mẫu.`) : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Judge chọn câu đứng trước (thiên lệch giả định)', 0, 60, 5, 30, draw, (v) => v + '%').node]), out);
+          draw(30);
+        },
+        take: 'Khi hai câu trả lời ngang nhau, judge so cặp đo vị trí chứ không đo chất lượng.'
+      },
+      {
+        q: 'Gom lại: triệu chứng nào hay gặp, và checklist nào phòng nó?',
+        a: `<p>Bảng failure modes §3.6 của README có 16 dòng. Mỗi dòng có nguyên nhân và cách xử lý; phần lớn ứng với một dòng của checklist §3.7. Đánh dấu những dòng checklist đội bạn đã làm để xem triệu chứng nào vẫn có thể gặp.</p>`,
+        viz(box) {
+          const done = new Set(), out = el('div');
+          function draw() {
+            const open = FM.filter((f) => !f[2].some((k) => done.has(k)));
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Đã làm: <b>${done.size}/${CHECK.length}</b></span><span>Triệu chứng còn mở: <b>${open.length}/${FM.length}</b></span>` }),
+              tbl('<tr><th>Triệu chứng còn mở</th><th>Cách xử lý (README §3.6)</th></tr>' + open.map((f) => `<tr><td>${f[0]}</td><td>${f[1]}${f[2].length ? '' : ' <span class="mute">(không có dòng checklist §3.7 tương ứng; xem §2.6)</span>'}</td></tr>`).join('')),
+              open.length === 1 && !open[0][2].length ? flag('warn', '<b>Mọi dòng checklist đã làm, vẫn còn "SQL do model sinh đọc nhầm bảng hoặc sửa dữ liệu".</b> Checklist §3.7 không có dòng cho text-to-SQL. Không có nghĩa README thiếu: các lớp bảo vệ nằm ở §2.6 (role chỉ SELECT, parse SQL, timeout). Trong hệ thống thật: nếu dùng text-to-SQL, thêm dòng đó vào checklist của đội.') : open.length > 8 ? flag('bad', `<b>${open.length} triệu chứng chưa có gì phòng.</b> Bắt đầu từ nhóm Đo lường: thiếu nó thì không biết các lỗi trên xảy ra bao nhiêu.`) : '');
+          }
+          let grp = '';
+          const list = el('div');
+          CHECK.forEach(([k, g, t]) => { if (g !== grp) { grp = g; list.append(el('h4', { text: g, style: 'margin:8px 0 2px' })); } list.append(check(t, false, (v) => { if (v) done.add(k); else done.delete(k); draw(); })); });
+          box.append(list, out); draw();
+        },
+        take: 'Checklist không thay eval, nhưng cho biết lỗi nào đang để ngỏ.'
+      }
+    ],
+    poc: {
+      goal: "Độ trễ embed, search (3.000 chunk) và rerank cross-encoder <b>đo thật</b> trên CPU máy này (p50, p95); độ trễ LLM là giả định, tiền theo giá Cost optimization §2.1. Phần eval: <b>nhãn 14 câu × 3 pipeline chép từ Lab 08</b>, phân loại tầng hỏng và đếm chạy thật.",
+      file: "docs/advanced-rag/pocs/08_latency_cost_eval_failures.py",
+      run: "uv run docs/advanced-rag/pocs/08_latency_cost_eval_failures.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ.",
+      output: "Đo độ trễ THẬT trên máy này: 3000 chunk (corpus ShopViet nhân 100 lần), CPU. Độ trễ LLM là GIẢ ĐỊNH (TTFT + tốc độ sinh).\n\n== 1. Ngân sách một câu hỏi, từng tầng ==\nTầng                                                 tiền / câu    p50       p95     nguồn\n---------------------------------------------------  ------------  --------  ------  --------------------------------\nViết lại query (Haiku 5.5)                           $0.00005      567 ms    -       giả định: TTFT 300 ms, 150 tok/s\nEmbed query (paraphrase-multilingual-MiniLM-L12-v2)  $0 (local)    17 ms     17 ms   đo\nSearch: dense 3000 + BM25                            $0 (hạ tầng)  19 ms     20 ms   đo (brute-force, rank_bm25)\nRerank 20 candidate (cross-encoder CPU)              $0 (local)    134 ms    245 ms  đo\n   hoặc Voyage rerank-3 qua API, N=20                $0.00032      -         -       README §2.2, độ trễ không đo\nRerank 50 candidate (cross-encoder CPU)              $0 (local)    340 ms    351 ms  đo\n   hoặc Voyage rerank-3 qua API, N=50                $0.00080      -         -       README §2.2, độ trễ không đo\nGeneration Sonnet 5.5 (2620 in / 200 out)            $0.00724      4,086 ms  -       giả định: TTFT 700 ms, 60 tok/s\nGeneration Haiku 5.5 (2620 in / 200 out)             $0.00036      1,686 ms  -       giả định: TTFT 300 ms, 150 tok/s\n\n== 2. Eval 14 câu × 3 pipeline (nhãn VIẾT TAY, chép từ Lab 08; phân loại và đếm chạy thật) ==\nPipeline            đúng  Recall@50  Tra cứu  Nhiều phần  Không có đáp án  Quyền  lỗi theo tầng\n------------------  ----  ---------  -------  ----------  ---------------  -----  ----------------------------\nA dense→5           8/14  0.67       3/6      1/3         2/3              2/2    FP2×4, FP3×1, FP1×1\nB hybrid+rerank→5   8/14  0.89       5/6      1/3         1/3              1/2    FP3×2, FP1×2, FP2×1, RÒ RỈ×1\nC hybrid+rerank→12  8/14  0.89       4/6      3/3         1/3              0/2    FP1×2, RÒ RỈ×2, FP4×1, FP2×1\n\nRút ra: trên máy này embed, search và rerank cục bộ tính bằng ms tới vài trăm ms; hai lần gọi LLM (viết lại + sinh) chiếm phần lớn\nđộ trễ và gần hết tiền (số LLM là giả định). Cả ba pipeline cùng đúng 8/14: B, C kéo Recall@50 0,67 → 0,89 và FP2 4 → 1,\nnhưng đổi lấy rò rỉ quyền và trả lời câu không có đáp án. Con số tổng giữ nguyên trong khi loại lỗi đổi hẳn: tách theo nhóm và theo tầng.",
+      measured: true,
+      read: ["Phần 1: embed và search cỡ chục ms, rerank 50 cặp vài trăm ms; hai lần gọi LLM (giả định) chiếm phần lớn độ trễ và gần hết tiền.", "Phần 2: cả ba pipeline đúng 8/14, đúng như lab nói.", "Tách theo nhóm: B, C kéo Recall@50 0,67 → 0,89 và FP2 4 → 1, nhưng đổi lấy rò rỉ quyền (1 và 2 câu) và FP1."]
+    },
+    mount(stage) {
+      const S = { rw: 'haiku', retr: 'self', rr: 'v3', rrq: 'rw', hist: 2000, N: 100, docTok: 300, k: 8, chunkTok: 400, gen: 'sonnet', out: 250, promo: false, qpd: 20000 };
+      const bars = el('svg', { class: 'canvas', viewBox: '0 0 600 96', role: 'img', 'aria-label': 'Độ trễ và chi phí theo tầng' }), stat = el('div', { class: 'stat' }), table = el('div'), flags = el('div');
+      const histS = slider('Token lịch sử hội thoại', 500, 8000, 500, S.hist, (v) => { S.hist = v; render(); }, n0);
+      function stack(y, label, vals, total, fmt) {
+        const W = 600, L = 92, R = 10; let x = L;
+        const g = [el('text', { x: 0, y: y + 14, class: 'mute', text: label })];
+        vals.forEach(([k, v]) => { const w = total > 0 ? (v / total) * (W - L - R) : 0; g.push(el('rect', { x, y, width: Math.max(0, w), height: 20, fill: COL[k] }, [el('title', { text: k + ': ' + fmt(v) })])); if (w > 46) g.push(el('text', { x: x + 4, y: y + 14, fill: 'var(--bg)', style: 'font-size:11px', text: pct(v / total) })); x += w; });
+        g.push(el('text', { x: W - R, y: y + 34, class: 'mute', 'text-anchor': 'end', text: fmt(total) }));
+        return el('g', {}, g);
+      }
+      function render() {
+        histS.node.style.display = S.rrq === 'hist' && S.rr !== 'off' ? '' : 'none';
+        const b = budget(S), gen = b.st.find((s) => s.k === 'gen');
+        bars.replaceChildren(stack(6, 'Độ trễ', b.st.map((s) => [s.k, s.lat]), b.lat, ms), stack(52, 'Chi phí', b.st.map((s) => [s.k, s.cost]), b.cost, usd));
+        table.replaceChildren(tbl('<tr><th>Tầng</th><th>Token / đơn vị</th><th>Tiền mỗi câu</th><th>Độ trễ</th><th>Nguồn số</th></tr>' + b.st.map((s) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${COL[s.k]};margin-right:6px"></i>${s.name}</td><td class="mono">${s.tok}</td><td class="mono">${usd(s.cost)}</td><td class="mono">${ms(s.lat)}</td><td style="font-size:12px" class="mute">${s.src}</td></tr>`).join('') + `<tr><td><b>Tổng</b></td><td></td><td class="mono"><b>${usd(b.cost)}</b></td><td class="mono"><b>${ms(b.lat)}</b></td><td></td></tr>`));
+        stat.innerHTML = `<span>Mỗi câu: <b>${usd(b.cost)}</b> · <b>${ms(b.lat)}</b></span><span>Mỗi tháng (${n0(S.qpd)} câu/ngày): <b>${usd(b.cost * S.qpd * 30)}</b></span><span>Generation: <b>${pct(gen.cost / Math.max(b.cost, 1e-12))}</b> tiền, <b>${pct(gen.lat / b.lat)}</b> thời gian</span>`;
+        const fl = [];
+        if (S.rr !== 'off' && RERANK[S.rr].perM && S.rrq === 'hist') fl.push(flag('bad', `<b>Rerank đọc ${n0(b.rrTok)} token thay vì ${n0(b.rrTokRw)}: gấp ${(b.rrTok / b.rrTokRw).toFixed(1)} lần.</b> Query (${n0(S.hist)} token lịch sử) bị nhân với ${S.N} candidate. Độ trễ rerank cũng tăng theo. Không có nghĩa reranker đắt. Trong hệ thống thật: rerank bằng câu hỏi đã viết lại (README §3.6: "Rerank chậm hoặc đắt bất thường").`));
+        if (b.g.useHi) fl.push(flag('bad', `<b>Prompt generation ${n0(b.genIn)} token vượt 100.000: Haiku 5.5 tính giá gấp 5 cho mọi token của request.</b> ${S.k} đoạn × ${n0(S.chunkTok)} token. Tiền generation mỗi câu ${usd(b.g.cost)}; bớt vài đoạn để prompt xuống dưới ngưỡng thì giá mỗi token rẻ hơn 5 lần. Không có nghĩa nên đổi model; nghĩa là đưa ít đoạn hơn (README: thêm đoạn là thêm nhiễu). Trong hệ thống thật: log số token prompt mỗi request và cảnh báo khi gần ngưỡng giá.`));
+        if (S.retr !== 'self') { const sc = b.st.find((s) => s.k === 'search').cost; if (sc > gen.cost) fl.push(flag('warn', `<b>Tầng tìm kiếm managed (${usd(sc)}/câu) đắt hơn cả generation (${usd(gen.cost)}/câu).</b> Phí theo lần gọi không đổi theo độ dài câu hỏi, còn ${GM[S.gen].name} rất rẻ. Trái với quy tắc chung của README (generation là phần lớn tổng chi phí). Không có nghĩa README sai; nghĩa là quy tắc chung phải kiểm lại với cấu hình của bạn.`)); }
+        if (S.rw !== 'off') { const rw = b.st.find((s) => s.k === 'rewrite'); fl.push(flag('warn', `<b>Viết lại query thêm ${ms(rw.lat)} trước khi retrieval bắt đầu</b>, nhiều hơn embed + tìm kiếm${S.rr !== 'off' ? ' + rerank' : ''} cộng lại (${ms(b.st.filter((s) => ['embed', 'search', 'rerank'].includes(s.k)).reduce((a, s) => a + s.lat, 0))}), dù tiền chỉ ${usd(rw.cost)}. Nó nằm trên đường găng. Trong hệ thống thật: model nhỏ và nhanh cho bước viết lại, chỉ bật cho nhóm câu hỏi cần qua routing.`)); }
+        if ((S.gen === 'flash' || S.rw === 'flash') && S.promo) fl.push(flag('warn', '<b>Đang dùng giá khuyến mãi của Gemini 3.8 Flash ($0,75 / $3,75).</b> Giá tăng gấp đôi từ 01/01/2027 (Cost optimization §2.1). Dự báo chi phí phải dùng giá sau khuyến mãi.'));
+        if (!fl.length) fl.push(flag('ok', `Generation chiếm ${pct(gen.cost / Math.max(b.cost, 1e-12))} chi phí và ${pct(gen.lat / b.lat)} độ trễ, khớp với README §3.4.`));
+        flags.replaceChildren(...fl);
+      }
+      const rwOpts = [['off', 'Tắt']].concat(['haiku', 'luna', 'flashlite', 'sonnet'].map((k) => [k, GM[k].name]));
+      stage.append(el('p', { class: 'hint', html: 'Câu hỏi: <b>"' + QUESTION + '"</b> (' + estTok(QUESTION) + ' token, ước lượng ký tự/3).' }),
+        el('div', { class: 'row' }, [
+          select('Viết lại query', rwOpts, S.rw, (v) => { S.rw = v; render(); }).node,
+          select('Tìm kiếm', Object.entries(RETR).map(([k, r]) => [k, r.name]), S.retr, (v) => { S.retr = v; render(); }).node,
+          select('Rerank', Object.entries(RERANK).map(([k, r]) => [k, r.name]), S.rr, (v) => { S.rr = v; render(); }).node]),
+        el('div', { class: 'row' }, [
+          select('Query đưa vào reranker', [['rw', 'Câu hỏi đã viết lại'], ['hist', 'Cả lịch sử hội thoại']], S.rrq, (v) => { S.rrq = v; render(); }).node, histS.node,
+          select('Model generation', Object.entries(GM).map(([k, m]) => [k, m.name]), S.gen, (v) => { S.gen = v; render(); }).node,
+          select('Giá Gemini 3.8 Flash', [['0', 'Sau 01/01/2027 ($1,50 / $7,50)'], ['1', 'Khuyến mãi hiện tại ($0,75 / $3,75)']], '0', (v) => { S.promo = v === '1'; render(); }).node]),
+        el('div', { class: 'row' }, [
+          slider('Số candidate N', 10, 300, 10, S.N, (v) => { S.N = v; render(); }).node,
+          slider('Token mỗi candidate', 100, 1000, 50, S.docTok, (v) => { S.docTok = v; render(); }).node,
+          slider('Số đoạn vào prompt k', 1, 300, 1, S.k, (v) => { S.k = v; render(); }).node,
+          slider('Token mỗi đoạn', 200, 2000, 100, S.chunkTok, (v) => { S.chunkTok = v; render(); }, n0).node,
+          slider('Token output', 50, 1500, 50, S.out, (v) => { S.out = v; render(); }).node,
+          slider('Câu hỏi mỗi ngày', 1000, 100000, 1000, S.qpd, (v) => { S.qpd = v; render(); }, n0).node]),
+        bars, el('div', { class: 'legend', html: Object.entries({ rewrite: 'Viết lại query', embed: 'Embed', search: 'Tìm kiếm', rerank: 'Rerank', gen: 'Generation' }).map(([k, t]) => `<span><i style="background:${COL[k]};border-radius:2px"></i>${t}</span>`).join('') }),
+        stat, table, flags,
+        el('p', { class: 'hint', text: 'Giá model: Cost optimization §2.1 (06/11/2026). Giá Voyage, Cohere trên Bedrock, OpenAI file_search, Bedrock Retrieve: README §2.2, §3.4. Embed query coi như $0 ("rất nhỏ"). Giả định: system prompt generation 600 token, viết lại query 250 in / 40 out; TTFT 300/450/700 ms và tốc độ 150/100/60 token/s cho model nhỏ/vừa/lớn, cộng 1 ms mỗi 50 token input; rerank 40 ms + 0,6 ms mỗi candidate; tìm kiếm managed 250 ms. Cohere trên Bedrock tính phẳng mỗi query, chưa tính cách tách tài liệu trên 500 token. Generation chưa tính lịch sử hội thoại.' }));
+      render();
+
+      stage.append(el('h4', { text: 'Eval trên 14 câu hỏi có nhãn: tách retrieval khỏi generation', style: 'margin:24px 0 4px' }));
+      const E = { p: 'B', cmp: 'A' }, eOut = el('div');
+      function cell(b, k, g) { return g === 'none' || g === 'perm' ? '<td class="mono mute">-</td>' : `<td class="mono">${b.ans ? pct(b[k] / b.ans) : '-'}</td>`; }
+      function renderE() {
+        const P = evalPipe(E.p), Q = evalPipe(E.cmp);
+        const row = (g, name) => { const b = P[g], c = Q[g], d = b.ok / b.n - c.ok / c.n; return `<tr${g === 'all' ? ' style="font-weight:600"' : ''}><td>${name}</td><td class="mono">${b.n}</td>${cell(b, 'rec', g)}${cell(b, 'ctx', g)}<td class="mono"><b>${b.ok}/${b.n}</b> <span class="${d > 0 ? 'ok' : d < 0 ? 'bad' : 'mute'}">(${d > 0 ? '+' : ''}${(d * b.n).toFixed(0)} so với ${E.cmp})</span></td><td class="mono">${b.fp2}</td><td class="mono">${b.fp3}</td><td class="mono">${b.fp4}</td><td class="mono">${b.fp1}</td><td class="mono ${b.leak ? 'bad' : ''}"><b>${b.leak}</b></td></tr>`; };
+        const head = '<tr><th>Nhóm</th><th>n</th><th>Recall@50</th><th>Đáp án trong context</th><th>Đúng</th><th>FP2 retrieval</th><th>FP3 rơi khỏi context</th><th>FP4 generation</th><th>FP1</th><th>Rò rỉ</th></tr>';
+        const detail = '<tr><th>Câu hỏi</th><th>Nhóm</th><th>' + E.p + '</th><th>' + E.cmp + '</th></tr>' + QS.map((q) => { const a = classify(q, E.p), c = classify(q, E.cmp); return `<tr><td>${q.q}</td><td>${GROUPS[q.g]}</td><td style="color:var(--${CLS[a][1]})">${CLS[a][0]}</td><td style="color:var(--${CLS[c][1]})">${CLS[c][0]}</td></tr>`; }).join('');
+        const retr = P.all.fp2 + P.all.fp3, genF = P.all.fp4 + P.all.fp1, fl = [];
+        if (P.all.ok === Q.all.ok && E.p !== E.cmp) { const diff = Object.keys(GROUPS).filter((g) => P[g].ok !== Q[g].ok).map((g) => `${GROUPS[g]} ${P[g].ok}/${P[g].n} so với ${Q[g].ok}/${Q[g].n}`); fl.push(flag('warn', `<b>${E.p} và ${E.cmp} cùng ${P.all.ok}/${P.all.n} câu đúng, nhưng khác nhau ở ${diff.length} nhóm: ${diff.join('; ')}.</b> Con số tổng bằng nhau vì thắng ở nhóm này bù thua ở nhóm kia. Không có nghĩa hai pipeline tương đương. Trong hệ thống thật: báo cáo eval theo nhóm, quyết định theo nhóm quan trọng với sản phẩm.`)); }
+        if (P.all.leak) fl.push(flag('bad', `<b>${E.p} rò rỉ quyền ở ${P.all.leak}/${P.perm.n} câu nhóm quyền.</b> ${E.p === 'B' ? 'Nhánh BM25 mới thêm không được gắn filter nhóm; chỉ nhánh dense có.' : 'Nhánh BM25 thiếu filter nhóm, và 12 đoạn vào prompt kéo thêm biên bản kỷ luật vào context.'} README: tỉ lệ không rò rỉ phải là 100%; ứng dụng phải gắn filter vào mọi truy vấn. Trong hệ thống thật: nhóm quyền trong CI, fail là chặn deploy, bất kể điểm các nhóm khác.`));
+        if (P.all.fp4 > Q.all.fp4) fl.push(flag('warn', `<b>${E.p} có ${P.all.fp4} lỗi FP4 (đáp án trong context mà trả lời sai), ${E.cmp} có ${Q.all.fp4}.</b> ${E.p === 'C' ? '12 đoạn vào prompt kéo theo chính sách phí 2025 cạnh bản 2026; model chọn nhầm. ' : ''}Thêm đoạn tăng khả năng có đáp án trong context, nhưng mỗi đoạn thêm là thêm nhiễu (README §1.2).`));
+        if (P.all.fp1 > Q.all.fp1) fl.push(flag('warn', `<b>${E.p} trả lời ${P.all.fp1}/${P.none.n} câu không có đáp án, ${E.cmp} chỉ ${Q.all.fp1}.</b> Retrieval mạnh hơn luôn tìm được "thứ gì đó" để model bám vào. Nhóm không có đáp án là cách duy nhất thấy lỗi này.`));
+        const q6 = QS[5];
+        if (['A', 'B', 'C'].every((p) => classify(q6, p) === 'fp2')) fl.push(flag('warn', '<b>"Gói ShopCare Pro có hoàn tiền không?" sai ở cả ba pipeline, đều là FP2.</b> Chunk chứa điều khoản hoàn tiền không có chữ "ShopCare Pro" nào. Hybrid hay rerank không cứu được; sửa ở chunk: contextual retrieval hoặc parent–child (README §2.3, §2.4).'));
+        eOut.replaceChildren(el('div', { class: 'stat', html: `<span>${E.p} đúng: <b>${P.all.ok}/${P.all.n}</b> (${pct(P.all.ok / P.all.n)})</span><span>Lỗi retrieval (FP2 + FP3): <b>${retr}</b></span><span>Lỗi generation (FP4 + FP1): <b>${genF}</b></span><span>Rò rỉ: <b class="${P.all.leak ? 'bad' : 'ok'}">${P.all.leak}</b></span>` }),
+          tbl(head + Object.entries(GROUPS).map(([g, n]) => row(g, n)).join('') + row('all', 'Tổng')), ...fl,
+          el('details', { style: 'margin-top:10px' }, [el('summary', { text: 'Chi tiết từng câu' }), tbl(detail)]));
+      }
+      stage.append(el('div', { class: 'row' }, [select('Pipeline', Object.entries(PIPES), E.p, (v) => { E.p = v; renderE(); }).node, select('So với', Object.entries(PIPES), E.cmp, (v) => { E.cmp = v; renderE(); }).node]), eOut,
+        el('p', { class: 'hint', text: 'Phân loại: nhóm tra cứu và nhiều phần, câu sai mà tài liệu đúng không có (đủ) trong top-50 là FP2; có trong top-50 nhưng không (đủ) vào context là FP3; có trong context mà vẫn sai là FP4. Nhóm không có đáp án: trả lời thay vì từ chối là FP1. Nhóm quyền: trả nội dung tài liệu không được phép là rò rỉ. Kết quả từng câu là dữ liệu dựng sẵn.' }));
+      renderE();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

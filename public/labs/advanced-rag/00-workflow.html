@@ -1,0 +1,791 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 00</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a class="off" href="#">← Lab trước</a><a href="01-failure-points.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flag = (kind, html) => el('div', { style: `border-left:4px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 9%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+  const check = (label, on, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = on; i.addEventListener('change', () => onChange(i.checked)); return { node: el('label', { class: 'ctl', style: 'font-size:13px' }, [i, label]), input: i }; };
+  const N_POOL = 5, K_CTX = 3, RRF_K = 60, K1 = 1.2, B = 0.75;
+
+  const DOCS = {
+    R25: { name: 'Đổi trả 2025', old: true },
+    R26: { name: 'Đổi trả 2026' },
+    ORD: { name: 'Đơn hàng' },
+    S30: { name: 'Sản phẩm Galaxy S30' },
+    Z14: { name: 'Sản phẩm ZenBook Z14' },
+    BH: { name: 'Bảo hành.pdf tr.4' },
+    BHG: { name: 'Bảo hành chung' },
+    SHIP: { name: 'Giao hàng' },
+    SVC: { name: 'Trung tâm bảo hành' },
+    PAY: { name: 'Thanh toán' }
+  };
+  const CH = [
+    { id: 'r25a', d: 'R25', t: 'Laptop mua online được đổi trả trong 15 ngày kể từ ngày nhận hàng, máy còn đủ hộp và phụ kiện.', c: ['doi_tra', 'laptop', 'thoi_han'] },
+    { id: 'r26a', d: 'R26', t: 'Từ 01/01/2026, laptop được đổi trả trong 7 ngày kể từ ngày nhận hàng; máy đã kích hoạt bảo hành điện tử chỉ đổi khi lỗi phần cứng.', c: ['doi_tra', 'laptop', 'thoi_han'] },
+    { id: 'r26b', d: 'R26', t: 'Điện thoại được đổi trả trong 7 ngày kể từ ngày nhận hàng nếu lỗi do nhà sản xuất.', c: ['doi_tra', 'dien_thoai', 'thoi_han'] },
+    { id: 'r26c', d: 'R26', t: 'Tai nghe và loa được đổi trả trong 15 ngày nếu lỗi do nhà sản xuất.', c: ['doi_tra', 'tai_nghe', 'thoi_han'] },
+    { id: 'r26d', d: 'R26', t: 'Quà tặng khuyến mãi không đổi trả riêng. Quà tặng đi theo sản phẩm chính và được đổi trả cùng sản phẩm chính, trong thời hạn của sản phẩm chính.', c: ['doi_tra', 'qua_tang'] },
+    { id: 'o4812', d: 'ORD', t: 'Đơn SV-4812: Galaxy S30, đang chờ xác nhận thanh toán.', c: ['don_hang', 'trang_thai_don'] },
+    { id: 'o4128', d: 'ORD', t: 'Đơn SV-4128: tai nghe Buds Lite, giao thành công ngày 20/11/2026.', c: ['don_hang', 'trang_thai_don'] },
+    { id: 'o4281', d: 'ORD', t: 'Đơn SV-4281: Galaxy S30, đang giao, dự kiến tới trong 24 giờ.', c: ['don_hang', 'trang_thai_don'] },
+    { id: 'o8421', d: 'ORD', t: 'Đơn SV-8421: ốp lưng Galaxy S30, khách đã huỷ.', c: ['don_hang', 'trang_thai_don'] },
+    { id: 'o2481', d: 'ORD', t: 'Đơn SV-2481: ZenBook Z14, khách yêu cầu xuất hoá đơn VAT.', c: ['don_hang', 'trang_thai_don'] },
+    { id: 'o4821', d: 'ORD', t: 'Đơn SV-4821: ZenBook Z14, giao thành công ngày 22/11/2026 tại Hà Nội.', c: ['don_hang', 'trang_thai_don'] },
+    { id: 's30', d: 'S30', t: 'Galaxy S30 256GB, màn hình 6,7 inch, pin 5.000mAh. Quà tặng kèm: tai nghe Buds Lite (SKU BL-200).', c: ['dien_thoai', 'galaxy', 'qua_tang', 'tai_nghe'] },
+    { id: 'z14', d: 'Z14', t: 'ZenBook Z14: chip 12 nhân, RAM 16GB, pin 72Wh, sạc nhanh 65W USB-C.', c: ['laptop', 'zenbook', 'pin'] },
+    { id: 't1', d: 'BH', p: 'T3', t: 'Bảng 3. Thời hạn bảo hành theo model. | Model | Thân máy | Pin | Sạc | Galaxy S30 | 12 tháng | 12 tháng | 6 tháng |', c: ['bao_hanh', 'thoi_han', 'pin'] },
+    { id: 't2', d: 'BH', p: 'T3', t: '| ZenBook Z14 | 24 tháng | 12 tháng | 12 tháng |', c: ['zenbook'] },
+    { id: 'g1', d: 'BHG', t: 'Mọi sản phẩm được bảo hành 12 tháng tại trung tâm bảo hành ShopViet, trừ khi bảng bảo hành theo model ghi khác.', c: ['bao_hanh', 'thoi_han'] },
+    { id: 'g3', d: 'BHG', t: 'Thời hạn bảo hành pin tính từ ngày mua trên hoá đơn, không tính từ ngày kích hoạt máy.', c: ['bao_hanh', 'pin', 'thoi_han'] },
+    { id: 'g2', d: 'BHG', t: 'Pin bị chai dưới 80% dung lượng trong thời hạn bảo hành pin được đổi pin mới miễn phí.', c: ['bao_hanh', 'pin'] },
+    { id: 'sh1', d: 'SHIP', t: 'Đơn giao tới Đà Lạt, Đà Nẵng và các tỉnh miền Trung mất 2–3 ngày làm việc.', c: ['giao_hang', 'thoi_han'] },
+    { id: 'sh2', d: 'SHIP', t: 'Nội thành Hà Nội và TP.HCM giao trong 24 giờ.', c: ['giao_hang'] },
+    { id: 'sv1', d: 'SVC', t: 'Trung tâm bảo hành ShopViet nhận sửa laptop, điện thoại, tai nghe và đồng hồ thông minh, kể cả máy hết bảo hành.', c: ['sua_chua', 'bao_hanh', 'laptop', 'dien_thoai'] },
+    { id: 'tg1', d: 'PAY', t: 'Trả góp 0% áp dụng cho đơn từ 3.000.000đ khi thanh toán bằng thẻ tín dụng của 12 ngân hàng đối tác.', c: ['tra_gop', 'thanh_toan'] }
+  ];
+  const BY = Object.fromEntries(CH.map((c) => [c.id, c]));
+
+  const QS = [
+    { id: 'code', name: 'Đơn SV-4821 (mã đơn gần giống nhau)', q: 'Đơn SV-4821 của tôi đã giao chưa?', c: ['don_hang', 'trang_thai_don'],
+      sub: [['Đơn SV-4821 đã giao chưa', ['don_hang', 'trang_thai_don']]], need: ['o4821'],
+      traps: [['o4812', 'Chưa giao, đơn đang chờ xác nhận thanh toán.', true], ['o4128', 'Đã giao thành công ngày 20/11/2026.', true], ['o4281', 'Đang giao, dự kiến tới trong 24 giờ.', true]],
+      ok: 'Đã giao. Đơn SV-4821 (ZenBook Z14) giao thành công ngày 22/11/2026 tại Hà Nội.', halluc: 'Đơn đang được giao, dự kiến tới trong 2–3 ngày.' },
+    { id: 'ver', name: 'Đổi trả laptop (bản cũ còn trong index)', q: 'Laptop mua online được đổi trả trong mấy ngày?', c: ['doi_tra', 'laptop', 'thoi_han'],
+      sub: [['Laptop mua online đổi trả trong mấy ngày', ['doi_tra', 'laptop', 'thoi_han']]], need: ['r26a'], conflict: true,
+      traps: [['r25a', 'Trong 15 ngày kể từ ngày nhận hàng.', true]],
+      ok: 'Trong 7 ngày kể từ ngày nhận hàng (chính sách từ 01/01/2026); máy đã kích hoạt bảo hành điện tử chỉ đổi khi lỗi phần cứng.', halluc: 'Trong 30 ngày.' },
+    { id: 'hop', name: 'Quà tặng Galaxy S30 (nhiều bước)', q: 'Tai nghe tặng kèm Galaxy S30 được đổi trả trong bao lâu?', c: ['doi_tra', 'tai_nghe', 'qua_tang', 'galaxy', 'thoi_han'],
+      sub: [['Galaxy S30 tặng kèm tai nghe gì', ['galaxy', 'qua_tang', 'tai_nghe', 'dien_thoai']], ['Quà tặng khuyến mãi đổi trả thế nào', ['qua_tang', 'doi_tra']], ['Galaxy S30 (điện thoại) đổi trả trong bao lâu', ['doi_tra', 'galaxy', 'dien_thoai', 'thoi_han']]],
+      need: ['s30', 'r26d', 'r26b'],
+      traps: [['r26c', 'Trong 15 ngày, như mọi tai nghe.', true]],
+      ok: 'Buds Lite là quà tặng nên không đổi trả riêng; đổi cùng Galaxy S30 trong 7 ngày nếu lỗi do nhà sản xuất.', halluc: 'Trong 30 ngày.' },
+    { id: 'tbl', name: 'Bảo hành pin Z14 (bảng trong PDF)', q: 'Pin ZenBook Z14 bảo hành mấy tháng?', c: ['bao_hanh', 'pin', 'zenbook', 'thoi_han'],
+      sub: [['Thời hạn bảo hành pin ZenBook Z14', ['bao_hanh', 'pin', 'zenbook', 'thoi_han']]], need: ['t2'], intact: 'T3',
+      traps: [['t2', '24 tháng (đọc nhầm cột Thân máy vì mảnh bảng không có header).', true], ['g1', '12 tháng, theo bảo hành chung (trùng số đúng nhưng đoạn này không nói gì về pin Z14).', true], ['t1', '12 tháng (đọc hàng Galaxy S30, hàng duy nhất có trong mảnh bảng; trùng số đúng do may).', true]],
+      ok: 'Pin ZenBook Z14 bảo hành 12 tháng (Bảng 3, cột Pin); thân máy 24 tháng.', halluc: '6 tháng.' },
+    { id: 'miss', name: 'Xe máy điện (không có trong corpus)', q: 'ShopViet có bán xe máy điện trả góp 0% không?', c: ['xe_dien', 'tra_gop'], noAnswer: true,
+      sub: [['ShopViet có bán xe máy điện không', ['xe_dien']], ['Điều kiện trả góp 0%', ['tra_gop', 'thanh_toan']]], need: [],
+      traps: [['tg1', 'Có, trả góp 0% cho đơn từ 3.000.000đ qua thẻ tín dụng.', false]],
+      ok: 'Tài liệu không nói ShopViet bán xe máy điện, nên không trả lời được. Tài liệu chỉ có điều kiện trả góp 0% chung: đơn từ 3.000.000đ, thẻ tín dụng.', halluc: 'Có, ShopViet bán xe máy điện trả góp 0%.' },
+    { id: 'ctrl', name: 'Giao Đà Lạt (câu đang đúng)', q: 'Giao hàng tới Đà Lạt mất mấy ngày?', c: ['giao_hang', 'thoi_han'],
+      sub: [['Thời gian giao hàng tới Đà Lạt', ['giao_hang', 'thoi_han']]], need: ['sh1'],
+      traps: [['sh2', 'Trong 24 giờ.', true]], ok: '2–3 ngày làm việc.', halluc: '1 ngày.' }
+  ];
+
+  const STOP = new Set(['có', 'không', 'được', 'trong', 'bao', 'lâu', 'mấy', 'cho', 'của', 'và', 'là', 'thì', 'khi', 'nào', 'gì', 'thế', 'tới', 'các', 'với', 'theo', 'mất']);
+  const tok = (s) => s.toLowerCase().normalize('NFC').match(/[\p{L}\p{N}]+(?:[-.][\p{L}\p{N}]+)*/gu) || [];
+  const DT = CH.map((c) => tok(c.t));
+  const AVG = DT.reduce((s, t) => s + t.length, 0) / DT.length;
+  const DF = new Map();
+  DT.forEach((ts) => new Set(ts).forEach((w) => DF.set(w, (DF.get(w) || 0) + 1)));
+  const idf = (w) => Math.log(1 + (CH.length - (DF.get(w) || 0) + 0.5) / ((DF.get(w) || 0) + 0.5));
+  const qTerms = (s) => [...new Set(tok(s).filter((w) => !STOP.has(w)))];
+  function bm25(terms, i) {
+    const ts = DT[i];
+    return terms.reduce((s, w) => {
+      const tf = ts.filter((x) => x === w).length;
+      return tf ? s + idf(w) * (tf * (K1 + 1)) / (tf + K1 * (1 - B + B * ts.length / AVG)) : s;
+    }, 0);
+  }
+  const cos = (a, b) => { const n = a.filter((x) => b.includes(x)).length; return n / Math.sqrt(a.length * b.length); };
+  const rankBy = (ids, f) => ids.map((i) => ({ i, s: f(i) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s || a.i - b.i);
+  function rrf(lists) {
+    const m = new Map();
+    lists.forEach((l) => l.forEach((x, r) => m.set(x.i, (m.get(x.i) || 0) + 1 / (RRF_K + r + 1))));
+    return [...m.entries()].map(([i, s]) => ({ i, s })).sort((a, b) => b.s - a.s || a.i - b.i);
+  }
+  function rerankScore(text, cs, i) {
+    const terms = qTerms(text), tot = terms.reduce((s, w) => s + idf(w), 0) || 1;
+    const hit = terms.filter((w) => DT[i].includes(w)).reduce((s, w) => s + idf(w), 0);
+    return 0.3 * cos(cs, CH[i].c) + 0.7 * hit / tot;
+  }
+
+  function run(q, cfg) {
+    const allowed = CH.map((_, i) => i).filter((i) => !(cfg.filter && DOCS[CH[i].d].old));
+    const queries = cfg.decomp ? q.sub : [[q.q, q.c]];
+    const per = queries.map(([text, cs]) => {
+      const terms = qTerms(text);
+      const dense = rankBy(allowed, (i) => cos(cs, CH[i].c));
+      const sparse = rankBy(allowed, (i) => bm25(terms, i));
+      const fused = cfg.hybrid ? rrf([dense, sparse]) : dense;
+      return { text, dense, sparse, top: fused.slice(0, N_POOL) };
+    });
+    const fusedAll = per.length > 1 ? rrf(per.map((p) => p.top)) : per[0].top;
+    const poolIdx = fusedAll.map((x) => x.i);
+    const info = new Map();
+    poolIdx.forEach((i, r) => {
+      const dr = per.map((p) => p.dense.findIndex((x) => x.i === i)).filter((x) => x >= 0);
+      const sr = per.map((p) => p.sparse.findIndex((x) => x.i === i)).filter((x) => x >= 0);
+      info.set(i, { fr: r + 1, fs: fusedAll[r].s, dr: dr.length ? Math.min(...dr) + 1 : 0, sr: sr.length ? Math.min(...sr) + 1 : 0,
+        rs: Math.max(...queries.map(([t, cs]) => rerankScore(t, cs, i))) });
+    });
+    let order = poolIdx.slice();
+    if (cfg.rerank) order.sort((a, b) => info.get(b).rs - info.get(a).rs || a - b);
+    const picked = [];
+    if (per.length > 1) per.forEach((p, j) => {
+      const own = p.top.map((x) => x.i);
+      if (cfg.rerank) own.sort((a, b) => rerankScore(queries[j][0], queries[j][1], b) - rerankScore(queries[j][0], queries[j][1], a) || a - b);
+      const best = own.find((i) => !picked.includes(CH[i].id));
+      if (best !== undefined) picked.push(CH[best].id);
+    });
+    order.forEach((i) => { if (picked.length < Math.max(K_CTX, per.length) && !picked.includes(CH[i].id)) picked.push(CH[i].id); });
+    let ctx = [];
+    picked.forEach((id) => {
+      const p = BY[id].p;
+      const add = cfg.parent && p ? CH.filter((c) => c.p === p).map((c) => c.id) : [id];
+      add.forEach((x) => { if (!ctx.includes(x)) ctx.push(x); });
+    });
+    const pool = poolIdx.map((i) => CH[i].id);
+    return Object.assign({ q, cfg, per, pool, order: order.map((i) => CH[i].id), info, picked, ctx }, judge(q, cfg, pool, ctx), { calls: cfg.decomp ? 1 : 0 });
+  }
+
+  function judge(q, cfg, pool, ctx) {
+    const firstTrap = (skipIntact) => q.traps.find(([id]) => ctx.includes(id) && !(skipIntact && id === q.need[0]));
+    const intactOk = !q.intact || (cfg.parent && CH.filter((c) => c.p === q.intact).every((c) => ctx.includes(c.id)));
+    if (q.noAnswer) {
+      if (cfg.ground) return { ok: true, text: q.ok, cites: q.traps.filter(([id]) => ctx.includes(id)).map(([id]) => id), fp: '', stage: -1 };
+      const t = firstTrap();
+      return { ok: false, text: t ? t[1] : q.halluc, cites: [], fp: 'FP1 Missing content', stage: 4, why: 'Corpus không có đáp án, prompt không cho phép nói "không có trong tài liệu", model lấy đoạn gần nhất để trả lời.' };
+    }
+    const needIn = q.need.filter((id) => ctx.includes(id));
+    const inPool = q.need.filter((id) => pool.includes(id));
+    if (needIn.length === q.need.length && intactOk) {
+      const t = q.conflict && firstTrap();
+      if (t && ctx.indexOf(t[0]) < Math.min(...q.need.map((id) => ctx.indexOf(id))))
+        return { ok: false, text: t[1], cites: cfg.ground ? [t[0]] : [], fp: 'FP4 Not extracted (đoạn mâu thuẫn)', stage: 1, why: `Cả bản 2025 (${t[0]}) lẫn bản 2026 đều vào context, bản cũ đứng trước và khớp câu hỏi hơn. Model chọn đoạn đầu.` };
+      return { ok: true, text: q.ok, cites: cfg.ground ? q.need.concat(q.intact ? CH.filter((c) => c.p === q.intact && !q.need.includes(c.id)).map((c) => c.id) : []) : [], fp: '', stage: -1 };
+    }
+    let fp, stage, why;
+    if (needIn.length === q.need.length && !intactOk) { fp = 'FP4 Not extracted (bảng mất header)'; stage = 3; why = 'Mảnh bảng có hàng ZenBook Z14 nhưng không có dòng header, model không biết số nào là cột Pin.'; }
+    else if (q.need.length > 1 && (needIn.length > 0 || inPool.length > 0)) { fp = 'FP7 Incomplete'; stage = 0; why = `Câu hỏi cần ${q.need.length} đoạn nối nhau, context chỉ có ${needIn.length}. Một query không gọi được cả ba bước.`; }
+    else if (inPool.length < q.need.length) { fp = 'FP2 Không vào top-N'; stage = 1; why = `Đoạn đúng không nằm trong ${N_POOL} candidate của retrieval. Không tầng nào phía sau cứu được.`; }
+    else { fp = 'FP3 Không vào top-k'; stage = 2; why = `Đoạn đúng nằm trong ${N_POOL} candidate nhưng xếp dưới hạng ${K_CTX}, bị cắt khi ghép context.`; }
+    const t = firstTrap(false);
+    if (t && (!cfg.ground || t[2])) return { ok: false, text: t[1], cites: cfg.ground ? [t[0]] : [], fp, stage, why };
+    if (cfg.ground) return { ok: false, refused: true, text: 'Tài liệu được cung cấp không đủ để trả lời câu này.', cites: [], fp, stage, why };
+    return { ok: false, text: q.halluc, cites: [], fp, stage, why };
+  }
+
+  const TOG = [['decomp', 'Viết lại + tách câu', 0], ['hybrid', 'Hybrid BM25 + dense (RRF)', 1], ['filter', 'Lọc metadata: chỉ bản hiệu lực', 1], ['rerank', 'Rerank (cross-encoder)', 2], ['parent', 'Parent doc: trả cả bảng/đoạn cha', 3], ['ground', 'Grounded: trích dẫn, được nói "không có"', 4]];
+  const LAT = { base: 1650, decomp: 700, hybrid: 20, filter: 0, rerank: 200, parent: 0, ground: 0 };
+  const latency = (cfg) => LAT.base + TOG.reduce((s, [k]) => s + (cfg[k] ? LAT[k] : 0), 0);
+  const tokEst = (ids) => Math.round(ids.reduce((s, id) => s + BY[id].t.length, 0) / 4);
+  const off = () => Object.fromEntries(TOG.map(([k]) => [k, false]));
+  const ALL = Array.from({ length: 64 }, (_, m) => Object.fromEntries(TOG.map(([k], j) => [k, !!(m & (1 << j))])));
+  const nOn = (cfg) => TOG.filter(([k]) => cfg[k]).length;
+  function minimalFix(q) {
+    const okCfgs = ALL.filter((c) => run(q, c).ok).sort((a, b) => nOn(a) - nOn(b) || latency(a) - latency(b));
+    return okCfgs[0] || null;
+  }
+  const cfgLabel = (cfg) => { const on = TOG.filter(([k]) => cfg[k]).map(([, l]) => l.split(':')[0].split(' (')[0]); return on.length ? on.join(' + ') : 'không cần bật gì'; };
+
+  return {
+    id: 'workflow', nav: '0. Workflow', ref: 'Tổng quan',
+    title: 'Mỗi câu ShopViet trả lời sai hỏng ở một tầng khác nhau, và chỉ kỹ thuật của đúng tầng đó mới sửa được',
+    hook: 'Chọn một câu hỏi mà RAG cơ bản trả lời sai. Bật tắt kỹ thuật ở từng tầng, xem tập đoạn lấy về, câu trả lời và bảng eval sáu câu thay đổi thế nào.',
+    terms: [
+      ['RAG cơ bản', 'Pipeline đã học ở LLM-01 Embedding: chia chunk, embed, lấy top-k theo cosine, nhét vào prompt. Trong lab: dense top-3 trên 22 chunk.'],
+      ['Token', 'Đơn vị model đếm chữ để tính tiền và giới hạn độ dài prompt. Tiếng Việt: 49 từ ≈ 56 token (cost-optimization §2.1, tokenizer o200k_base), tức khoảng 1 từ ≈ 1 token.'],
+      ['Dense retrieval', 'Tìm theo ý nghĩa: biến câu hỏi và từng chunk thành vector số (embedding), lấy chunk có vector gần nhất (cosine). "Đổi trả" và "hoàn hàng" gần nhau dù khác chữ; "SV-4821" và "SV-4812" cũng gần nhau dù là hai đơn khác hẳn.'],
+      ['Chunk', 'Một mảnh tài liệu được index riêng. Ví dụ "| ZenBook Z14 | 24 tháng | 12 tháng | 12 tháng |" là một chunk bị cắt ra từ Bảng 3: chỉ có số, không có tên cột.'],
+      ['Top-N và top-k', 'N là số candidate retrieval lấy về để rerank (lab: 5), k là số đoạn thật sự đưa vào prompt (lab: 3). Thí nghiệm của Anthropic dùng N = 150, k = 20.'],
+      ['Query rewriting / decomposition', 'Một lần gọi LLM viết lại câu hỏi trước khi tìm. Decomposition tách "tai nghe tặng kèm S30 đổi trả bao lâu" thành 3 câu con, mỗi câu một lần retrieve.'],
+      ['BM25', 'Tìm theo từ khoá, chấm điểm theo số lần từ xuất hiện và độ hiếm của từ. Từ "sv-4821" chỉ có trong 1 chunk nên được điểm rất cao.'],
+      ['Hybrid + RRF', 'Chạy cả dense lẫn BM25, trộn hai bảng xếp hạng bằng Reciprocal Rank Fusion: điểm = tổng 1/(60 + hạng). Hạng 1 được 1/61 ≈ 0,0164.'],
+      ['Rerank', 'Cross-encoder đọc câu hỏi và từng candidate cùng lúc rồi chấm lại, chỉ chạy trên N candidate. Nó sắp xếp lại, không tìm thêm.'],
+      ['Metadata filter', 'Lọc cứng theo thuộc tính khi truy vấn, ví dụ chỉ lấy tài liệu có hiệu lực. Chính sách đổi trả 2025 bị loại trước khi xếp hạng.'],
+      ['Parent–child', 'Index mảnh nhỏ, khi mảnh khớp thì đưa cả đoạn cha cho model. Khớp hàng Z14 thì model nhận cả Bảng 3 kèm header.'],
+      ['Grounded answer', 'Prompt bắt model chỉ trả lời từ context, kèm trích dẫn, và cho phép nói "không có trong tài liệu".'],
+      ['Faithfulness', 'Tỉ lệ khẳng định trong câu trả lời có đoạn nguồn ủng hộ. "Đơn đang chờ thanh toán" trích từ đoạn SV-4812 cho câu hỏi về đơn SV-4821 là trích dẫn có thật nhưng sai câu hỏi.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> bán đồ điện tử online. Trợ lý chat trả lời từ kho tài liệu: chính sách đổi trả (bản 2025 và 2026 cùng nằm trong index), trạng thái đơn hàng, mô tả sản phẩm, file PDF bảo hành có bảng. Pipeline hiện tại là RAG cơ bản của LLM-01: dense top-3.',
+      scenario: 'Đội CSKH gửi một danh sách câu trả lời sai: khách hỏi đơn SV-4821 đã giao chưa thì bot trả lời theo đơn SV-4812; hỏi đổi trả laptop thì bot đọc chính sách năm ngoái; hỏi tai nghe tặng kèm Galaxy S30 thì bot trả lời "15 ngày như mọi tai nghe"; hỏi bảo hành pin ZenBook Z14 thì bot đọc nhầm cột trong bảng PDF; hỏi xe máy điện, thứ ShopViet không bán, bot vẫn trả lời "có".',
+      ask: 'Mỗi câu sai hỏng ở tầng nào của pipeline, và kỹ thuật nào sửa đúng tầng đó mà không làm hỏng câu đang đúng?',
+      solves: 'Pipeline nâng cao sáu tầng: viết lại query → hybrid retrieve có lọc metadata → rerank → ghép context bằng parent doc → trả lời grounded có trích dẫn → eval theo tầng. Lab chạy cả pipeline trên một corpus đồ chơi 22 chunk, tính điểm thật trong trình duyệt, và tự tìm tổ hợp kỹ thuật nhỏ nhất sửa được từng câu.',
+      read: [
+        'Sơ đồ sáu tầng: viền đỏ là tầng gây lỗi của câu đang chọn, chữ nhỏ là đầu ra của tầng đó.',
+        'Các ô tick bật kỹ thuật theo tầng. Mỗi lần đổi, cả pipeline chạy lại: dense (trùng khái niệm gán tay), BM25 (tính thật trên chữ), RRF, rerank giả lập, ghép context.',
+        'Bảng "Tập lấy về": N = 5 candidate với hạng dense, hạng BM25, điểm rerank. Viền xanh là đoạn đúng, cam là bẫy (đoạn gần đúng). Cột cuối cho biết đoạn có vào context không.',
+        'Khung câu trả lời: đúng/sai, trích dẫn, điểm hỏng theo bảng FP của Barnett 2024 (README §1.1), và tổ hợp kỹ thuật nhỏ nhất sửa được câu này (tìm vét cạn 64 cấu hình).',
+        'Bảng eval cuối: cả sáu câu với cấu hình hiện tại. Đây là bước 6 của pipeline: bật một kỹ thuật cho một câu thì phải xem lại cả năm câu kia.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Pipeline RAG có nhiều tầng, mỗi tầng có một việc và một phép đo riêng (README §1.2). Sửa nhầm tầng thì tốn tiền mà không sửa được: rerank không cứu được đoạn chưa bao giờ được lấy về, retrieval tốt hơn không cứu được bảng mất header.</p>
+<div class="tbl"><table>
+<tr><th>Câu ShopViet</th><th>Hỏng ở tầng</th><th>Điểm hỏng (README §1.1)</th><th>Kỹ thuật sửa</th><th>README</th></tr>
+<tr><td>Đơn SV-4821 vs SV-4812</td><td>Retrieval, rồi rerank</td><td>FP2 → FP3</td><td>Hybrid BM25 + RRF, rồi rerank</td><td>§2.1, §2.2</td></tr>
+<tr><td>Đổi trả laptop 2025 vs 2026</td><td>Retrieval (thiếu metadata)</td><td>FP4 đoạn mâu thuẫn</td><td>Gắn ngày hiệu lực, metadata filter</td><td>§2.6, §3.6</td></tr>
+<tr><td>Quà tặng Galaxy S30</td><td>Query</td><td>FP7 Incomplete</td><td>Decomposition, iterative/agentic</td><td>§2.1, §1.4</td></tr>
+<tr><td>Bảo hành pin Z14 trong bảng PDF</td><td>Ghép context</td><td>FP4 (bảng mất header)</td><td>Parent–child, chia bảng lặp header</td><td>§2.4, §2.7</td></tr>
+<tr><td>Xe máy điện (không có)</td><td>Generation</td><td>FP1 Missing content</td><td>Prompt cho phép "không có", trích dẫn</td><td>§1.1, §2.8</td></tr>
+</table></div>
+<h4>Thứ tự nâng cấp, từ rẻ đến đắt (README, Tra cứu nhanh)</h4>
+<ol><li>Đo trước: tách Recall@N của retrieval khỏi chất lượng câu trả lời.</li><li>Hybrid search và RRF.</li><li>Rerank trên top-N, N chọn bằng đo Recall@N.</li><li>Sửa chunk: contextual retrieval hoặc parent–child.</li><li>Biến đổi query, chỉ cho nhóm câu cần, qua routing.</li><li>Agentic RAG có giới hạn vòng và ngân sách.</li><li>GraphRAG cho câu tổng hợp, khi eval cho thấy nó thắng.</li></ol>
+<div class="verdict"><b>Điểm cần nhớ:</b> chỉ giữ kỹ thuật nào eval chứng minh được giá trị trên dữ liệu của bạn (README §3.1). Mỗi kỹ thuật thêm là thêm độ trễ, thêm thành phần vận hành, thêm chỗ hỏng.</div>`,
+    why: {
+      c: 'Phân loại câu sai theo điểm hỏng trước, rồi bật kỹ thuật rẻ nhất cho nhóm lỗi lớn nhất (README §3.1). Hybrid + RRF và metadata filter gần như miễn phí lúc query; rerank thêm một lần gọi; decomposition chỉ bật cho câu nhiều bước qua routing; grounded prompt gần như không tốn gì.',
+      s: 'Bật mọi kỹ thuật cho mọi câu: pipeline có HyDE, multi-query, rerank, contextual và GraphRAG cùng lúc rất khó debug (README §3.1). Bỏ RAG, nhét cả kho vào prompt: xem Bài 2. Đổi embedding model to hơn: không sửa được mã đơn SV-4821 hay bản 2025, vì vấn đề không nằm ở chất lượng embedding.',
+      p: 'Cần tập eval có nhãn đoạn đúng cho từng câu, chia theo loại câu hỏi (README §3.5). Metadata ngày hiệu lực phải được gắn lúc index. Decomposition thêm một lần gọi LLM trên đường găng; rerank thêm độ trễ tăng theo số candidate.'
+    },
+    deep: [
+      {
+        q: 'RAG cơ bản đã lấy đúng loại tài liệu (đơn hàng). Sao vẫn trả lời theo đơn SV-4812 khi khách hỏi SV-4821?',
+        a: `<p>Dense retrieval so <b>ý nghĩa</b>. Với embedding, "SV-4821" và "SV-4812" là hai chuỗi gần như giống nhau: cùng tiền tố, cùng bốn chữ số. Sáu đoạn đơn hàng đều có cùng dạng "Đơn SV-xxxx: sản phẩm, trạng thái", nên về ý nghĩa chúng giống nhau gần như hoàn toàn. Dense không có tín hiệu nào để kéo đúng đơn lên; đơn nào đứng trên là do may.</p>
+<p>Trong lab, dense được giả lập bằng "trùng khái niệm gán tay": câu hỏi và cả sáu đơn có cùng hai khái niệm "đơn hàng, trạng thái đơn", nên cả sáu được 1,00 điểm, hoà nhau, và SV-4821 tình cờ đứng thứ 6. Mã đơn không phải khái niệm. BM25 thì ngược lại: nó đếm <b>chữ</b>. Từ "sv-4821" chỉ có trong một chunk, nên độ hiếm (IDF) rất cao. Hình dưới tính hạng của đoạn SV-4821 ở hai bảng xếp hạng.</p>`,
+        viz(box) {
+          const q = QS[0], terms = qTerms(q.q), ids = CH.map((_, i) => i);
+          const dense = rankBy(ids, (i) => cos(q.c, CH[i].c)), sparse = rankBy(ids, (i) => bm25(terms, i));
+          const gi = CH.findIndex((c) => c.id === 'o4821');
+          const dr = dense.findIndex((x) => x.i === gi) + 1, sr = sparse.findIndex((x) => x.i === gi) + 1;
+          const rows = dense.slice(0, 6).map((x, r) => `<tr${CH[x.i].id === 'o4821' ? ' class="cur"' : ''}><td>${r + 1}</td><td>${esc(CH[x.i].t.slice(0, 46))}…</td><td class="mono">${x.s.toFixed(2)}</td></tr>`).join('');
+          const rows2 = sparse.slice(0, 6).map((x, r) => `<tr${CH[x.i].id === 'o4821' ? ' class="cur"' : ''}><td>${r + 1}</td><td>${esc(CH[x.i].t.slice(0, 46))}…</td><td class="mono">${x.s.toFixed(2)}</td></tr>`).join('');
+          box.append(el('div', { class: 'cols' }, [
+            el('div', { html: `<h4>Dense <small>cosine khái niệm</small></h4><table>${rows}</table>` }),
+            el('div', { html: `<h4>BM25 <small>tính trên chữ</small></h4><table>${rows2}</table>` })]),
+          el('div', { class: 'stat', html: `<span>Hạng của SV-4821 ở dense: <b class="${dr > N_POOL ? 'bad' : 'ok'}">${dr}</b></span><span>Ở BM25: <b class="ok">${sr}</b></span><span>IDF của "sv-4821": <b>${idf('sv-4821').toFixed(2)}</b>, của "đơn": <b>${idf('đơn').toFixed(2)}</b></span>` }),
+          el('div', { class: 'cap', text: `Cột dense: sáu đơn cùng điểm 1,00, thứ tự giữa chúng chỉ là thứ tự trong index. Hạng ${dr} nghĩa là nằm ngoài ${N_POOL} candidate. IDF cao = từ hiếm: "sv-4821" chỉ có trong 1 chunk, "đơn" có trong 6. BM25 dùng k1 = 1,2, b = 0,75 (giá trị phổ biến, không lấy từ README), tách từ theo âm tiết.` }));
+        },
+        take: 'Mã, SKU, số hiệu là chỗ embedding yếu và BM25 mạnh. README Tra cứu nhanh: đáp án có trong corpus mà không vào top-k thì thử hybrid trước.'
+      },
+      {
+        q: 'Bật hybrid xong, SV-4821 đã vào candidate. Sao có lúc vẫn chưa vào context?',
+        a: `<p>RRF trộn hai bảng xếp hạng bằng công thức 1/(60 + hạng), cộng trên mọi bảng (README §2.1). Đoạn SV-4821 đứng đầu BM25 nhưng đứng thấp ở dense. Các đơn SV-4128, SV-8421, SV-4281 đứng cao ở cả hai bảng: dense xếp chúng ngay đầu (hoà điểm), BM25 xếp chúng hạng 2–4 vì có chữ "đơn", "giao", "đã". Cộng lại, chúng vượt SV-4821.</p>
+<p>Hằng số 60 làm khoảng cách giữa các hạng rất nhỏ: hạng 1 được 0,0164, hạng 5 được 0,0154. Ví dụ: hạng 1 + hạng 6 = 1/61 + 1/66 ≈ 0,0315, thua hạng 2 + hạng 4 = 1/62 + 1/64 ≈ 0,0318. Đứng đầu một bảng chưa chắc thắng. Cormack và cộng sự cố định k = 60 và viết rằng lựa chọn không quan trọng lắm [14].</p>`,
+        viz(box) {
+          const r = run(QS[0], Object.assign(off(), { hybrid: true }));
+          const rows = r.pool.map((id) => { const i = CH.findIndex((c) => c.id === id), f = r.info.get(i);
+            return `<tr${id === 'o4821' ? ' class="cur"' : ''}><td>${esc(CH[i].t.slice(0, 30))}…</td><td class="mono">${f.dr || '-'}</td><td class="mono">${f.sr || '-'}</td><td class="mono">${f.dr ? '1/' + (60 + f.dr) : '0'} + ${f.sr ? '1/' + (60 + f.sr) : '0'}</td><td class="mono">${f.fs.toFixed(4)}</td><td>${r.picked.includes(id) ? '<b class="ok">vào</b>' : '<span class="bad">bị cắt</span>'}</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Đoạn</th><th>Hạng dense</th><th>Hạng BM25</th><th>RRF</th><th>Điểm</th><th>Top-${K_CTX}</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: 'Tính trực tiếp từ hai bảng xếp hạng của câu hỏi SV-4821, chỉ bật hybrid.' }));
+        },
+        take: 'Hybrid giải quyết "không vào top-N". "Vào top-N nhưng rơi khỏi top-k" là việc của rerank: đúng hai dòng đầu của bảng Tra cứu nhanh.'
+      },
+      {
+        q: 'Vậy rerank là đủ? Bật rerank mà tắt hybrid thì sao?',
+        a: `<p>Không đủ. Reranker là cross-encoder: đọc câu hỏi và từng đoạn cùng lúc nên chính xác hơn bi-encoder. Nhưng nó đắt, không index trước được, nên chỉ chạy trên N candidate mà retrieval đã lấy về (README §2.2). Đoạn không nằm trong N candidate thì reranker không bao giờ thấy.</p>
+<p>Thử ở hình chính: chọn câu SV-4821, chỉ bật Rerank. Pipeline báo FP2. Đây đúng là trường hợp B của README §1.2: Recall@50 bằng 0,50 thì sửa reranker không giúp được gì, vì một nửa số đáp án chưa bao giờ tới được reranker.</p>
+<p>Trong lab, reranker được giả lập: điểm = 0,3 × trùng khái niệm + 0,7 × tỉ lệ từ khoá của câu hỏi (có trọng số IDF) xuất hiện nguyên văn trong đoạn. Cross-encoder thật học điều này từ dữ liệu, không có công thức.</p>`,
+        take: 'Đo Recall@N trước khi mua reranker. Thí nghiệm của Anthropic: thêm rerank (150 candidate, giữ 20) giảm tỉ lệ retrieval thất bại từ 2,9% xuống 1,9%, trên nền đã có contextual embedding và BM25 [21].'
+      },
+      {
+        q: 'Câu đổi trả laptop: bật hybrid, bật rerank, vẫn ra "15 ngày". Sao kỹ thuật mạnh hơn lại không giúp?',
+        a: `<p>Vì retrieval không sai. Cả bản 2025 ("15 ngày") lẫn bản 2026 ("7 ngày") đều thật sự trả lời câu hỏi. Bản 2025 còn viết "laptop mua online", khớp chữ với câu hỏi hơn. Mọi tầng xếp hạng đều đẩy nó lên, kể cả reranker. Model thấy hai đoạn mâu thuẫn và chọn đoạn đứng đầu.</p>
+<p>Thứ còn thiếu là một thông tin không nằm trong chữ: <b>ngày hiệu lực</b>. README §2.6: gắn thuộc tính có cấu trúc khi index (ngày hiệu lực, phiên bản...) và lọc cứng trong truy vấn. README §3.6 xếp đúng triệu chứng này: "Chính sách cũ cạnh tranh với chính sách mới", nguyên nhân "thiếu metadata ngày hiệu lực".</p>
+<p>Một chi tiết vận hành: filter "lấy bản mới nhất" là filter do hệ thống tự thêm. Nếu nó trả 0 kết quả, được phép nới (bỏ filter) nhưng phải cho người dùng thấy. Filter do người dùng đặt thì không được nới.</p>`,
+        take: 'Có loại lỗi mà tăng chất lượng xếp hạng không bao giờ sửa được. Phiên bản và thời gian là metadata, không phải ngữ nghĩa.'
+      },
+      {
+        q: 'Câu quà tặng Galaxy S30: sao một query không đủ, phải tách thành ba?',
+        a: `<p>Đáp án nằm ở ba đoạn nối nhau: mô tả S30 nói Buds Lite là quà tặng → chính sách nói quà tặng đổi trả theo máy chính → chính sách điện thoại nói 7 ngày. Câu hỏi gốc nhắc "tai nghe" và "đổi trả", nên đoạn khớp nhất là "Tai nghe đổi trả 15 ngày". Đó là bẫy: Buds Lite là quà, không tính như tai nghe mua riêng.</p>
+<p>Decomposition dùng một lần gọi LLM tách câu thành câu con, mỗi câu con retrieve riêng, rồi trộn bằng RRF. Hình dưới chạy pipeline với và không có decomposition, đếm số đoạn cần thiết lọt vào context.</p>`,
+        viz(box) {
+          const q = QS[2];
+          const a = run(q, off()), b = run(q, Object.assign(off(), { decomp: true }));
+          const line = (r, lbl) => `<tr><td>${lbl}</td><td class="mono">${r.per.length}</td><td>${r.ctx.map((id) => q.need.includes(id) ? '<b class="ok">' + id + '</b>' : q.traps.some(([t]) => t === id) ? '<b style="color:var(--warn)">' + id + '</b>' : id).join(', ')}</td><td class="mono">${q.need.filter((id) => r.ctx.includes(id)).length}/${q.need.length}</td><td>${r.ok ? '<b class="ok">đúng</b>' : '<b class="bad">sai</b>'}</td></tr>`;
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Cấu hình</th><th>Số query</th><th>Context</th><th>Đoạn cần</th><th>Kết quả</th></tr>${line(a, 'Một query')}${line(b, 'Decomposition')}</table>` }),
+            el('div', { class: 'cap', text: 'Xanh: đoạn cần cho đáp án (s30, r26d, r26b). Cam: bẫy "tai nghe 15 ngày". Câu con được viết sẵn trong lab, thực tế do LLM sinh.' }));
+        },
+        take: 'Câu so sánh hoặc nhiều bước cần nhiều lần retrieve. Với câu mà bước sau phụ thuộc kết quả bước trước, IRCoT với GPT-3 tăng tới 21 điểm recall và 15 điểm QA so với retrieve một lần (README §2.1). Cái giá: một lần gọi LLM nằm trên đường găng.'
+      },
+      {
+        q: 'Câu bảng PDF: bật hybrid thì hàng Z14 đã vào context, sao bot lại trả lời "24 tháng"?',
+        a: `<p>Chunker chia Bảng 3 theo số token. Mảnh đầu có caption, header và hàng Galaxy S30. Mảnh sau chỉ còn <code>| ZenBook Z14 | 24 tháng | 12 tháng | 12 tháng |</code>, không có dòng header. README §2.7: chunk kiểu này vô nghĩa với cả embedding lẫn model. Model không biết số nào là cột Pin, nên lấy số đầu tiên (24, thật ra là cột Thân máy).</p>
+<p>Còn ở RAG cơ bản, bot nói "12 tháng": trùng đáp án, nhưng lab vẫn chấm <b>sai</b>. Con số đó lấy từ đoạn bảo hành chung, đoạn không nhắc gì tới pin Z14. Đúng do may: nếu bảng ghi pin 6 tháng, bot vẫn nói 12. Eval chấm theo đoạn nguồn, không chỉ theo con số.</p>
+<p>Đây là lúc Recall tăng mà độ đúng không tăng: lỗi đã chuyển từ tầng retrieval (FP2) sang tầng ghép context (FP4). Hai cách sửa: chia bảng theo dòng và lặp header trong mọi chunk (hàm <code>split_table</code> ở README §2.7), hoặc parent–child: khớp mảnh nào thì đưa cả bảng (README §2.4).</p>`,
+        viz(box) {
+          const q = QS[3];
+          const cfgs = [['RAG cơ bản', off()], ['+ Hybrid', Object.assign(off(), { hybrid: true })], ['+ Parent doc', Object.assign(off(), { parent: true })], ['+ cả hai', Object.assign(off(), { hybrid: true, parent: true })]];
+          const rows = cfgs.map(([lbl, c]) => { const r = run(q, c); return `<tr><td>${lbl}</td><td>${r.ctx.includes('t2') ? '<b class="ok">có</b>' : 'không'}</td><td>${r.fp || '-'}</td><td>${esc(r.text)}</td><td class="mono">${tokEst(r.ctx)}</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Cấu hình</th><th>Hàng Z14 trong context</th><th>Điểm hỏng</th><th>Bot trả lời</th><th>Token context</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: 'Token context ước lượng thô bằng số ký tự / 4 (cost-optimization §2.1 đo 49 từ tiếng Việt ≈ 56 token với o200k_base).' }));
+        },
+        take: 'Mỗi tầng có metric riêng. Recall của retrieval tăng không chứng minh câu trả lời đúng hơn; phải đo cả tầng context (README §3.5, bước 3).'
+      },
+      {
+        q: 'Câu xe máy điện: corpus không có đáp án, sao bot vẫn trả lời "có"?',
+        a: `<p>Retrieval luôn trả về k đoạn, kể cả khi không đoạn nào liên quan. Đoạn gần nhất là điều kiện trả góp 0%. Prompt không cho phép từ chối, nên model ghép "trả góp 0%" vào câu hỏi và trả lời "có". Đây là FP1 Missing Content: hệ thống trả lời thay vì nói không biết (README §1.1).</p>
+<p>Sửa ở tầng generation, gần như không tốn gì: prompt cho phép "không có trong tài liệu", và bắt trích dẫn. Với Claude, Citations API trả <code>cited_text</code> là nguyên văn đoạn được trích, không tính vào output token (README §2.8).</p>
+<p>Nhưng grounded không phải thuốc vạn năng. Thử câu SV-4821 với chỉ Grounded bật: bot trả lời "chưa giao, đang chờ thanh toán" kèm trích dẫn tới đoạn SV-4812. Trích dẫn có thật, câu trả lời vẫn sai. README §2.8: quote matching bắt được trích dẫn bịa, không bắt được trích dẫn có thật nhưng không ủng hộ khẳng định.</p>`,
+        take: 'Eval phải có nhóm câu cố ý không có đáp án (README §3.5) để đo tỉ lệ từ chối đúng. Không có nhóm này thì FP1 vô hình.'
+      },
+      {
+        q: 'Sao không bật hết mọi kỹ thuật cho chắc?',
+        a: `<p>Ba lý do. Mỗi kỹ thuật thêm độ trễ hoặc tiền: decomposition thêm một lần gọi LLM trước khi retrieval bắt đầu (README §2.1). Parent doc làm context dài hơn. Và pipeline bật mọi thứ rất khó debug khi một câu sai (README §3.1).</p>
+<p>Hình dưới chạy cả 64 tổ hợp bật/tắt trên sáu câu, lấy số câu đúng và độ trễ giả định. Với mỗi mức độ đúng, chỉ giữ cấu hình nhanh nhất. Trong corpus này, muốn đúng cả sáu thì phải bật cả sáu, vì mỗi câu hỏng ở một tầng khác nhau. Nhìn bước cuối: từ 5/6 lên 6/6 là thêm decomposition, tốn thêm độ trễ cho <b>mọi</b> câu để sửa đúng một câu.</p>`,
+        viz(box) {
+          const pts = ALL.map((c) => ({ c, acc: QS.filter((q) => run(q, c).ok).length, lat: latency(c) }));
+          const best = {};
+          pts.forEach((p) => { if (!best[p.acc] || p.lat < best[p.acc].lat || (p.lat === best[p.acc].lat && nOn(p.c) < nOn(best[p.acc].c))) best[p.acc] = p; });
+          const allOn = pts[63];
+          const rows = Object.keys(best).sort((a, b) => a - b).map((k) => `<tr${+k === QS.length ? ' class="cur"' : ''}><td class="mono">${k}/${QS.length}</td><td class="mono">${(best[k].lat / 1000).toFixed(2)} s</td><td>${cfgLabel(best[k].c)}</td></tr>`).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Câu đúng</th><th>Độ trễ</th><th>Cấu hình nhanh nhất đạt mức đó</th></tr>${rows}</table>` }),
+            el('div', { class: 'stat', html: `<span>Bật cả 6: <b>${allOn.acc}/${QS.length}</b> câu đúng, <b>${(allOn.lat / 1000).toFixed(2)} s</b></span><span>Cấu hình có ≥ ${QS.length - 1} câu đúng: <b>${pts.filter((p) => p.acc >= QS.length - 1).length}</b>/64</span>` }),
+            el('div', { class: 'cap', text: `Độ trễ là số giả định: nền ${LAT.base} ms (embed, search, generation), decomposition +${LAT.decomp} ms, BM25 +${LAT.hybrid} ms, rerank +${LAT.rerank} ms. README §3.4 chỉ ghi định tính ("vài chục ms", "thêm một lần gọi LLM").` }));
+        },
+        take: 'Decomposition là kỹ thuật đắt nhất về độ trễ và chỉ cần cho một câu trong sáu. README §1.4: routing, phân loại rẻ trước, chỉ bật kỹ thuật đắt cho nhóm câu cần.'
+      },
+      {
+        q: 'Làm sao biết câu nào hỏng ở tầng nào mà không phải đọc từng câu trả lời?',
+        a: `<p>Đo theo thứ tự tầng, mỗi tầng một con số (README §3.5):</p>
+<ol><li>Retrieval: Recall@N trên câu hỏi có nhãn đoạn đúng. Không cần LLM.</li><li>Rerank: nDCG@k, Recall@k.</li><li>Context: đoạn đúng có thật sự nằm trong prompt cuối cùng không (bắt FP3).</li><li>Câu trả lời: độ đúng, faithfulness, trích dẫn qua quote matching.</li><li>Nhóm không có đáp án và nhóm quyền.</li><li>Chi phí và độ trễ p95 cho từng nhóm.</li></ol>
+<p>Bước 1 và 2 rẻ, xác định, chạy trong CI mỗi lần đổi chunking hay embedding. Lab này làm đúng việc đó: mỗi câu có nhãn đoạn đúng (<code>need</code>), pipeline tự phân loại điểm hỏng bằng cách hỏi lần lượt "có trong N candidate không, có trong context không, có nguyên vẹn không". Bài 1 làm việc này trên một tập trace lớn hơn.</p>`,
+        take: 'Nhãn đoạn đúng cho từng câu eval là thứ đắt nhất phải làm, và là thứ khiến mọi quyết định ở trên thành đo được thay vì đoán.'
+      }
+    ],
+    poc: {
+      goal: "Cả pipeline chạy thật trên 30 đoạn ShopViet (embedding và cross-encoder trên CPU, BM25, RRF, lọc ngày hiệu lực): 5 câu hỏi × 6 cấu hình, đếm đoạn cần có trong top-3. Câu con ở cấu hình D là <b>chuỗi viết tay</b>, không phải output LLM; POC đo tầng retrieval, không sinh câu trả lời.",
+      file: "docs/advanced-rag/pocs/00_workflow.py",
+      run: "uv run docs/advanced-rag/pocs/00_workflow.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ. Phần tuỳ chọn gọi <code>claude-haiku-5-5</code> 5 lần (&lt; $0,001) nếu có <code>ANTHROPIC_API_KEY</code> trong <code>docs/advanced-rag/pocs/.env</code>; không có key thì bỏ qua.",
+      output: "Corpus: 30 đoạn ShopViet (common.py). Dense: paraphrase-multilingual-MiniLM-L12-v2 (thật, CPU). Rerank: cross-encoder mmarco-mMiniLMv2 (thật, CPU).\nCâu con ở cấu hình D là chuỗi VIẾT TAY (giả làm output LLM). Không gọi LLM sinh câu trả lời: đo tầng retrieval.\n\n== Đoạn cần có trong top-3 (đếm thật trên kết quả xếp hạng) ==\nCâu hỏi                                       A     B     C     D     E     F\n--------------------------------------------  ----  ----  ----  ----  ----  ----\nĐơn SV-4821 giao ngày nào?                    1/1   1/1   1/1   1/1   1/1   1/1\nLaptop mua online được đổi trả trong mấy ngà  0/1   0/1   1/1   1/1   1/1   1/1\nTai nghe tặng kèm Galaxy S30 được đổi trả tr  1/3   1/3   1/3   3/3   1/3   3/3\nPin ZenBook Z14 bảo hành mấy tháng?           1/1   1/1   1/1   1/1   1/1   1/1\nGiao hàng tới Đà Lạt mất mấy ngày?            1/1   1/1   1/1   1/1   1/1   1/1\nRecall@3 trung bình                           0.67  0.67  0.87  1.00  0.87  1.00\nCột: A dense top-3 | B + BM25, RRF | C + lọc hiệu lực | D + tách câu | E + rerank câu gốc | F + rerank từng câu con\n\n== Hạng của đoạn đúng trong từng danh sách (1 = đầu) ==\nCâu hỏi                                       cần    dense  BM25  RRF  dense top-1  RRF top-1\n--------------------------------------------  -----  -----  ----  ---  -----------  ---------\nĐơn SV-4821 giao ngày nào?                    o4821  3      1     2    o4128        o4128\nLaptop mua online được đổi trả trong mấy ngà  r26    4      4     4    r25          r25\n\n== Top-3 của từng câu: A so với F ==\nĐơn SV-4821 giao ngày nào?\n   A: ['o4128', 'o4812', 'o4821']\n   F: ['o4821', 'o4128', 'ship2']   (cần ['o4821'])\nLaptop mua online được đổi trả trong mấy ngày?\n   A: ['r25', 'r27', 'r24']\n   F: ['r26', 'w26r', 'w26']   (cần ['r26'])\nTai nghe tặng kèm Galaxy S30 được đổi trả trong bao lâu?\n   A: ['o4812', 't_hdr', 's30']\n   F: ['s30', 'gift', 'rph']   (cần ['s30', 'gift', 'rph'])\nPin ZenBook Z14 bảo hành mấy tháng?\n   A: ['t_z14', 'o4821', 'z14']\n   F: ['t_z14', 'o4821', 'o2481']   (cần ['t_z14'])\nGiao hàng tới Đà Lạt mất mấy ngày?\n   A: ['ship2', 'ship1', 't_z14']\n   F: ['ship2', 'inst2', 'care3']   (cần ['ship2'])\n\nĐoạn bảng lấy về cho câu pin Z14: '| ZenBook Z14 | 24 tháng | 12 tháng | 12 tháng |'\n   không có header cột → model không biết 12 tháng là cột Thân máy hay Pin (sửa ở Lab 06: lặp header).\n\n== Tuỳ chọn: sinh câu trả lời bằng model thật ==\nBỏ qua: không có ANTHROPIC_API_KEY trong docs/advanced-rag/pocs/.env (chép .env.example rồi điền key; ~5 lần gọi Haiku 5.5 < $0,001).\n\nRút ra: dense xếp đơn SV-4128 trên SV-4821 (mã gần giống), BM25 khớp đúng mã, RRF mới kéo lên hạng 2, rerank lên hạng 1;\nbản 2025 thắng về câu chữ cho tới khi lọc ngày hiệu lực;\ntách câu kéo đủ 3 mảnh câu nhiều bước, nhưng rerank lại theo câu GỐC làm rơi 2 mảnh: rerank phải chấm theo từng câu con.\nCâu bảng Z14 'đúng' theo Recall nhưng mảnh mất header: Recall cao chưa chắc trả lời đúng. Context 3 đoạn câu nhiều bước ~87 token (o200k).",
+      measured: true,
+      read: ["Bảng đầu: mỗi cột bật thêm một kỹ thuật. Câu đổi trả laptop chỉ đúng từ cột C (lọc ngày hiệu lực); câu quà tặng S30 chỉ đủ 3/3 khi tách câu (D).", "Cột E so với F: rerank lại theo câu <b>gốc</b> làm rơi 2 trong 3 mảnh mà tách câu vừa kéo về (Recall@3 1,00 → 0,87); rerank theo từng câu con giữ 1,00.", "Bảng hạng: dense xếp đơn SV-4128 đầu, SV-4821 hạng 3; BM25 hạng 1; RRF mới hạng 2. Bản 2025 đứng đầu cả dense lẫn BM25.", "Câu pin Z14 'đúng' theo Recall nhưng mảnh bảng không có header: Recall cao chưa chắc trả lời đúng (sửa ở Lab 06)."]
+    },
+    mount(stage) {
+      const cfg = off();
+      let qi = 0;
+      const pipe = el('svg', { class: 'canvas', viewBox: '0 0 600 236', role: 'img', 'aria-label': 'Sáu tầng của pipeline RAG nâng cao' });
+      const qline = el('p', { class: 'mono', style: 'margin:4px 0 10px;font-size:13px' });
+      const poolBox = el('div', { class: 'tbl' }), ansBox = el('div'), flags = el('div'), evalBox = el('div', { class: 'tbl' }), evalStat = el('div', { class: 'stat' });
+      const STG = ['1. Query', '2. Retrieve', '3. Rerank', '4. Ghép context', '5. Trả lời', '6. Eval'];
+
+      function drawPipe(r, ev) {
+        const kids = [];
+        const lines = [
+          [cfg.decomp ? `${r.per.length} câu con` : 'câu gốc', cfg.decomp ? '+1 lần gọi LLM' : 'không viết lại'],
+          [cfg.hybrid ? 'dense + BM25 (RRF)' : 'chỉ dense', `${N_POOL} candidate${cfg.filter ? ', lọc hiệu lực' : ''}`],
+          [cfg.rerank ? 'cross-encoder' : 'giữ thứ tự retrieval', `giữ top-${K_CTX}`],
+          [cfg.parent ? 'mở rộng ra đoạn cha' : 'chunk rời', `${r.ctx.length} đoạn, ~${tokEst(r.ctx)} token`],
+          [r.refused ? 'từ chối' : r.ok ? 'đúng' : 'sai', r.cites.length ? 'trích ' + r.cites.join(', ') : 'không trích dẫn'],
+          [`${ev.acc}/${QS.length} câu đúng`, `~${(latency(cfg) / 1000).toFixed(2)} s (giả định)`]
+        ];
+        STG.forEach((h, i) => {
+          const x = (i % 3) * 200 + 4, y = i < 3 ? 8 : 128, bad = r.stage === i, good = i === 4 && r.ok;
+          const col = bad ? 'var(--bad)' : good ? 'var(--ok)' : i === 5 ? 'var(--accent)' : 'var(--line)';
+          kids.push(el('rect', { x, y, width: 180, height: 96, rx: 8, fill: 'var(--panel)', stroke: col, 'stroke-width': bad || good ? 3 : 2 }),
+            el('text', { x: x + 10, y: y + 26, text: h, style: 'font-weight:700;font-size:15px;fill:var(--ink)' }),
+            el('text', { x: x + 10, y: y + 54, text: lines[i][0], style: 'font-size:12.5px;fill:var(--ink)' }),
+            el('text', { x: x + 10, y: y + 76, text: lines[i][1], style: 'font-size:12px;fill:var(--mute)' }));
+          if (bad) kids.push(el('text', { x: x + 170, y: y + 26, 'text-anchor': 'end', text: r.fp.split(' ')[0], style: 'font-size:12px;font-weight:700;fill:var(--bad)' }));
+          if (i % 3 < 2) kids.push(el('path', { d: `M${x + 182} ${y + 48} L${x + 198} ${y + 48}`, stroke: 'var(--mute)', 'stroke-width': 2 }));
+        });
+        kids.push(el('path', { d: 'M494 106 L494 116 L94 116 L94 126', fill: 'none', stroke: 'var(--mute)', 'stroke-width': 2 }));
+        pipe.replaceChildren(...kids);
+      }
+
+      function drawPool(r) {
+        const q = r.q;
+        const rows = r.order.map((id) => {
+          const i = CH.findIndex((c) => c.id === id), f = r.info.get(i), c = CH[i];
+          const gold = q.need.includes(id) || (q.intact && c.p === q.intact && cfg.parent), trap = q.traps.some(([t]) => t === id) && !gold;
+          const st = r.picked.includes(id) ? '<b class="ok">vào context</b>' : '<span class="bad">bị cắt</span>';
+          const sty = gold ? 'border-left:4px solid var(--ok)' : trap ? 'border-left:4px solid var(--warn)' : '';
+          return `<tr><td style="${sty}" class="mono">${id}</td><td><small style="color:var(--mute)">${esc(DOCS[c.d].name)}${DOCS[c.d].old ? ' (hết hiệu lực)' : ''}</small><br>${esc(c.t)}</td><td class="mono">${f.dr || '-'}</td><td class="mono">${cfg.hybrid ? (f.sr || '-') : 'tắt'}</td><td class="mono">${cfg.rerank ? f.rs.toFixed(2) : 'tắt'}</td><td>${st}</td></tr>`;
+        }).join('');
+        const extra = r.ctx.filter((id) => !r.picked.includes(id));
+        const miss = q.need.filter((id) => !r.pool.includes(id));
+        poolBox.innerHTML = `<table><tr><th>Id</th><th>Đoạn</th><th>Hạng dense</th><th>Hạng BM25</th><th>Rerank</th><th>Top-${K_CTX}</th></tr>${rows}</table>` +
+          (extra.length ? `<p class="hint">Parent doc thêm vào context: <b>${extra.join(', ')}</b> (cùng đoạn cha với mảnh đã chọn).</p>` : '') +
+          (miss.length ? `<p class="hint">Đoạn đúng <b class="bad">${miss.join(', ')}</b> không có trong ${N_POOL} candidate.</p>` : '');
+      }
+
+      function render() {
+        const q = QS[qi], r = run(q, cfg);
+        const evs = QS.map((x) => run(x, cfg)), base = QS.map((x) => run(x, off()));
+        const ev = { acc: evs.filter((x) => x.ok).length };
+        qline.textContent = 'Khách hỏi: "' + q.q + '"';
+        drawPipe(r, ev); drawPool(r);
+        const fix = minimalFix(q);
+        const single = TOG.filter(([k]) => !cfg[k]).filter(([k]) => run(q, Object.assign({}, cfg, { [k]: true })).ok).map(([, l]) => l);
+        ansBox.replaceChildren(el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${r.ok ? 'ok' : r.refused ? 'warn' : 'bad'});border-radius:6px;padding:10px 12px;background:var(--bg);margin-top:12px`, html:
+          `<div style="font-size:12px;color:var(--mute)">Bot trả lời ${r.ok ? '<b class="ok">đúng</b>' : r.refused ? '<b style="color:var(--warn)">từ chối (an toàn nhưng chưa trả lời được)</b>' : '<b class="bad">sai</b>'}</div><div style="margin:4px 0">${esc(r.text)}${r.cites.length ? ' <span class="mono" style="font-size:12px;color:var(--accent)">[' + r.cites.join('] [') + ']</span>' : ''}</div>` +
+          (r.fp ? `<div style="font-size:13px"><b class="bad">${esc(r.fp)}</b> ở tầng <b>${STG[r.stage]}</b>. ${esc(r.why)}</div>` : '') +
+          `<div style="font-size:13px;margin-top:4px;color:var(--mute)">Tổ hợp nhỏ nhất sửa được câu này (vét cạn 64 cấu hình): <b style="color:var(--ink)">${fix ? esc(cfgLabel(fix)) : 'không có'}</b>${!r.ok && single.length ? '. Từ cấu hình hiện tại, bật thêm một trong: <b style="color:var(--ink)">' + single.map(esc).join('; ') + '</b>' : ''}.</div>` }));
+
+        const f = [];
+        if (cfg.rerank && r.fp.startsWith('FP2')) f.push(flag('bad', `<b>Rerank đang bật mà câu vẫn sai ở tầng retrieval.</b> Đoạn đúng không nằm trong ${N_POOL} candidate, nên reranker không bao giờ đọc nó. Không có nghĩa reranker kém: nó chỉ sắp lại những gì được đưa tới.<br>Trong hệ thống thật: đo Recall@N trước; Recall@N thấp thì sửa retrieval (hybrid, chunk), không mua reranker tốt hơn.`));
+        if (q.id === 'tbl' && r.ctx.includes('t2') && !r.ok) f.push(flag('warn', `<b>Recall tăng, câu trả lời vẫn sai.</b> Hàng ZenBook Z14 đã vào context nhưng là mảnh bảng không header. Lỗi chuyển từ FP2 sang FP4, không biến mất.<br>Trong hệ thống thật: chia bảng theo dòng và lặp header (README §2.7), hoặc parent–child; đo riêng "đoạn đúng có trong prompt" và "câu trả lời đúng".`));
+        if (cfg.ground && !r.ok && r.cites.length) f.push(flag('bad', `<b>Có trích dẫn mà vẫn sai.</b> Bot trích đoạn ${r.cites.join(', ')}, đoạn đó có thật trong context, nhưng không trả lời đúng câu hỏi. Grounding chỉ đảm bảo câu trả lời dựa trên context; context sai thì câu trả lời sai có trích dẫn.<br>Trong hệ thống thật: quote matching bắt trích dẫn bịa, không bắt được trích dẫn đúng nguồn sai ý; faithfulness cần LLM judge hoặc người đọc (README §2.8).`));
+        if (q.conflict && cfg.rerank && !cfg.filter && !r.ok) f.push(flag('warn', '<b>Rerank làm bản cũ đứng đầu chắc hơn.</b> Bản 2025 viết "laptop mua online", khớp chữ với câu hỏi hơn bản 2026. Reranker đúng về độ liên quan, sai về thời gian.<br>Trong hệ thống thật: ngày hiệu lực là metadata, gắn lúc index và lọc trong truy vấn (README §2.6).'));
+        if (cfg.decomp && q.sub.length === 1) {
+          const nd = run(q, Object.assign({}, cfg, { decomp: false }));
+          if (nd.ok === r.ok) f.push(flag('warn', `<b>Decomposition không đổi kết quả câu này</b> (${r.ok ? 'đúng' : 'sai'} cả khi tắt), nhưng thêm ${LAT.decomp} ms giả định và một lần gọi LLM trên đường găng.<br>Trong hệ thống thật: routing như Adaptive-RAG (README §1.4), chỉ tách câu cho nhóm câu nhiều phần hoặc nhiều bước.`));
+        }
+        const broke = QS.filter((x, j) => base[j].ok && !evs[j].ok);
+        if (broke.length) f.push(flag('bad', `<b>Hồi quy:</b> ${broke.map((x) => esc(x.name)).join(', ')} đúng ở RAG cơ bản nhưng sai với cấu hình này.<br>Trong hệ thống thật: đo lại trên cả tập câu đang đúng mỗi khi bật kỹ thuật mới (README §3.1, bước 4).`));
+        if (r.ok && nOn(cfg) > nOn(fix || cfg) + 2) f.push(flag('ok', `Câu này đúng, nhưng chỉ cần ${fix ? esc(cfgLabel(fix)) : '...'}. ${nOn(cfg)} kỹ thuật đang bật; phần còn lại phục vụ câu khác hoặc không phục vụ câu nào. Xem bảng eval.`));
+        flags.replaceChildren(...f);
+
+        const lat = latency(cfg);
+        evalBox.innerHTML = '<table><tr><th>Câu</th><th>Kết quả</th><th>Đoạn cần trong context</th><th>Điểm hỏng</th></tr>' + QS.map((x, j) => {
+          const e = evs[j], need = x.need.length ? `${x.need.filter((id) => e.ctx.includes(id)).length}/${x.need.length}` : 'không có đáp án';
+          return `<tr${j === qi ? ' class="cur"' : ''}><td>${esc(x.name)}</td><td>${e.ok ? '<b class="ok">đúng</b>' : e.refused ? '<b style="color:var(--warn)">từ chối</b>' : '<b class="bad">sai</b>'}${base[j].ok !== e.ok ? ' <small>(' + (e.ok ? 'mới sửa' : 'hồi quy') + ')</small>' : ''}</td><td class="mono">${need}</td><td>${e.fp ? esc(e.fp) + ' · ' + STG[e.stage] : '-'}</td></tr>`;
+        }).join('') + '</table>';
+        const ans = QS.filter((x) => x.need.length);
+        const rec = ans.reduce((s, x) => { const e = evs[QS.indexOf(x)]; return s + x.need.filter((id) => e.ctx.includes(id)).length / x.need.length; }, 0) / ans.length;
+        evalStat.innerHTML = `<span>Câu đúng: <b>${ev.acc}/${QS.length}</b> (RAG cơ bản: ${base.filter((x) => x.ok).length}/${QS.length})</span><span>Recall đoạn cần trong context: <b>${(rec * 100).toFixed(0)}%</b></span><span>Gọi LLM thêm mỗi câu: <b>${cfg.decomp ? 1 : 0}</b></span><span>Độ trễ giả định: <b>${(lat / 1000).toFixed(2)} s</b> (cơ bản ${(LAT.base / 1000).toFixed(2)} s)</span>`;
+      }
+
+      const qS = select('Câu hỏi', QS.map((x, j) => [j, x.name]), 0, (v) => { qi = +v; render(); });
+      const groups = [0, 1, 2, 3, 4].map((s) => el('div', { style: 'display:flex;flex-direction:column;gap:2px;min-width:0' }, [el('b', { text: STG[s], style: 'font-size:12px;color:var(--mute)' }),
+        ...TOG.filter((t) => t[2] === s).map(([k, l]) => check(l, cfg[k], (v) => { cfg[k] = v; render(); }).node)]));
+      const reset = el('button', { text: 'Về RAG cơ bản', type: 'button', onclick: () => { TOG.forEach(([k]) => { cfg[k] = false; }); stage.querySelectorAll('input[type=checkbox]').forEach((i) => { i.checked = false; }); render(); } });
+      stage.append(el('div', { class: 'row' }, [qS.node, reset]), qline, pipe,
+        el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0' }, groups),
+        el('h4', { text: `Tập lấy về (N = ${N_POOL} candidate, thứ tự sau rerank nếu bật)`, style: 'margin:14px 0 4px' }), poolBox, ansBox, flags,
+        el('h4', { text: 'Eval: cả sáu câu với cấu hình hiện tại', style: 'margin:18px 0 4px' }), evalBox, evalStat,
+        el('p', { class: 'hint', text: `Corpus đồ chơi 22 chunk, viết tay cho lab; chỉ Bảng 3 bị chunker cắt làm hai mảnh. Dense được giả lập bằng cosine trên tập khái niệm gán tay cho mỗi đoạn và câu hỏi; BM25 tính thật trên chữ (k1 = 1,2, b = 0,75); RRF k = 60 (README §2.1); reranker giả lập bằng công thức nêu ở câu hỏi 3. Quy tắc trả lời: đủ đoạn cần thì đúng, thiếu thì dùng bẫy có trong context, grounded thì từ chối khi không có bẫy hợp lệ. Độ trễ là số giả định.` }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -66,6 +66,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Khi LLM tự quyết bước tiếp theo: workflow hay agent, các pattern, context và memory, multi-agent, sandbox, điều kiện dừng và ngân sách, human-in-the-loop, chạy dài, eval, chi phí và bảo mật.',
     parts: ['Workflow tổng hợp', 'Workflow hay agent', 'Các pattern workflow', 'Context và memory', 'Một agent nhiều tool và multi-agent', 'Chạy code, computer use, MCP và framework', 'Điều kiện dừng, ngân sách và duyệt', 'Chạy dài, observability và eval', 'Chi phí, bảo mật và failure modes']
   },
+  'advanced-rag': {
+    title: 'LLM - 14 - RAG nâng cao',
+    description: 'Khi retrieval cơ bản không đủ: điểm hỏng của pipeline, long context và agentic RAG, query rewriting, rerank, contextual retrieval, parent–child, GraphRAG, metadata, trích dẫn, cập nhật index và phân quyền.',
+    parts: ['Workflow tổng hợp', 'Các điểm hỏng của pipeline RAG', 'Long context và agentic RAG', 'Query rewriting, HyDE và decomposition', 'Rerank và contextual retrieval', 'Parent–child và GraphRAG', 'Metadata, đa phương thức và trích dẫn', 'Triệu chứng, cập nhật index và phân quyền', 'Độ trễ, chi phí, eval và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

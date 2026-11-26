@@ -1,0 +1,690 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-failure-points.html">← Lab trước</a><a href="03-query-rewriting.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const flag = (kind, html) => el('div', { style: `border-left:4px solid var(--${kind});background:color-mix(in srgb, var(--${kind}) 9%, var(--panel));padding:8px 12px;border-radius:0 6px 6px 0;margin-top:8px;font-size:13.5px`, html });
+  const check = (label, on, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = on; i.addEventListener('change', () => onChange(i.checked)); return { node: el('label', { class: 'ctl', style: 'font-size:13px' }, [i, label]), input: i }; };
+  const fT = (n) => n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 ? 2 : 0).replace('.', ',') + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n));
+  const usd = (x) => x >= 1000 ? '$' + Math.round(x).toLocaleString('en-US') : x >= 1 ? '$' + x.toFixed(2) : x >= 0.01 ? '$' + x.toFixed(3) : '$' + x.toFixed(5);
+  const sec = (s) => s >= 10 ? s.toFixed(0) + ' s' : s.toFixed(1) + ' s';
+
+  const M = {
+    sonnet: { name: 'Sonnet 5.5', in: 2, out: 10, cr: 0.10 },
+    haiku: { name: 'Haiku 5.5', in: 0.10, out: 0.50, cr: 0.01, long: { at: 100000, in: 0.50, out: 2.50, cr: 0.05 } },
+    opus: { name: 'Opus 5.5', in: 4, out: 20, cr: 0.20 },
+    fable: { name: 'Fable 5.1', in: 10, out: 50, cr: 0.25 }
+  };
+  const WINDOW = 1000000, WRITE_X = 1.25, TTL_MIN = 5;
+  const Q_TOK = 500, OUT_TOK = 300, K = 5, CHUNK = 400, RR_N = 50, RR_DOC = 300, RR_Q = 50, RR_PRICE = 0.05;
+  const PREFILL = 20000, CACHED_SPEEDUP = 10, GEN = 60, BASE_LAT = 0.3, RET_LAT = 0.25;
+  const tier = (m, prompt) => (m.long && prompt > m.long.at ? m.long : m);
+  const KBS = [20000, 50000, 99000, 101000, 150000, 200000, 350000, 600000, 1000000, 1500000, 3000000];
+  const QPD = [50, 200, 1000, 5000, 20000, 100000];
+  const UPD = [0, 1, 4, 24, 96];
+
+  function lcPlain(m, kb) {
+    const P = kb + Q_TOK, t = tier(m, P);
+    return { fits: P <= WINDOW, inTok: P, perQ: (P * t.in + OUT_TOK * t.out) / 1e6, ttft: BASE_LAT + P / PREFILL, t };
+  }
+  function lcCache(m, kb, qpd, upd) {
+    const P = kb + Q_TOK, t = tier(m, P);
+    const lam = qpd / (24 * 60 / TTL_MIN);
+    const writes = Math.min(qpd, qpd * Math.exp(-lam) + upd), reads = qpd - writes;
+    const day = (writes * (kb * t.in * WRITE_X + Q_TOK * t.in) + reads * (kb * t.cr + Q_TOK * t.in) + qpd * OUT_TOK * t.out) / 1e6;
+    const hit = qpd ? reads / qpd : 0;
+    const ttft = BASE_LAT + hit * (kb / (PREFILL * CACHED_SPEEDUP) + Q_TOK / PREFILL) + (1 - hit) * (P / PREFILL);
+    return { fits: P <= WINDOW, inTok: P, perQ: qpd ? day / qpd : 0, day, hit, writes, ttft, t };
+  }
+  function rag(m) {
+    const P = Q_TOK + K * CHUNK, t = tier(m, P);
+    const rr = (RR_Q * RR_N + RR_DOC * RR_N) * RR_PRICE / 1e6;
+    return { fits: true, inTok: P, perQ: (P * t.in + OUT_TOK * t.out) / 1e6 + rr, rr, ttft: BASE_LAT + RET_LAT + P / PREFILL, t };
+  }
+
+  const QT = {
+    easy: { name: 'Tra cứu một sự kiện', ex: 'Giao tới Đà Lạt mất mấy ngày?', facts: 1, found: [1, 1, 1, 1, 1, 1, 1, 1] },
+    hop: { name: 'Nhiều bước', ex: 'Tai nghe tặng kèm Galaxy S30 đổi trả bao lâu?', facts: 3, found: [2, 3, 3, 3, 3, 3, 3, 3] },
+    vague: { name: 'Query đầu tệ', ex: 'Cái tai nghe chống ồn mua tháng trước bị rè, giờ làm sao?', facts: 2, found: [0, 1, 2, 2, 2, 2, 2, 2] }
+  };
+  const ROUNDS_LOG = {
+    hop: ['search("tai nghe tặng kèm Galaxy S30 đổi trả") → s30, r26d (quà tặng theo máy chính)', 'search("Galaxy S30 điện thoại đổi trả bao lâu") → r26b (7 ngày)'],
+    vague: ['search("tai nghe bị rè") → đoạn hướng dẫn sử dụng, không liên quan', 'search("tai nghe chống ồn lỗi nhà sản xuất đổi trả") → r26c (15 ngày)', 'search("tai nghe lỗi sau 15 ngày bảo hành") → g1 (bảo hành 12 tháng)'],
+    easy: ['search("giao hàng Đà Lạt") → sh1 (2–3 ngày)']
+  };
+  const SYS = 1500, ROUND_OUT = 150, LLM_LAT = 1.2, SEARCH_LAT = 0.15, ROUTE_LAT = 0.3, ROUTE_IN = 300, ROUTE_OUT = 5;
+
+  function agentRun(type, maxR, stop) {
+    const q = QT[type];
+    let rounds = 0, found = 0, inTok = 0, outTok = 0;
+    for (let r = 1; r <= maxR; r++) {
+      rounds = r;
+      inTok += SYS + 60 + (r - 1) * (K * CHUNK + ROUND_OUT);
+      outTok += ROUND_OUT;
+      found = q.found[r - 1];
+      if (stop && found >= q.facts) break;
+    }
+    inTok += SYS + 60 + rounds * (K * CHUNK + ROUND_OUT);
+    outTok += OUT_TOK;
+    return { rounds, calls: rounds + 1, recall: found / q.facts, ok: found >= q.facts, inTok, outTok, lat: (rounds + 1) * LLM_LAT + rounds * SEARCH_LAT };
+  }
+  function fixedRun(type) {
+    const q = QT[type], found = q.found[0];
+    return { rounds: 1, calls: 1, recall: found / q.facts, ok: found >= q.facts, inTok: SYS + 60 + K * CHUNK, outTok: OUT_TOK, lat: LLM_LAT + SEARCH_LAT };
+  }
+  function strategy(kind, st) {
+    const mix = { easy: 1 - st.hard, hop: st.hard / 2, vague: st.hard / 2 };
+    const m = M.sonnet, h = M.haiku;
+    const acc = { recall: 0, ok: 0, calls: 0, inTok: 0, outTok: 0, lat: 0, cost: 0, wasted: 0, rounds: 0 };
+    Object.keys(QT).forEach((type) => {
+      const w = mix[type];
+      if (!w) return;
+      let outs;
+      if (kind === 'fixed') outs = [[1, fixedRun(type)]];
+      else if (kind === 'agent') outs = [[1, agentRun(type, st.maxR, st.stop)]];
+      else {
+        const right = st.router, toAgent = type === 'easy' ? 1 - right : right;
+        outs = [[toAgent, agentRun(type, st.maxR, st.stop)], [1 - toAgent, fixedRun(type)]];
+      }
+      outs.forEach(([p, r]) => {
+        if (!p) return;
+        const extraIn = kind === 'route' ? ROUTE_IN : 0, extraOut = kind === 'route' ? ROUTE_OUT : 0;
+        const cost = (r.inTok * m.in + r.outTok * m.out + extraIn * h.in + extraOut * h.out) / 1e6;
+        const need = QT[type].found.findIndex((f) => f >= QT[type].facts) + 1;
+        const W = w * p;
+        acc.recall += W * r.recall; acc.ok += W * (r.ok ? 1 : 0); acc.calls += W * (r.calls + (kind === 'route' ? 1 : 0));
+        acc.inTok += W * r.inTok; acc.outTok += W * r.outTok; acc.lat += W * (r.lat + (kind === 'route' ? ROUTE_LAT : 0)); acc.cost += W * cost;
+        acc.rounds += W * r.rounds; acc.wasted += W * Math.max(0, r.rounds - (need || r.rounds));
+      });
+    });
+    return acc;
+  }
+
+  return {
+    id: 'long-context-agentic', nav: '2. Long context, agentic', ref: '§1.3–1.4',
+    title: 'Kho tài liệu ShopViet vừa cửa sổ 1 triệu token, nhưng nhét cả kho vào mỗi câu hỏi đắt gấp hàng chục lần RAG, và để model tự tìm thì đắt thêm nữa',
+    hook: 'Phần 1: chỉnh kích thước kho, số câu hỏi mỗi ngày, số lần cập nhật kho và model; so tiền, độ trễ của nhét cả kho (có và không cache) với RAG. Phần 2: chạy vòng agentic trên hỗn hợp câu hỏi ShopViet, xem số lần gọi thêm đổi lấy bao nhiêu recall.',
+    terms: [
+      ['Long context', 'Đưa nguyên kho tài liệu vào prompt thay vì retrieve. Kho ShopViet 350.000 token (giả định) thì mỗi câu hỏi gửi 350.500 token input.'],
+      ['Cửa sổ context', 'Số token tối đa một request nhận được. Nhiều model hiện có cửa sổ 1 triệu token (README §1.3).'],
+      ['Độ dài hiệu dụng', 'Độ dài mà model còn giữ được chất lượng. RULER đo GPT-4: cửa sổ 128K, độ dài hiệu dụng 64K.'],
+      ['Lost in the middle', 'Model trả lời tốt nhất khi thông tin cần nằm ở đầu hoặc cuối context, kém hẳn khi nằm ở giữa (Liu và cộng sự).'],
+      ['TTFT, prefill', 'TTFT (time to first token): thời gian từ lúc gửi request tới lúc thấy chữ đầu tiên. Phần lớn là prefill: model đọc hết prompt rồi mới viết. Lab giả định prefill tỉ lệ thuận với độ dài prompt: prompt dài gấp 10 thì chờ gấp 10.'],
+      ['Prompt caching', 'Provider lưu phần đầu prompt đã xử lý; request sau có cùng prefix thì đọc cache với giá rẻ. Sonnet 5.5: input $2, đọc cache $0,10 mỗi triệu token.'],
+      ['Cache write, TTL', 'Lần đầu ghi cache tốn 1,25 lần giá input (TTL 5 phút). Không có request nào trong 5 phút thì cache hết hạn, request sau phải ghi lại.'],
+      ['Self-Route', 'Thử RAG trước, model tự đánh giá context có đủ không; không đủ thì chuyển sang long context.'],
+      ['Agentic RAG', 'Model tự quyết có tìm không, tìm gì, đọc kết quả rồi tìm tiếp hay trả lời. Mỗi vòng là một lần gọi LLM cộng một lần search.'],
+      ['Điều kiện dừng', 'Quy tắc kết thúc vòng agentic: đủ thông tin, hết số vòng tối đa, hoặc hết ngân sách token.'],
+      ['Routing', 'Một bộ phân loại rẻ đứng trước pipeline, chỉ gửi câu khó vào vòng agentic. Adaptive-RAG dùng classifier nhỏ chia ba mức: không retrieve, một lần, nhiều bước.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> có kho tài liệu khoảng 350.000 token (giả định): chính sách, hướng dẫn, mô tả sản phẩm. Trợ lý chat nhận khoảng 5.000 câu hỏi mỗi ngày (giả định). Kho được sửa ít nhất một lần mỗi ngày khi có khuyến mãi mới.',
+      scenario: 'Bài 0 và Bài 1 cho thấy pipeline RAG có nhiều tầng có thể hỏng. Một kỹ sư đề xuất: "Model đã có cửa sổ 1 triệu token, bỏ hết retrieval, nhét cả kho vào prompt là xong." Một người khác đề xuất ngược lại: "Cho model tự tìm, tìm bao nhiêu lần cũng được, câu nhiều bước như quà tặng Galaxy S30 sẽ hết sai."',
+      ask: 'Nhét cả kho tốn bao nhiêu tiền và thời gian mỗi câu so với RAG, prompt caching cứu được tới đâu? Và vòng agentic đổi bao nhiêu lần gọi thêm lấy bao nhiêu recall?',
+      solves: 'Tính chi phí từng cách bằng giá thật trong cost-optimization §2.1 (Claude, ngày 06/11/2026), mô hình cache có TTL 5 phút và cập nhật kho. Mô phỏng vòng agentic trên ba loại câu hỏi ShopViet, có và không có điều kiện dừng, so với RAG cố định và routing.',
+      read: [
+        'Phần 1, trục ngang: kích thước kho trên thang log, với các mốc từ README (32K của RULER, 64K độ dài hiệu dụng GPT-4, 100K mốc giá Haiku 5.5, 200K gợi ý của Anthropic, 1M cửa sổ). Chấm cam là kho hiện tại.',
+        'Thanh ngang: tiền mỗi câu hỏi của ba cách. Bảng: token input, tỉ lệ cache hit, tiền mỗi tháng, thời gian tới chữ đầu (TTFT, giả định tốc độ prefill).',
+        'Phần 2: bảng ba chiến lược (RAG cố định, agentic luôn, routing) với recall, tỉ lệ đúng, số lần gọi LLM, token, tiền mỗi 1.000 câu, độ trễ. Dải vòng bên dưới là từng vòng của một câu mẫu.',
+        'Giá model và giá rerank lấy từ README; kích thước kho, số câu, tốc độ prefill, độ trễ mỗi lần gọi, token mỗi vòng là giả định, ghi ở chú thích.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Long context có thay được RAG không (README §1.3)</h4>
+<p>Li và cộng sự (2024), 9 dataset: khi đủ tài nguyên, long context cho điểm trung bình cao hơn RAG (Gemini-1.5-Pro 49,70 so với 37,33; GPT-4o 48,67 so với 32,60). Nhưng model không dùng đều mọi vị trí (lost in the middle), chỉ khoảng một nửa trong 17 model của RULER giữ được hiệu năng ở 32K, và long context trả tiền cho cả kho ở mỗi lượt gọi. Cache chỉ khớp theo prefix: tài liệu đổi thì cache vỡ.</p>
+<div class="tbl"><table><tr><th>Tình huống</th><th>Chọn</th></tr>
+<tr><td>Corpus nhỏ (khoảng 200.000 token, ~500 trang), ít thay đổi, nhiều câu cần đọc toàn bộ</td><td>Long context với prompt caching</td></tr>
+<tr><td>Corpus lớn hơn cửa sổ, hoặc thay đổi hằng ngày</td><td>RAG</td></tr>
+<tr><td>Một người hỏi sâu về vài tài liệu cụ thể</td><td>Retrieve tài liệu, đưa nguyên tài liệu vào context</td></tr>
+<tr><td>Câu khó trả lời từ vài đoạn, tỉ lệ nhỏ</td><td>Self-Route: RAG trước, không đủ thì mở rộng</td></tr>
+<tr><td>Cần biết câu trả lời dựa trên đoạn nào</td><td>RAG có trích dẫn, hoặc long context kèm Citations API</td></tr></table></div>
+<h4>Agentic RAG (README §1.4)</h4>
+<p>Dùng khi câu hỏi nhiều bước, query đầu thường tệ, hoặc nguồn dữ liệu nhiều loại. Không dùng cho chatbot cần trả lời dưới vài giây cho mọi câu mà phần lớn là tra cứu một sự kiện: dùng routing kiểu Adaptive-RAG. Đã bật thì cần giới hạn số vòng, ngân sách token, điều kiện dừng, log từng lượt tìm.</p>
+<div class="verdict"><b>Điểm cần nhớ:</b> long context và RAG không loại trừ nhau. Mẫu hay dùng nhất: retrieval chọn tài liệu, long context đọc tài liệu. Agent tìm nhiều hơn thì tốt hơn, và đắt hơn tương ứng: khoảng 4 lần token của một lượt chat với một agent, khoảng 15 lần với nhiều agent (Anthropic).</div>`,
+    why: {
+      c: 'RAG cho kho thay đổi hằng ngày và lưu lượng lớn; routing đưa phần nhỏ câu nhiều bước vào vòng agentic có giới hạn vòng và điều kiện dừng. Long context dành cho trường hợp retrieval đã chọn được vài tài liệu và cần đọc trọn chúng.',
+      s: 'Nhét cả kho vào mọi request: đơn giản, không có tầng retrieval nào hỏng, nhưng trả tiền cho cả kho mỗi lượt, cache vỡ mỗi lần kho đổi, và chất lượng giảm khi context dài (README §1.3). Agentic cho mọi câu: chất lượng cao nhất trên câu khó, nhưng chi phí và độ trễ nhân lên cho cả câu dễ.',
+      p: 'Phải vận hành retrieval (index, cập nhật, eval từng tầng như Bài 1). Phải có bộ phân loại câu hỏi và chấp nhận nó phân loại sai một phần. Vòng agentic cần log từng query trung gian để debug, vì bước đầu sai thì các bước sau sai theo.'
+    },
+    deep: [
+      {
+        q: 'Kho ShopViet vừa cửa sổ 1 triệu token. Long context có thật sự trả lời tốt hơn RAG không?',
+        a: `<p>Có bằng chứng là có. Li và cộng sự (2024) so trên 9 dataset: khi đủ tài nguyên, long context (LC) cho điểm trung bình cao hơn RAG rõ rệt (README §1.3):</p>
+<div class="tbl"><table><tr><th>Model</th><th>Long context</th><th>RAG</th><th>Self-Route</th></tr><tr><td>Gemini-1.5-Pro</td><td>49,70</td><td>37,33</td><td>46,41</td></tr><tr><td>GPT-4o</td><td>48,67</td><td>32,60</td><td>48,89</td></tr><tr><td>GPT-3.5-Turbo</td><td>32,07</td><td>30,33</td><td>35,32</td></tr></table></div>
+<p>Lý do dễ hiểu: không có tầng retrieval nào để hỏng. FP2, FP3 của Bài 1 biến mất vì mọi đoạn đều có trong context. Câu hỏi tiếp theo là cái giá.</p>`,
+        take: 'Về chất lượng trung bình, long context thắng khi đủ tiền. Câu hỏi thật là tiền, độ trễ, độ dài hiệu dụng và độ tươi của dữ liệu.'
+      },
+      {
+        q: 'Vậy tốn bao nhiêu tiền? Nhét 350.000 token vào mỗi câu hỏi thì sao?',
+        a: `<p>Mỗi câu trả tiền input cho cả kho. Hình dưới tính với kho 350.000 token, câu hỏi và system 500 token, trả lời 300 token (đều giả định), giá từ cost-optimization §2.1.</p>`,
+        viz(box) {
+          const rows = Object.values(M).map((m) => { const a = lcPlain(m, 350000), r = rag(m);
+            return `<tr><td>${m.name}</td><td class="mono">$${m.in} / $${m.out}</td><td class="mono">${usd(a.perQ)}</td><td class="mono">${usd(r.perQ)}</td><td class="mono"><b>${(a.perQ / r.perQ).toFixed(0)}×</b></td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Model</th><th>Giá input / output (1M token)</th><th>Long context / câu</th><th>RAG / câu</th><th>Gấp</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: `RAG: ${K} đoạn × ${CHUNK} token (giả định) cộng rerank Voyage rerank-3 trên ${RR_N} candidate theo công thức README §2.2. Haiku 5.5 vượt 100.000 token nên cả request tính giá 0,50 / 2,50 (cost-optimization §2.1).` }));
+        },
+        take: 'Không cache, long context đắt gấp vài chục tới hơn trăm lần RAG ở kho cỡ này, với mọi model. Chênh lệch tỉ lệ với kích thước kho.'
+      },
+      {
+        q: 'Prompt caching giảm giá đọc xuống 20 lần. Vậy bật cache là hết vấn đề?',
+        a: `<p>Cache giảm phần lớn chi phí khi prefix ổn định (README §1.3). Sonnet 5.5 đọc cache $0,10 so với input $2. Nhưng có ba điều kiện ngầm:</p>
+<ul><li><b>Phải có request trong TTL.</b> Cache 5 phút hết hạn nếu không ai hỏi; request sau phải ghi lại, tốn 1,25 lần giá input.</li><li><b>Kho không được đổi.</b> Cache khớp theo prefix; sửa một chữ trong chính sách là vỡ toàn bộ phần phía sau.</li><li><b>Đọc cache vẫn tính theo kích thước kho.</b> 350.000 token × $0,10 / triệu = $0,035 mỗi câu, vẫn hơn RAG.</li></ul>
+<p>Hình dưới tính tỉ lệ hit theo số câu mỗi ngày, giả định câu hỏi đến ngẫu nhiên đều trong ngày (Poisson), TTL làm mới mỗi lần hit, một lần cập nhật kho mỗi ngày. Poisson ở đây nghĩa là các câu đến độc lập, không hẹn giờ: 20 câu/ngày là trung bình 0,07 câu mỗi 5 phút, nên gần như câu nào cũng tới khi cache đã hết hạn.</p>`,
+        viz(box) {
+          const rows = QPD.map((q) => { const c = lcCache(M.sonnet, 350000, q, 1), a = lcPlain(M.sonnet, 350000);
+            return `<tr${c.perQ > a.perQ ? ' class="cur"' : ''}><td class="mono">${q.toLocaleString('vi-VN')}</td><td class="mono">${(q / 288).toFixed(2)}</td><td class="mono">${(c.hit * 100).toFixed(1)}%</td><td class="mono">${usd(c.perQ)}</td><td class="mono">${usd(a.perQ)}</td><td>${c.perQ > a.perQ ? '<b class="bad">cache đắt hơn</b>' : (a.perQ / c.perQ).toFixed(1) + '× rẻ hơn'}</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Câu / ngày</th><th>Câu / 5 phút</th><th>Cache hit</th><th>Có cache / câu</th><th>Không cache / câu</th><th>So sánh</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: 'Sonnet 5.5, kho 350.000 token. Hệ số ghi cache 1,25 (TTL 5 phút) và giá đọc cache từ cost-optimization §2.1. Một ngày có 288 khung 5 phút. Công thức của lab: số lần ghi = số câu × e^(−số câu trong 5 phút) + số lần cập nhật kho; đây là giả định, không lấy từ README.' }),
+            flag('warn', '<b>Công thức của lab bi quan hơn mô phỏng ở lưu lượng thấp.</b> Dòng 50 câu/ngày: lab 13,9%, mô phỏng 30 ngày trong POC 16,3%; ở 20 câu/ngày chênh nhiều hơn: 1,7% so với 6,6%. Công thức cộng thêm 1 lần ghi cho mỗi lần cập nhật kho, kể cả khi cache đã hết hạn sẵn. Lưu lượng thấp thì câu đầu sau lần cập nhật gần như chắc chắn đã là cache miss, nên lần ghi đó bị đếm hai lần. Không có nghĩa kết luận sai: cả hai cách đều cho cache 5 phút đắt hơn không cache ở mức này. Từ 200 câu/ngày hai cách khớp nhau (49,6% so với 50,8%).<br>Trong hệ thống thật: lấy hit rate từ log usage của provider (số token đọc cache so với ghi cache), đừng dự toán bằng công thức.'));
+        },
+        take: 'Với lưu lượng thấp, cache ghi nhiều hơn đọc và đắt hơn không cache. Với lưu lượng cao, cache rẻ hơn nhiều lần, nhưng vẫn trả tiền đọc cả kho mỗi câu.'
+      },
+      {
+        q: 'Bỏ qua tiền. Đưa cả kho vào thì model có chắc đọc được đoạn cần không?',
+        a: `<p>Không chắc. README §1.3 dẫn ba nguồn:</p>
+<ul><li><b>Lost in the middle</b> (Liu và cộng sự): với GPT-3.5-Turbo, độ chính xác khi không đưa tài liệu nào là 56,1%. Khi có 20 hoặc 30 tài liệu và đáp án nằm ở vị trí xấu nhất, độ chính xác xuống <b>dưới</b> mức đó. Thêm tài liệu đặt sai chỗ còn tệ hơn không đưa gì.</li><li><b>RULER</b> (Hsieh và cộng sự): trong 17 model, chỉ khoảng một nửa giữ được hiệu năng thỏa đáng ở 32K.</li><li>Tài liệu context window của Claude: khi số token tăng, độ chính xác và khả năng nhớ lại giảm.</li></ul>
+<p>Hình dưới so cửa sổ với độ dài hiệu dụng RULER đo được cho hai model mà README nêu số.</p>`,
+        viz(box) {
+          box.append(hbars([['GPT-4: cửa sổ', 128, false], ['GPT-4: hiệu dụng', 64, true], ['Llama 3.1 70B: cửa sổ', 128, false], ['Llama 3.1 70B: hiệu dụng', 64, true], ['Kho ShopViet (giả định)', 350, false]], { max: 350, fmt: (v) => v + 'K' }),
+            el('div', { class: 'cap', text: 'Số 128K / 64K từ RULER qua README §1.3. Đây là hai model cũ; README không có số độ dài hiệu dụng cho model hiện tại, nên phải đo bằng eval của bạn.' }));
+        },
+        take: 'Cửa sổ là giới hạn kỹ thuật, không phải độ dài model đọc tốt. Đây cũng là FP4 của Bài 1 ở quy mô lớn: đoạn đúng có trong context mà không được dùng.'
+      },
+      {
+        q: 'Có cách nào lấy chất lượng của long context mà không trả giá long context cho mọi câu?',
+        a: `<p>Self-Route (Li và cộng sự): chạy RAG trước, để model tự đánh giá context có đủ không; không đủ thì chuyển sang long context. Theo bảng của paper, phần lớn câu dừng ở bước RAG: 76,78% với Gemini-1.5-Pro, 57,36% với GPT-4o; Self-Route dùng khoảng 38% số token của long context với Gemini-1.5-Pro, khoảng 61% với GPT-4o (README §1.3). Phần văn bản của paper ghi vài con số không khớp với bảng của chính nó; README lấy số từ bảng.</p>
+<p>Hình dưới áp hai tỉ lệ dừng đó vào chi phí ShopViet (Sonnet 5.5, kho 350.000 token, không cache): câu dừng ở RAG trả tiền RAG, câu chuyển trả cả RAG lẫn long context.</p>`,
+        viz(box) {
+          const a = lcPlain(M.sonnet, 350000).perQ, r = rag(M.sonnet).perQ;
+          const rows = [['Gemini-1.5-Pro', 0.7678], ['GPT-4o', 0.5736]].map(([n, p]) => { const sr = p * r + (1 - p) * (r + a);
+            return `<tr><td>${n}</td><td class="mono">${(p * 100).toFixed(2)}%</td><td class="mono">${usd(sr)}</td><td class="mono">${(sr / a * 100).toFixed(0)}%</td><td class="mono">${(sr / r).toFixed(0)}×</td></tr>`; }).join('');
+          box.append(el('div', { class: 'tbl', html: `<table><tr><th>Tỉ lệ dừng ở RAG lấy từ</th><th>Dừng ở RAG</th><th>Self-Route / câu</th><th>So với long context</th><th>So với RAG</th></tr>${rows}</table>` }),
+            el('div', { class: 'cap', text: 'Áp tỉ lệ của paper vào chi phí của lab là phép tính minh hoạ; tỉ lệ dừng trên dữ liệu ShopViet sẽ khác. Chi phí bước tự đánh giá của model không tính riêng.' }));
+        },
+        take: 'Self-Route rẻ hơn long context nhiều, nhưng vẫn đắt hơn RAG hàng chục lần vì phần câu chuyển trả giá cả kho. Nó đáng khi câu khó chiếm tỉ lệ nhỏ.'
+      },
+      {
+        q: 'Câu quà tặng Galaxy S30 cần ba bước. Agentic RAG khác pipeline cố định thế nào?',
+        a: `<p>Pipeline cố định retrieve đúng một lần, với query là chính câu hỏi. Agentic RAG giao việc tìm cho model: có cần tìm không, tìm gì, đọc kết quả, rồi tìm tiếp hay trả lời (README §1.4). Với câu Galaxy S30: vòng 1 tìm được "Buds Lite là quà tặng" và "quà tặng đổi theo máy chính"; model đọc xong mới biết cần hỏi tiếp "điện thoại đổi trả bao lâu".</p>
+<p>Ba hướng nghiên cứu đặt nền: <b>Self-RAG</b> huấn luyện model sinh token đặc biệt để tự quyết khi nào retrieve và tự chấm đoạn lấy về; <b>CRAG</b> thêm evaluator nhỏ chấm độ liên quan rồi rẽ ba nhánh Correct / Incorrect / Ambiguous; <b>Adaptive-RAG</b> đặt classifier trước pipeline. Số của CRAG trên SelfRAG-LLaMA2-7b (README §1.4):</p>
+<div class="tbl"><table><tr><th>Hệ thống</th><th>PopQA</th><th>Bio</th><th>PubHealth</th><th>ARC</th></tr><tr><td>RAG</td><td>52,8</td><td>59,2</td><td>39,0</td><td>53,2</td></tr><tr><td>CRAG</td><td>59,8</td><td>74,1</td><td>75,6</td><td>68,6</td></tr><tr><td>Self-RAG</td><td>54,9</td><td>81,2</td><td>72,4</td><td>67,3</td></tr><tr><td>Self-CRAG</td><td>61,8</td><td>86,2</td><td>74,8</td><td>67,2</td></tr></table></div>
+<p>Chi tiết đáng nhớ: ngưỡng rẽ nhánh của CRAG được chỉnh riêng cho từng dataset (0,59 và −0,99 cho PopQA; 0,95 và −0,91 cho Biography). Một evaluator "relevant / irrelevant" không có ngưỡng chung.</p>`,
+        take: 'Agentic sửa FP7 của câu nhiều bước, vì query sau được viết sau khi đọc kết quả query trước. Đổi lại, mỗi vòng là một lần gọi LLM.'
+      },
+      {
+        q: 'Thế thì cho agentic chạy với mọi câu luôn, cho chắc?',
+        a: `<p>Adaptive-RAG trả lời bằng số (README §1.4), FLAN-T5-XL, trung bình 6 dataset:</p>`,
+        viz(box) {
+          const d = [['Không retrieve', 21.12, 0, 0.11], ['Retrieve một lần', 44.31, 1, 1], ['Adaptive-RAG', 46.94, 2.17, 3.6], ['Luôn nhiều bước', 48.85, 4.69, 8.81]];
+          box.append(el('div', { class: 'cols' }, [
+            el('div', {}, [el('h4', { text: 'F1' }), hbars(d.map(([n, f]) => [n, f, n === 'Adaptive-RAG']), { max: 50, fmt: (v) => v.toFixed(2) })]),
+            el('div', {}, [el('h4', { text: 'Thời gian (so với retrieve một lần)' }), hbars(d.map(([n, , , t]) => [n, t, n === 'Adaptive-RAG']), { max: 9, fmt: (v) => v + '×' })])]),
+            el('div', { class: 'stat', html: `<span>Adaptive lấy <b>${((46.94 - 44.31) / (48.85 - 44.31) * 100).toFixed(0)}%</b> mức tăng F1 của "luôn nhiều bước"</span><span>với <b>${(3.6 / 8.81 * 100).toFixed(0)}%</b> thời gian của nó</span>` }),
+            el('div', { class: 'cap', text: 'Số từ bảng Adaptive-RAG trong README §1.4. Hai tỉ lệ ở dòng dưới được tính từ bảng đó.' }));
+        },
+        take: 'Routing không thắng về chất lượng: luôn nhiều bước vẫn có F1 cao nhất. Nó thắng về chi phí. Đây là đánh đổi của mọi hệ agentic.'
+      },
+      {
+        q: 'Agentic tốn thêm bao nhiêu trong thực tế, và điều gì làm nó vỡ ngân sách?',
+        a: `<p>Anthropic đo trong hệ research của họ: một agent dùng khoảng 4 lần số token của một lượt chat, hệ nhiều agent khoảng 15 lần; trên BrowseComp, lượng token dùng giải thích phần lớn chênh lệch điểm giữa các lần chạy (README §1.4). Tìm nhiều hơn thì tốt hơn, và đắt hơn tương ứng.</p>
+<p>Token tăng nhanh hơn số vòng vì mỗi vòng gửi lại toàn bộ lịch sử: vòng 3 gửi system prompt, câu hỏi, và kết quả search của vòng 1, 2. Thử ở phần 2 của hình chính: tắt "Điều kiện dừng", agent tiếp tục tìm sau khi đã đủ thông tin cho tới khi hết số vòng tối đa. README §3.6: "Chi phí tăng vọt sau khi bật agentic RAG" có nguyên nhân "không giới hạn vòng, không có ngân sách".</p>
+<p>Khi đã bật, vòng agentic cần: giới hạn số vòng, ngân sách token, điều kiện dừng, log từng lượt tìm (README §1.4, dẫn Agents §3.2). Retrieval đưa vào agent dưới dạng một tool trả kết quả có trích dẫn.</p>`,
+        take: 'Ngân sách của agent được quyết định bởi điều kiện dừng nhiều hơn bởi giá token.'
+      }
+    ],
+    poc: {
+      goal: "Tính tiền nhét cả kho 350.000 token so với RAG bằng giá Cost optimization §2.1, bậc giá Haiku 5.5 &gt; 100.000 token, và <b>mô phỏng Poisson 30 ngày</b> cho cache TTL 5 phút / 1 giờ (so với công thức của lab). Vòng agentic: <b>model là danh sách query viết tay</b>, search BM25 và đếm token tiktoken là thật.",
+      file: "docs/advanced-rag/pocs/02_long_context_agentic.py",
+      run: "uv run docs/advanced-rag/pocs/02_long_context_agentic.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM, không cần model.",
+      output: "Giá: docs/cost-optimization/README.md §2.1 (06/11/2026). Ghi cache 1,25× input (TTL 5 phút), 2× (TTL 1 giờ) theo §2.2.\nGiả định (giống Lab 02): kho 350.000 token, câu hỏi+system 500, trả lời 300, RAG 5×400 token + rerank Voyage 50 candidate.\n\n== 1. Một câu hỏi: nhét cả kho (không cache) so với RAG ==\nModel       Long context  RAG       Gấp\n----------  ------------  --------  ----\nFable 5.1   $3.52         $0.0409   86×\nOpus 5.5    $1.41         $0.0169   83×\nSonnet 5.5  $0.7040       $0.00888  79×\nHaiku 5.5   $0.1760       $0.00128  138×\n\n== 2. Bậc giá Haiku 5.5: prompt vượt 100.000 token thì MỌI token tính ×5 ==\nPrompt (token)  in / out / đọc cache   Tiền / câu\n--------------  ---------------------  ----------\n99.500          $0.10 / $0.50 / $0.01  $0.0101\n99.900          $0.10 / $0.50 / $0.01  $0.0101\n100.100         $0.50 / $2.50 / $0.05  $0.0508\n150.500         $0.50 / $2.50 / $0.05  $0.0760\nThêm 200 token (99.900 → 100.100) làm tiền mỗi câu tăng 5.0×.\n\n== 3. Cache có TTL: mô phỏng câu hỏi đến ngẫu nhiên (Poisson) 30 ngày, kho sửa 1 lần/ngày, Sonnet 5.5 ==\nCâu/ngày  TB đến/ngày  hit 5'  công thức Lab  5' / câu  hit 1h  1h / câu  không cache  RAG\n--------  -----------  ------  -------------  --------  ------  --------  -----------  --------\n20        19           6.6%    1.7%           $0.8236   52.6%   $0.6860   $0.7040      $0.00888\n50        49           16.3%   13.9%          $0.7421   85.4%   $0.2384   $0.7040      $0.00888\n200       199          50.8%   49.6%          $0.4524   99.0%   $0.0532   $0.7040      $0.00888\n1000      999          96.6%   96.8%          $0.0672   99.8%   $0.0417   $0.7040      $0.00888\n5000      4979         100.0%  100.0%         $0.0393   100.0%  $0.0395   $0.7040      $0.00888\n20000     19990        100.0%  100.0%         $0.0391   100.0%  $0.0391   $0.7040      $0.00888\n\n== 4. Vòng agentic: model là KỊCH BẢN viết tay (danh sách query), search BM25 thật, token đếm bằng tiktoken ==\nLoại câu                    Cách                         vòng  recall  token  tiền (Sonnet)  token so RAG\n--------------------------  ---------------------------  ----  ------  -----  -------------  ------------\nTra cứu (Đà Lạt)            RAG 1 lần (query gốc)        1     1.00    548    $0.00278       1.0×\nTra cứu (Đà Lạt)            agent, dừng khi đủ           1     1.00    544    $0.00277       1.0×\nTra cứu (Đà Lạt)            agent, không điều kiện dừng  3     1.00    1355   $0.00535       2.5×\nNhiều bước (quà S30)        RAG 1 lần (query gốc)        1     0.33    554    $0.00279       1.0×\nNhiều bước (quà S30)        agent, dừng khi đủ           3     1.00    1398   $0.00544       2.5×\nNhiều bước (quà S30)        agent, không điều kiện dừng  3     1.00    1398   $0.00544       2.5×\nQuery đầu tệ (tai nghe rè)  RAG 1 lần (query gốc)        1     0.50    542    $0.00276       1.0×\nQuery đầu tệ (tai nghe rè)  agent, dừng khi đủ           3     1.00    1285   $0.00521       2.4×\nQuery đầu tệ (tai nghe rè)  agent, không điều kiện dừng  3     1.00    1285   $0.00521       2.4×\n\nRút ra: kho 350.000 token, không cache, nhét cả kho đắt hơn RAG 79× (Sonnet) tới 138× (Haiku, dính bậc >100k).\nCache TTL 5 phút ở 20 câu/ngày: hit 7%, $0.8236/câu, ĐẮT hơn không cache ($0.7040); TTL 1 giờ: hit 53%, $0.6860/câu.\nCông thức của Lab (mỗi lần sửa kho = 1 lần ghi) bi quan hơn mô phỏng ở lưu lượng thấp (1,7% so với 6,6% ở 20 câu/ngày), khớp từ 200 câu/ngày.\nLưu lượng cao thì cache rẻ hơn nhiều lần nhưng vẫn trả tiền đọc cả kho mỗi câu, vẫn đắt hơn RAG. Vòng agentic tăng recall ở câu nhiều bước/query tệ\nvà nhân token lên; thiếu điều kiện dừng thì câu dễ cũng chạy hết vòng.",
+      measured: true,
+      read: ["Bảng 1: không cache, nhét cả kho đắt hơn RAG 79× (Sonnet) tới 138× (Haiku, vì dính bậc &gt; 100K).", "Bảng 2: thêm 200 token quanh mốc 100.000 làm tiền mỗi câu Haiku tăng 5,0×.", "Bảng 3: ở 20 và 50 câu/ngày, cache 5 phút đắt hơn không cache; TTL 1 giờ rẻ hơn ở lưu lượng thấp. Công thức của lab bi quan hơn mô phỏng ở lưu lượng thấp (1,7% so với 6,6% hit), khớp từ 200 câu/ngày.", "Bảng 4: vòng agentic tăng recall câu nhiều bước 0,33 → 1,00 với 2,5× token; thiếu điều kiện dừng thì câu dễ cũng chạy 3 vòng."]
+    },
+    mount(stage) {
+      const st = { kb: 350000, qpd: 5000, upd: 1, model: 'sonnet' };
+      const ag = { hard: 0.2, maxR: 4, stop: true, router: 0.9, ex: 'hop' };
+      const axis = el('svg', { class: 'canvas', viewBox: '0 0 700 92', role: 'img', 'aria-label': 'Kích thước kho so với các mốc trong README' });
+      const bars = el('div'), table = el('div', { class: 'tbl' }), flags = el('div');
+      const agTable = el('div', { class: 'tbl' }), agStrip = el('svg', { class: 'canvas', viewBox: '0 0 700 100', role: 'img', 'aria-label': 'Các vòng agentic của câu mẫu' }), agLog = el('ol', { class: 'mono', style: 'font-size:12px;margin:4px 0 0;padding-left:22px' }), agStat = el('div', { class: 'stat' }), agFlags = el('div');
+
+      function drawAxis() {
+        const lo = Math.log10(10000), hi = Math.log10(4000000), X = (v) => 20 + (Math.log10(v) - lo) / (hi - lo) * 660;
+        const marks = [[32000, '32K RULER'], [64000, '64K hiệu dụng'], [100000, '100K Haiku'], [200000, '200K Anthropic'], [1000000, '1M cửa sổ']];
+        const kids = [el('line', { x1: 20, x2: 680, y1: 60, y2: 60, stroke: 'var(--line)', 'stroke-width': 2 }),
+          el('rect', { x: X(1000000), y: 50, width: 680 - X(1000000), height: 20, fill: 'var(--bad)', opacity: 0.15 })];
+        marks.forEach(([v, l], i) => kids.push(el('line', { x1: X(v), x2: X(v), y1: 48, y2: 72, stroke: v === 1000000 ? 'var(--bad)' : 'var(--mute)', 'stroke-width': 1.5, 'stroke-dasharray': v === 1000000 ? '' : '3 3' }),
+          el('text', { x: X(v), y: i % 2 ? 88 : 42, 'text-anchor': 'middle', text: l, style: 'font-size:11px;fill:var(--mute)' })));
+        kids.push(el('circle', { cx: X(st.kb), cy: 60, r: 8, fill: 'var(--warn)', stroke: 'var(--panel)', 'stroke-width': 2 }),
+          el('text', { x: Math.min(Math.max(X(st.kb), 60), 640), y: 18, 'text-anchor': 'middle', text: 'Kho: ' + fT(st.kb) + ' token', style: 'font-size:12.5px;font-weight:700;fill:var(--ink)' }));
+        axis.replaceChildren(...kids);
+      }
+
+      function renderA() {
+        const m = M[st.model];
+        const a = lcPlain(m, st.kb), c = lcCache(m, st.kb, st.qpd, st.upd), r = rag(m);
+        drawAxis();
+        const fitsTxt = (x) => (x.fits ? '' : ' (không vừa)');
+        bars.replaceChildren(hbars([['Long context' + fitsTxt(a), a.fits ? a.perQ : 0, false], ['Long context + cache' + fitsTxt(c), c.fits ? c.perQ : 0, false], ['RAG', r.perQ, true]], { max: Math.max(a.fits ? a.perQ : 0, c.fits ? c.perQ : 0, r.perQ), fmt: usd }));
+        const row = (n, x, extra) => `<tr><td>${n}</td><td class="mono">${fT(x.inTok)}</td><td class="mono">${extra}</td><td class="mono">${x.fits ? usd(x.perQ) : '-'}</td><td class="mono">${x.fits ? usd(x.perQ * st.qpd * 30) : '-'}</td><td class="mono">${x.fits ? sec(x.ttft + OUT_TOK / GEN) : '-'}</td><td class="mono">${x.fits ? sec(x.ttft) : 'vượt cửa sổ'}</td></tr>`;
+        table.innerHTML = `<table><tr><th>Cách</th><th>Token input / câu</th><th>Cache</th><th>Tiền / câu</th><th>Tiền / tháng</th><th>Tổng thời gian</th><th>TTFT</th></tr>
+${row('Long context', a, 'không')}${row('Long context + cache', c, `hit ${(c.hit * 100).toFixed(1)}%, ghi ${Math.round(c.writes).toLocaleString('vi-VN')}/ngày`)}${row('RAG', r, 'không cần')}</table>`;
+        const f = [];
+        if (!a.fits) f.push(flag('bad', `<b>Kho ${fT(st.kb)} token vượt cửa sổ 1M.</b> Long context không chạy được; chỉ còn RAG (README §1.3: corpus lớn hơn cửa sổ thì chọn RAG).`));
+        else {
+          if (c.perQ > a.perQ) f.push(flag('bad', `<b>Bật cache mà đắt hơn không cache:</b> ${usd(c.perQ)} so với ${usd(a.perQ)} mỗi câu. Với ${st.qpd.toLocaleString('vi-VN')} câu/ngày, trung bình ${(st.qpd / 288).toFixed(2)} câu mỗi 5 phút, nên ${((1 - c.hit) * 100).toFixed(0)}% câu gặp cache đã hết hạn và phải ghi lại với giá 1,25 lần input. Không có nghĩa caching vô dụng: nó chỉ lời khi cùng prefix được đọc lại trong TTL.<br>Trong hệ thống thật: TTL 1 giờ (ghi 2 lần giá input) cho lưu lượng thưa, hoặc không cache; tính hit rate thật từ log trước khi dự toán.`));
+          if (st.model === 'haiku' && st.kb + Q_TOK > 100000) {
+            const below = lcPlain(m, 99000 - Q_TOK);
+            f.push(flag('warn', `<b>Haiku 5.5 vượt mốc 100.000 token:</b> mọi token của request tính giá 0,50 / 2,50 thay vì 0,10 / 0,50, kể cả phần đọc cache (cost-optimization §2.1). Kho 99K tốn ${usd(below.perQ)} mỗi câu; kho hiện tại ${usd(a.perQ)}, tức ${(a.perQ / below.perQ).toFixed(1)} lần cho ${(st.kb / 99000).toFixed(1)} lần token.<br>Trong hệ thống thật: với model có bậc giá theo độ dài, thêm vài trang tài liệu có thể nhân hoá đơn; RAG giữ prompt dưới mốc.`));
+          }
+          if (c.perQ / r.perQ > 3) f.push(flag('warn', `<b>Kể cả có cache, long context đắt gấp ${(c.perQ / r.perQ).toFixed(0)} lần RAG</b> (${usd(c.perQ * st.qpd * 30)} so với ${usd(r.perQ * st.qpd * 30)} mỗi tháng). Đọc cache vẫn tính trên ${fT(st.kb)} token mỗi câu.`));
+          else f.push(flag('ok', `<b>Long context có cache ${c.perQ < r.perQ ? 'rẻ hơn RAG' : 'chỉ đắt gấp ' + (c.perQ / r.perQ).toFixed(1) + ' lần RAG'}</b> (${usd(c.perQ)} so với ${usd(r.perQ)} mỗi câu; phần rerank của RAG là ${usd(r.rr)}). Kho nhỏ, lưu lượng đủ để cache nóng: vùng README §1.3 gợi ý long context với prompt caching. Vẫn phải kiểm tra chất lượng ở độ dài này bằng eval.`));
+          if (st.kb > 64000) f.push(flag('warn', `<b>Kho ${fT(st.kb)} dài hơn độ dài hiệu dụng 64K</b> mà RULER đo cho GPT-4 (cửa sổ 128K). Không có nghĩa model bạn dùng hỏng ở 64K: README không có số cho model hiện tại. Có nghĩa "vừa cửa sổ" không chứng minh "đọc tốt".<br>Trong hệ thống thật: đo độ đúng theo vị trí của đoạn đáp án trong context (đầu, giữa, cuối) trên tập eval của bạn.`));
+          if (st.upd >= 24) f.push(flag('warn', `<b>${st.upd} lần cập nhật kho mỗi ngày:</b> mỗi lần sửa làm vỡ cache của cả kho (cache khớp theo prefix), thêm ${st.upd} lần ghi ${fT(st.kb)} token mỗi ngày. RAG chỉ index lại tài liệu bị sửa (README §3.2).`));
+        }
+        flags.replaceChildren(...f);
+      }
+
+      function renderB() {
+        const S = { fixed: strategy('fixed', ag), agent: strategy('agent', ag), route: strategy('route', ag) };
+        const names = { fixed: 'RAG cố định (1 lần retrieve)', agent: 'Agentic cho mọi câu', route: 'Routing: chỉ câu khó vào agent' };
+        const pc = (x) => (x * 100).toFixed(0) + '%';
+        agTable.innerHTML = `<table><tr><th>Chiến lược</th><th>Recall</th><th>Trả lời đúng</th><th>Gọi LLM / câu (kể cả router)</th><th>Token / câu</th><th>Tiền / 1.000 câu</th><th>Độ trễ TB</th></tr>${Object.keys(S).map((k) => { const x = S[k];
+          return `<tr><td>${names[k]}</td><td class="mono">${pc(x.recall)}</td><td class="mono">${pc(x.ok)}</td><td class="mono">${x.calls.toFixed(2)}</td><td class="mono">${fT(x.inTok + x.outTok)}</td><td class="mono">${usd(x.cost * 1000)}</td><td class="mono">${sec(x.lat)}</td></tr>`; }).join('')}</table>`;
+        const tokX = (S.agent.inTok + S.agent.outTok) / (S.fixed.inTok + S.fixed.outTok);
+        agStat.innerHTML = `<span>Agentic / cố định: <b>${tokX.toFixed(1)}×</b> token, <b>+${((S.agent.ok - S.fixed.ok) * 100).toFixed(0)}</b> điểm trả lời đúng</span><span>Routing / cố định: <b>${((S.route.inTok + S.route.outTok) / (S.fixed.inTok + S.fixed.outTok)).toFixed(1)}×</b> token, <b>+${((S.route.ok - S.fixed.ok) * 100).toFixed(0)}</b> điểm</span><span>Tham chiếu Anthropic: một agent ≈ 4× token một lượt chat</span>`;
+
+        const run = agentRun(ag.ex, ag.maxR, ag.stop), q = QT[ag.ex], log = ROUNDS_LOG[ag.ex];
+        const kids = [el('text', { x: 0, y: 14, text: `Câu mẫu: "${q.ex}" (cần ${q.facts} đoạn)`, style: 'font-size:12.5px;fill:var(--ink);font-weight:700' })];
+        const bw = 640 / Math.max(run.rounds + 1, 4);
+        let tok = 0;
+        for (let r = 1; r <= run.rounds + 1; r++) {
+          const x = r - 1, final = r === run.rounds + 1, found = final ? q.found[run.rounds - 1] : q.found[r - 1];
+          const prevFound = r > 1 ? q.found[r - 2] : 0;
+          const waste = !final && r > 1 && found === prevFound && prevFound >= q.facts;
+          tok += SYS + 60 + (r - 1) * (K * CHUNK + ROUND_OUT) + (final ? OUT_TOK : ROUND_OUT);
+          const col = final ? (run.ok ? 'var(--ok)' : 'var(--bad)') : waste ? 'var(--warn)' : 'var(--accent)';
+          kids.push(el('rect', { x: x * bw + 2, y: 26, width: bw - 8, height: 70, rx: 6, fill: 'var(--panel)', stroke: col, 'stroke-width': 2 }),
+            el('text', { x: x * bw + 10, y: 44, text: final ? 'Trả lời' : `Vòng ${r}`, style: 'font-size:12px;font-weight:700;fill:var(--ink)' }),
+            el('text', { x: x * bw + 10, y: 62, text: final ? (run.ok ? 'đủ thông tin' : 'thiếu thông tin') : `${found}/${q.facts} đoạn${waste ? ', không thêm gì' : ''}`, style: `font-size:11.5px;fill:${waste ? 'var(--warn)' : 'var(--ink)'}` }),
+            el('text', { x: x * bw + 10, y: 80, text: `tích lũy ${fT(tok)} token`, style: 'font-size:11px;fill:var(--mute)' }));
+        }
+        agStrip.replaceChildren(...kids);
+        agLog.replaceChildren(...Array.from({ length: run.rounds }, (_, j) => el('li', { text: log[j] || 'search lặp lại một biến thể của query trước, không có đoạn mới' })));
+
+        const f = [];
+        const fixedStop = strategy('agent', Object.assign({}, ag, { stop: true }));
+        if (!ag.stop && S.agent.wasted > 0.05) f.push(flag('bad', `<b>Không có điều kiện dừng:</b> trung bình ${S.agent.wasted.toFixed(2)} vòng mỗi câu chạy sau khi đã đủ thông tin. Token tăng ${((S.agent.inTok + S.agent.outTok) / (fixedStop.inTok + fixedStop.outTok)).toFixed(1)} lần so với có điều kiện dừng, độ đúng không đổi (${pc(S.agent.ok)} cả hai). Không có nghĩa model "tham": agent không có tín hiệu nào bảo nó dừng.<br>Trong hệ thống thật: điều kiện dừng, giới hạn vòng và ngân sách token (README §3.6, dẫn Agents §3.2).`));
+        if (ag.maxR === 1) f.push(flag('warn', `<b>Giới hạn 1 vòng:</b> agent tìm đúng một lần như RAG cố định, cùng recall, nhưng thêm một lần gọi LLM để quyết định tìm gì. Vòng agentic chỉ có giá trị khi được phép tìm tiếp.`));
+        if (ag.hard <= 0.3 && S.agent.cost > 1.2 * S.route.cost) f.push(flag('warn', `<b>Câu khó chỉ chiếm ${pc(ag.hard)} traffic</b>, nhưng agentic cho mọi câu tốn ${usd(S.agent.cost * 1000)} mỗi 1.000 câu so với ${usd(S.route.cost * 1000)} của routing, để đổi ${((S.agent.ok - S.route.ok) * 100).toFixed(1)} điểm. Câu dễ cũng trả tiền vòng agentic.<br>Trong hệ thống thật: phân loại rẻ trước, chỉ bật vòng agentic cho nhóm câu khó (README §1.4).`));
+        if (ag.router < 0.8) f.push(flag('warn', `<b>Router đúng ${pc(ag.router)}:</b> ${pc((1 - ag.router) * ag.hard)} traffic là câu khó bị gửi nhầm vào RAG cố định và trả lời sai; ${pc((1 - ag.router) * (1 - ag.hard))} là câu dễ bị gửi nhầm vào agent và trả tiền thừa. Độ chính xác của router là một metric phải đo riêng.`));
+        agFlags.replaceChildren(...f);
+      }
+
+      const kbS = slider('Kho (token)', 0, KBS.length - 1, 1, KBS.indexOf(st.kb), (v) => { st.kb = KBS[v]; renderA(); }, (v) => fT(KBS[v]));
+      const qS = slider('Câu / ngày', 0, QPD.length - 1, 1, QPD.indexOf(st.qpd), (v) => { st.qpd = QPD[v]; renderA(); }, (v) => QPD[v].toLocaleString('vi-VN'));
+      const uS = slider('Cập nhật kho / ngày', 0, UPD.length - 1, 1, UPD.indexOf(st.upd), (v) => { st.upd = UPD[v]; renderA(); }, (v) => UPD[v]);
+      const mS = select('Model', Object.entries(M).map(([k, v]) => [k, `${v.name} ($${v.in} / $${v.out})`]), st.model, (v) => { st.model = v; renderA(); });
+      const hS = slider('Câu khó trong traffic', 0, 100, 5, ag.hard * 100, (v) => { ag.hard = v / 100; renderB(); }, (v) => v + '%');
+      const rS = slider('Số vòng tối đa', 1, 8, 1, ag.maxR, (v) => { ag.maxR = v; renderB(); });
+      const roS = slider('Router đúng', 50, 100, 5, ag.router * 100, (v) => { ag.router = v / 100; renderB(); }, (v) => v + '%');
+      const sC = check('Điều kiện dừng (đủ thông tin thì trả lời)', ag.stop, (v) => { ag.stop = v; renderB(); });
+      const eS = select('Câu mẫu', Object.entries(QT).map(([k, v]) => [k, v.name]), ag.ex, (v) => { ag.ex = v; renderB(); });
+
+      stage.append(el('h4', { text: 'Phần 1. Nhét cả kho hay RAG: tiền và thời gian mỗi câu', style: 'margin:0 0 8px' }),
+        el('div', { class: 'row' }, [kbS.node, qS.node]), el('div', { class: 'row' }, [uS.node, mS.node]), axis, bars, table, flags,
+        el('p', { class: 'hint', text: `Giá USD / 1M token từ cost-optimization §2.1 (06/11/2026); ghi cache 1,25 × input với TTL 5 phút; Haiku 5.5 trên 100.000 token tính 0,50 / 2,50 / 0,01→0,05 cho mọi token. Cửa sổ 1M áp cho mọi model trong lab (README §1.3 ghi "nhiều model"). Giả định: câu hỏi + system ${Q_TOK} token, trả lời ${OUT_TOK} token, RAG ${K} đoạn × ${CHUNK} token, rerank Voyage rerank-3 ($0,05/1M, README §2.2) trên ${RR_N} candidate × ${RR_DOC} token; prefill ${fT(PREFILL)} token/s, đọc cache nhanh hơn ${CACHED_SPEEDUP} lần, sinh ${GEN} token/s, retrieval + rerank ${RET_LAT} s. Câu hỏi đến ngẫu nhiên đều trong ngày; chưa tính chi phí hạ tầng của RAG.` }),
+        el('h4', { text: 'Phần 2. Agentic RAG: thêm bao nhiêu lần gọi, được bao nhiêu recall', style: 'margin:22px 0 8px' }),
+        el('div', { class: 'row' }, [hS.node, rS.node, roS.node]), el('div', { class: 'row' }, [sC.node, eS.node]), agTable, agStat, agStrip, agLog, agFlags,
+        el('p', { class: 'hint', text: `Ba loại câu ShopViet: tra cứu (1 đoạn, tìm được ngay), nhiều bước (3 đoạn, vòng 1 được 2, vòng 2 đủ), query đầu tệ (2 đoạn, vòng 1 không được gì, vòng 2 được 1, vòng 3 đủ). "Câu khó" chia đều cho hai loại sau. Đều là giả định của lab. Mỗi vòng gửi lại system ${SYS} token, câu hỏi, và toàn bộ kết quả các vòng trước (${K} × ${CHUNK} token mỗi vòng), sinh ${ROUND_OUT} token; trả lời ${OUT_TOK} token; Sonnet 5.5 $2 / $10; router chạy Haiku 5.5 (${ROUTE_IN} token vào). Độ trễ giả định ${LLM_LAT} s mỗi lần gọi LLM, ${SEARCH_LAT} s mỗi lần search, router ${ROUTE_LAT} s.` }));
+      renderA(); renderB();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,734 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 05</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-rerank-contextual.html">← Lab trước</a><a href="06-metadata-multimodal-citations.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const STOP = new Set('có không ko được là và của cho các một những thì bị khi nào gì với trong từ đã tại theo này đó ra vào mà sau trước như để thế làm sao bao lâu nhiêu hoặc nên hãy còn cần phải nếu đi đâu xong'.split(' '));
+  const SYN = [['bảo hành', 'bảohành'], ['đổi trả', 'đổitrả'], ['care+', 'care'], ['hỏng', 'lỗi']];
+  const terms = (s) => { let t = s.toLowerCase(); SYN.forEach(([a, b]) => { t = t.split(a).join(b); }); return t.split(/[^\p{L}\p{N}]+/u).filter((w) => w && !STOP.has(w)); };
+  const tok = (s) => Math.max(1, Math.round((s.trim().split(/\s+/).length * 56) / 49));
+  const usd = (v) => '$' + (v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v.toPrecision(2)).replace('.', ',');
+  const nf = (n) => Math.round(n).toLocaleString('vi-VN');
+  function makeIndex(texts) {
+    const tf = (x) => { const m = {}; terms(x).forEach((w) => { m[w] = (m[w] || 0) + 1; }); return m; };
+    const df = {};
+    texts.map(tf).forEach((m) => Object.keys(m).forEach((w) => { df[w] = (df[w] || 0) + 1; }));
+    const idf = (w) => Math.log(1 + texts.length / (df[w] || 0.5));
+    const vec = (x) => { const m = tf(x), v = {}; for (const w in m) v[w] = (1 + Math.log(m[w])) * idf(w); return v; };
+    const norm = (v) => Math.hypot(...Object.values(v)) || 1;
+    const cos = (a, b) => { let s = 0; for (const w in a) if (b[w]) s += a[w] * b[w]; return s / (norm(a) * norm(b)); };
+    const dv = texts.map(vec);
+    return { rank: (q) => { const qv = vec(q); return dv.map((d, i) => ({ i, s: cos(qv, d) })).sort((a, b) => b.s - a.s); }, vec, cos };
+  }
+  const SEC = ['Phạm vi bảo hành', 'Trường hợp từ chối', 'Cách gửi bảo hành'];
+  const SENT = [
+    [0, 0, 'Laptop mua tại ShopViet từ 01/01/2026 được bảo hành 24 tháng.'],
+    [0, 0, 'Thời hạn tính từ ngày giao hàng ghi trên hoá đơn.'],
+    [0, 1, 'Pin là linh kiện tiêu hao nên có thời hạn riêng.'],
+    [0, 1, 'Pin được bảo hành 12 tháng.'],
+    [0, 1, 'Chỉ đổi pin khi dung lượng còn dưới 80% so với thiết kế.'],
+    [1, 2, 'Máy rơi vỡ, vào nước hoặc tự ý tháo máy không được bảo hành.'],
+    [1, 2, 'Pin phồng do dùng sạc không chính hãng cũng bị từ chối.'],
+    [1, 3, 'Tem bảo hành bị rách thì cửa hàng kiểm tra thêm trước khi nhận.'],
+    [2, 4, 'Mang laptop tới cửa hàng ShopViet gần nhất, kèm hoá đơn.'],
+    [2, 4, 'Ở tỉnh không có cửa hàng thì gửi qua bưu điện, ShopViet trả phí gửi.'],
+    [2, 5, 'Thời gian xử lý từ 7 đến 14 ngày làm việc.']
+  ].map(([sec, par, text], i) => ({ i, sec, par, text, t: tok(text) }));
+  const PARS = [0, 1, 2, 3, 4, 5].map((p) => SENT.filter((s) => s.par === p).map((s) => s.i));
+  const SECS = [0, 1, 2].map((m) => SENT.filter((s) => s.sec === m).map((s) => s.i));
+  const textOf = (ids) => ids.map((i) => SENT[i].text).join(' ');
+  const UNITS = { sent: SENT.map((s) => [s.i]), par: PARS, sec: SECS.map((ids) => ids), doc: [SENT.map((s) => s.i)] };
+  const UTEXT = { sent: UNITS.sent.map(textOf), par: PARS.map(textOf), sec: SECS.map((ids, m) => SEC[m] + '. ' + textOf(ids)) };
+  const IDX = { sent: makeIndex(UTEXT.sent), par: makeIndex(UTEXT.par), sec: makeIndex(UTEXT.sec) };
+  const LEVEL = { sent: 0, win: 1, par: 2, sec: 3, doc: 4 };
+  const UNAME = { sent: 'câu', par: 'đoạn', sec: 'mục' };
+  const RNAME = { sent: 'câu', win: 'cửa sổ câu', par: 'đoạn cha', sec: 'mục cha', doc: 'cả tài liệu' };
+  const QA = [
+    { id: 'a', text: 'Pin laptop bị chai sau 8 tháng còn được bảo hành không?', need: [3, 4, 6], facts: { 3: 'pin bảo hành 12 tháng', 4: 'chỉ đổi khi dung lượng dưới 80%', 6: 'pin phồng do sạc không chính hãng bị từ chối' } },
+    { id: 'b', text: 'Laptop hỏng thì mang đi đâu bảo hành, bao lâu thì xong?', need: [8, 9, 10], facts: { 8: 'mang tới cửa hàng kèm hoá đơn', 9: 'tỉnh không có cửa hàng thì gửi bưu điện', 10: 'xử lý 7 đến 14 ngày làm việc' } }
+  ];
+  const DOC_TOK = SENT.reduce((a, s) => a + s.t, 0);
+  function retrieve(q, unit, ret, w, k) {
+    const r = IDX[unit].rank(q.text).slice(0, k), eff = LEVEL[ret] < LEVEL[unit] || (ret === 'win' && unit !== 'sent') ? unit : ret, out = new Set();
+    r.forEach(({ i }) => {
+      const ids = UNITS[unit][i];
+      if (eff === unit) ids.forEach((x) => out.add(x));
+      else if (eff === 'win') { const c = ids[0]; for (let x = Math.max(0, c - w); x <= Math.min(SENT.length - 1, c + w); x++) out.add(x); }
+      else if (eff === 'par') ids.forEach((x) => PARS[SENT[x].par].forEach((y) => out.add(y)));
+      else if (eff === 'sec') ids.forEach((x) => SECS[SENT[x].sec].forEach((y) => out.add(y)));
+      else SENT.forEach((s) => out.add(s.i));
+    });
+    return { hits: r, matched: r.map(({ i }) => UNITS[unit][i]), sent: [...out].sort((a, b) => a - b), eff };
+  }
+  const NODES = {
+    g16: { x: 75, y: 45, label: 'Strix G16', type: 'p', alias: ['strix g16', 'g16'] },
+    air: { x: 75, y: 135, label: 'Air 13', type: 'p', alias: ['air 13'] },
+    vivo: { x: 75, y: 215, label: 'Vivo 14', type: 'p', alias: ['vivo 14'] },
+    tnz: { x: 75, y: 290, label: 'Tai nghe Z', type: 'p', alias: ['tai nghe z'] },
+    gaming: { x: 290, y: 75, label: 'Laptop gaming', type: 'c', alias: [] },
+    office: { x: 290, y: 175, label: 'Laptop văn phòng', type: 'c', alias: [] },
+    audio: { x: 290, y: 275, label: 'Tai nghe', type: 'c', alias: [] },
+    r7: { x: 495, y: 40, label: 'Đổi trả 7 ngày', type: 'r', alias: [] },
+    r15: { x: 495, y: 150, label: 'Đổi trả 15 ngày', type: 'r', alias: [] },
+    care: { x: 495, y: 260, label: 'Gói Care+', type: 'k', alias: [] }
+  };
+  const EDGES = [['g16', 'gaming', 'thuộc'], ['air', 'office', 'thuộc'], ['vivo', 'office', 'thuộc'], ['tnz', 'audio', 'thuộc'], ['gaming', 'r7', 'áp dụng'], ['office', 'r7', 'áp dụng'], ['audio', 'r15', 'áp dụng'], ['care', 'office', 'bán kèm'], ['care', 'audio', 'bán kèm'], ['care', 'gaming', 'không áp dụng']];
+  const GCH = [
+    'Strix G16: laptop gaming RTX 5070, màn 165Hz, thuộc danh mục Laptop gaming.',
+    'Laptop được đổi trả trong 7 ngày kể từ ngày nhận hàng.',
+    'Tai nghe và loa được đổi trả trong 15 ngày nếu lỗi do nhà sản xuất.',
+    'Air 13: laptop mỏng nhẹ, pin 15 giờ, nặng 1,2 kg.',
+    'Danh sách Laptop văn phòng gồm Air 13, Vivo 14 và ThinkPad E14.',
+    'Gói Care+ chỉ bán kèm Laptop văn phòng và tai nghe, không áp dụng cho Laptop gaming.',
+    'Tai nghe Z: chống ồn, pin 30 giờ, thuộc nhóm Tai nghe.'
+  ];
+  const GIDX = makeIndex(GCH);
+  const GQ = [
+    { id: 'g1', text: 'Air 13 có mua được gói Care+ không?', targets: ['care'], need: [4, 5], trap: 3, right: 'Có', wrong: 'không chắc (đoạn Air 13 không nói danh mục)' },
+    { id: 'g2', text: 'Strix G16 có mua kèm gói Care+ được không?', targets: ['care'], need: [0, 5], trap: -1, right: 'Không', wrong: '' },
+    { id: 'g3', text: 'Tai nghe Z đổi trả trong bao nhiêu ngày?', targets: ['r7', 'r15'], need: [6, 2], trap: 1, right: '15 ngày', wrong: '7 ngày (của laptop)' }
+  ];
+  function bfs(q) {
+    const low = q.text.toLowerCase(), start = Object.keys(NODES).filter((n) => NODES[n].alias.some((a) => low.includes(a)));
+    const layers = [start], prev = {}, seen = new Set(start);
+    let found = start.find((s) => q.targets.includes(s)) || null;
+    while (!found && layers[layers.length - 1].length && layers.length < 6) {
+      const next = [];
+      layers[layers.length - 1].forEach((n) => EDGES.forEach(([a, b]) => {
+        const o = a === n ? b : b === n ? a : null;
+        if (o && !seen.has(o)) { seen.add(o); prev[o] = n; next.push(o); }
+      }));
+      layers.push(next);
+      found = next.find((n) => q.targets.includes(n)) || null;
+    }
+    const path = [];
+    for (let n = found; n; n = prev[n]) path.unshift(n);
+    return { start, layers, path, found };
+  }
+  const edgeOf = (a, b) => EDGES.find(([x, y]) => (x === a && y === b) || (x === b && y === a));
+
+  return {
+    id: 'parent-child-graphrag', nav: '5. Parent–child & GraphRAG', ref: '§2.4–2.5',
+    title: 'Tìm bằng mảnh nhỏ, trả về mảnh to: cắt ở đâu thì đủ ý mà không tốn token, và khi nào phải nối qua graph',
+    hook: 'Phần A: chọn đơn vị để tìm và đơn vị trả về cho model, xem số token gửi đi và câu trả lời đủ mấy ý. Phần B: đi từng bước trên graph sản phẩm, danh mục, chính sách và so với vector search.',
+    terms: [
+      ['Token', 'Đơn vị model dùng để đếm chữ và tính tiền. Một từ tiếng Việt thường là 1–2 token: 49 từ khoảng 56 token với tokenizer o200k (Cost optimization §2.1). Giá API tính theo triệu token.'],
+      ['Đơn vị tìm (retrieval unit)', 'Mảnh được biến thành vector (embed) và so với câu hỏi; mảnh nào gần câu hỏi nhất thì được chọn. Ví dụ từng câu: "Pin được bảo hành 12 tháng."'],
+      ['Đơn vị trả về (returned unit)', 'Mảnh thật sự đưa vào prompt của model. Có thể lớn hơn đơn vị tìm: tìm thấy một câu, nhưng gửi cả đoạn chứa câu đó.'],
+      ['Parent–child (small-to-big)', 'Index chunk con nhỏ, khi con khớp thì trả về chunk cha lớn hơn. LlamaIndex mặc định chia ba tầng 2048 → 512 → 128 token.'],
+      ['Auto-merging', 'Nếu hơn một nửa số con của một cha cùng được lấy về (ngưỡng mặc định 0,5 trong LlamaIndex), gộp lại thành cha thay vì gửi các mảnh rời.'],
+      ['Sentence window', 'Index từng câu; khi một câu khớp thì gửi câu đó kèm vài câu trước và sau. LlamaIndex mặc định 3 câu mỗi phía.'],
+      ['Late chunking', 'Đưa cả tài liệu qua embedding model context dài, rồi mới cắt ra chunk ở tầng token và lấy trung bình. Vector của chunk "Pin được bảo hành 12 tháng" vì thế đã "thấy" chữ "laptop" ở đầu tài liệu.'],
+      ['Knowledge graph', 'Dữ liệu dạng nút và cạnh, giống bảng quan hệ trong SQL nhưng đi theo từng bước: "Tai nghe Z" —thuộc→ "Tai nghe" —áp dụng→ "Đổi trả 15 ngày".'],
+      ['Multi-hop', 'Câu hỏi phải nối hai mẩu thông tin trở lên ở các chỗ khác nhau. "Air 13 có mua được Care+ không" cần biết Air 13 thuộc danh mục nào, rồi Care+ có bán kèm danh mục đó không. Giống một câu SQL phải JOIN hai bảng.'],
+      ['GraphRAG (Microsoft)', 'LLM trích entity và quan hệ từ toàn bộ corpus, gom thành cộng đồng (community), viết báo cáo tóm tắt cho từng cộng đồng. Câu hỏi tổng hợp được trả lời bằng map-reduce trên các báo cáo.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> có tài liệu "Chính sách bảo hành laptop 2026" gồm 3 mục, 6 đoạn, 11 câu. Khách hỏi "Pin laptop bị chai sau 8 tháng còn được bảo hành không?". Câu trả lời đủ cần ba ý ở ba chỗ: pin bảo hành 12 tháng, chỉ đổi khi dung lượng dưới 80%, và pin phồng do sạc không chính hãng bị từ chối (nằm ở mục khác). Một khách khác hỏi "Air 13 có mua được gói Care+ không?". Trợ lý trả lời "không chắc". Đúng ra là "có": Air 13 thuộc danh mục Laptop văn phòng, và Care+ bán kèm Laptop văn phòng. Hai ý này nằm ở hai đoạn khác nhau, và đoạn nói về Care+ không nhắc tên Air 13.',
+      scenario: 'Chunk nhỏ khớp chính xác nhưng thiếu ý xung quanh. Chunk lớn đủ ý nhưng tốn token và điểm khớp bị loãng. Còn câu hỏi phải nối nhiều mẩu thì vector search lấy về mẩu giống câu hỏi nhất, không phải mẩu nối được câu trả lời.',
+      ask: 'Nên tìm bằng mảnh cỡ nào và trả về mảnh cỡ nào? Khi nào phải dùng graph để nối thông tin, và khi nào graph chỉ thêm chi phí?',
+      solves: 'Tách việc tìm khỏi việc đọc: parent–child, sentence window, late chunking (README §2.4). Với câu hỏi nhiều bước qua nhiều tài liệu, graph nối được bằng cạnh. README §2.5 cho bằng chứng khi nào graph thắng và khi nào không.',
+      read: ['Phần A: chọn <b>Đơn vị tìm</b>, <b>Đơn vị trả về</b>, cửa sổ và top-k. Câu tô nền là phần gửi cho model. Khung viền đậm là đơn vị đã khớp. Câu có nhãn "cần" là ý mà câu trả lời đủ phải có.', 'Dòng số: token gửi đi (ước lượng từ chuỗi thật), tỉ lệ so với cả tài liệu, số ý đủ.', 'Phần B: bấm <b>Đi thêm 1 bước</b> để mở rộng từ sản phẩm trong câu hỏi. Bên dưới là top-k của vector search trên 7 đoạn mô tả cùng nội dung.', 'Điểm khớp là bộ chấm đồ chơi (từ khoá, IDF, cosine), không phải embedding thật. Tài liệu ngắn hơn tài liệu thật nhiều, nên hãy nhìn tỉ lệ, không nhìn số token tuyệt đối.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Tách việc tìm khỏi việc đọc (README §2.4)</h4>
+<ul><li><b>Parent–child:</b> <code>HierarchicalNodeParser</code> mặc định 2048 → 512 → 128 token; <code>AutoMergingRetriever</code> gộp con về cha khi tỉ lệ con được lấy vượt <code>simple_ratio_thresh</code>, mặc định 0,5.</li>
+<li><b>Sentence window:</b> <code>SentenceWindowNodeParser</code> mặc định <code>window_size=3</code>, lưu cửa sổ trong metadata key <code>window</code>; sau retrieval dùng <code>MetadataReplacementPostProcessor(target_metadata_key="window")</code>.</li>
+<li><b>Late chunking</b> (Günther và cộng sự, 2024): trên 4 dataset BEIR, trung bình 3 model, nDCG@10 tăng khoảng 1,5–1,9 điểm; mức tăng không đều. Cần model context đủ dài và truy cập embedding tầng token.</li></ul>
+<div class="tbl"><table><tr><th>Tình huống</th><th>Chọn</th></tr>
+<tr><td>Chunk thiếu chủ ngữ, tài liệu có cấu trúc rõ</td><td>Contextual retrieval hoặc late chunking</td></tr>
+<tr class="cur"><td>Cần model đọc cả đoạn xung quanh</td><td>Parent–child hoặc sentence window</td></tr>
+<tr><td>Tài liệu có heading rõ (docs kỹ thuật, wiki)</td><td>Chia theo heading, gắn đường dẫn heading vào chunk</td></tr>
+<tr><td>Văn bản pháp lý, mỗi câu là một ý</td><td>Sentence window</td></tr></table></div>
+<p>Dùng parent–child cùng rerank: rerank trên chunk con rồi mới mở rộng ra chunk cha.</p>
+<h4>Graph có đáng không (README §2.5)</h4>
+<div class="tbl"><table><tr><th>Loại câu hỏi</th><th>Graph có đáng không</th></tr>
+<tr><td>Tra cứu một sự kiện, một điều khoản</td><td>Không. RAG ngang hoặc hơn, graph chỉ thêm chi phí</td></tr>
+<tr class="cur"><td>Nhiều bước, nối thông tin qua nhiều tài liệu</td><td>Có thể. HippoRAG2 thắng trên MultiHop-RAG và nhóm suy luận phức tạp, chi phí token gần vector RAG</td></tr>
+<tr><td>Tổng hợp toàn corpus</td><td>Có, đây là chỗ GraphRAG được thiết kế cho. Cân nhắc LazyGraphRAG hoặc map-reduce trên tóm tắt trước</td></tr>
+<tr><td>Dữ liệu thay đổi hằng ngày</td><td>Nghiêng về vector RAG; graph phải cập nhật tăng dần hoặc index lại</td></tr></table></div>
+<div class="verdict"><b>Quy tắc an toàn:</b> phân loại câu hỏi thật từ log, đo tỉ lệ từng loại. Nếu câu hỏi tổng hợp chỉ chiếm 3% traffic, map-reduce trên tóm tắt cho riêng nhóm đó qua routing thường rẻ hơn dựng và duy trì graph cho cả corpus. So graph với vector RAG bằng câu hỏi có đáp án kiểm tra được, không chỉ bằng LLM chấm so cặp.</div>`,
+    why: {
+      c: 'Tìm bằng đơn vị nhỏ (câu hoặc chunk con) để khớp chính xác, trả về đơn vị lớn hơn (cửa sổ câu hoặc chunk cha) để model đủ ý. Graph chỉ dùng cho nhóm câu hỏi multi-hop hoặc tổng hợp mà eval của bạn cho thấy vector RAG thua, và đi qua routing.',
+      s: 'Một cỡ chunk cho cả tìm lẫn đọc: nhỏ thì thiếu điều kiện, to thì loãng và tốn token. Gửi cả tài liệu: đủ ý nhưng tốn token nhất, và lẫn những mục không liên quan. Dựng GraphRAG cho mọi câu hỏi: index rất đắt (khoảng 75% ở bước trích graph), global search hàng trăm nghìn token mỗi câu, trong khi câu tra cứu một điều khoản thì RAG thường ngang hoặc hơn.',
+      p: 'Parent–child và sentence window: lưu thêm quan hệ cha con hoặc metadata cửa sổ, token gửi đi lớn hơn đơn vị tìm, và ý nằm ở mục khác vẫn không với tới. Graph: một lần LLM đọc cả corpus để trích entity, phải cập nhật khi dữ liệu đổi, và một lớp lỗi mới (entity trích sai, cạnh thiếu).'
+    },
+    deep: [
+      {
+        q: 'Vì sao mảnh nhỏ lại khớp chính xác hơn? Mảnh to chứa câu đúng rồi mà.',
+        a: `<p>Mảnh to có chứa câu đúng, nhưng cũng chứa nhiều câu khác. Vector của một mảnh là "nghĩa trung bình" của cả mảnh. Thêm câu không liên quan là kéo trung bình đó ra xa câu hỏi. Với từ khoá cũng vậy: điểm được chia cho độ dài.</p>
+<p>Hình dưới tính điểm của câu hỏi về pin với bốn mảnh lồng nhau, đều chứa câu "Pin được bảo hành 12 tháng": chính câu đó, đoạn chứa nó, mục chứa nó, cả tài liệu. Cùng một bộ chấm, cùng trọng số IDF tính trên các câu.</p>`,
+        viz(box) {
+          const ix = makeIndex(UTEXT.sent), qv = ix.vec(QA[0].text);
+          const rows = [['Câu (' + SENT[3].t + ' token)', textOf([3])], ['Đoạn cha (' + PARS[1].reduce((a, i) => a + SENT[i].t, 0) + ' token)', textOf(PARS[1])], ['Mục cha (' + SECS[0].reduce((a, i) => a + SENT[i].t, 0) + ' token)', textOf(SECS[0])], ['Cả tài liệu (' + DOC_TOK + ' token)', textOf(SENT.map((s) => s.i))]].map(([n, t], i) => [n, ix.cos(qv, ix.vec(t)), i === 0]);
+          box.append(hbars(rows, { fmt: (v) => v.toFixed(3) }), el('div', { class: 'cap', text: 'Điểm giảm khi mảnh to ra, dù câu đúng vẫn nằm trong đó. Trong kho thật với hàng nghìn mảnh, mảnh to dễ bị một mảnh nhỏ hơn, ngắn hơn nhưng sai chủ đề vượt qua.' }));
+        },
+        take: 'Mảnh nhỏ cho điểm khớp sắc. Mảnh to cho đủ ý. Muốn cả hai thì tìm bằng mảnh nhỏ, gửi mảnh to.'
+      },
+      {
+        q: 'Auto-merging gộp con về cha khi nào? Ngưỡng 0,5 nghĩa là gì?',
+        a: `<p>LlamaIndex chia ba tầng: cha 2048 token, con 512, cháu 128. Index các mảnh nhỏ nhất. Sau khi tìm, <code>AutoMergingRetriever</code> đếm: trong các con của một cha, bao nhiêu con được lấy về? Nếu tỉ lệ <b>vượt</b> <code>simple_ratio_thresh</code> (mặc định 0,5) thì thay các con đó bằng cả cha.</p>
+<p>Ý tưởng: nhiều mảnh của cùng một đoạn cùng khớp nghĩa là cả đoạn liên quan, gửi nguyên đoạn đọc liền mạch hơn các mảnh rời. Bấm vào các ô con bên dưới để đánh dấu được lấy về.</p>`,
+        viz(box) {
+          const on = [true, false, false, false], grid = el('div', { style: 'display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px' }), out = el('div', { class: 'stat' });
+          const draw = () => {
+            const n = on.filter(Boolean).length, ratio = n / 4, merge = ratio > 0.5;
+            grid.replaceChildren(...on.map((v, i) => el('button', { class: v ? 'on' : '', text: `Con ${i + 1} · 128`, onclick: () => { on[i] = !on[i]; draw(); } })));
+            out.innerHTML = `<span>Tỉ lệ con được lấy: <b>${n}/4 = ${ratio.toFixed(2).replace('.', ',')}</b></span><span>Gộp về cha? <b class="${merge ? 'ok' : ''}">${merge ? 'có, gửi cha 512 token' : 'không, gửi ' + n + ' mảnh rời'}</b></span><span>Token gửi: <b>${merge ? 512 : n * 128}</b></span>` + (n === 2 ? '<span class="bad">Đúng 0,5 chưa vượt ngưỡng: không gộp.</span>' : '');
+          };
+          box.append(grid, out, el('div', { class: 'cap', text: 'Ví dụ dùng tầng 512 → 128: một cha 512 token có 4 con 128 token. Ngưỡng là "vượt", nên 2/4 không gộp, 3/4 thì gộp.' }));
+          draw();
+        },
+        take: 'Auto-merging chỉ gộp khi nhiều con cùng khớp. Một con khớp đơn lẻ vẫn được gửi một mình, thiếu ý thì vẫn thiếu.'
+      },
+      {
+        q: 'Sentence window lấy 3 câu mỗi phía. Sao không lấy luôn cả đoạn?',
+        a: `<p>Cửa sổ không cần biết ranh giới đoạn hay mục. Nó lấy N câu trước và sau câu khớp, kể cả khi đoạn rất dài (chỉ lấy phần gần) hoặc đoạn rất ngắn (tràn sang đoạn bên cạnh). Hợp với văn bản dày đặc như hợp đồng, nơi một câu là một điều khoản và điều khoản liên quan thường đứng sát nhau.</p>
+<p>LlamaIndex: <code>SentenceWindowNodeParser</code> mặc định <code>window_size=3</code>, lưu cửa sổ trong metadata key <code>window</code>. Lúc index, mỗi câu được embed một mình; cửa sổ chỉ nằm trong metadata. Sau retrieval, <code>MetadataReplacementPostProcessor</code> thay câu bằng cửa sổ trước khi đưa vào prompt.</p>
+<p>Kéo cửa sổ cho câu hỏi về pin. Câu khớp là "Pin được bảo hành 12 tháng."</p>`,
+        viz(box) {
+          const out = el('div', { class: 'stat' }), strip = el('div', { style: 'display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px' }), q = QA[0];
+          const draw = (w) => {
+            const c = 3, ids = []; for (let x = Math.max(0, c - w); x <= Math.min(SENT.length - 1, c + w); x++) ids.push(x);
+            const got = q.need.filter((n) => ids.includes(n)).length, cross = ids.some((x) => SENT[x].sec !== SENT[c].sec), t = ids.reduce((a, x) => a + SENT[x].t, 0);
+            strip.replaceChildren(...SENT.map((s) => el('span', { title: s.text, style: `flex:1;min-width:22px;height:26px;border-radius:4px;display:grid;place-items:center;font:500 11px var(--mono);background:${ids.includes(s.i) ? 'var(--accent-soft)' : 'var(--bg)'};border:${s.i === c ? '2px solid var(--accent)' : q.need.includes(s.i) ? '2px solid var(--ok)' : '1px solid var(--line)'};${SENT[s.i].sec !== SENT[Math.max(0, s.i - 1)].sec && s.i ? 'margin-left:8px;' : ''}`, text: 'c' + (s.i + 1) })));
+            out.innerHTML = `<span>Cửa sổ: <b>${ids.length}</b> câu, <b>${t}</b> token</span><span>Ý cần có: <b class="${got === q.need.length ? 'ok' : 'bad'}">${got}/${q.need.length}</b></span>` + (cross ? '<span class="bad">Cửa sổ tràn sang mục khác</span>' : '');
+          };
+          box.append(el('div', { class: 'row' }, [slider('window_size', 0, 5, 1, 1, draw).node]), strip, out,
+            el('div', { class: 'cap', text: 'Ô viền đậm là câu khớp, viền xanh lá là câu chứa ý cần. Khoảng cách lớn hơn giữa các ô là ranh giới mục. Ở window_size=3, cửa sổ với tới ý "pin phồng" ở mục Trường hợp từ chối, nhưng cũng kéo theo câu về rơi vỡ, vào nước: ở đây có ích là tình cờ, cửa sổ không biết câu nào liên quan.' }));
+          draw(1);
+        },
+        take: 'Cửa sổ là "lấy hàng xóm", không phải "lấy đúng ý". Nó cứu được điều kiện đứng sát câu khớp, không cứu được ý nằm xa.'
+      },
+      {
+        q: 'Có rerank thì rerank trên con hay trên cha?',
+        a: `<p>README: rerank trên chunk <b>con</b> (nhỏ, chính xác) rồi mới mở rộng ra chunk cha. Hai lý do. Thứ nhất, reranker cũng bị loãng như embedding: chấm một mảnh 2048 token thì câu đúng chỉ là một phần nhỏ. Thứ hai, tiền reranker tính theo token: với Voyage, token = token query × số tài liệu + tổng token tài liệu.</p>
+<p>Hình dưới tính tiền rerank N candidate với <code>rerank-3</code> ($0,05 / triệu token, README §2.2), query 50 token, cho ba cỡ của LlamaIndex.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const draw = (N) => {
+            const rows = [128, 512, 2048].map((d) => { const t = 50 * N + N * d; return [`${N} mảnh × ${d} token`, (t / 1e6) * 0.05, d === 128]; });
+            out.replaceChildren(hbars(rows, { fmt: (v) => usd(v) + ' / câu' }));
+            cap.textContent = `Rerank trên cha 2048 token đắt gấp ${(rows[2][1] / rows[0][1]).toFixed(1).replace('.', ',')} lần trên con 128 token. Với 1 triệu câu hỏi: ${usd(rows[0][1] * 1e6)} so với ${usd(rows[2][1] * 1e6)}.`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('N candidate', 10, 150, 10, 50, draw).node]), out, cap);
+          draw(50);
+        },
+        take: 'Chấm điểm trên mảnh nhỏ, đọc trên mảnh to. Thứ tự này rẻ hơn và chính xác hơn.'
+      },
+      {
+        q: 'Late chunking khác parent–child chỗ nào? "Chunk đã thấy cả tài liệu" nghĩa là gì?',
+        a: `<p>Parent–child sửa ở <b>bước trả về</b>: tìm bằng mảnh nhỏ, gửi mảnh to. Vector của mảnh nhỏ vẫn mù về phần còn lại của tài liệu.</p>
+<p>Late chunking sửa ở <b>bước embed</b>. Embedding model dạng transformer cho mỗi token một vector, và mỗi vector đó đã "nhìn" các token khác trong cùng lần đưa vào. Cách thường: cắt chunk trước, embed từng chunk, nên token trong chunk chỉ nhìn thấy chunk. Late chunking: đưa cả tài liệu vào một lần, rồi mới cắt ở tầng token và lấy trung bình cho từng chunk. Token "Pin" trong câu thứ tư đã nhìn thấy "Laptop" ở câu đầu.</p>
+<p>Số liệu (Günther và cộng sự, 2024): trên 4 dataset BEIR, trung bình 3 model, nDCG@10 tăng khoảng 1,5–1,9 điểm. Không đều: lớn nhất ở NFCorpus với jina-v2-small, gần như không có với nomic trên SciFact và NFCorpus. Điều kiện: model context đủ dài, truy cập được embedding tầng token.</p>
+<p>Hình dưới là <b>mô phỏng ý tưởng</b>, không phải model thật: vector chunk "late" = vector của chunk + α × vector của cả tài liệu. Câu hỏi "bảo hành pin laptop" có chữ "laptop" mà câu "Pin được bảo hành 12 tháng." không có.</p>`,
+        viz(box) {
+          const ix = makeIndex(UTEXT.sent), q = ix.vec('bảo hành pin laptop'), ch = ix.vec(SENT[3].text), dv = ix.vec(textOf(SENT.map((s) => s.i))), other = ix.vec(SENT[0].text), out = el('div');
+          const mix = (a, b, al) => { const v = {}; for (const w in a) v[w] = a[w]; for (const w in b) v[w] = (v[w] || 0) + al * b[w]; return v; };
+          const draw = (al) => {
+            const s1 = ix.cos(q, mix(ch, dv, al)), s2 = ix.cos(q, mix(other, dv, al));
+            out.replaceChildren(hbars([['"Pin được bảo hành 12 tháng."', s1, true], ['"Laptop mua tại ShopViet ... 24 tháng."', s2, false]], { max: 1, fmt: (v) => v.toFixed(3) }),
+              el('div', { class: 'cap', html: al > 0.6 ? '<span class="bad">α lớn: mọi chunk của tài liệu trông giống nhau vì đều mang cùng phần "cả tài liệu". Chunk mất đặc trưng riêng.</span>' : al > 0 ? 'Chunk về pin giờ có chút "laptop" nên khớp tốt hơn câu hỏi có chữ laptop.' : 'α = 0 là cách embed thường: chunk về pin không biết nó nói về laptop.' }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('α (mức trộn ngữ cảnh, mô phỏng)', 0, 1.5, 0.1, 0, draw, (v) => v.toFixed(1)).node]), out,
+            el('div', { class: 'cap', text: 'Late chunking thật không có α: mức ngữ cảnh do attention của model quyết định. Và giống contextualized chunk embedding, nó không thêm chữ nào vào chunk, nên BM25 không được lợi.' }));
+          draw(0);
+        },
+        take: 'Late chunking làm vector của chunk mang ngữ cảnh mà không tốn LLM lúc index. Mức lợi nhỏ và không đều, phải đo.'
+      },
+      {
+        q: 'Vector search trả lời "không chắc" cho câu Air 13 và Care+. Graph làm khác gì?',
+        a: `<p>Vector search hỏi: <b>đoạn nào giống câu hỏi nhất?</b> Câu hỏi có "Air 13" và "Care+". Đoạn quy tắc Care+ khớp chữ "Care+". Đoạn mô tả Air 13 ("laptop mỏng nhẹ, pin 15 giờ") khớp chữ "Air 13" nhưng không nói Air 13 thuộc danh mục nào. Mắt xích ở giữa ("Laptop văn phòng gồm Air 13...") cũng chỉ khớp chữ "Air 13", ngang điểm với đoạn mô tả, nên top-2 có thể lấy nhầm đoạn mô tả. Thiếu mắt xích, model không nối được Air 13 với Laptop văn phòng và trả lời "không chắc".</p>
+<p>Graph hỏi: <b>từ Air 13, đi theo cạnh nào tới Care+?</b> Air 13 —thuộc→ Laptop văn phòng —bán kèm→ Care+. Nối được vì có cạnh "thuộc", không cần đoạn văn nào giống câu hỏi.</p>
+<p>Graph không phải lúc nào cũng thắng. Câu "Tai nghe Z đổi trả trong bao nhiêu ngày?" (chọn câu thứ ba ở Phần B): đoạn chính sách đã có sẵn chữ "tai nghe", nên vector search cũng lấy đủ hai mảnh. Ở loại câu này graph chỉ thêm chi phí.</p>
+<p>Nhưng cạnh đó từ đâu ra? Ai đó (người hoặc LLM) phải đọc mô tả sản phẩm và chính sách để trích ra. GraphRAG của Microsoft (Edge và cộng sự, 2024) dùng LLM trích entity và quan hệ từ toàn bộ corpus, gom thành cộng đồng và viết báo cáo cho từng cộng đồng. Tài liệu của Microsoft ước tính bước trích graph chiếm khoảng 75% chi phí index. Dữ liệu đổi thì index lại cũng tốn tương ứng.</p>
+<p>Với dữ liệu ShopViet, nhiều cạnh như "sản phẩm thuộc danh mục" đã có sẵn trong database sản phẩm. Không cần LLM trích. Đó là structured retrieval (README §2.6), thường rẻ và chắc hơn trích từ văn bản.</p>`,
+        take: 'Graph nối bằng quan hệ, vector nối bằng độ giống. Câu hỏi multi-hop mà mắt xích giữa không giống câu hỏi thì cần quan hệ. Quan hệ có sẵn trong database thì dùng database, đừng trích lại từ văn bản.'
+      },
+      {
+        q: 'GraphRAG global search tốn bao nhiêu token mỗi câu hỏi?',
+        a: `<p>GraphRAG-Bench (Xiang và cộng sự, 2025), hình 8 của paper, chi phí token mỗi câu hỏi: vector RAG khoảng 879, HippoRAG2 khoảng 1.008, MS-GraphRAG local khoảng 38.707, MS-GraphRAG global khoảng 331.375. Phần văn bản của paper có chỗ ghi prompt global search "tới 4×10⁴ token", không khớp với hình; dù theo số nào, global search cũng đắt hơn vector RAG nhiều bậc.</p>
+<p>Hình dưới vẽ trên thang log (mỗi vạch dọc gấp 10 lần) và đổi ra tiền input cho 1.000 câu hỏi với Sonnet 5.5 ($2 / triệu token input, Cost optimization §2.1).</p>
+<p>LazyGraphRAG (Microsoft Research, 11/2024) hoãn phần đắt sang lúc truy vấn: index chỉ dùng NLP trích cụm danh từ. Microsoft báo cáo chi phí index bằng vector RAG và bằng 0,1% GraphRAG đầy đủ, chất lượng câu hỏi tổng hợp tương đương global search với chi phí truy vấn thấp hơn hơn 700 lần. Bằng chứng giới hạn: một bộ dữ liệu (5.590 bài báo AP), 100 câu hỏi, chấm bằng LLM so cặp.</p>`,
+        viz(box) {
+          const R = [['Vector RAG', 879], ['HippoRAG2', 1008], ['MS-GraphRAG local', 38707], ['MS-GraphRAG global', 331375]];
+          box.append(hbars(R.map(([n, v], i) => [n, Math.log10(v), i === 3]), { max: 6, fmt: (v) => { const t = 10 ** v; return nf(t) + ' tok · ' + usd((t / 1e6) * 2 * 1000) + ' / 1.000 câu'; } }),
+            el('div', { class: 'cap', text: `Thanh dài theo log10. Global search tốn gấp khoảng ${nf(331375 / 879)} lần vector RAG mỗi câu hỏi.` }));
+        },
+        take: 'Global search là công cụ cho câu hỏi tổng hợp hiếm gặp, không phải đường mặc định cho mọi câu hỏi.'
+      },
+      {
+        q: 'Vậy graph có thắng vector RAG không? Paper nào cũng nói graph tốt hơn mà.',
+        a: `<p>README dẫn ba nghiên cứu độc lập. Kết quả phụ thuộc loại câu hỏi:</p>
+<div class="tbl"><table><tr><th>Nghiên cứu</th><th>Loại câu hỏi</th><th>RAG</th><th>Graph</th></tr>
+<tr><td>Han và cộng sự (2025), Llama-3.1-8B</td><td>NQ (một bước), F1</td><td><b>64,78</b></td><td>63,01 (graph tốt nhất)</td></tr>
+<tr><td></td><td>MultiHop-RAG</td><td>67,02</td><td><b>70,27</b> (HippoRAG2)</td></tr>
+<tr><td>GraphRAG-Bench, GPT-4o-mini, bộ Novel</td><td>Tra cứu sự kiện</td><td><b>60,92</b> (có rerank)</td><td>60,14 (HippoRAG2)</td></tr>
+<tr><td></td><td>Suy luận phức tạp</td><td>42,93</td><td><b>53,38</b> (HippoRAG2)</td></tr>
+<tr><td></td><td>Tóm tắt theo ngữ cảnh</td><td>51,30</td><td><b>64,40</b> (MS-GraphRAG local)</td></tr></table></div>
+<p>Han và cộng sự còn thấy GraphRAG global search yếu trên tác vụ hỏi đáp, và kết hợp cả hai thắng từng cái riêng ở phần lớn trường hợp.</p>
+<p>Còn "paper nào cũng nói graph tốt hơn"? Zeng và cộng sự (2025) chỉ ra các đánh giá trước đó có câu hỏi không liên quan và thiên lệch khi dùng LLM chấm. Sau khi khử thiên lệch, tỉ lệ thắng của LightRAG trước NaiveRAG trên bộ Agriculture giảm từ 66,70% (theo paper LightRAG) xuống 39,06%, tức NaiveRAG thắng.</p>`,
+        viz(box) {
+          box.append(hbars([['LightRAG thắng, theo paper LightRAG', 66.70, false], ['LightRAG thắng, sau khi khử thiên lệch', 39.06, true]], { max: 100, fmt: (v) => v.toFixed(2).replace('.', ',') + '%' }),
+            el('div', { class: 'cap', text: 'Cùng bộ dữ liệu Agriculture, cùng hai hệ thống. Chỉ đổi cách đánh giá. Dưới 50% nghĩa là NaiveRAG thắng nhiều hơn.' }));
+        },
+        take: 'Graph thắng ở câu nhiều bước và tổng hợp, hoà hoặc thua ở câu tra cứu một sự kiện. Đánh giá bằng đáp án kiểm tra được, không chỉ bằng LLM chấm so cặp.'
+      },
+      {
+        q: 'Câu hỏi tổng hợp chỉ chiếm 3% traffic thì có nên dựng graph không?',
+        a: `<p>README: phân loại câu hỏi thật từ log trước, đo tỉ lệ từng loại. Nếu câu hỏi tổng hợp chỉ chiếm 3%, một pipeline map-reduce trên tóm tắt tài liệu, chạy riêng cho 3% đó qua routing, thường rẻ hơn dựng và duy trì graph cho cả corpus.</p>
+<p>Hình dưới tính token trung bình mỗi câu hỏi khi đưa mọi câu qua global search, so với routing: chỉ nhóm tổng hợp đi global search, còn lại đi vector RAG. Số token mỗi loại lấy từ GraphRAG-Bench ở câu 7. Chưa tính chi phí index graph, phần mà routing cũng không tránh được nếu nhánh tổng hợp vẫn dùng GraphRAG; map-reduce trên tóm tắt thì tránh được, nhưng README không có số token cho cách đó.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const draw = (p) => {
+            const share = p / 100, all = 331375, routed = share * 331375 + (1 - share) * 879, vec = 879;
+            out.replaceChildren(hbars([['Mọi câu qua global search', all, false], [`Routing (${p}% tổng hợp)`, routed, true], ['Mọi câu qua vector RAG', vec, false]], { fmt: (v) => nf(v) + ' tok / câu' }));
+            cap.textContent = `Routing tốn trung bình ${nf(routed)} token mỗi câu, bằng ${((routed / all) * 100).toFixed(1).replace('.', ',')}% so với đưa mọi câu qua global search. Phần lớn chi phí còn lại đến từ ${p}% câu tổng hợp.`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Tỉ lệ câu hỏi tổng hợp', 0, 30, 1, 3, draw, (v) => v + '%').node]), out, cap);
+          draw(3);
+        },
+        take: 'Đo tỉ lệ loại câu hỏi trước khi chọn kiến trúc. Kỹ thuật đắt chỉ nên chạy cho nhóm cần nó.'
+      }
+    ],
+    poc: {
+      goal: "Tài liệu bảo hành 11 câu: tìm bằng câu (embedding thật), trả về câu / cửa sổ / đoạn cha / mục cha / cả tài liệu / auto-merge, đếm token tiktoken và số ý đủ. Phần graph: <b>cạnh viết tay</b> (GraphRAG thật dùng LLM trích), BFS và vector top-2 chạy thật.",
+      file: "docs/advanced-rag/pocs/05_parent_child_graphrag.py",
+      run: "uv run docs/advanced-rag/pocs/05_parent_child_graphrag.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ.",
+      output: "Tài liệu 'Bảo hành laptop 2026': 3 mục, 6 đoạn, 11 câu, 176 token. Tìm bằng câu (paraphrase-multilingual-MiniLM-L12-v2 (thật, CPU)), top-2.\n\n== A. Đơn vị tìm = câu; đơn vị trả về thay đổi ==\nCâu hỏi                                   trả về             câu khớp  ý đủ  token  so cả tài liệu\n----------------------------------------  -----------------  --------  ----  -----  --------------\nPin laptop bị chai sau 8 tháng còn được   câu                3,0       1/3   29     16%\nPin laptop bị chai sau 8 tháng còn được   cửa sổ ±1          3,0       2/3   72     41%\nPin laptop bị chai sau 8 tháng còn được   đoạn cha           3,0       2/3   72     41%\nPin laptop bị chai sau 8 tháng còn được   mục cha            3,0       2/3   72     41%\nPin laptop bị chai sau 8 tháng còn được   cả tài liệu        3,0       3/3   176    100%\nPin laptop bị chai sau 8 tháng còn được   auto-merge (>0,5)  3,0       1/3   29     16%\nLaptop hỏng thì mang đi đâu bảo hành, ba  câu                0,8       1/3   38     22%\nLaptop hỏng thì mang đi đâu bảo hành, ba  cửa sổ ±1          0,8       2/3   89     51%\nLaptop hỏng thì mang đi đâu bảo hành, ba  đoạn cha           0,8       2/3   73     41%\nLaptop hỏng thì mang đi đâu bảo hành, ba  mục cha            0,8       3/3   125    71%\nLaptop hỏng thì mang đi đâu bảo hành, ba  cả tài liệu        0,8       3/3   176    100%\nLaptop hỏng thì mang đi đâu bảo hành, ba  auto-merge (>0,5)  0,8       1/3   38     22%\n\n== B. Câu hỏi nhiều bước: BFS trên graph so với vector top-k ==\nCâu hỏi                                   đường đi BFS                                               graph đủ  vector top-2  vector đủ  token graph  token vector\n----------------------------------------  ---------------------------------------------------------  --------  ------------  ---------  -----------  ------------\nAir 13 có mua được gói Care+ không?       Air 13 → [thuộc] Laptop văn phòng → [bán kèm] Care+        2/2       1,2           1/2        41           42\nStrix G16 có mua kèm gói Care+ được khôn  Strix G16 → [thuộc] Laptop gaming → [KHÔNG áp dụng] Care+  2/2       3,0           1/2        36           31\nTai nghe Z đổi trả trong bao nhiêu ngày?  Tai nghe Z → [thuộc] Tai nghe → [đổi trả] đổi trả 15 ngày  2/2       7,5           2/2        36           36\nCạnh graph là VIẾT TAY (GraphRAG thật dùng LLM trích entity/quan hệ, ~75% chi phí index theo README §2.5). BFS và vector search chạy thật.\n\nRút ra: tìm bằng câu chính xác nhưng thiếu ý (1/3); trả về đoạn/mục cha đủ thêm ý với 41–71% token của cả tài liệu.\nÝ 'pin phồng bị từ chối' nằm ở mục khác nên chỉ tới khi gửi cả tài liệu. Auto-merge (>0,5) không kích hoạt: top-2 chỉ chạm 1/3 câu mỗi đoạn.\nGraph thắng khi mắt xích giữa không chung chữ với câu hỏi (Air 13 → Laptop văn phòng, Strix G16 → Laptop gaming: vector 1/2).\nTai nghe Z: vector cũng đủ 2/2 vì đoạn chính sách có sẵn chữ 'tai nghe': graph chỉ thêm chi phí ở loại câu này.",
+      measured: true,
+      read: ["Phần A: trả về câu chỉ đủ 1/3 ý; đoạn hoặc mục cha đủ 2–3/3 với 41–71% token của cả tài liệu.", "Ý 'pin phồng bị từ chối' nằm ở mục khác: chỉ tới khi gửi cả tài liệu. Auto-merge ngưỡng 0,5 không kích hoạt với top-2.", "Phần B: BFS đủ 2/2 mảnh cho cả 3 câu; vector top-2 chỉ đủ khi đoạn chính sách có sẵn chữ trong câu hỏi (Tai nghe Z)."]
+    },
+    mount(stage) {
+      const S = { q: 'a', unit: 'sent', ret: 'sent', w: 1, k: 1, gq: 'g1', step: 0, gk: 2 };
+      const tree = el('div'), statA = el('div', { class: 'stat' }), capA = el('div', { class: 'sum', style: 'margin-top:10px;padding-top:0;border:0' });
+      function renderA() {
+        const q = QA.find((x) => x.id === S.q), r = retrieve(q, S.unit, S.ret, S.w, S.k), sentSet = new Set(r.sent);
+        const matchedSets = r.matched.map((ids) => new Set(ids)), rankOf = (ids) => { const i = r.matched.findIndex((m) => m.length === ids.length && m.every((x, j) => x === ids[j])); return i < 0 ? 0 : i + 1; };
+        const sentEl = (s) => {
+          const need = q.need.includes(s.i), rk = S.unit === 'sent' ? rankOf([s.i]) : 0;
+          return el('div', { style: `font-size:12.5px;padding:3px 6px;margin:2px 0;border-radius:4px;background:${sentSet.has(s.i) ? 'var(--accent-soft)' : 'transparent'};border-left:3px solid ${need ? 'var(--ok)' : 'transparent'};${rk ? 'outline:2px solid var(--accent);' : ''}${sentSet.has(s.i) ? '' : 'color:var(--mute);'}`, html: `<span class="mono" style="font-size:11px;color:var(--mute)">c${s.i + 1}${rk ? ' · #' + rk : ''}</span> ${s.text}${need ? ` <b class="ok" style="font-size:11px">cần: ${q.facts[s.i]}</b>` : ''}` });
+        };
+        tree.replaceChildren(el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px' }, SECS.map((ids, m) => {
+          const rk = S.unit === 'sec' ? rankOf(ids) : 0;
+          return el('div', { style: `border:${rk ? '2px solid var(--accent)' : '1px solid var(--line)'};border-radius:8px;padding:6px 8px;background:var(--bg)` }, [
+            el('div', { style: 'font-size:12px;font-weight:700;margin-bottom:4px', text: `Mục ${m + 1}. ${SEC[m]}${rk ? ' · #' + rk : ''}` }),
+            ...PARS.map((pids, p) => [pids, p]).filter(([pids]) => SENT[pids[0]].sec === m).map(([pids, p]) => {
+              const pr = S.unit === 'par' ? rankOf(pids) : 0;
+              return el('div', { style: `border:${pr ? '2px solid var(--accent)' : '1px dashed var(--line)'};border-radius:6px;padding:3px;margin-bottom:5px` }, [el('div', { class: 'mono', style: 'font-size:10.5px;color:var(--mute)', text: `đoạn ${p + 1}${pr ? ' · #' + pr : ''}` }), ...pids.map((i) => sentEl(SENT[i]))]);
+            })]);
+        })));
+        const sentTok = r.sent.reduce((a, i) => a + SENT[i].t, 0), got = q.need.filter((n) => sentSet.has(n)), pct = (sentTok / DOC_TOK) * 100, needTok = q.need.reduce((a, i) => a + SENT[i].t, 0);
+        statA.innerHTML = `<span>Gửi cho model: <b>${r.sent.length}</b> câu, <b>${sentTok}</b> token</span><span>So với cả tài liệu: <b>${pct.toFixed(0)}%</b></span><span>Ý đủ: <b class="${got.length === q.need.length ? 'ok' : 'bad'}">${got.length}/${q.need.length}</b></span><span>Token của ý cần / token gửi: <b>${Math.round((got.reduce((a, i) => a + SENT[i].t, 0) / sentTok) * 100)}%</b></span>`;
+        const msgs = [], miss = q.need.filter((n) => !sentSet.has(n)), top = r.matched[0];
+        if (r.eff !== S.ret) msgs.push(`<p class="bad"><b>Đơn vị trả về (${RNAME[S.ret]}) nhỏ hơn hoặc không áp dụng được cho đơn vị tìm (${UNAME[S.unit]}).</b> Khi tìm theo ${UNAME[S.unit]}, hệ thống chỉ biết ${UNAME[S.unit]} nào khớp, không biết câu nào trong đó. Lab gửi nguyên ${UNAME[S.unit]} đã khớp. Trong hệ thống thật, đơn vị trả về luôn bằng hoặc lớn hơn đơn vị tìm.</p>`);
+        if (!top.some((i) => q.need.includes(i))) msgs.push(`<p class="bad"><b>${UNAME[S.unit]} khớp nhất không chứa ý nào cần.</b> Điểm của ${UNAME[S.unit]} lớn bị loãng bởi các câu khác.</p>`);
+        if (miss.length && S.ret === 'sent' && S.unit === 'sent') msgs.push(`<p class="bad"><b>Câu khớp đúng nhưng thiếu ${miss.length} ý.</b> Câu "${SENT[top[0]].text}" trả lời đúng chủ đề, nhưng ${miss.map((i) => '"' + q.facts[i] + '"').join(', ')} nằm ở câu khác. Model sẽ trả lời thiếu điều kiện, nghe vẫn tự tin. Điều này không có nghĩa câu nhỏ là sai: nó tìm đúng, chỉ là không đủ để đọc. <b>Trong hệ thống thật:</b> giữ câu làm đơn vị tìm, đổi đơn vị trả về thành cửa sổ hoặc đoạn cha.</p>`);
+        else if (miss.length) {
+          const far = miss.filter((i) => !top.some((t) => SENT[t].sec === SENT[i].sec));
+          msgs.push(`<p class="bad"><b>Còn thiếu ${miss.length} ý: ${miss.map((i) => q.facts[i]).join('; ')}.</b>${far.length ? ` Ý này nằm ở mục "${SEC[SENT[far[0]].sec]}", khác mục với chỗ khớp. Parent–child chỉ mở rộng trong cùng cha, nên không với tới. Muốn có nó: tăng top-k, hoặc cho chunk ngoại lệ mang ngữ cảnh "pin" để nó tự khớp (contextual retrieval, Lab 4).` : ' Ý này cùng mục với chỗ khớp nhưng ở đoạn khác: đoạn cha hoặc cửa sổ hẹp không với tới, mục cha thì có. Cỡ đơn vị trả về phải chọn theo cách tài liệu đặt các ý liên quan gần nhau tới đâu.'}</p>`);
+        }
+        if (!miss.length && pct >= 60) msgs.push(`<p class="bad"><b>Đủ ý, nhưng gửi ${pct.toFixed(0)}% tài liệu.</b> Gần bằng nhét cả tài liệu vào prompt. Với kho thật, mục cha có thể là 2048 token mỗi kết quả, top-${S.k} là ${nf(2048 * S.k)} token cho riêng phần context.</p>`);
+        if (!miss.length && pct < 60) msgs.push(`<p class="ok"><b>Đủ ${q.need.length}/${q.need.length} ý với ${pct.toFixed(0)}% tài liệu.</b> Đây là điểm cân bằng cho câu hỏi này. Câu hỏi khác có thể cần cỡ khác, nên đo trên tập câu hỏi thật.</p>`);
+        capA.innerHTML = '<div class="verdict">' + msgs.join('') + `<p>Chi phí context với Sonnet 5.5 ($2 / triệu token input, Cost optimization §2.1): ${usd((sentTok / 1e6) * 2 * 1e6)} mỗi triệu câu hỏi cho phần này.</p></div>`;
+      }
+      const svg = el('svg', { class: 'canvas', viewBox: '0 0 570 320', role: 'img', 'aria-label': 'Graph sản phẩm, danh mục, chính sách của ShopViet' });
+      const statB = el('div', { class: 'stat' }), capB = el('div', { class: 'sum', style: 'margin-top:8px;padding-top:0;border:0' }), vecBox = el('div', { class: 'chunks' });
+      const COL = { p: 'var(--g1)', c: 'var(--g4)', r: 'var(--g2)', k: 'var(--g3)' };
+      function renderB() {
+        const q = GQ.find((x) => x.id === S.gq), b = bfs(q), maxStep = b.layers.length - 1, st = Math.min(S.step, maxStep);
+        const visited = new Set(b.layers.slice(0, st + 1).flat()), done = st >= maxStep && b.found, onPath = new Set(done ? b.path : []);
+        const pathEdge = (a, c) => done && b.path.some((n, i) => i && ((b.path[i - 1] === a && n === c) || (b.path[i - 1] === c && n === a)));
+        const edges = EDGES.map(([a, c, lab]) => {
+          const A = NODES[a], C = NODES[c], hot = pathEdge(a, c), seen = visited.has(a) && visited.has(c);
+          return el('g', {}, [el('line', { x1: A.x, y1: A.y, x2: C.x, y2: C.y, stroke: hot ? 'var(--accent)' : seen ? 'var(--ink)' : 'var(--line)', 'stroke-width': hot ? 3.5 : 1.5, 'stroke-dasharray': lab === 'không áp dụng' ? '5 4' : '' }),
+            el('text', { x: (A.x + C.x) / 2, y: (A.y + C.y) / 2 - 4, 'text-anchor': 'middle', class: hot ? '' : 'mute', style: 'font-size:10.5px;paint-order:stroke;stroke:var(--panel);stroke-width:3px', text: lab })]);
+        });
+        const nodes = Object.entries(NODES).map(([id, n]) => {
+          const v = visited.has(id), p = onPath.has(id);
+          return el('g', {}, [el('rect', { x: n.x - 62, y: n.y - 15, width: 124, height: 30, rx: 8, fill: v ? COL[n.type] : 'var(--panel)', 'fill-opacity': v ? (p ? 0.9 : 0.35) : 1, stroke: p ? 'var(--accent)' : COL[n.type], 'stroke-width': p ? 3 : 1.5 }),
+            el('text', { x: n.x, y: n.y + 4, 'text-anchor': 'middle', style: `font-size:12px;${p ? 'font-weight:700' : ''}`, text: n.label })]);
+        });
+        svg.replaceChildren(...edges, ...nodes);
+        const vr = GIDX.rank(q.text), topk = vr.slice(0, S.gk).map((x) => x.i), haveAll = q.need.every((n) => topk.includes(n)), trapIn = q.trap >= 0 && topk.includes(q.trap);
+        const trapAbove = q.trap >= 0 && vr.findIndex((x) => x.i === q.trap) < Math.min(...q.need.map((n) => vr.findIndex((x) => x.i === n)));
+        vecBox.replaceChildren(...vr.slice(0, Math.max(S.gk, 4)).map((x, i) => el('div', { class: 'ch', style: `${q.need.includes(x.i) ? 'border-color:var(--ok);' : ''}${i < S.gk ? '' : 'opacity:.45;'}` }, [el('small', { text: `#${i + 1} · điểm ${x.s.toFixed(3)}${q.need.includes(x.i) ? ' · mảnh cần' : ''}${x.i === q.trap ? ' · mảnh bẫy' : ''}` }), el('span', { text: GCH[x.i] })])));
+        const lastEdge = done && b.path.length > 1 ? edgeOf(b.path[b.path.length - 2], b.path[b.path.length - 1]) : null;
+        statB.innerHTML = `<span>Bước: <b>${st}/${maxStep}</b></span><span>Nút đã thăm: <b>${visited.size}</b></span><span>Đường đi: <b>${done ? b.path.map((n) => NODES[n].label).join(' → ') : 'chưa tới'}</b></span><span>Graph trả lời: <b class="${done ? 'ok' : ''}">${done ? q.right + ' (cạnh "' + lastEdge[2] + '")' : '...'}</b></span><span>Vector top-${S.gk}: đủ mảnh <b class="${haveAll ? 'ok' : 'bad'}">${q.need.filter((n) => topk.includes(n)).length}/${q.need.length}</b></span>`;
+        const msgs = [];
+        if (!haveAll && trapIn) msgs.push(`<p class="bad"><b>Vector search lấy mảnh bẫy, thiếu mảnh nối.</b> Top-${S.gk} có "${GCH[q.trap]}" nhưng thiếu "${GCH[q.need.find((n) => !topk.includes(n))]}". Model sẽ trả lời <b>${q.wrong}</b>. Vì sao: vector search chỉ chấm từng đoạn giống câu hỏi tới đâu. Mảnh bẫy giống câu hỏi ngang hoặc hơn mảnh nối, và retriever không biết đoạn nào là mắt xích giữa của chuỗi "sản phẩm → danh mục → chính sách". Điều này không có nghĩa vector search hỏng: câu hỏi một bước nó vẫn làm tốt. <b>Trong hệ thống thật:</b> quan hệ sản phẩm–danh mục đã có trong database, tra thẳng (§2.6) hoặc nối bằng graph cho nhóm câu hỏi multi-hop.</p>`);
+        else if (haveAll && trapAbove) msgs.push(`<p class="bad"><b>Đủ mảnh, nhưng mảnh bẫy đứng trên.</b> Top-${S.gk} có cả mảnh bẫy "${GCH[q.trap]}" lẫn các mảnh cần. Model phải tự nối từ các đoạn rời và chọn ${q.right} thay vì ${q.wrong}. Tăng top-k để cứu một câu nghĩa là thêm nhiễu cho mọi câu.</p>`);
+        else if (haveAll) msgs.push(`<p class="ok"><b>Vector search đủ mảnh ở top-${S.gk}.</b> Câu này hai mảnh cần đều nhắc tên thứ được hỏi, nên giống câu hỏi. Graph không thêm gì ngoài chi phí. Đây là trường hợp README nói: graph chỉ đáng khi câu hỏi phải nối qua quan hệ.</p>`);
+        else msgs.push(`<p class="bad">Top-${S.gk} thiếu mảnh cần. Tăng top-k để xem mảnh còn lại đứng hạng mấy.</p>`);
+        capB.innerHTML = '<div class="verdict">' + msgs.join('') + '</div>';
+      }
+      const gqSel = select('Câu hỏi', GQ.map((q) => [q.id, q.text]), S.gq, (v) => { S.gq = v; S.step = 0; renderB(); });
+      stage.append(
+        el('h4', { text: 'A. Đơn vị tìm và đơn vị trả về', style: 'margin:0 0 8px' }),
+        el('div', { class: 'row' }, [
+          select('Câu hỏi', QA.map((q) => [q.id, q.text]), S.q, (v) => { S.q = v; renderA(); }).node,
+          select('Đơn vị tìm', [['sent', 'Câu'], ['par', 'Đoạn'], ['sec', 'Mục']], S.unit, (v) => { S.unit = v; renderA(); }).node,
+          select('Đơn vị trả về', [['sent', 'Chính đơn vị tìm (câu)'], ['win', 'Cửa sổ ± w câu'], ['par', 'Đoạn cha'], ['sec', 'Mục cha'], ['doc', 'Cả tài liệu']], S.ret, (v) => { S.ret = v; renderA(); }).node]),
+        el('div', { class: 'row' }, [slider('Cửa sổ w', 1, 3, 1, S.w, (v) => { S.w = v; renderA(); }).node, slider('top-k', 1, 3, 1, S.k, (v) => { S.k = v; renderA(); }).node]),
+        tree, statA, capA,
+        el('h4', { text: 'B. Câu hỏi nhiều bước: graph và vector search', style: 'margin:22px 0 8px' }),
+        el('div', { class: 'row' }, [gqSel.node,
+          el('button', { class: 'primary', text: 'Đi thêm 1 bước', onclick: () => { S.step++; renderB(); } }),
+          el('button', { text: 'Làm lại', onclick: () => { S.step = 0; renderB(); } }),
+          slider('Vector top-k', 1, 4, 1, S.gk, (v) => { S.gk = v; renderB(); }).node]),
+        svg,
+        el('div', { class: 'legend', html: '<span><i style="background:var(--g1)"></i>Sản phẩm</span><span><i style="background:var(--g4)"></i>Danh mục</span><span><i style="background:var(--g2)"></i>Chính sách đổi trả</span><span><i style="background:var(--g3)"></i>Gói dịch vụ</span><span>Nét đứt: quan hệ phủ định</span>' }),
+        statB, el('h4', { text: 'Vector search trên cùng nội dung viết thành đoạn văn', style: 'margin:14px 0 6px' }), vecBox, capB,
+        el('p', { class: 'hint', text: 'Graph và các đoạn văn là dữ liệu dựng sẵn. Duyệt graph là BFS thật trong trình duyệt: bắt đầu từ sản phẩm có tên trong câu hỏi, mở rộng từng lớp tới khi gặp nút chính sách hoặc gói cần tìm. Token ước lượng theo 49 từ tiếng Việt ≈ 56 token (o200k, Cost optimization §2.1).' }));
+      renderA(); renderB();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

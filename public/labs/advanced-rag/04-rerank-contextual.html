@@ -1,0 +1,688 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-query-rewriting.html">← Lab trước</a><a href="05-parent-child-graphrag.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const STOP = new Set('có không ko được là và của cho các một những thì bị khi nào gì với trong từ đã tại theo này đó ra vào mà sau trước như để thế làm sao bao lâu nhiêu hoặc nên hãy còn cần phải nếu đoạn nói về thuộc mục trích'.split(' '));
+  const SYN = [['hủy', 'huỷ'], ['hoàn lại', 'hoàn'], ['đổi trả', 'đổi'], ['đổi mới', 'đổi'], ['care+', 'care']];
+  const terms = (s) => { let t = s.toLowerCase(); SYN.forEach(([a, b]) => { t = t.split(a).join(b); }); return t.split(/[^\p{L}\p{N}]+/u).filter((w) => w && !STOP.has(w)); };
+  const tok = (s) => Math.max(1, Math.round((s.trim().split(/\s+/).length * 56) / 49));
+  const usd = (v) => '$' + (v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v.toPrecision(2)).replace('.', ',');
+  const nf = (n) => Math.round(n).toLocaleString('vi-VN');
+  function makeIndex(texts) {
+    const tf = texts.map((x) => { const m = {}; terms(x).forEach((w) => { m[w] = (m[w] || 0) + 1; }); return m; });
+    const df = {};
+    tf.forEach((m) => Object.keys(m).forEach((w) => { df[w] = (df[w] || 0) + 1; }));
+    const idf = (w) => Math.log(1 + texts.length / (df[w] || 0.5));
+    const vec = (m) => { const v = {}; for (const w in m) v[w] = (1 + Math.log(m[w])) * idf(w); return v; };
+    const norm = (v) => Math.hypot(...Object.values(v)) || 1;
+    const dv = tf.map(vec), dn = dv.map(norm);
+    return (q) => {
+      const m = {};
+      terms(q).forEach((w) => { m[w] = (m[w] || 0) + 1; });
+      const qv = vec(m), qn = norm(qv);
+      return texts.map((_, i) => { let s = 0; for (const w in qv) if (dv[i][w]) s += qv[w] * dv[i][w]; return { i, s: s / (qn * dn[i]) }; }).sort((a, b) => b.s - a.s);
+    };
+  }
+  const CH = [
+    { id: 'A1', doc: 'Điều khoản gói Care+', text: 'Gói Care+ đổi máy mới khi rơi vỡ hoặc vào nước, tối đa một lần mỗi năm.', ctx: 'Trích Điều khoản gói ShopViet Care+, mục 1 "Quyền lợi": phạm vi đổi máy của gói Care+.' },
+    { id: 'A2', doc: 'Điều khoản gói Care+', text: 'Phí gói bằng 8% giá máy, thanh toán một lần khi mua.', ctx: 'Trích Điều khoản gói ShopViet Care+, mục 2 "Phí": mức phí mua gói Care+.' },
+    { id: 'A3', doc: 'Điều khoản gói Care+', text: 'Khách được hoàn lại toàn bộ phí nếu yêu cầu trong 30 ngày, trừ khi đã dùng quyền lợi.', ctx: 'Trích Điều khoản gói ShopViet Care+, mục 3 "Huỷ gói": hoàn phí gói Care+ khi khách huỷ gói.' },
+    { id: 'B1', doc: 'Đổi trả laptop 2026', text: 'Laptop lỗi phần cứng do nhà sản xuất được đổi trả với phí 0 đồng.', ctx: 'Trích Chính sách đổi trả laptop 2026, mục 1 "Điều kiện đổi": laptop lỗi phần cứng.' },
+    { id: 'B2', doc: 'Đổi trả laptop 2026', text: 'Yêu cầu phải gửi trong 7 ngày kể từ ngày nhận hàng, máy còn nguyên seal.', ctx: 'Trích Chính sách đổi trả laptop 2026, mục 2 "Thời hạn": thời hạn gửi yêu cầu đổi trả laptop lỗi.' },
+    { id: 'C1', doc: 'Điều khoản trả góp 0%', text: 'Trả góp 0% cho đơn từ 3.000.000đ khi thanh toán bằng thẻ tín dụng.', ctx: 'Trích Điều khoản trả góp 0% của ShopViet, mục 1 "Điều kiện".' },
+    { id: 'C2', doc: 'Điều khoản trả góp 0%', text: 'Khách có thể huỷ hợp đồng và được hoàn phí hồ sơ nếu yêu cầu trong 7 ngày.', ctx: 'Trích Điều khoản trả góp 0% của ShopViet, mục 3 "Huỷ hợp đồng": huỷ hợp đồng trả góp.' },
+    { id: 'D1', doc: 'Chính sách giao hàng', text: 'Giao hàng nhanh 2 giờ tại Hà Nội và TP.HCM.', ctx: 'Trích Chính sách giao hàng của ShopViet.' }
+  ];
+  const QS = [
+    { id: 'q1', text: 'Huỷ gói Care+ thì được hoàn phí trong bao lâu?', gold: 'A3', ans: '30 ngày' },
+    { id: 'q2', text: 'Laptop lỗi thì phải yêu cầu đổi trả trong bao lâu?', gold: 'B2', ans: '7 ngày' },
+    { id: 'q3', text: 'Hủy trả góp có mất phí không?', gold: 'C2', ans: 'được hoàn phí hồ sơ nếu huỷ trong 7 ngày' },
+    { id: 'q4', text: 'Care+ có đổi máy khi rơi vỡ không?', gold: 'A1', ans: 'có, một lần mỗi năm' }
+  ];
+  const plainIdx = makeIndex(CH.map((c) => c.text)), ctxIdx = makeIndex(CH.map((c) => c.ctx + ' ' + c.text));
+  const DAYS = /trong (\d+) ngày/;
+  const PRICE = { haiku: { in: 0.10, out: 0.50, read: 0.01 }, sonnetIn: 2, voyage: 0.05, voyageLite: 0.02, bedrockCohere: 2.0 / 1000 };
+  const CTX_PROMPT = 'Here is the chunk we want to situate within the whole document. Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.';
+  const PROMPT_EN_TOK = Math.round((CTX_PROMPT.split(/\s+/).length * 44) / 39);
+
+  return {
+    id: 'rerank-contextual', nav: '4. Rerank & chunk có ngữ cảnh', ref: '§2.2–2.3',
+    title: 'Chunk "trong 30 ngày" là 30 ngày của cái gì? Ghép ngữ cảnh vào chunk, rồi rerank cho đúng thứ tự',
+    hook: 'Phần A: bật tắt ngữ cảnh ghép vào chunk và xem câu hỏi khớp chunk nào. Phần B: kéo số candidate, số giữ lại, độ dài query để xem rerank tốn bao nhiêu.',
+    terms: [
+      ['Token', 'Đơn vị model dùng để đếm chữ và tính tiền. Một từ tiếng Việt thường là 1–2 token: 49 từ khoảng 56 token với tokenizer o200k (Cost optimization §2.1). Giá API tính theo triệu token.'],
+      ['Chunk', 'Một mảnh tài liệu được index riêng. Ví dụ điều khoản Care+ bị chia thành 3 chunk theo 3 mục.'],
+      ['BM25', 'Tìm theo từ khoá, giống full-text search trong database: chấm điểm theo số chữ chung giữa câu hỏi và chunk, chữ càng hiếm càng nhiều điểm. "Care+" khớp "Care+"; "trả tiền dần" không khớp "trả góp".'],
+      ['Embedding (dense)', 'Biến một đoạn văn thành một dãy số (vector) sao cho hai đoạn cùng nghĩa có vector gần nhau. Nhờ vậy "hoàn phí trong bao lâu" khớp được "hoàn lại toàn bộ phí nếu yêu cầu trong 30 ngày" dù thiếu chữ "Care+".'],
+      ['Hybrid', 'Chạy cả BM25 lẫn embedding rồi trộn hai danh sách xếp hạng (RRF, Lab 3). Chunk lên đầu khi được cả hai nhánh xếp cao.'],
+      ['Contextual retrieval', 'Cách của Anthropic: cho LLM đọc cả tài liệu, viết 1–2 câu ngữ cảnh cho từng chunk ("Trích Điều khoản Care+, mục 3 Huỷ gói..."), ghép vào đầu chunk rồi mới embed và đưa vào BM25.'],
+      ['Contextual BM25', 'Index từ khoá (BM25) xây trên chunk đã ghép ngữ cảnh. Chữ "Care+" trong câu ngữ cảnh giờ tìm thấy được bằng từ khoá.'],
+      ['Reranker / cross-encoder', 'Model đọc câu hỏi và một đoạn văn cùng lúc rồi cho một điểm liên quan. Chính xác hơn so vector, nhưng phải chạy lại cho từng cặp lúc truy vấn, nên chỉ chạy trên vài chục tới vài trăm candidate.'],
+      ['Candidate, top-N → top-K', 'Retrieval lấy N đoạn (candidate), reranker chấm lại và giữ K đoạn tốt nhất cho model. Thí nghiệm của Anthropic: N = 150, K = 20.'],
+      ['Tỉ lệ retrieval thất bại', '1 − recall@20: tỉ lệ câu hỏi mà đoạn đúng không có trong 20 đoạn lấy về. 5,7% nghĩa là 57 trên 1.000 câu hỏi trượt.'],
+      ['Search unit (Cohere)', 'Đơn vị tính phí của Cohere Rerank: 1 query với tối đa 100 tài liệu. Tài liệu trên 500 token bị tách, mỗi phần tính là một tài liệu.'],
+      ['Prompt caching', 'Provider lưu phần đầu prompt đã xử lý. Request sau có cùng phần đầu thì phần đó tính giá đọc cache, rẻ hơn nhiều. Ở đây phần đầu là cả tài liệu, dùng chung cho mọi chunk của tài liệu đó.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> chia mọi tài liệu chính sách thành chunk theo mục. Khách hỏi "Huỷ gói Care+ thì được hoàn phí trong bao lâu?". Trợ lý trả lời "7 ngày". Đáp án đúng là 30 ngày, nằm ở mục 3 của Điều khoản Care+. Nhưng chunk đó chỉ viết "Khách được hoàn lại toàn bộ phí nếu yêu cầu trong 30 ngày", không có chữ "Care+" hay "huỷ". Với retriever chấm theo từ khoá, chunk thắng là điều khoản huỷ hợp đồng trả góp, có đủ "huỷ", "hoàn phí", "trong 7 ngày".',
+      scenario: 'Lấy đúng tài liệu nhưng sai đoạn, hoặc lấy đoạn của tài liệu khác có cùng cấu trúc câu. Chunk thiếu chủ ngữ ("gói này", "điều khoản trên", "yêu cầu phải gửi") nên embedding và BM25 đều không biết nó nói về cái gì.',
+      ask: 'Ghép ngữ cảnh vào chunk thì câu hỏi khớp đúng chunk chưa? Thêm rerank thì được thêm bao nhiêu, và tốn bao nhiêu mỗi câu hỏi?',
+      solves: 'Contextual retrieval sửa chunk lúc index (tốn một lần). Rerank sửa thứ tự lúc truy vấn (tốn mỗi câu hỏi). README §2.3 cho số: tỉ lệ thất bại 5,7% xuống 2,9% với contextual embedding + BM25, xuống 1,9% khi thêm rerank.',
+      read: ['Phần A: chọn câu hỏi, bật tắt <b>Ghép ngữ cảnh</b>. Chữ nghiêng là câu ngữ cảnh do LLM viết, chữ thường là nguyên văn chunk. Cụm "trong N ngày" được tô.', 'Viền xanh lá là chunk đúng. Khung cảnh báo đọc con số mà chunk đứng đầu sẽ đưa cho model.', 'Phần B: chọn số candidate N, số giữ lại K, độ dài mỗi candidate, độ dài query. Bảng tính tiền rerank theo công thức của từng provider và tiền generation cho K đoạn.', 'Điểm ở phần A là bộ chấm đồ chơi (từ khoá, IDF, cosine), cư xử giống BM25, không phải embedding thật. Câu ngữ cảnh là chuỗi viết sẵn, giả làm output của LLM. Với embedding thật kết quả khác một phần: xem câu hỏi "Với embedding thật..." bên dưới và phần POC.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Contextual retrieval (README §2.3)</h4>
+<p>LLM đọc cả tài liệu, viết một đoạn ngữ cảnh ngắn (thường 50–100 token) cho từng chunk, ghép vào đầu chunk trước khi embed và trước khi đưa vào BM25. Kết quả (1 − recall@20, trung bình nhiều domain, embedding Gemini Text 004):</p>
+<div class="tbl"><table>
+<tr><th>Cấu hình</th><th>Tỉ lệ retrieval thất bại</th><th>Giảm so với baseline</th></tr>
+<tr><td>Embedding + BM25</td><td>5,7%</td><td>—</td></tr>
+<tr><td>Contextual embedding</td><td>3,7%</td><td>35%</td></tr>
+<tr class="cur"><td>Contextual embedding + contextual BM25</td><td>2,9%</td><td>49%</td></tr>
+<tr><td>Thêm rerank (150 candidate, giữ 20)</td><td>1,9%</td><td>67%</td></tr>
+</table></div>
+<ul><li>Chi phí: Anthropic ước tính $1,02 mỗi triệu token tài liệu, một lần, với chunk 800 token, tài liệu 8K token, có prompt caching, theo giá Claude 3 Haiku năm 2024. Tính lại theo model bạn dùng.</li>
+<li>Gửi chunk đầu, chờ ghi cache xong, rồi mới chạy song song các chunk còn lại. Đổi prompt là index lại toàn bộ: hash chunk gồm cả phiên bản prompt.</li>
+<li>Ngữ cảnh do LLM viết có thể sai section. Kiểm tra ngẫu nhiên vài chục chunk. Trích dẫn chỉ trỏ vào nguyên văn.</li>
+<li>Contextualized chunk embedding (ví dụ <code>voyage-context-4</code>) và late chunking rẻ hơn lúc index nhưng không cải thiện BM25, vì không thêm chữ nào vào chunk.</li></ul>
+<h4>Reranker qua API (tháng 11/2026, README §2.2)</h4>
+<div class="tbl"><table>
+<tr><th>Provider</th><th>Model</th><th>Cách tính phí</th></tr>
+<tr><td>Cohere</td><td><code>rerank-v5.0-pro</code>, <code>rerank-v5.0-fast</code></td><td>Theo search: 1 query, tối đa 100 tài liệu; tài liệu trên 500 token bị tách. Trên Bedrock, Rerank 3.5 là $2,00 / 1.000 query</td></tr>
+<tr class="cur"><td>Voyage</td><td><code>rerank-3</code>, <code>rerank-3-lite</code></td><td>$0,05 / $0,02 mỗi triệu token; token = token query × số tài liệu + tổng token tài liệu</td></tr>
+<tr><td>Jina</td><td><code>jina-reranker-v3.5</code>, <code>v3</code>, <code>m0</code></td><td>Theo token, khoảng $0,05 / triệu token; trọng số CC-BY-NC</td></tr>
+</table></div>
+<div class="verdict"><b>Chọn N:</b> không có con số đúng chung. Đo Recall@N và p95 độ trễ ở vài giá trị N (50, 100, 150) trên tập eval của bạn, chọn N nhỏ nhất mà Recall@N không còn tăng đáng kể. Đưa câu hỏi đã viết lại cho reranker, không đưa cả hội thoại. Dùng cùng parent–child thì rerank trên chunk con rồi mới mở rộng ra chunk cha.</div>`,
+    why: {
+      c: 'Sửa chunk trước (contextual retrieval, tốn một lần lúc index, không thêm gì lúc truy vấn), rồi rerank top-N candidate với N chọn bằng đo Recall@N. Hai việc sửa hai lỗi khác nhau: chunk thiếu chủ ngữ thì không có điểm để rerank cứu, còn chunk đúng nằm ở hạng 30 thì phải có rerank mới kéo lên.',
+      s: 'Chunk to hơn cho đủ ngữ cảnh: khớp kém chính xác hơn và tốn token generation. Chỉ dùng contextualized chunk embedding hoặc late chunking: rẻ hơn lúc index nhưng BM25 vẫn không thấy chữ "Care+". Rerank trên toàn kho: cross-encoder không index trước được, phải chạy lại cho từng cặp mỗi câu hỏi. LLM làm reranker cho mọi câu: chậm và đắt hơn cross-encoder.',
+      p: 'Contextual retrieval: một lần gọi LLM cho mỗi chunk lúc index, phải index lại khi đổi prompt, và có thể ghi ngữ cảnh sai. Rerank: một lần gọi API (hoặc GPU tự host) mỗi câu hỏi, độ trễ tăng gần tuyến tính theo số candidate, và query dài bị nhân với số tài liệu trong công thức tính token của Voyage.'
+    },
+    deep: [
+      {
+        q: 'Chunk "Khách được hoàn lại toàn bộ phí nếu yêu cầu trong 30 ngày" sai chỗ nào? Câu đó đúng mà.',
+        a: `<p>Câu đó đúng, nhưng <b>không tự đứng được</b>. Đọc riêng nó, bạn không biết "phí" là phí gì, "yêu cầu" là yêu cầu gì. Người đọc tài liệu biết vì vừa đọc tiêu đề "Điều khoản gói Care+" và mục "3. Huỷ gói" ở trên. Chunk bị cắt ra thì mất những dòng đó.</p>
+<p>Embedding của chunk chỉ chứa nghĩa của chữ trong chunk. BM25 chỉ thấy chữ trong chunk. Cả hai không có chỗ nào để chữ "Care+" bám vào.</p>
+<p>Tệ hơn: kho có ba chunk cùng khuôn "... trong N ngày". Không có ngữ cảnh, ba chunk này gần như là một câu với con số khác nhau. Bảng dưới liệt kê từ của chunk A3 trước và sau khi ghép ngữ cảnh, theo đúng bộ tách từ của phần A.</p>`,
+        viz(box) {
+          const a3 = CH.find((c) => c.id === 'A3'), before = new Set(terms(a3.text)), after = new Set(terms(a3.ctx + ' ' + a3.text));
+          const added = [...after].filter((w) => !before.has(w)), q = new Set(terms(QS[0].text));
+          const tag = (w) => (q.has(w) ? `<b class="ok">${w}</b>` : w);
+          const same = CH.filter((c) => DAYS.test(c.text)).map((c) => `${c.id}: "${c.text.match(DAYS)[0]}"`).join(' · ');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: `<tr><th></th><th>Từ được index</th></tr><tr><td>Chunk gốc</td><td class="mono">${[...before].map(tag).join(', ')}</td></tr><tr><td>Thêm nhờ ngữ cảnh</td><td class="mono">${added.map(tag).join(', ')}</td></tr>` })]),
+            el('div', { class: 'cap', html: `Chữ xanh là từ có trong câu hỏi "${QS[0].text}". Chunk gốc chỉ khớp ${[...before].filter((w) => q.has(w)).length} từ, bản ghép ngữ cảnh khớp ${[...after].filter((w) => q.has(w)).length} từ. Các chunk cùng khuôn trong kho: ${same}.` }));
+        },
+        take: 'Chunk thiếu chủ ngữ không có gì để câu hỏi bám vào. Ghép ngữ cảnh là thêm đúng những chữ bị cắt mất.'
+      },
+      {
+        q: 'Vì sao ghép ngữ cảnh phải vào cả embedding lẫn BM25? Một chỗ không đủ sao?',
+        a: `<p>Hai chỉ mục hỏng theo hai kiểu khác nhau. Embedding nắm nghĩa mềm, BM25 nắm chữ chính xác như tên gói "Care+", mã model "G16". Bảng của README tách hai phần đóng góp:</p>
+<ul><li>Chỉ contextual embedding: 5,7% xuống 3,7%.</li><li>Thêm contextual BM25: xuống 2,9%.</li><li>Thêm rerank: xuống 1,9%.</li></ul>
+<p>Hình dưới vẽ các con số này và đổi ra số câu trượt trên 1.000 câu hỏi. Phần trăm giảm được tính lại từ hai con số thất bại, khớp với cột "Giảm so với baseline" trong README.</p>
+<p>Đây cũng là lý do contextualized chunk embedding (như <code>voyage-context-4</code>) hay late chunking, dù rẻ hơn lúc index, không thay hết được contextual retrieval: chúng làm vector mang ngữ cảnh, nhưng <b>không thêm chữ nào vào chunk</b>, nên BM25 vẫn mù.</p>`,
+        viz(box) {
+          const R = [['Embedding + BM25', 5.7], ['Contextual embedding', 3.7], ['+ contextual BM25', 2.9], ['+ rerank (150 → 20)', 1.9]];
+          box.append(hbars(R.map(([n, v], i) => [n, v, i === 3]), { max: 6, fmt: (v) => `${v.toFixed(1).replace('.', ',')}% · ${Math.round(v * 10)}/1.000 câu` }),
+            el('div', { class: 'cap', text: 'Giảm so với 5,7%: ' + R.slice(1).map(([n, v]) => `${n} ${Math.round(((5.7 - v) / 5.7) * 100)}%`).join(' · ') + '. Số từ README §2.3, trung bình nhiều domain, embedding Gemini Text 004, đo 1 − recall@20.' }));
+        },
+        take: 'Ngữ cảnh vào embedding cứu phần nghĩa, vào BM25 cứu phần chữ. Rerank cứu phần thứ tự. Ba bước cộng dồn.'
+      },
+      {
+        q: 'Với embedding thật, chunk trả góp có thật sự thắng câu hỏi Care+ không?',
+        a: `<p>Không. Phần A dùng bộ chấm đồ chơi chỉ đếm chữ chung, nên nó cư xử giống BM25. Với bộ chấm đó, C2 (huỷ trả góp) đứng đầu vì có đủ "huỷ", "hoàn", "phí".</p>
+<p>POC chạy embedding thật (<code>paraphrase-multilingual-MiniLM-L12-v2</code>) trên cùng kiểu chunk cho kết quả khác:</p>
+<ul><li><b>Dense trơn</b> (chưa ghép ngữ cảnh) đã xếp chunk hoàn phí Care+ <b>hạng 1</b>. Embedding hiểu "hoàn phí trong bao lâu" gần "hoàn lại toàn bộ phí nếu yêu cầu trong 30 ngày" dù thiếu chữ "Care+".</li>
+<li><b>BM25 trơn</b> xếp nó hạng 4. Ghép ngữ cảnh đưa lên hạng 1. Đây là chỗ ngữ cảnh cứu rõ nhất.</li>
+<li><b>Hybrid trơn</b> (trộn hai danh sách) đưa chunk "Care+ đổi máy khi rơi vỡ" lên đầu, không phải chunk trả góp. Chunk đó không có số ngày nào, nên model không trả lời được.</li></ul>
+<p>Điều này không có nghĩa ghép ngữ cảnh vô ích: trong hybrid, BM25 kéo sai thì cả kết quả trộn lệch theo, và ghép ngữ cảnh sửa đúng nửa đó. Nó chỉ có nghĩa câu chuyện "chunk trả góp thắng" là của bộ chấm theo chữ, không phải của mọi retriever. <b>Trong hệ thống thật:</b> đo hạng của chunk đúng riêng cho BM25, riêng cho dense, rồi mới cho hybrid, để biết ngữ cảnh đang cứu nhánh nào.</p>`,
+        take: 'Ngữ cảnh giúp nhiều nhất cho nhánh tìm theo chữ (BM25). Nhánh embedding có thể đã đúng sẵn. Đo từng nhánh trước khi kết luận.'
+      },
+      {
+        q: 'Câu q3 viết "Hủy", tài liệu viết "huỷ". Máy có coi là cùng một chữ không?',
+        a: `<p>Không. Hai chữ nhìn gần như nhau nhưng dấu hỏi đặt ở chỗ khác: "H<b>ủ</b>y" đặt dấu trên u, "hu<b>ỷ</b>" đặt dấu trên y. Cả hai cách bỏ dấu đều có người dùng.</p>
+<p>Với máy, đó là hai chuỗi ký tự khác nhau, giống "color" và "colour". NFC (chuẩn hoá Unicode, README dùng ở bước kiểm trích dẫn) chỉ gộp "chữ cái + dấu rời" thành một ký tự dựng sẵn; nó <b>không dời dấu</b> từ u sang y. POC đo thật: sau NFC và chữ thường, "hủy" vẫn khác "huỷ", và BM25 trơn không tìm thấy chunk huỷ trả góp ở hạng nào.</p>
+<p>Bộ chấm đồ chơi ở Phần A đã gom sẵn "hủy" thành "huỷ" (bảng đồng nghĩa đầu file), nên trong lab bạn không thấy lỗi này. Đây là chỗ lab dễ dãi hơn hệ thống thật.</p>
+<p>Embedding thật không mù hoàn toàn: POC cho chunk đó hạng 5 khi trơn, hạng 2 khi có ngữ cảnh (câu ngữ cảnh có chữ "huỷ hợp đồng trả góp", khớp "trả góp" trong câu hỏi). <b>Trong hệ thống thật:</b> đưa câu hỏi và tài liệu qua cùng một bước chuẩn hoá trước khi vào BM25, gồm NFC và thống nhất vị trí dấu thanh; kiểm bằng vài cặp như "hủy/huỷ", "hòa/hoà".</p>`,
+        take: 'NFC không đủ cho tiếng Việt: cùng một từ có hai cách đặt dấu. Chuẩn hoá giống nhau cho câu hỏi và tài liệu trước khi đưa vào BM25.'
+      },
+      {
+        q: 'Cross-encoder chính xác hơn, sao không dùng nó tìm trên cả kho luôn?',
+        a: `<p>Nguyên lý đã có ở Embeddings §2.2, ở đây chỉ nhắc phần ảnh hưởng tới chi phí. Bi-encoder embed tài liệu <b>một lần lúc index</b>, lúc hỏi chỉ embed câu hỏi rồi so vector. Cross-encoder đọc câu hỏi và tài liệu <b>cùng lúc</b>, nên không có gì để tính trước: mỗi câu hỏi mới phải chạy model lại cho từng tài liệu.</p>
+<p>Kéo thanh trượt để thấy số lần chạy model mỗi câu hỏi.</p>`,
+        viz(box) {
+          const out = el('div', { class: 'stat' });
+          const draw = (e) => { const n = Math.round(10 ** e); out.innerHTML = `<span>Kho: <b>${nf(n)}</b> chunk</span><span>Bi-encoder lúc hỏi: <b>1</b> lần embed + tìm ANN</span><span>Cross-encoder trên cả kho: <b class="bad">${nf(n)}</b> lần chạy model</span><span>Cross-encoder trên 150 candidate: <b class="ok">150</b> lần</span>`; };
+          box.append(el('div', { class: 'row' }, [slider('Số chunk trong kho', 3, 7, 0.5, 6, draw, (v) => nf(10 ** v)).node]), out,
+            el('div', { class: 'cap', text: 'Đếm số lần chạy, không phải thời gian. README nói độ trễ rerank tăng gần tuyến tính theo số candidate, và không có benchmark độ trễ nào so có kiểm soát; tự đo p95 trên phần cứng của bạn.' }));
+          draw(6);
+        },
+        take: 'Cross-encoder đắt theo số cặp, nên nó chỉ chạy trên danh sách ngắn mà retrieval đã lọc.'
+      },
+      {
+        q: 'Voyage tính token kiểu gì mà query dài lại đắt gấp gần bảy lần?',
+        a: `<p>Công thức của Voyage: <b>số token = token query × số tài liệu + tổng token tài liệu</b>. Cross-encoder đọc câu hỏi cùng <b>từng</b> tài liệu, nên câu hỏi được đọc lại N lần, và tính tiền N lần.</p>
+<p>Ví dụ trong README: 100 tài liệu, mỗi tài liệu 300 token, query 50 token: 100 × 50 + 100 × 300 = 35.000 token, khoảng $0,00175 với <code>rerank-3</code>. Query 2.000 token (cả lịch sử hội thoại) thì thành 230.000 token, gấp gần bảy lần.</p>
+<p>Kéo độ dài query. Ngưỡng của Voyage: query tối đa 8.000 token, tổng mỗi request tối đa 600K token.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const draw = (q) => {
+            const N = 100, d = 300, qt = q * N, dt = N * d, base = 50 * N + dt;
+            out.replaceChildren(hbars([['Query × 100 tài liệu', qt, q > 500], ['Token tài liệu', dt, false]], { max: Math.max(qt, dt), fmt: nf }));
+            cap.innerHTML = `Tổng <b>${nf(qt + dt)}</b> token, ${usd(((qt + dt) / 1e6) * PRICE.voyage)} với rerank-3, gấp <b>${((qt + dt) / base).toFixed(2).replace('.', ',')}</b> lần query 50 token.` + (q > 1000 ? ' <span class="bad">Phần query đã lớn hơn phần tài liệu: bạn đang trả tiền để reranker đọc đi đọc lại lịch sử hội thoại.</span>' : '');
+          };
+          box.append(el('div', { class: 'row' }, [slider('Token query', 10, 8000, 10, 50, draw, nf).node]), out, cap);
+          draw(50);
+        },
+        take: 'Đưa cho reranker câu hỏi đã viết lại, ngắn gọn. Không đưa cả hội thoại.'
+      },
+      {
+        q: 'N = 150 là con số chuẩn à? Chọn số candidate thế nào?',
+        a: `<p>Không có con số chuẩn. 150 là con số thí nghiệm của Anthropic dùng. Cách chọn trong README: đo Recall@N ở vài giá trị N (ví dụ 50, 100, 150) trên tập eval, rồi chọn N nhỏ nhất mà Recall@N không còn tăng đáng kể. Recall@N ở đây là: đoạn đúng có nằm trong N candidate trước khi rerank không. Nếu không có, rerank không cứu được.</p>
+<p>Hình dưới <b>giả lập</b> một tập eval 400 câu hỏi, mỗi câu có hạng của đoạn đúng sau bước retrieval đầu. Hạng sinh ngẫu nhiên (cố định seed), đuôi dài: phần lớn ở top 20, một số ở hạng 50–150, một số không bao giờ được lấy. Kéo ngưỡng "tăng tối thiểu" để xem N nào được chọn.</p>`,
+        viz(box) {
+          const rnd = seeded(42), ranks = Array.from({ length: 400 }, () => { const u = rnd(); return u < 0.04 ? Infinity : Math.max(1, Math.round(Math.exp(randn(rnd) * 1.25 + 1.8))); });
+          const Ns = [10, 20, 50, 100, 150, 200, 300], rec = (n) => ranks.filter((r) => r <= n).length / ranks.length;
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const draw = (th) => {
+            let pick = Ns[Ns.length - 1];
+            for (let i = 0; i < Ns.length - 1; i++) if ((rec(Ns[i + 1]) - rec(Ns[i])) * 100 < th) { pick = Ns[i]; break; }
+            out.replaceChildren(hbars(Ns.map((n) => [`Recall@${n}`, rec(n) * 100, n === pick]), { max: 100, fmt: (v) => v.toFixed(1).replace('.', ',') + '%' }));
+            cap.innerHTML = `Chọn <b>N = ${pick}</b>: bước tiếp theo tăng Recall ít hơn ${th} điểm phần trăm. ${(100 - rec(300) * 100).toFixed(1).replace('.', ',')}% câu không bao giờ có đoạn đúng trong candidate: rerank không cứu được những câu này, phải sửa retrieval hoặc chunk.`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Tăng tối thiểu để đáng nâng N', 0.5, 5, 0.5, 1, draw, (v) => v + ' điểm').node]), out, cap);
+          draw(1);
+        },
+        take: 'Rerank chỉ sắp xếp lại những gì retrieval đã lấy. N lớn tăng trần recall nhưng tăng độ trễ và tiền tuyến tính.'
+      },
+      {
+        q: 'Chọn reranker to nhất cho chắc được không?',
+        a: `<p>Không chắc. Model card của <code>Qwen3-Reranker</code> có một chi tiết README dặn kiểm tra: trên MTEB-R, bản 8B (69,02) <b>thấp hơn</b> bản 4B (69,76). Model to hơn không phải lúc nào cũng tốt hơn trên mọi tác vụ, và chắc chắn chậm hơn, cần GPU lớn hơn.</p>
+<p>Còn giấy phép: <code>BAAI/bge-reranker-v2-m3</code> (0,6B) và Qwen3-Reranker là Apache-2.0. Jina công bố trọng số theo CC-BY-NC: tự host cho sản phẩm thương mại như ShopViet cần giấy phép riêng.</p>`,
+        viz(box) {
+          box.append(hbars([['Qwen3-Reranker 4B', 69.76, true], ['Qwen3-Reranker 8B', 69.02, false]], { max: 72, fmt: (v) => v.toFixed(2).replace('.', ',') }),
+            el('div', { class: 'cap', text: 'Điểm MTEB-R theo model card, trích trong README §2.2. Trục bắt đầu từ 0 nên chênh lệch nhìn nhỏ: đúng là nó nhỏ, và nó ngược chiều với kích thước.' }));
+        },
+        take: 'Đo reranker trên câu hỏi tiếng Việt của bạn. Benchmark công khai chỉ là điểm xuất phát.'
+      },
+      {
+        q: 'Dùng luôn LLM chat làm reranker có được không? Nó hiểu tiếng Việt tốt hơn mà.',
+        a: `<p>Được, và nó hiểu được tiêu chí phức tạp ("chỉ tính tài liệu áp dụng cho khách doanh nghiệp"). README gọi đây là reranker theo điểm: hỏi model từng đoạn "đoạn này có trả lời câu hỏi không, có/không". Cách thiết kế bộ câu hỏi có/không ở Decision models §3.4.</p>
+<p>Đổi lại: chậm và đắt hơn cross-encoder nhiều. Hình dưới tính chi phí đọc 100 đoạn × 300 token cho một câu hỏi. Giá LLM theo Cost optimization §2.1; giả định mỗi đoạn kèm 50 token câu hỏi và 40 token hướng dẫn, output 1 token mỗi đoạn.</p>`,
+        viz(box) {
+          const N = 100, d = 300, q = 50, ins = 40, inTok = N * (d + q + ins), outTok = N;
+          const rows = [['Voyage rerank-3-lite', ((N * q + N * d) / 1e6) * PRICE.voyageLite], ['Voyage rerank-3', ((N * q + N * d) / 1e6) * PRICE.voyage], ['Cohere Rerank 3.5 trên Bedrock', PRICE.bedrockCohere], ['Haiku 5.5 chấm từng đoạn', (inTok * 0.10 + outTok * 0.50) / 1e6], ['Sonnet 5.5 chấm từng đoạn', (inTok * 2 + outTok * 10) / 1e6]];
+          box.append(hbars(rows.map(([n, v], i) => [n, v, i > 2]), { fmt: usd }),
+            el('div', { class: 'cap', text: `Mỗi câu hỏi. LLM đọc ${nf(inTok)} token input. Haiku 5.5 đắt gấp khoảng ${(rows[3][1] / rows[1][1]).toFixed(1).replace('.', ',')} lần Voyage rerank-3, cùng bậc độ lớn; Sonnet 5.5 gấp khoảng ${Math.round(rows[4][1] / rows[1][1])} lần. Khác biệt lớn hơn là độ trễ: 100 lần gọi (hoặc một lần gọi rất dài) so với một request rerank.` }));
+        },
+        take: 'LLM làm reranker hợp với tiêu chí phức tạp trên danh sách ngắn. Với thứ tự liên quan thông thường, cross-encoder rẻ và nhanh hơn.'
+      },
+      {
+        q: 'Ghép ngữ cảnh cho cả kho thì tốn bao nhiêu? $1,02 mỗi triệu token còn đúng không?',
+        a: `<p>$1,02 mỗi triệu token tài liệu là ước tính của Anthropic với chunk 800 token, tài liệu 8K token, có prompt caching, theo <b>giá Claude 3 Haiku năm 2024</b>. README dặn tính lại theo model và giá bạn dùng. Hình dưới tính lại với Claude Haiku 5.5.</p>
+<p>Mỗi chunk là một request: phần tài liệu (dùng chung, đặt đầu prompt để cache) + prompt hướng dẫn + chunk, output là đoạn ngữ cảnh 50–100 token (lấy 75). Request đầu ghi cache (1,25 × giá input, TTL 5 phút), các request sau đọc cache.</p>
+<p>Hai bẫy README nêu: gửi song song mọi chunk ngay từ đầu thì các request đến trước khi cache được ghi đều trả giá ghi; tài liệu ngắn hơn ngưỡng tối thiểu của model thì không được cache (Haiku 5.5: 512 token, theo Multi-turn §2.2).</p>`,
+        viz(box) {
+          const S = { D: 8000, c: 800, par: false }, out = el('div'), cap = el('div', { class: 'cap' });
+          const draw = () => {
+            const h = PRICE.haiku, write = h.in * 1.25, n = Math.ceil(S.D / S.c), outT = 75, rest = S.c + PROMPT_EN_TOK;
+            const big = S.D + rest > 100000, mul = big ? 5 : 1, canCache = S.D >= 512;
+            const reqNo = (S.D * h.in + rest * h.in + outT * h.out) * mul / 1e6;
+            const first = (S.D * write + rest * h.in + outT * h.out) * mul / 1e6, later = (S.D * h.read + rest * h.in + outT * h.out) * mul / 1e6;
+            const cached = !canCache ? n * reqNo : S.par ? n * first : first + (n - 1) * later, none = n * reqNo;
+            const per1M = (v) => (v / S.D) * 1e6;
+            out.innerHTML = `<div class="tbl"><table><tr><th>Cách chạy</th><th>Một tài liệu (${n} chunk)</th><th>Mỗi triệu token tài liệu</th></tr><tr><td>Không cache</td><td class="mono">${usd(none)}</td><td class="mono">${usd(per1M(none))}</td></tr><tr class="cur"><td>${!canCache ? 'Có bật cache (nhưng không được cache)' : S.par ? 'Cache, gửi song song ngay từ đầu' : 'Cache, chunk đầu trước rồi song song'}</td><td class="mono">${usd(cached)}</td><td class="mono"><b>${usd(per1M(cached))}</b></td></tr><tr><td>README (Claude 3 Haiku, 2024)</td><td>—</td><td class="mono">$1,02</td></tr></table></div>`;
+            const w = [];
+            if (!canCache) w.push(`<span class="bad">Tài liệu ${nf(S.D)} token, dưới ngưỡng 512 token: không được cache, mọi chunk trả giá input đầy đủ.</span>`);
+            if (canCache && S.par) w.push(`<span class="bad">Gửi song song ngay từ đầu: cả ${n} request đến trước khi cache ghi xong, mỗi request trả giá ghi cache (1,25 × input). Đắt hơn cả không cache ${Math.round((cached / none - 1) * 100)}%.</span>`);
+            if (big) w.push('<span class="bad">Prompt vượt 100.000 token: Haiku 5.5 tính gấp 5 lần cho mọi token của request (Cost optimization §2.1). Tài liệu dài thì gửi mục lục, phần mở đầu và section chứa chunk thay vì cả tài liệu.</span>');
+            cap.innerHTML = (w.length ? w.join(' ') + ' ' : '') + `Giá Haiku 5.5: input $0,10, output $0,50, đọc cache $0,01 mỗi triệu token (Cost optimization §2.1); ghi cache 1,25 × input. Prompt hướng dẫn khoảng ${PROMPT_EN_TOK} token, ước lượng từ chuỗi tiếng Anh trong README.`;
+          };
+          const par = el('button', { text: 'Gửi song song ngay từ đầu: tắt', onclick: () => { S.par = !S.par; par.textContent = 'Gửi song song ngay từ đầu: ' + (S.par ? 'bật' : 'tắt'); par.classList.toggle('on', S.par); draw(); } });
+          box.append(el('div', { class: 'row' }, [slider('Token tài liệu', 300, 120000, 100, S.D, (v) => { S.D = v; draw(); }, nf).node, slider('Token chunk', 100, 2000, 50, S.c, (v) => { S.c = v; draw(); }, nf).node, par]), out, cap);
+          draw();
+        },
+        take: 'Với model rẻ và cache đúng cách, ghép ngữ cảnh cho cả kho là chi phí một lần nhỏ. Bẫy là thứ tự gửi request và tài liệu quá dài.'
+      },
+      {
+        q: 'Câu ngữ cảnh do LLM viết. Nếu nó viết sai thì sao?',
+        a: `<p>Thì chunk bị gắn nhãn sai, và lỗi này khó thấy hơn lỗi chunk thiếu chủ ngữ, vì chunk trông như có đủ thông tin. README nêu lỗi hay gặp: <b>gán chunk cho sai section</b> khi tài liệu có nhiều phần cùng cấu trúc. Ví dụ điều khoản Care+ có mục "Huỷ gói" cho laptop và một mục "Huỷ gói" y hệt cho điện thoại, khác số ngày.</p>
+<p>Bấm nút để thay câu ngữ cảnh của A3 bằng một câu sai (gán nó vào điều khoản trả góp) và xem câu q1 tìm được gì.</p>
+<p>Cách giữ an toàn theo README: kiểm tra ngẫu nhiên vài chục chunk trước khi chạy cả kho; khi trả lời, đánh dấu rõ phần nào là ngữ cảnh do máy viết, phần nào là nguyên văn; trích dẫn chỉ trỏ vào nguyên văn.</p>`,
+        viz(box) {
+          let wrong = false;
+          const out = el('div', { class: 'stat' }), btn = el('button', { text: 'Dùng ngữ cảnh sai cho A3' });
+          const draw = () => {
+            const ctx = CH.map((c) => (c.id === 'A3' && wrong ? 'Trích Điều khoản trả góp 0% của ShopViet, mục 4: phí hồ sơ khi tất toán sớm hợp đồng trả góp.' : c.ctx) + ' ' + c.text);
+            const r = makeIndex(ctx)(QS[0].text), top = CH[r[0].i], pos = r.findIndex((x) => CH[x.i].id === 'A3') + 1;
+            out.innerHTML = `<span>Ngữ cảnh A3: <b class="${wrong ? 'bad' : 'ok'}">${wrong ? 'sai' : 'đúng'}</b></span><span>Top-1: <b class="${top.id === 'A3' ? 'ok' : 'bad'}">${top.id}</b> (${top.text.match(DAYS) ? top.text.match(DAYS)[0] : 'không có số ngày'})</span><span>Hạng của A3: <b>${pos}</b></span>`;
+          };
+          btn.addEventListener('click', () => { wrong = !wrong; btn.textContent = wrong ? 'Trả lại ngữ cảnh đúng' : 'Dùng ngữ cảnh sai cho A3'; btn.classList.toggle('on', wrong); draw(); });
+          box.append(el('div', { class: 'row' }, [btn]), out, el('div', { class: 'cap', text: 'Ngữ cảnh sai kéo A3 sang chủ đề trả góp, câu hỏi về Care+ lại quay về chunk sai.' }));
+          draw();
+        },
+        take: 'Ngữ cảnh máy viết là một nguồn lỗi mới. Kiểm tra mẫu trước khi index cả kho, và không bao giờ trích dẫn phần ngữ cảnh.'
+      }
+    ],
+    poc: {
+      goal: "Cùng 10 chunk, index trơn và index có câu ngữ cảnh ghép đầu chunk: hạng thật trong BM25, embedding, hybrid, và sau rerank cross-encoder. <b>Câu ngữ cảnh là viết tay</b> (giả làm output prompt contextual của README §2.3). Phần tiền: công thức Voyage của README và tiền index contextual tính lại theo giá.",
+      file: "docs/advanced-rag/pocs/04_rerank_contextual.py",
+      run: "uv run docs/advanced-rag/pocs/04_rerank_contextual.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ.",
+      output: "10 chunk của 4 tài liệu. Dense: paraphrase-multilingual-MiniLM-L12-v2 (thật, CPU). Rerank: cross-encoder mmarco (CPU, thật).\nCâu ngữ cảnh ghép vào đầu chunk là VIẾT TAY (giả làm output của prompt contextual trong README §2.3).\n\n== A. Hạng của chunk đúng: chunk trơn so với chunk có ngữ cảnh ==\nCâu hỏi                                     cần    BM25  BM25+ctx  dense  dense+ctx  hybrid  hybrid→rerank  hybrid+ctx\n------------------------------------------  -----  ----  --------  -----  ---------  ------  -------------  ----------\nHuỷ gói Care+ thì được hoàn phí trong bao   care3  4     1         1      1          2       3              1\nLaptop lỗi phần cứng thì được đổi máy mới   w26r   1     1         1      1          1       1              1\nCare+ có đổi máy khi rơi vỡ không?          care1  1     1         1      1          1       1              1\nHủy trả góp có mất phí không?               inst2  -     2         5      2          5       1              2\n\n== Câu trả lời mà chunk đứng đầu (hybrid) đưa cho model ==\nHuỷ gói Care+ thì được hoàn phí trong bao lâu?\n   trơn: care1 → (không có số ngày)   |   có ngữ cảnh: care3 → 30 ngày\nLaptop lỗi phần cứng thì được đổi máy mới trong bao lâu?\n   trơn: w26r → 30 ngày   |   có ngữ cảnh: w26r → 30 ngày\nCare+ có đổi máy khi rơi vỡ không?\n   trơn: care1 → (không có số ngày)   |   có ngữ cảnh: care1 → (không có số ngày)\nHủy trả góp có mất phí không?\n   trơn: inst1 → (không có số ngày)   |   có ngữ cảnh: inst1 → (không có số ngày)\n\n== B. Tiền rerank mỗi query (công thức README §2.2) ==\nN    token/tài liệu  token query  token Voyage  rerank-3  rerank-3-lite  Cohere 3.5 Bedrock\n---  --------------  -----------  ------------  --------  -------------  ------------------\n100  300             50           35.000        $0.00175  $0.00070       $0.002\n100  300             2000         230.000       $0.0115   $0.00460       $0.002\n150  300             50           52.500        $0.00263  $0.00105       $0.002\n50   300             50           17.500        $0.00088  $0.00035       $0.002\nQuery 2.000 token (cả hội thoại) so với 50: 6.57× tiền, cùng 100 tài liệu.\n\n== C. Tiền index contextual retrieval cho 1 triệu token tài liệu (tài liệu 8K, chunk 800, có cache) ==\nNgữ cảnh sinh ra  Claude 3 Haiku (giá 2024)  Haiku 5.5 (Cost opt §2.1)\n----------------  -------------------------  -------------------------\n50 token          $0.9169                    $0.3538\n75 token          $0.9559                    $0.3694\n100 token         $0.9950                    $0.3850\nPhần hướng dẫn của prompt: 60 token (tiktoken o200k). README ghi $1,02 theo giá Claude 3 Haiku. Giá Claude 3 Haiku ($0,25 in, $1,25 out, ghi $0,30, đọc $0,03) KHÔNG có trong repo: lấy từ trang giá Anthropic 2024.\n\n'Hủy' (câu hỏi) và 'huỷ' (tài liệu) sau NFC vẫn là hai chuỗi khác nhau (dấu đặt ở ủ hay ỷ). Vì vậy BM25 trơn không thấy inst2 (hạng -).\n\nRút ra: chunk care3 không có chữ 'Care+': BM25 trơn xếp hạng 4, có ngữ cảnh lên hạng 1; hybrid trơn đưa care1 lên đầu\n(không có số ngày), có ngữ cảnh thì care3 → '30 ngày'. Dense thật đã xếp care3 hạng 1 cả khi trơn: lợi ích lớn nhất rơi vào BM25.\nRerank không phải lúc nào cũng tốt hơn: câu Care+ hybrid hạng 2 → rerank 3; câu trả góp 5 → 1. Đo trên tập của bạn.\nTiền rerank theo token tăng theo token query × số tài liệu (6,57× khi đưa cả hội thoại); contextual retrieval tốn một lần lúc index.",
+      measured: true,
+      read: ["Phần A: chunk care3 không có chữ 'Care+' nên BM25 trơn xếp hạng 4; có ngữ cảnh lên hạng 1. Embedding thật đã xếp hạng 1 ngay cả khi trơn.", "'Hủy' (câu hỏi) và 'huỷ' (tài liệu) là hai chuỗi khác nhau kể cả sau NFC: BM25 trơn không tìm thấy điều khoản huỷ trả góp.", "Rerank không phải lúc nào cũng tốt hơn: câu Care+ tụt hạng 2 → 3, câu trả góp lên 5 → 1.", "Phần B, C: 35.000 token ≈ $0,00175 và query 2.000 token đắt 6,57× khớp README; tiền index contextual tính lại ~$0,92–1,00 / 1M token với giá Claude 3 Haiku (README ghi $1,02), ~$0,35–0,39 với Haiku 5.5."]
+    },
+    mount(stage) {
+      const S = { q: 'q1', ctx: false, N: 100, K: 20, d: 300, qt: 50, k: 3 };
+      const listA = el('div', { class: 'chunks' }), capA = el('div', { class: 'sum', style: 'margin-top:10px;padding-top:0;border:0' }), statA = el('div', { class: 'stat' });
+      const mark = (s) => s.replace(DAYS, (m) => `<mark>${m}</mark>`);
+      function renderA() {
+        const q = QS.find((x) => x.id === S.q), r = (S.ctx ? ctxIdx : plainIdx)(q.text), other = (S.ctx ? plainIdx : ctxIdx)(q.text);
+        const mx = r[0].s || 1;
+        listA.replaceChildren(...r.map((x, i) => {
+          const c = CH[x.i], g = c.id === q.gold, inK = i < S.k;
+          const box = el('div', { class: 'ch', style: `${g ? 'border-color:var(--ok);' : ''}${inK ? '' : 'opacity:.45;'}` });
+          box.innerHTML = `<small>#${i + 1} · ${c.id} · ${c.doc} · điểm ${x.s.toFixed(3)} <span style="display:inline-block;vertical-align:middle;height:6px;border-radius:3px;background:var(--accent);width:${Math.round((x.s / mx) * 80)}px"></span>${g ? ' · <b class="ok">chunk đúng</b>' : ''}</small>` + (S.ctx ? `<i style="color:var(--mute)">${c.ctx}</i> ` : '') + mark(c.text);
+          return box;
+        }));
+        const top = CH[r[0].i], pos = r.findIndex((x) => CH[x.i].id === q.gold) + 1, posO = other.findIndex((x) => CH[x.i].id === q.gold) + 1;
+        statA.innerHTML = `<span>Hạng chunk đúng: <b class="${pos === 1 ? 'ok' : 'bad'}">${pos}</b></span><span>Khi ${S.ctx ? 'tắt' : 'bật'} ngữ cảnh: <b>${posO}</b></span><span>Token ước lượng của chunk đúng: <b>${tok(CH.find((c) => c.id === q.gold).text)}</b>${S.ctx ? ` + ngữ cảnh <b>${tok(CH.find((c) => c.id === q.gold).ctx)}</b>` : ''}</span>`;
+        const tm = top.text.match(DAYS), gm = CH.find((c) => c.id === q.gold).text.match(DAYS), msgs = [];
+        if (top.id !== q.gold) {
+          msgs.push(`<p class="bad"><b>Chunk đứng đầu là ${top.id} (${top.doc}), không phải ${q.gold}.</b>${tm ? ` Model sẽ đọc "<b>${tm[0]}</b>" và trả lời bằng con số đó${gm && gm[1] !== tm[1] ? `, trong khi đáp án đúng là ${gm[0]}` : ''}.` : ' Chunk này không chứa đáp án.'}</p>`);
+          const same = CH.filter((c) => DAYS.test(c.text));
+          if (!S.ctx && gm) msgs.push(`<p>Chuyện gì xảy ra: kho có ${same.length} chunk cùng khuôn "trong N ngày" (${same.map((c) => c.id + ': ' + c.text.match(DAYS)[1]).join(', ')}). Chunk đúng ${q.gold} không nói nó thuộc chính sách nào, áp dụng cho cái gì; "${gm[0]}" của nó đứng một mình không có nghĩa gì. Câu hỏi khớp chunk nào có nhiều chữ chung hơn, ở đây là ${top.id}. Điều này không có nghĩa retriever hỏng: nó chấm đúng theo chữ mà nó được cho.${q.id === 'q1' ? ' Lưu ý: bộ chấm ở đây chỉ đếm chữ, giống BM25. Embedding thật (POC) đã xếp chunk đúng hạng 1 ngay khi chưa ghép ngữ cảnh; BM25 thật xếp nó hạng 4.' : ''}</p><p><b>Trong hệ thống thật:</b> bật ngữ cảnh (nút trên) để thấy chunk đúng lên hạng ${posO}. Đây là triệu chứng "lấy đúng tài liệu, sai đoạn; chunk thiếu chủ ngữ" trong bảng Tra cứu nhanh của README.</p>`);
+        } else if (!S.ctx) msgs.push('<p class="ok">Chunk đúng đứng đầu ngay cả khi không có ngữ cảnh: chunk này tự chứa đủ chữ của câu hỏi. Ngữ cảnh không cần cho mọi chunk, nhưng bạn không biết trước chunk nào cần.</p>');
+        else msgs.push(`<p class="ok">Có ngữ cảnh, chunk đúng ${q.gold} đứng đầu${posO > 1 ? ` (không có ngữ cảnh: hạng ${posO})` : ''}. Các chữ "${q.gold.startsWith('A') ? 'Care+, huỷ gói' : q.gold.startsWith('B') ? 'laptop, đổi, thời hạn' : 'trả góp, huỷ hợp đồng'}" giờ có mặt trong cả embedding lẫn BM25.</p>`);
+        capA.innerHTML = '<div class="verdict">' + msgs.join('') + '</div>';
+      }
+      const tblB = el('div', { class: 'sum', style: 'margin-top:6px;padding-top:0;border:0' }), barsB = el('div'), capB = el('div', { class: 'sum', style: 'margin-top:8px;padding-top:0;border:0' });
+      const funnel = el('div', { class: 'cellbar', style: 'grid-template-columns:repeat(50,1fr)' });
+      function renderB() {
+        if (S.K > S.N) S.K = S.N;
+        const vt = S.qt * S.N + S.N * S.d, parts = S.N * Math.ceil(S.d / 500), units = Math.ceil(parts / 100);
+        const v = (vt / 1e6) * PRICE.voyage, vl = (vt / 1e6) * PRICE.voyageLite, genK = (S.K * S.d / 1e6) * PRICE.sonnetIn, genN = (S.N * S.d / 1e6) * PRICE.sonnetIn;
+        const cells = 50, keepCells = Math.max(1, Math.round((S.K / S.N) * cells));
+        funnel.replaceChildren(...Array.from({ length: cells }, (_, i) => el('span', { class: i < keepCells ? '' : 'off' })));
+        barsB.replaceChildren(hbars([[`Query × ${S.N} tài liệu`, S.qt * S.N, S.qt > 500], ['Token tài liệu', S.N * S.d, false]], { max: Math.max(S.qt * S.N, S.N * S.d), fmt: nf }));
+        tblB.innerHTML = `<div class="tbl"><table><tr><th>Khoản</th><th>Mỗi câu hỏi</th><th>Mỗi 1.000 câu hỏi</th><th>Cách tính</th></tr>
+<tr><td>Voyage rerank-3</td><td class="mono">${usd(v)}</td><td class="mono">${usd(v * 1000)}</td><td>${nf(vt)} token × $0,05 / triệu</td></tr>
+<tr><td>Voyage rerank-3-lite</td><td class="mono">${usd(vl)}</td><td class="mono">${usd(vl * 1000)}</td><td>${nf(vt)} token × $0,02 / triệu</td></tr>
+<tr><td>Cohere Rerank 3.5 trên Bedrock</td><td class="mono">${usd(PRICE.bedrockCohere)}</td><td class="mono">$2,00</td><td>$2,00 / 1.000 query. Theo trang giá Cohere: ${parts} phần tài liệu = ${units} search unit</td></tr>
+<tr class="cur"><td>Generation: K = ${S.K} đoạn vào Sonnet 5.5</td><td class="mono">${usd(genK)}</td><td class="mono">${usd(genK * 1000)}</td><td>${nf(S.K * S.d)} token input × $2 / triệu</td></tr>
+<tr><td>Nếu bỏ rerank, nhét cả N = ${S.N} đoạn</td><td class="mono">${usd(genN)}</td><td class="mono">${usd(genN * 1000)}</td><td>${nf(S.N * S.d)} token input × $2 / triệu</td></tr></table></div>`;
+        const w = [];
+        if (S.qt >= 1000) w.push(`<p class="bad"><b>Query ${nf(S.qt)} token bị nhân ${S.N} lần.</b> Phần query (${nf(S.qt * S.N)} token) ${S.qt * S.N > S.N * S.d ? 'lớn hơn' : 'gần bằng'} phần tài liệu. So với query 50 token, rerank Voyage đắt gấp ${(vt / (50 * S.N + S.N * S.d)).toFixed(1).replace('.', ',')} lần. Vì sao: cross-encoder đọc câu hỏi cùng từng tài liệu. <b>Trong hệ thống thật:</b> đưa câu hỏi đã viết lại cho reranker, không đưa cả lịch sử hội thoại.</p>`);
+        if (vt > 600000) w.push(`<p class="bad"><b>${nf(vt)} token vượt giới hạn 600K token mỗi request của Voyage.</b> Phải chia thành nhiều request hoặc giảm N.</p>`);
+        if (S.qt > 8000) w.push('<p class="bad">Query vượt 8.000 token, giới hạn của Voyage.</p>');
+        if (S.d > 500) w.push(`<p>Mỗi đoạn ${S.d} token, trên 500 token: Cohere tách mỗi đoạn thành ${Math.ceil(S.d / 500)} phần, mỗi phần tính là một tài liệu.</p>`);
+        if (S.N > 100) w.push(`<p>N = ${S.N} trên 100 tài liệu: theo trang giá Cohere là ${units} search unit cho một câu hỏi.</p>`);
+        if (S.K >= S.N) w.push('<p class="bad"><b>K bằng N: rerank không loại đoạn nào.</b> Thứ tự có thể tốt hơn, nhưng model vẫn đọc đủ N đoạn.</p>');
+        if (genN > v + genK) w.push(`<p class="ok"><b>Rerank làm tổng chi phí rẻ hơn:</b> rerank (Voyage) + K đoạn = ${usd(v + genK)}, so với ${usd(genN)} khi nhét cả N đoạn vào Sonnet 5.5. Đoạn ít hơn cũng là ít nhiễu hơn cho model.</p>`);
+        capB.innerHTML = '<div class="verdict">' + w.join('') + '<p>Giá: Voyage và Cohere theo README §2.2; Sonnet 5.5 input $2 / triệu token theo Cost optimization §2.1. Độ trễ rerank tăng gần tuyến tính theo N; tự đo p95.</p></div>';
+      }
+      const ctxBtn = el('button', { text: 'Ghép ngữ cảnh: tắt' });
+      ctxBtn.addEventListener('click', () => { S.ctx = !S.ctx; ctxBtn.textContent = 'Ghép ngữ cảnh: ' + (S.ctx ? 'bật' : 'tắt'); ctxBtn.classList.toggle('on', S.ctx); renderA(); });
+      const kS = slider('K giữ lại', 1, 50, 1, S.K, (v) => { S.K = v; renderB(); });
+      stage.append(
+        el('h4', { text: 'A. Câu hỏi khớp chunk nào, có và không có ngữ cảnh', style: 'margin:0 0 8px' }),
+        el('div', { class: 'row' }, [select('Câu hỏi', QS.map((q) => [q.id, q.text]), S.q, (v) => { S.q = v; renderA(); }).node, ctxBtn, slider('top-k', 1, 8, 1, S.k, (v) => { S.k = v; renderA(); }).node]),
+        listA, statA, capA,
+        el('h4', { text: 'B. Rerank top-N thành top-K: tốn bao nhiêu mỗi câu hỏi', style: 'margin:22px 0 8px' }),
+        el('div', { class: 'row' }, [
+          slider('N candidate', 10, 200, 10, S.N, (v) => { S.N = v; if (S.K > v) { S.K = v; kS.input.value = v; } renderB(); }).node, kS.node,
+          slider('Token mỗi đoạn', 100, 1000, 50, S.d, (v) => { S.d = v; renderB(); }).node,
+          select('Query đưa cho reranker', [[50, '50 token: câu đã viết lại'], [200, '200 token: câu kèm vài dòng'], [2000, '2.000 token: cả hội thoại'], [9000, '9.000 token: hội thoại dài']], S.qt, (v) => { S.qt = +v; renderB(); }).node]),
+        el('div', { class: 'hint', style: 'margin:0 0 4px', text: 'Mỗi ô là 2% số candidate. Ô sáng là phần giữ lại cho model.' }), funnel, barsB, tblB, capB,
+        el('p', { class: 'hint', text: 'Phần A dùng bộ chấm đồ chơi (bỏ từ chức năng, gom vài cách viết như hủy/huỷ mà BM25 thật không gom, IDF, cosine) trên 8 chunk của 4 tài liệu. Token ước lượng theo 49 từ tiếng Việt ≈ 56 token (o200k, Cost optimization §2.1).' }));
+      renderA(); renderB();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

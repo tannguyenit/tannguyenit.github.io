@@ -1,0 +1,759 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 06</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="05-parent-child-graphrag.html">← Lab trước</a><a href="07-symptoms-updates-permissions.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const flag = (kind, html) => el('div', { style: `border:1px solid var(--line);border-left:4px solid var(--${kind});border-radius:6px;padding:8px 12px;margin-top:10px;font-size:13.5px`, html });
+  const tbl = (html) => el('div', { class: 'sum tbl', style: 'border:0;margin:8px 0 0;padding:0' }, [el('table', { html })]);
+  const pre = (text) => el('pre', { style: 'overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:12px/1.45 var(--mono);margin:6px 0 0;white-space:pre-wrap', text });
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const n0 = (v) => Math.round(v).toLocaleString('vi-VN');
+  const fmtD = (d) => { const s = String(d); return s.slice(6, 8) + '/' + s.slice(4, 6) + '/' + s.slice(0, 4); };
+
+  const DOCS = [
+    { id: 'kb://policy/return-2024-vn', title: 'Chính sách đổi trả 2024 (VN)', region: 'VN', ver: 2024, from: 20240101, to: 20241231, days: 30, sim: 0.88, text: 'Laptop mua tại ShopViet được đổi trả trong 30 ngày kể từ ngày nhận hàng.' },
+    { id: 'kb://policy/return-2025-vn', title: 'Chính sách đổi trả 2025 (VN)', region: 'VN', ver: 2025, from: 20250101, to: 20251231, days: 15, sim: 0.91, text: 'Laptop được đổi trả trong 15 ngày kể từ ngày nhận hàng, kèm hoá đơn.' },
+    { id: 'kb://policy/return-2026-vn', title: 'Chính sách đổi trả 2026 (VN)', region: 'VN', ver: 2026, from: 20260101, to: 20261231, days: 7, sim: 0.86, text: 'Từ 01/01/2026, laptop được đổi trả trong 7 ngày kể từ ngày nhận hàng, máy còn nguyên seal.' },
+    { id: 'kb://policy/return-2027-vn', title: 'Dự thảo đổi trả 2027 (VN)', region: 'VN', ver: 2027, from: 20270101, to: 20271231, days: 14, sim: 0.87, text: 'Dự kiến từ 01/01/2027, laptop được đổi trả trong 14 ngày.' },
+    { id: 'kb://policy/return-2025-th', title: 'Chính sách đổi trả 2025 (TH)', region: 'TH', ver: 2025, from: 20250101, to: 20251231, days: 10, sim: 0.9, text: 'Laptop mua tại ShopViet Thái Lan được đổi trả trong 10 ngày.' },
+    { id: 'kb://policy/return-2026-th', title: 'Chính sách đổi trả 2026 (TH)', region: 'TH', ver: 2026, from: 20260101, to: 20261231, days: 10, sim: 0.89, text: 'Năm 2026, laptop mua tại ShopViet Thái Lan vẫn được đổi trả trong 10 ngày.' },
+    { id: 'kb://faq/phone-return-2026-vn', title: 'FAQ đổi trả điện thoại 2026 (VN)', region: 'VN', ver: 2026, from: 20260101, to: 20261231, days: null, sim: 0.8, text: 'Điện thoại được đổi trả trong 7 ngày nếu lỗi do nhà sản xuất.' },
+    { id: 'kb://policy/warranty-laptop-2026-vn', title: 'Bảo hành laptop 2026 (VN)', region: 'VN', ver: 2026, from: 20260101, to: 20261231, days: null, sim: 0.74, text: 'Laptop được bảo hành 24 tháng tại trung tâm ShopViet.' }
+  ];
+  const DATES = [[20240615, '15/06/2024'], [20250615, '15/06/2025'], [20261127, '27/11/2026 (hôm nay)'], [20270201, '01/02/2027']];
+  const K = 3;
+
+  function runFilter(f) {
+    let pool = DOCS.filter((d) => !f.region || d.region === f.region);
+    if (f.ver === 'max') { const mx = Math.max(-Infinity, ...pool.map((d) => d.ver)); pool = pool.filter((d) => d.ver === mx); }
+    if (f.ver === 'eff') pool = pool.filter((d) => d.from <= f.date && f.date <= d.to);
+    const top = pool.slice().sort((a, b) => b.sim - a.sim).slice(0, K);
+    const ans = top.find((d) => d.days != null);
+    const truth = DOCS.find((d) => d.days != null && d.region === (f.truthRegion || 'VN') && d.from <= f.date && f.date <= d.to);
+    const daysSet = new Set(top.filter((d) => d.days != null).map((d) => d.days));
+    return { pool, top, ans, truth, contradict: daysSet.size > 1 };
+  }
+  function filterJson(f) {
+    const parts = [];
+    if (f.region) parts.push(`{"type": "eq", "key": "region", "value": "${f.region}"}`);
+    if (f.ver === 'max') parts.push('{"type": "eq", "key": "version", "value": <max(version)>}');
+    if (f.ver === 'eff') parts.push(`{"type": "lte", "key": "effective_from", "value": ${f.date}}`, `{"type": "gte", "key": "effective_to", "value": ${f.date}}`);
+    if (!parts.length) return '"filters": null   (không lọc gì, chỉ xếp theo độ giống)';
+    return '"filters": {"type": "and", "filters": [\n  ' + parts.join(',\n  ') + '\n]}';
+  }
+
+  const norm = (s, nfc) => (nfc ? s.normalize('NFC') : s).toLowerCase().replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim();
+  const SRC = {
+    'kb://policy/return-2026-vn#sec-2': 'Từ 01/01/2026, laptop được đổi trả trong 7 ngày kể từ ngày nhận hàng, máy còn nguyên seal. Phí đổi trả là 0 đồng nếu lỗi do nhà sản xuất; các trường hợp khác thu 5% giá trị đơn.',
+    'kb://faq/phone-return-2026-vn#q1': 'Điện thoại được đổi trả trong 7 ngày nếu lỗi do nhà sản xuất. Phụ kiện đi kèm phải còn đầy đủ.',
+    'kb://policy/warranty-laptop-2026-vn#sec-1': 'Laptop được bảo hành 24 tháng tại trung tâm ShopViet. Bảo hành không áp dụng cho hư hỏng do rơi vỡ hoặc vào nước.'
+  };
+  const CLAIMS = [
+    { claim: 'Laptop được đổi trong 7 ngày kể từ ngày nhận.', source_id: 'kb://policy/return-2026-vn#sec-2', quote: 'laptop được đổi trả trong 7 ngày kể từ ngày nhận hàng' },
+    { claim: 'Lỗi do nhà sản xuất thì không mất phí.', source_id: 'kb://policy/return-2026-vn#sec-2', quote: 'Phí đổi trả là 0 đồng nếu lỗi do nhà sản xuất'.normalize('NFD'), nfd: true },
+    { claim: 'Trường hợp khác thu phí 3%.', source_id: 'kb://policy/return-2026-vn#sec-2', quote: 'các trường hợp khác thu 3% giá trị đơn' },
+    { claim: 'Đơn SV-4821 (nhận 22/11) vẫn còn hạn đổi.', source_id: 'kb://faq/phone-return-2026-vn#q1', quote: '7 ngày' },
+    { claim: 'Năm 2025 laptop được đổi trong 15 ngày.', source_id: 'kb://policy/return-2025-vn#sec-2', quote: 'đổi trả trong 15 ngày' }
+  ];
+  function checkCitation(c, nfc) {
+    if (typeof c.source_id !== 'string' || typeof c.quote !== 'string') return { ok: false, why: 'source_id hoặc quote không phải chuỗi' };
+    const text = SRC[c.source_id], q = norm(c.quote, nfc);
+    if (text == null) return { ok: false, why: 'source_id không có trong context' };
+    if (!q) return { ok: false, why: 'quote rỗng' };
+    const at = norm(text, nfc).indexOf(q);
+    if (at < 0) return { ok: false, why: 'quote không có trong nguồn' };
+    return { ok: true, at, len: q.length, short: q.length < 15 };
+  }
+  function highlight(text, at, len) {
+    return esc(text.slice(0, at)) + '<span style="background:var(--accent-soft);outline:1px solid var(--accent);border-radius:3px">' + esc(text.slice(at, at + len)) + '</span>' + esc(text.slice(at + len));
+  }
+
+  function tri(s) {
+    const t = ' ' + s.normalize('NFC').toLowerCase().replace(/\s+/g, ' ') + ' ', m = new Map();
+    for (let i = 0; i < t.length - 2; i++) { const g = t.slice(i, i + 3); m.set(g, (m.get(g) || 0) + 1); }
+    return m;
+  }
+  function cos(a, b) {
+    let d = 0, na = 0, nb = 0;
+    for (const [g, v] of a) { na += v * v; if (b.has(g)) d += v * b.get(g); }
+    for (const v of b.values()) nb += v * v;
+    return na && nb ? d / Math.sqrt(na * nb) : 0;
+  }
+
+  const ORDERS = [
+    ['SV-4810', 'Laptop', 'đổi trả', 20261118], ['SV-4815', 'Laptop', 'đổi trả', 20261123], ['SV-4816', 'Điện thoại', 'đổi trả', 20261123],
+    ['SV-4819', 'Laptop', 'bảo hành', 20261124], ['SV-4821', 'Laptop', 'đổi trả', 20261124], ['SV-4822', 'Laptop', 'đổi trả', 20261125],
+    ['SV-4824', 'Tai nghe', 'đổi trả', 20261125], ['SV-4826', 'Laptop', 'đổi trả', 20261126], ['SV-4828', 'Laptop', 'đổi trả', 20261126],
+    ['SV-4830', 'Laptop', 'bảo hành', 20261127], ['SV-4831', 'Laptop', 'đổi trả', 20261127], ['SV-4833', 'Laptop', 'đổi trả', 20261127],
+    ['SV-4835', 'Điện thoại', 'bảo hành', 20261127], ['SV-4836', 'Laptop', 'đổi trả', 20261128]
+  ];
+  const isTarget = (o) => o[1] === 'Laptop' && o[2] === 'đổi trả' && o[3] >= 20261123 && o[3] <= 20261129;
+
+  const TABLE = ['| Nhóm hàng | Hạn đổi | Phí khi không lỗi |', '|---|---|---|',
+    '| Laptop | 7 ngày | 5% |', '| Điện thoại | 7 ngày | 5% |', '| Máy tính bảng | 7 ngày | 5% |', '| Tai nghe | 15 ngày | 0% |', '| Loa | 15 ngày | 0% |',
+    '| Màn hình | 10 ngày | 3% |', '| Bàn phím, chuột | 15 ngày | 0% |', '| Đồng hồ thông minh | 7 ngày | 5% |', '| Máy ảnh | 10 ngày | 5% |', '| Phụ kiện sạc | 30 ngày | 0% |'];
+  function splitTable(lines, maxRows, caption) {
+    const header = lines[0], sep = lines[1], rows = lines.slice(2), out = [];
+    for (let i = 0; i < Math.max(rows.length, 1); i += maxRows) {
+      const part = rows.slice(i, i + maxRows);
+      const note = caption ? `${caption} (dòng ${i + 1}–${i + part.length} / ${rows.length})` : '';
+      out.push([].concat(note ? [note] : [], [header, sep], part).join('\n'));
+    }
+    return out;
+  }
+  function splitNaive(lines, chars) {
+    const text = lines.join('\n'), out = [];
+    for (let i = 0; i < text.length; i += chars) out.push(text.slice(i, i + chars));
+    return out;
+  }
+
+  return {
+    id: 'meta-cite', nav: '6. Metadata, bảng, trích dẫn', ref: '§2.6–2.8',
+    title: 'Khách hỏi laptop đổi trả mấy ngày, RAG trả lời "15 ngày" từ chính sách 2025: filter nào chặn được, và làm sao biết trích dẫn là thật?',
+    hook: 'Bật tắt từng filter (quốc gia, phiên bản, ngày hiệu lực) để xem tài liệu nào lọt vào top-3 và câu trả lời đổi ra sao. Bên dưới, bật tắt chuẩn hoá NFC và sửa quote để xem trình kiểm tra trích dẫn bắt được gì và bỏ sót gì.',
+    terms: [
+      ['Metadata', 'Thuộc tính có cấu trúc gắn vào tài liệu lúc index, nằm ngoài nội dung văn bản. Ví dụ: {"region": "VN", "version": 2026, "effective_from": 20260101}.'],
+      ['Metadata filter', 'Điều kiện lọc cứng chạy cùng truy vấn vector. Tài liệu không thoả điều kiện bị loại trước khi xếp hạng, dù nó giống câu hỏi đến đâu. Ví dụ: region = "VN" loại hẳn chính sách Thái Lan.'],
+      ['Ngày hiệu lực', 'Khoảng thời gian một chính sách có giá trị: effective_from tới effective_to. "Phiên bản mới nhất" và "đang có hiệu lực" là hai thứ khác nhau: bản dự thảo 2027 mới nhất nhưng chưa có hiệu lực vào 27/11/2026.'],
+      ['Enum', 'Danh sách giá trị hợp lệ cố định trong schema. Ví dụ region chỉ được là "VN" hoặc "TH". Model trả "Bangkok" thì bị loại thay vì thành một filter vô nghĩa.'],
+      ['Text-to-SQL', 'Cho model viết câu SQL từ câu hỏi, chạy SQL trên database rồi trả kết quả. Dùng khi đáp án là con số, phép đếm, phép lọc trên bảng: "tuần này có bao nhiêu yêu cầu đổi trả laptop?".'],
+      ['View', 'Bảng ảo trong database, định nghĩa bằng một câu SELECT. Cho model thấy view v_return_requests với tên cột dễ hiểu thay vì 40 bảng gốc.'],
+      ['ColPali / visual retrieval', 'Embed thẳng ảnh của trang PDF, không qua OCR. Mỗi trang thành khoảng 1.030 vector 128 chiều thay vì một vector.'],
+      ['Grounding', 'Câu trả lời bám vào nguồn: mỗi khẳng định có một đoạn trong tài liệu ủng hộ. Trích dẫn là cách làm grounding kiểm tra được.'],
+      ['Citations API', 'Tính năng của Claude: gửi tài liệu kèm "citations": {"enabled": true}, Claude trả về text block kèm vị trí chính xác của đoạn được trích (cited_text). Không để model tự gõ "[Nguồn 3]".'],
+      ['Quote matching', 'Khi không có API trích dẫn: model trả kèm mỗi khẳng định một cặp (source_id, quote), code kiểm tra quote có nguyên văn trong nguồn đó không.'],
+      ['NFC / NFD', 'Hai cách lưu cùng một chữ có dấu. NFC: "ộ" là 1 ký tự. NFD: "o" + dấu mũ + dấu nặng, 3 ký tự. Nhìn giống hệt, so chuỗi thì khác.']
+    ],
+    problem: {
+      example: 'Khách đơn <b>SV-4821</b> (laptop, nhận hàng 22/11/2026) hỏi trợ lý ShopViet: "Laptop đổi trả trong mấy ngày?". Kho tài liệu có chính sách đổi trả 2024, 2025, 2026 của Việt Nam, bản dự thảo 2027, hai bản của ShopViet Thái Lan, FAQ điện thoại và chính sách bảo hành.',
+      scenario: 'RAG cơ bản (lab Embedding) trả lời "15 ngày". Bản 2025 có câu chữ giống câu hỏi hơn bản 2026, nên đứng đầu top-3 (đây là số dựng sẵn; embedding thật trong POC lại xếp dự thảo 2027 đầu, cũng sai phiên bản). Khách mang máy tới ngày thứ 10 và bị từ chối. Khi bị hỏi lại, trợ lý dẫn "[Nguồn: chính sách đổi trả]" mà không ai kiểm được câu đó nằm ở đâu.',
+      ask: 'Embedding không biết năm và quốc gia thì lấy đúng bản bằng cách nào? Và làm sao biết câu được trích có thật nằm trong nguồn?',
+      solves: 'Gắn metadata (region, version, effective_from/to) lúc index và lọc cứng theo ngày hỏi và quốc gia của tài khoản; đếm và lọc trên bảng thì dùng text-to-SQL; trích dẫn bằng id do hệ thống cấp, kiểm tra quote nguyên văn sau chuẩn hoá NFC.',
+      read: [
+        'Phần 1: chọn <b>Quốc gia</b>, <b>Phiên bản</b> và <b>Ngày hỏi</b>. Bảng liệt kê 8 tài liệu với độ giống (cố định, dựng sẵn cho ví dụ), cột trạng thái cho biết tài liệu bị filter loại, lọt top-3 hay là đáp án đúng.',
+        'Câu trả lời mô phỏng lấy số ngày từ tài liệu đổi trả laptop đứng cao nhất trong top-3. Đáp án đúng là chính sách laptop của VN đang có hiệu lực vào ngày hỏi. Khung JSON là filter tương ứng theo kiểu <code>filters</code> của OpenAI vector store (giá trị ngày viết dạng số YYYYMMDD cho dễ đọc).',
+        'Phần 2: 5 khẳng định trong câu trả lời của model, mỗi cái kèm (source_id, quote). Trình kiểm tra là bản JavaScript của hàm <code>check_citations</code> trong README §2.8. Phần nguồn được tô là chỗ quote khớp.',
+        'Khung cam, đỏ là điều bất thường được phát hiện từ dữ liệu, kèm giải thích và cách xử lý.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Metadata filter và text-to-SQL (§2.6)</h4>
+<ul><li>Embedding không so sánh ngày, không đếm, và "Việt Nam" nằm gần "Thái Lan". Gắn thuộc tính có cấu trúc lúc index (ngày hiệu lực, quốc gia, sản phẩm, phiên bản, loại tài liệu, nhóm được đọc) và lọc cứng trong truy vấn.</li>
+<li>OpenAI vector store: <code>attributes</code> trên file, lọc bằng <code>filters</code> (<code>eq</code>, <code>gt</code>, <code>in</code>…, kết hợp <code>and</code>/<code>or</code>). Gemini File Search: <code>custom_metadata</code> và <code>metadata_filter</code>.</li></ul>
+<div class="tbl"><table><tr><th>Nguồn giá trị filter</th><th>Độ tin cậy</th></tr>
+<tr><td>Ngữ cảnh ứng dụng (trang sản phẩm, quốc gia của tài khoản)</td><td>Cao nhất, không cần model đoán</td></tr>
+<tr><td>Giao diện (bộ lọc người dùng chọn)</td><td>Cao</td></tr>
+<tr><td>Model trích từ câu hỏi (structured output, schema có enum)</td><td>Thấp nhất. Không chắc thì để trống: filter sai mất tài liệu đúng, thiếu filter chỉ nhiễu hơn</td></tr></table></div>
+<ul><li>0 kết quả: filter do người dùng hoặc ứng dụng đặt thì giữ nguyên, trả lời "không tìm thấy" kèm điều kiện. Chỉ nới filter hệ thống tự thêm hoặc model tự đoán, theo thứ tự định trước, và cho người dùng thấy điều kiện nào bị bỏ.</li>
+<li>Text-to-SQL: role chỉ <code>SELECT</code> trên view được duyệt, row-level security; schema chọn lọc kèm mô tả cột và dòng mẫu; parse SQL (ví dụ <code>sqlglot</code>) chỉ nhận một câu SELECT trên bảng được phép; timeout và giới hạn số dòng; trả cả câu SQL cho người dùng. Eval so kết quả chạy, không so chuỗi SQL.</li></ul>
+<h4>RAG đa phương thức (§2.7)</h4>
+<div class="tbl"><table><tr><th>Loại tài liệu</th><th>Cách làm</th></tr>
+<tr><td>Văn bản thuần, ít bảng</td><td>Pipeline text thông thường</td></tr>
+<tr><td>Có bảng, parse sạch</td><td>Chia bảng theo dòng, lặp header và caption; đưa cả bảng vào context khi cần</td></tr>
+<tr><td>Bảng phức tạp (ô gộp, nhiều tầng header), biểu đồ</td><td>Retrieval chọn trang, gửi ảnh trang hoặc PDF cho model</td></tr>
+<tr><td>Hàng triệu trang scan, OCR kém</td><td>Visual retrieval (ColPali: nDCG@5 81,3 so với 65,5–66,1 của OCR + BM25/BGE-M3 trên ViDoRe), chấp nhận 257,5 KB mỗi trang</td></tr></table></div>
+<h4>Trích dẫn và grounding (§2.8)</h4>
+<ul><li>Tệ nhất: model tự viết "[Nguồn: tài liệu 3]". Có thể đánh số sai, trích tài liệu không có trong context, hoặc trích câu không có trong tài liệu.</li>
+<li>Claude: Citations API (<code>document</code> với citations bật; <code>cited_text</code> không tính output token), hoặc block <code>search_result</code> trong <code>tool_result</code> với <code>source</code> là id ổn định của bạn. Không bật citations cùng <code>output_config.format</code>: API trả 400.</li>
+<li>OpenAI <code>file_search</code>: annotation <code>file_citation</code>; thêm <code>include=["file_search_call.results"]</code> để lấy đoạn đã tìm. Gemini File Search: <code>file_citation</code>, dùng được cùng structured output từ Gemini 3.</li>
+<li>Không có API: quote matching sau chuẩn hoá NFC. Bắt được trích dẫn bịa, không bắt được trích dẫn có thật nhưng không ủng hộ khẳng định. Ghi tỉ lệ không đạt thành metric.</li></ul>
+<div class="verdict"><b>Hai câu cần nhớ:</b> độ giống không biết ngày và quốc gia, nên điều kiện cứng phải nằm trong filter chứ không nằm trong embedding; trích dẫn chỉ có giá trị khi code kiểm được nó, và kiểm được "có trong nguồn" vẫn chưa phải "ủng hộ khẳng định".</div>`,
+    why: {
+      c: 'Gắn region, version, effective_from/to cho mọi tài liệu; lấy quốc gia từ tài khoản và ngày từ đồng hồ hệ thống, lọc "đang có hiệu lực" thay vì "mới nhất". Câu hỏi đếm và lọc trên đơn hàng đi qua text-to-SQL với role chỉ đọc. Trích dẫn dùng search_result với source là id kb://, hoặc quote matching có NFC khi không có API.',
+      s: 'Thêm "ưu tiên chính sách mới nhất" vào prompt: model vẫn chỉ thấy những gì top-3 đưa vào, và bản 2026 có thể không có trong đó. Lọc "version mới nhất": lấy phải bản dự thảo chưa có hiệu lực. Để model tự đoán quốc gia: đoán sai là mất tài liệu đúng. Embed từng dòng đơn hàng để đếm: số đếm phụ thuộc k. Để model tự viết [Nguồn N]: không kiểm được.',
+      p: 'Phải có quy trình gắn metadata lúc index và giữ nó đúng khi chính sách đổi (ai nhập effective_to?). Text-to-SQL cần role database riêng, view có mô tả, bước parse SQL và eval theo kết quả chạy. Quote matching chỉ bắt trích dẫn bịa; phần "có ủng hộ không" vẫn cần LLM judge hoặc người đọc.'
+    },
+    deep: [
+      {
+        q: 'Embedding đã hiểu nghĩa câu, sao không tự phân biệt 2025 với 2026, Việt Nam với Thái Lan?',
+        a: `<p>Vì embedding đo <b>độ giống về nội dung tổng thể</b>. Hai chính sách đổi trả laptop chỉ khác nhau ở năm và vài con số: 95% câu chữ giống nhau, nên vector của chúng nằm sát nhau. Điều phân biệt chúng (năm, quốc gia) lại là phần rất nhỏ của văn bản.</p>
+<p>Embedding cũng không có phép so sánh. Nó không biết "27/11/2026 nằm trong khoảng 01/01/2026 tới 31/12/2026". Nó chỉ biết chuỗi "2026" hơi giống chuỗi "2025".</p>
+<p>Hình dưới đo độ giống giữa câu mẫu và vài biến thể bằng cosine trên trigram ký tự (đếm cụm 3 ký tự liên tiếp). Đây không phải embedding thật, chỉ là phép đo đơn giản chạy được trong trình duyệt, nhưng cho thấy cùng hiện tượng: đổi năm hoặc đổi nước, độ giống gần như không giảm.</p>`,
+        viz(box) {
+          const base = 'Chính sách đổi trả laptop năm 2026 tại Việt Nam: đổi trong 7 ngày kể từ ngày nhận hàng.';
+          const vars = [
+            ['Đổi năm 2026 → 2025, 7 → 15 ngày', 'Chính sách đổi trả laptop năm 2025 tại Việt Nam: đổi trong 15 ngày kể từ ngày nhận hàng.'],
+            ['Đổi Việt Nam → Thái Lan, 7 → 10 ngày', 'Chính sách đổi trả laptop năm 2026 tại Thái Lan: đổi trong 10 ngày kể từ ngày nhận hàng.'],
+            ['Đổi laptop → điện thoại', 'Chính sách đổi trả điện thoại năm 2026 tại Việt Nam: đổi trong 7 ngày kể từ ngày nhận hàng.'],
+            ['Chủ đề khác: bảo hành', 'Laptop được bảo hành 24 tháng tại trung tâm ShopViet, không áp dụng cho rơi vỡ.']
+          ];
+          const b = tri(base);
+          const rows = vars.map(([l, t]) => [l, cos(b, tri(t)), false]);
+          box.append(el('p', { class: 'hint', html: 'Câu mẫu: <i>' + esc(base) + '</i>' }), hbars(rows, { max: 1, fmt: (v) => v.toFixed(3) }));
+          const worst = Math.min(rows[0][1], rows[1][1]);
+          box.append(flag('warn', `<b>Đổi năm hoặc đổi nước, độ giống vẫn ${worst.toFixed(2)} trở lên, cao hơn cả câu cùng chủ đề "bảo hành" (${rows[3][1].toFixed(2)}).</b> Thông tin quyết định đáp án chỉ chiếm vài ký tự. Không có nghĩa embedding thật cũng cho đúng các con số này; nghĩa là đo độ giống không phải công cụ để chọn năm hay nước. Trong hệ thống thật: đưa năm, nước, ngày hiệu lực vào metadata và lọc cứng.`));
+        },
+        take: 'Thuộc tính rời rạc (năm, nước, phiên bản) là việc của filter, không phải của độ giống.'
+      },
+      {
+        q: 'Vậy giá trị filter lấy từ đâu? Để model đọc câu hỏi rồi đoán được không?',
+        a: `<p>README xếp ba nguồn theo độ tin cậy: <b>ngữ cảnh ứng dụng</b> (tài khoản thuộc VN, đang ở trang sản phẩm X), <b>giao diện</b> (bộ lọc người dùng chọn), rồi mới tới <b>model trích từ câu hỏi</b>.</p>
+<p>Khi để model trích, dùng structured output với schema có enum, ví dụ <code>{"region": {"enum": ["VN", "TH"]}}</code>, và cho phép để trống. Lý do để trống an toàn hơn đoán: <b>filter sai loại mất tài liệu đúng</b> (không có cách nào lấy lại ở bước sau), còn <b>thiếu filter chỉ làm kết quả nhiễu hơn</b> (tài liệu đúng vẫn có cơ hội lọt top-k).</p>
+<p>Bảng dưới chạy cùng hàm lọc của hình chính cho câu "Tôi đang ở Bangkok, laptop mua ở ShopViet đổi mấy ngày?" của khách có tài khoản VN, ngày 27/11/2026, filter ngày hiệu lực luôn bật.</p>`,
+        viz(box) {
+          const cases = [['Ngữ cảnh ứng dụng: tài khoản VN', 'VN'], ['Model đoán từ chữ "Bangkok"', 'TH'], ['Model không chắc, để trống', '']];
+          let h = '<tr><th>Nguồn filter</th><th>region</th><th>Top-3</th><th>Trả lời</th><th>Đúng?</th></tr>';
+          const res = cases.map(([l, r]) => { const o = runFilter({ region: r, ver: 'eff', date: 20261127 }); return { l, r, o, ok: o.ans && o.truth && o.ans.days === o.truth.days, has: o.top.includes(o.truth) }; });
+          res.forEach((x) => { h += `<tr><td>${x.l}</td><td class="mono">${x.r || '(trống)'}</td><td>${x.o.top.map((d) => d.title).join('<br>')}</td><td class="mono">${x.o.ans ? x.o.ans.days + ' ngày' : '-'}</td><td class="${x.ok ? 'ok' : 'bad'}"><b>${x.ok ? 'đúng' : 'sai'}</b>${!x.ok && x.has ? ' (đáp án có trong top-3)' : ''}</td></tr>`; });
+          box.append(tbl(h));
+          const wrong = res[1], empty = res[2];
+          box.append(flag('bad', `<b>Model đoán "TH" từ chữ Bangkok, filter loại sạch chính sách VN, trả lời ${wrong.o.ans ? wrong.o.ans.days : '?'} ngày.</b> Khách đang ở Bangkok nhưng đơn mua ở ShopViet VN. Để trống thì top-3 ${empty.has ? 'vẫn chứa' : 'không chứa'} bản VN 2026, chỉ nhiễu hơn${empty.ok ? '' : ' và model vẫn có thể chọn nhầm bản TH vì nó đứng cao hơn'}. Không có nghĩa model trích filter là vô dụng: nó hợp với thuộc tính câu hỏi nói rõ mà ứng dụng không biết. Trong hệ thống thật: thuộc tính ứng dụng biết (quốc gia tài khoản, ngày hôm nay) thì lấy từ ứng dụng, đừng hỏi model.`));
+        },
+        take: 'Ứng dụng biết gì thì đừng bắt model đoán. Model không chắc thì để trống.'
+      },
+      {
+        q: 'Filter chặt quá, trả về 0 kết quả. Nới filter ra cho có câu trả lời được không?',
+        a: `<p>Tuỳ filter đó do ai đặt. README tách hai loại:</p>
+<ul><li><b>Điều kiện người dùng hoặc ứng dụng đặt</b> (quốc gia tài khoản, bộ lọc trên giao diện, "hết hạn trong tháng 12"): giữ nguyên, trả lời "không tìm thấy" kèm điều kiện đã dùng. Nới nó là trả lời một câu hỏi khác. Với filter theo quyền, nới là lộ dữ liệu.</li>
+<li><b>Điều kiện hệ thống tự thêm hoặc model tự đoán</b> khi câu hỏi không nói (ví dụ mặc định "phiên bản đang hiệu lực"): được nới, theo thứ tự định trước, và cho người dùng thấy điều kiện nào đã bị bỏ.</li></ul>
+<p>Ví dụ: khách chọn trên giao diện "Thái Lan", hỏi về ngày 15/06/2024. Kho không có chính sách TH năm 2024.</p>`,
+        viz(box) {
+          const strict = runFilter({ region: 'TH', ver: 'eff', date: 20240615 }), relaxedDate = runFilter({ region: 'TH', ver: '', date: 20240615 }), relaxedRegion = runFilter({ region: '', ver: 'eff', date: 20240615 });
+          box.append(tbl('<tr><th>Cách xử lý</th><th>Số kết quả</th><th>Trả lời</th><th>Đánh giá</th></tr>' +
+            `<tr><td>Giữ nguyên cả hai điều kiện</td><td class="mono">${strict.pool.length}</td><td>"Không tìm thấy chính sách đổi trả của ShopViet Thái Lan áp dụng ngày 15/06/2024."</td><td class="ok">Đúng: nói rõ điều kiện</td></tr>` +
+            `<tr><td>Nới ngày (điều kiện hệ thống tự thêm), báo cho người dùng</td><td class="mono">${relaxedDate.pool.length}</td><td>"Không có bản áp dụng ngày đó. Bản gần nhất (${relaxedDate.top[0] ? relaxedDate.top[0].title : '-'}) quy định ${relaxedDate.ans ? relaxedDate.ans.days : '?'} ngày."</td><td class="ok">Chấp nhận được: đã nói điều kiện bị bỏ</td></tr>` +
+            `<tr><td>Nới quốc gia (người dùng đã chọn) để có đáp án</td><td class="mono">${relaxedRegion.pool.length}</td><td>"${relaxedRegion.ans ? relaxedRegion.ans.days : '?'} ngày" (thật ra là chính sách ${relaxedRegion.ans ? relaxedRegion.ans.region : '?'})</td><td class="bad">Sai: trả lời câu hỏi khác</td></tr>`));
+          box.append(flag('bad', `<b>Nới filter quốc gia ra kết quả "${relaxedRegion.ans ? relaxedRegion.ans.days : '?'} ngày" của chính sách ${relaxedRegion.ans ? relaxedRegion.ans.region : '?'}, nghe rất tự tin.</b> Không có nghĩa nới filter luôn sai: nới điều kiện hệ thống tự thêm, có báo, là hợp lý. Trong hệ thống thật: đánh dấu mỗi điều kiện filter là "user" hay "system", chỉ nới loại "system", và log mọi lần nới.`));
+        },
+        take: 'Không có kết quả cũng là một câu trả lời. Nới filter người dùng đặt là đổi câu hỏi của họ.'
+      },
+      {
+        q: 'Câu "tuần này có bao nhiêu yêu cầu đổi trả laptop?" thì embed từng đơn hàng rồi RAG không được sao?',
+        a: `<p>Không, vì RAG chỉ đưa <b>k</b> đoạn vào context. Model đếm được những gì nó thấy, không đếm được những gì nằm ngoài top-k. Câu trả lời sẽ phụ thuộc k, không phụ thuộc dữ liệu.</p>
+<p>Đáp án đếm, cộng, lọc ngày nằm trong bảng. Text-to-SQL cho model viết một câu <code>SELECT COUNT(*) ...</code>, database đếm chính xác trên mọi dòng. Kéo k để xem RAG "đếm" ra bao nhiêu so với SQL trên 14 yêu cầu mẫu (tuần 23–29/11/2026).</p>`,
+        viz(box) {
+          const out = el('div');
+          const sqlCount = ORDERS.filter(isTarget).length;
+          const ranked = ORDERS.slice().sort((a, b) => (b[1] === 'Laptop') - (a[1] === 'Laptop') || b[3] - a[3]);
+          function draw(k) {
+            const ctx = ranked.slice(0, k), rag = ctx.filter(isTarget).length;
+            out.replaceChildren(
+              pre("SELECT COUNT(*) FROM v_return_requests\nWHERE product_group = 'Laptop' AND request_type = 'đổi trả'\n  AND created_date BETWEEN '2026-11-23' AND '2026-11-29';\n-- kết quả: " + sqlCount),
+              el('div', { class: 'stat', html: `<span>SQL đếm trên ${ORDERS.length} dòng: <b>${sqlCount}</b></span><span>RAG thấy ${k} dòng trong context, đếm được: <b class="${rag === sqlCount ? 'ok' : 'bad'}">${rag}</b></span>` }),
+              tbl('<tr><th>Đơn</th><th>Nhóm</th><th>Loại</th><th>Ngày</th><th>Trong context RAG</th></tr>' + ORDERS.map((o) => `<tr><td class="mono">${o[0]}</td><td>${o[1]}</td><td>${o[2]}</td><td class="mono">${fmtD(o[3])}</td><td class="${ctx.includes(o) ? 'ok' : 'mute'}">${ctx.includes(o) ? 'có' : '-'}${isTarget(o) ? ' · khớp' : ''}</td></tr>`).join('')),
+              rag !== sqlCount ? flag('bad', `<b>Với k = ${k}, RAG trả lời "${rag}" thay vì ${sqlCount}.</b> Đổi k là đổi đáp án: con số này đo kích thước context, không đo dữ liệu. Không có nghĩa retrieval kém: nó trả đúng những dòng giống nhất. Trong hệ thống thật: câu hỏi đếm, tổng, lọc theo ngày đi qua text-to-SQL; RAG để cho câu hỏi có đáp án nằm trong một đoạn văn.`) : flag('warn', `Với k = ${k}, RAG đếm trùng với SQL, nhưng chỉ vì context đủ lớn để chứa cả bảng mẫu 14 dòng. Với 14.000 dòng thì không.`));
+          }
+          box.append(el('div', { class: 'row' }, [slider('k (số dòng vào context)', 1, 14, 1, 5, draw).node]), out);
+          draw(5);
+        },
+        take: 'Đáp án là phép đếm thì cho database đếm. Model viết câu hỏi, database tính.'
+      },
+      {
+        q: 'Cho model viết SQL rồi chạy thẳng, có nguy hiểm không?',
+        a: `<p>Có. Model có thể viết <code>DELETE</code>, đọc bảng khách hàng, hoặc bị prompt injection dẫn tới một câu lệnh lạ. README liệt kê các lớp tối thiểu, và lớp quan trọng nhất nằm <b>ở database</b>, không nằm trong prompt:</p>
+<ul><li>Role chỉ có <code>SELECT</code> trên các view được duyệt; row-level security nếu người dùng chỉ được thấy dữ liệu của họ.</li>
+<li>Schema đưa cho model là schema đã chọn lọc: view có tên cột dễ hiểu, mô tả cột, vài dòng mẫu.</li>
+<li>Parse câu SQL trước khi chạy (ví dụ thư viện <code>sqlglot</code>): đúng một câu SELECT, chỉ trên bảng/view được phép.</li>
+<li>Timeout và giới hạn số dòng; trả cả câu SQL cho người dùng xem.</li></ul>
+<p>Bảng dưới là một bộ kiểm tra đơn giản bằng regex, chỉ để minh hoạ các luật. Regex không thay được parser thật: comment, chuỗi chứa dấu chấm phẩy hay tên bảng có ngoặc kép đều lừa được nó.</p>`,
+        viz(box) {
+          const ALLOW = new Set(['v_return_requests', 'v_products']);
+          const SQLS = [
+            "SELECT COUNT(*) FROM v_return_requests WHERE product_group = 'Laptop' LIMIT 1000",
+            "SELECT * FROM v_return_requests; DROP TABLE orders",
+            "SELECT full_name, phone FROM customers WHERE city = 'Hà Nội'",
+            "DELETE FROM v_return_requests WHERE created_date < '2026-01-01'",
+            "SELECT r.order_id FROM v_return_requests r JOIN v_products p ON p.sku = r.sku"
+          ];
+          function check(sql) {
+            const stmts = sql.split(';').map((s) => s.trim()).filter(Boolean), why = [];
+            if (stmts.length !== 1) why.push('nhiều hơn một câu lệnh');
+            if (!/^select\b/i.test(stmts[0] || '')) why.push('không bắt đầu bằng SELECT');
+            if (/\b(insert|update|delete|drop|alter|grant|truncate)\b/i.test(sql)) why.push('có từ khoá ghi hoặc đổi schema');
+            const tables = [...sql.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_.]*)/gi)].map((m) => m[1].toLowerCase());
+            const bad = tables.filter((t) => !ALLOW.has(t));
+            if (bad.length) why.push('bảng không được phép: ' + [...new Set(bad)].join(', '));
+            const limit = /\blimit\s+\d+/i.test(sql);
+            return { ok: !why.length, why, limit };
+          }
+          let h = '<tr><th>SQL model sinh ra</th><th>Kết quả</th></tr>';
+          SQLS.forEach((s) => { const r = check(s); h += `<tr><td class="mono" style="font-size:12px">${esc(s)}</td><td class="${r.ok ? 'ok' : 'bad'}"><b>${r.ok ? 'chạy' : 'chặn'}</b>${r.ok ? (r.limit ? '' : ' (thêm LIMIT ở tầng chạy)') : ': ' + r.why.join('; ')}</td></tr>`; });
+          box.append(tbl(h), flag('warn', '<b>Dòng cuối không có LIMIT mà vẫn được chạy.</b> Kiểm tra cú pháp không giới hạn được số dòng hay thời gian: một JOIN hợp lệ vẫn có thể trả cả triệu dòng. Không có nghĩa bộ kiểm tra hỏng; giới hạn đó thuộc tầng chạy. Trong hệ thống thật: statement timeout và giới hạn số dòng đặt ở connection hoặc role database, không tin vào câu SQL.'));
+        },
+        take: 'Prompt nói "chỉ được SELECT" không phải kiểm soát. Role database chỉ có SELECT mới là kiểm soát.'
+      },
+      {
+        q: 'Bảng phí đổi trả theo nhóm hàng chia chunk theo token như văn bản được không?',
+        a: `<p>Chia theo số ký tự hoặc số token sẽ cắt bảng ở giữa: chunk sau chỉ còn những dòng như <code>| Màn hình | 10 ngày | 3% |</code>, không có header. Embedding không biết "10 ngày" là hạn đổi hay thời gian giao; model đọc chunk cũng không biết cột thứ ba là gì.</p>
+<p>README chia theo <b>dòng</b>, lặp lại header và caption trong mọi chunk (hàm <code>split_table</code>). Hình dưới chạy bản JavaScript của hàm đó trên bảng 10 dòng, so với cách cắt theo ký tự.</p>`,
+        viz(box) {
+          const out = el('div'), S = { mode: 'table', n: 4 };
+          const ctlN = slider('max_rows / ký tự mỗi chunk', 1, 10, 1, S.n, (v) => { S.n = v; draw(); }, (v) => S.mode === 'table' ? v + ' dòng' : v * 40 + ' ký tự');
+          function draw() {
+            const chunks = S.mode === 'table' ? splitTable(TABLE, S.n, 'Bảng phí đổi trả 2026 (VN)') : splitNaive(TABLE, S.n * 40);
+            const noHead = chunks.filter((c) => !c.includes('Hạn đổi'));
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Số chunk: <b>${chunks.length}</b></span><span>Chunk không có header: <b class="${noHead.length ? 'bad' : 'ok'}">${noHead.length}</b></span>` }),
+              el('div', { class: 'cols' }, chunks.slice(0, 6).map((c, i) => el('div', {}, [el('h4', { text: 'Chunk ' + (i + 1) + (noHead.includes(c) ? ' (thiếu header)' : '') }), pre(c)]))),
+              chunks.length > 6 ? el('p', { class: 'hint', text: '… và ' + (chunks.length - 6) + ' chunk nữa.' }) : '',
+              noHead.length ? flag('bad', `<b>${noHead.length}/${chunks.length} chunk chỉ còn số, không có tên cột.</b> Chunk như "${esc(noHead[0].trim().split('\n')[0].slice(0, 40))}…" vô nghĩa với cả embedding lẫn model. Không có nghĩa chunk theo token sai với văn bản thường. Trong hệ thống thật: phát hiện bảng khi parse, chia theo dòng, lặp header và caption, gắn id bảng và số trang vào metadata.`) : flag('ok', 'Chunk nào cũng có caption và header. Câu hỏi so sánh giữa các dòng nằm khác chunk (Laptop với Tai nghe) vẫn cần đưa cả bảng vào context khi một chunk của bảng được retrieve.'));
+          }
+          box.append(el('div', { class: 'row' }, [select('Cách chia', [['table', 'split_table: theo dòng, lặp header'], ['naive', 'Cắt theo số ký tự']], S.mode, (v) => { S.mode = v; ctlN.input.dispatchEvent(new Event('input')); }).node, ctlN.node]), out);
+          draw();
+        },
+        take: 'Một dòng bảng không có header là một dãy số. Chia bảng theo dòng và mang header theo.'
+      },
+      {
+        q: 'Catalogue sản phẩm là PDF scan đầy bảng thông số. Visual retrieval bỏ OCR luôn thì có gì phải trả?',
+        a: `<p>Chất lượng tốt hơn rõ: trên benchmark ViDoRe, ColPali đạt nDCG@5 trung bình 81,3, pipeline OCR rồi BM25 hoặc BGE-M3 chỉ 65,5–66,1 (nDCG@5: điểm 0–100 đo trang đúng có nằm trong 5 kết quả đầu không, đứng càng cao càng nhiều điểm). Index cũng nhanh hơn: 0,39 giây mỗi trang trên GPU L4, so với 7,22 giây của pipeline parse layout bằng Unstructured. Số liệu từ paper ColPali, README §2.7.</p>
+<p>Giá phải trả là <b>lưu trữ</b>: mỗi trang khoảng 1.030 vector 128 chiều, 257,5 KB ở float16, so với 8,6 KB của BGE-M3 cho cùng trang. Kéo số trang để xem.</p>`,
+        viz(box) {
+          const out = el('div');
+          const fmtB = (kb) => kb >= 1e6 ? (kb / 1e6).toFixed(1) + ' GB' : kb >= 1e3 ? (kb / 1e3).toFixed(1) + ' MB' : kb.toFixed(0) + ' KB';
+          const fmtT = (s) => s >= 3600 ? (s / 3600).toFixed(1) + ' giờ' : s >= 60 ? (s / 60).toFixed(1) + ' phút' : s.toFixed(0) + ' giây';
+          function draw(e) {
+            const p = Math.round(Math.pow(10, e));
+            out.replaceChildren(el('div', { class: 'stat', html: `<span>Số trang: <b>${n0(p)}</b></span>` }),
+              hbars([['Vector ColPali', p * 257.5, true], ['Vector BGE-M3', p * 8.6, false]], { fmt: fmtB }),
+              tbl(`<tr><th></th><th>ColPali</th><th>OCR + parse (Unstructured)</th></tr><tr><td>Thời gian index trên 1 GPU L4</td><td class="mono">${fmtT(p * 0.39)}</td><td class="mono">${fmtT(p * 7.22)}</td></tr><tr><td>Lưu trữ vector (chưa tính index)</td><td class="mono">${fmtB(p * 257.5)}</td><td class="mono">${fmtB(p * 8.6)} (BGE-M3)</td></tr>`),
+              p >= 1e6 ? flag('warn', `<b>${n0(p)} trang cần khoảng ${fmtB(p * 257.5)} chỉ cho vector, gấp ${(257.5 / 8.6).toFixed(0)} lần BGE-M3.</b> Không có nghĩa visual retrieval không đáng: với scan OCR kém nó thắng rõ. Trong hệ thống thật: chỉ dùng cho phần corpus thật sự cần (bảng phức tạp, scan), phần văn bản sạch giữ pipeline text; repo gốc illuin-tech/colpali đã ngừng phát triển, kiểm tra model kế nhiệm trên ViDoRe leaderboard.`) : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Số trang (thang log)', 3, 7, 0.5, 5, draw, (v) => n0(Math.pow(10, v))).node]), out);
+          draw(5);
+        },
+        take: 'Visual retrieval đổi lỗi OCR lấy dung lượng lưu trữ. Đo xem phần corpus nào thật sự cần nó.'
+      },
+      {
+        q: 'Sao không để model tự ghi "[Nguồn: tài liệu 3]" cuối câu cho đơn giản?',
+        a: `<p>Vì con số "3" là chữ model tự sinh, không gắn với gì cả. README liệt kê ba cách nó hỏng: đánh số sai (thứ tự tài liệu trong context đổi sau rerank), trích tài liệu không có trong context, hoặc trích đúng tài liệu nhưng câu được trích không có trong đó.</p>
+<p>Với hệ RAG đã có retrieval riêng, Claude nhận kết quả search dạng block <code>search_result</code> trong <code>tool_result</code>. <code>source</code> là id ổn định do hệ thống của bạn cấp (URL hoặc <code>kb://...</code>), nên trích dẫn map ngược về tài liệu gốc mà model không cần chép tên. Citation trả về loại <code>search_result_location</code> với <code>source</code>, <code>title</code>, <code>search_result_index</code> và khoảng block.</p>
+<p>Ràng buộc: mọi <code>search_result</code> trong một request cùng bật hoặc cùng tắt citations; <code>tool_result</code> có <code>search_result</code> thì mọi block trong đó phải là <code>search_result</code>; chỉ có text; không tìm thấy gì thì trả text block "No results found.".</p>`,
+        viz(box) {
+          box.append(pre(JSON.stringify({ type: 'tool_result', tool_use_id: 'toolu_01...', content: [{ type: 'search_result', source: 'kb://policy/return-2026-vn#sec-2', title: 'Chính sách đổi trả 2026 (VN), mục 2', content: [{ type: 'text', text: 'Từ 01/01/2026, laptop được đổi trả trong 7 ngày kể từ ngày nhận hàng, máy còn nguyên seal.' }, { type: 'text', text: 'Phí đổi trả là 0 đồng nếu lỗi do nhà sản xuất; các trường hợp khác thu 5% giá trị đơn.' }], citations: { enabled: true } }] }, null, 2)),
+            el('p', { class: 'cap', text: 'Cấu trúc theo ví dụ trong README §2.8, nội dung thay bằng chính sách ShopViet. Mỗi câu một text block, để citation trỏ được tới đúng câu.' }));
+        },
+        take: 'Id nguồn phải do hệ thống cấp và kiểm được. Chữ model tự gõ thì không kiểm được.'
+      },
+      {
+        q: 'Trình kiểm tra quote báo "đạt" rồi, vậy câu trả lời chắc đúng chưa? Và sao không bật citations cùng JSON output cho gọn?',
+        a: `<p>Chưa. Quote matching chỉ trả lời câu "chuỗi này có nằm trong nguồn không". Nó <b>bắt được trích dẫn bịa</b>, nhưng <b>không bắt được trích dẫn có thật mà không ủng hộ khẳng định</b>. Khẳng định số 4 ở hình chính là ví dụ: quote "7 ngày" có thật trong FAQ điện thoại, nhưng khẳng định nói về laptop. Chuỗi càng ngắn càng dễ khớp tình cờ, nên README khuyên highlight vị trí khớp cho người đọc tự đối chiếu, và để phần "có ủng hộ không" cho LLM judge hoặc người đọc (faithfulness, §3.5).</p>
+<p>Về JSON: trên Claude, bật citations cùng <code>output_config.format</code> thì API trả <b>400</b>. Tài liệu citations gợi ý thay bằng: yêu cầu model trả mỗi trường một dòng <code>tên: giá trị</code>, tự parse rồi gắn citation của từng text block vào dòng tương ứng. Prompt đòi "chỉ trả JSON" thì request vẫn thành công nhưng có thể có rất ít hoặc không có citation nào. Gemini File Search thì dùng được cùng structured output từ Gemini 3.</p>
+<p>Trích dẫn không đạt thì bỏ khẳng định, hiện cảnh báo, hoặc sinh lại, tuỳ sản phẩm. Ghi tỉ lệ không đạt thành metric: nó tăng là dấu hiệu sớm của prompt hoặc model mới bịa nhiều hơn.</p>`,
+        take: 'Kiểm quote là tầng một (có trong nguồn). Tầng hai (có ủng hộ khẳng định) cần judge hoặc người.'
+      }
+    ],
+    poc: {
+      goal: "Bốn cơ chế chạy thật: metadata filter theo ngày hiệu lực trên độ giống của embedding thật; <code>split_table</code> của README so với cắt ký tự; <code>check_citations</code> của README (chép nguyên) trên 5 trích dẫn, có và không có NFC; đếm bằng SQLite mở read-only. <b>Câu SQL là viết tay</b>, giả làm output model.",
+      file: "docs/advanced-rag/pocs/06_metadata_multimodal_citations.py",
+      run: "uv run docs/advanced-rag/pocs/06_metadata_multimodal_citations.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ.",
+      output: "Độ giống tính bằng paraphrase-multilingual-MiniLM-L12-v2 (thật, CPU) cho câu: 'Laptop đổi trả trong mấy ngày?'\n\n== 1. Metadata filter: cùng câu hỏi, ngày hỏi khác nhau, khách tài khoản VN ==\nTài liệu          cosine\n----------------  ------\nreturn-2027-vn    0.844\nreturn-2026-vn    0.788\nreturn-2025-vn    0.759\nreturn-2024-vn    0.716\nreturn-2025-th    0.707\nreturn-2026-th    0.674\nwarranty-2026-vn  0.597\nNgày hỏi    đúng     không lọc    region=VN    VN + bản mới nhất  VN + đang hiệu lực\n----------  -------  -----------  -----------  -----------------  ------------------\n15/06/2025  15 ngày  14 ngày SAI  14 ngày SAI  14 ngày SAI        15 ngày OK\n27/11/2026  7 ngày   14 ngày SAI  14 ngày SAI  14 ngày SAI        7 ngày OK\n01/02/2027  14 ngày  14 ngày OK   14 ngày OK   14 ngày OK         14 ngày OK\n\n== 2. Bảng PDF dài: split_table của README §2.8 so với cắt theo ký tự ==\nCách chia           số chunk  chunk có header  chunk BM25 top-1  header trong top-1\n------------------  --------  ---------------  ----------------  ------------------\ncắt 120 ký tự       3         1                có dòng Tai nghe  KHÔNG\nsplit_table 3 dòng  3         3                có dòng Tai nghe  có\nChunk cắt ký tự chứa 'Tai nghe': 'nh bảng | 7 ngày | 5% |\\n| Tai nghe | 15 ngày | 0% |\\n| Loa | 15 ngày | 0% |\\n| Màn hình | 10 ngày | 3% |\\n| Bàn phím, chuột'\n\n== 3. check_citations của README §2.8 (chép nguyên), chạy trên 5 trích dẫn ==\nKhẳng định                         độ dài quote  README (có NFC)                   bỏ NFC\n---------------------------------  ------------  --------------------------------  --------------------------------\nLaptop đổi trong 7 ngày            53            ĐẠT                               ĐẠT\nLỗi NSX không mất phí (quote NFD)  60            ĐẠT                               quote không có trong nguồn\nTrường hợp khác thu 3%             38            quote không có trong nguồn        quote không có trong nguồn\nĐơn SV-4821 (laptop) còn hạn đổi   6             ĐẠT                               ĐẠT\nNăm 2025 đổi trong 15 ngày         21            source_id không có trong context  source_id không có trong context\n\n== 4. Đếm trên bảng: SQL (câu SQL VIẾT TAY, giả làm output model), DB mở read-only ==\nSELECT COUNT(*) FROM return_requests WHERE category='Laptop' AND kind='đổi trả' AND day BETWEEN 20261123 AND 20261129\n  → 5 yêu cầu đổi trả laptop tuần 23–29/11\n'DELETE FROM return_requests'                 → bị chặn: attempt to write a readonly database\n'SELECT 1; DROP TABLE return_requests'        → bị chặn: You can only execute one statement at a time.\n\nRút ra: embedding thật xếp return-2027-vn cao nhất (0.844), nên không lọc hay chỉ lọc VN đều trả '14 ngày';\n'bản mới nhất' cũng chọn dự thảo 2027 chưa có hiệu lực. Chỉ lọc VN + đang hiệu lực vào ngày hỏi đúng ở cả 3 ngày.\nBảng: cắt ký tự để dòng Tai nghe ở chunk không có header; split_table lặp header trong mọi chunk.\ncheck_citations bắt quote bịa (3%) và nguồn không có trong context; không có NFC thì quote NFD đúng bị báo sai;\nquote '7 ngày' của FAQ điện thoại vẫn ĐẠT dù không ủng hộ khẳng định về laptop: phần đó cần judge hoặc người đọc.",
+      measured: true,
+      read: ["Bảng cosine: embedding thật xếp <b>dự thảo 2027</b> cao nhất (0,844), không phải bản 2025 như ví dụ của lab. Không lọc, lọc VN, hay 'bản mới nhất' đều trả '14 ngày'.", "Chỉ lọc VN + đang hiệu lực vào ngày hỏi đúng ở cả 15/06/2025, 27/11/2026 và 01/02/2027.", "Trích dẫn: bỏ NFC thì quote NFD đúng bị báo 'không có trong nguồn'; quote '7 ngày' của FAQ điện thoại vẫn ĐẠT cho khẳng định về laptop.", "SQLite read-only chặn DELETE; driver chặn chuỗi nhiều câu lệnh."]
+    },
+    mount(stage) {
+      const F = { region: '', ver: '', date: 20261127 };
+      const jsonBox = el('div'), tableBox = el('div'), stat = el('div', { class: 'stat' }), flags = el('div');
+      function render() {
+        const r = runFilter(F), topIds = new Set(r.top.map((d) => d.id)), poolIds = new Set(r.pool.map((d) => d.id));
+        jsonBox.replaceChildren(pre(filterJson(F)));
+        let h = '<tr><th>Tài liệu</th><th>Nước</th><th>Bản</th><th>Hiệu lực</th><th>Độ giống</th><th>Trạng thái</th></tr>';
+        DOCS.slice().sort((a, b) => b.sim - a.sim).forEach((d) => {
+          const inPool = poolIds.has(d.id), inTop = topIds.has(d.id), isTruth = r.truth && d.id === r.truth.id;
+          const st = !inPool ? '<span class="mute">bị filter loại</span>' : inTop ? '<b style="color:var(--accent)">top-3</b>' : '<span class="mute">qua filter, ngoài top-3</span>';
+          h += `<tr style="${inPool ? '' : 'opacity:.45'}"><td>${d.title}${isTruth ? ' <b class="ok">(đáp án đúng)</b>' : ''}</td><td class="mono">${d.region}</td><td class="mono">${d.ver}</td><td class="mono">${fmtD(d.from)}–${fmtD(d.to)}</td><td><div style="display:flex;align-items:center;gap:6px"><div style="width:70px;height:8px;background:var(--line);border-radius:4px"><div style="width:${d.sim * 100}%;height:8px;background:${inTop ? 'var(--accent)' : 'var(--dim)'};border-radius:4px"></div></div><span class="mono">${d.sim.toFixed(2)}</span></div></td><td>${st}</td></tr>`;
+        });
+        tableBox.replaceChildren(tbl(h));
+        const ok = r.ans && r.truth && r.ans.days === r.truth.days;
+        stat.innerHTML = `<span>Qua filter: <b>${r.pool.length}/${DOCS.length}</b></span><span>Trợ lý trả lời: <b class="${ok ? 'ok' : 'bad'}">${r.ans ? r.ans.days + ' ngày' : 'không tìm thấy'}</b>${r.ans ? ' (từ ' + r.ans.title + ')' : ''}</span><span>Đáp án đúng ngày ${fmtD(F.date)}: <b>${r.truth ? r.truth.days + ' ngày' : 'không có chính sách VN hiệu lực'}</b></span>`;
+        const fl = [];
+        if (!r.pool.length) fl.push(flag('warn', '<b>Filter trả 0 tài liệu.</b> Không nới các điều kiện người dùng hoặc ứng dụng đặt; trả lời "không tìm thấy" kèm điều kiện đã dùng (câu hỏi 3).'));
+        else if (r.ans && r.ans.from > F.date) fl.push(flag('bad', `<b>${F.ver === 'max' ? 'Lấy "phiên bản mới nhất" ra ' : 'Top-1 là '}${r.ans.title}, chưa có hiệu lực vào ${fmtD(F.date)}: trả lời ${r.ans.days} ngày${r.truth ? ' thay vì ' + r.truth.days : ''}.</b> ${F.ver === 'max' ? 'Version lớn nhất không có nghĩa là đang áp dụng. Không có nghĩa lọc theo version là sai; nghĩa là "mới nhất" phải tính tại ngày hỏi.' : 'Embedding không biết bản nào đã có hiệu lực. Không có nghĩa retrieval hỏng: nó xếp đúng theo độ giống.'} Trong hệ thống thật: lọc effective_from ≤ ngày hỏi ≤ effective_to; bản nháp gắn trạng thái riêng hoặc không đưa vào index của trợ lý khách hàng.`));
+        else if (r.ans && r.truth && r.ans.region === r.truth.region && !ok) fl.push(flag('bad', `<b>Chính sách cũ thắng: ${r.ans.title} (độ giống ${r.ans.sim.toFixed(2)}) đứng trên bản đang hiệu lực (${r.truth.sim.toFixed(2)}), trợ lý trả lời ${r.ans.days} ngày thay vì ${r.truth.days}.</b> Bản cũ chỉ tình cờ có câu chữ gần câu hỏi hơn; embedding không biết ngày nào đang áp dụng. Không có nghĩa retrieval hỏng: nó làm đúng việc xếp theo độ giống. Trong hệ thống thật: gắn ngày hiệu lực vào metadata và lọc theo ngày hỏi (README §3.6: "Chính sách cũ cạnh tranh với chính sách mới").`));
+        else if (r.ans && !r.truth) fl.push(flag('warn', `<b>Không có chính sách VN nào hiệu lực vào ${fmtD(F.date)}, nhưng trợ lý vẫn trả lời ${r.ans.days} ngày.</b> Đây là FP1 (Missing Content): đáp án không có, hệ thống vẫn trả lời. Trong hệ thống thật: bật filter ngày hiệu lực để retrieval trả 0, và cho phép model nói "không có trong tài liệu".`));
+        else if (r.ans && r.ans.region !== 'VN') fl.push(flag('bad', `<b>Trả lời theo chính sách ${r.ans.region}: ${r.ans.days} ngày.</b> Khách có tài khoản VN, nhưng chính sách Thái Lan giống câu hỏi không kém. Trong hệ thống thật: quốc gia lấy từ tài khoản, lọc cứng.`));
+        else if (ok) fl.push(flag('ok', `Đúng: ${r.ans.days} ngày theo ${r.ans.title}.`));
+        if (r.pool.length && !F.region && r.top.some((d) => d.region !== 'VN')) fl.push(flag('warn', `<b>Top-3 có ${r.top.filter((d) => d.region !== 'VN').length} tài liệu của ShopViet Thái Lan.</b> "Việt Nam" và "Thái Lan" nằm khá gần nhau trong không gian vector (README §2.6). Kể cả khi câu trả lời đúng, các đoạn này là nhiễu trong context.`));
+        if (r.contradict) fl.push(flag('warn', `<b>Context có ${new Set(r.top.filter((d) => d.days != null).map((d) => d.days)).size} con số khác nhau cho cùng câu hỏi (${[...new Set(r.top.filter((d) => d.days != null).map((d) => d.days))].join(', ')} ngày).</b> Các đoạn mâu thuẫn là nguyên nhân hay gặp của FP4 (đáp án nằm trong context mà model không lấy đúng). Model ở đây giả định chọn đoạn đứng đầu; model thật có thể chọn bất kỳ đoạn nào.`));
+        flags.replaceChildren(...fl);
+      }
+      stage.append(el('div', { class: 'row' }, [
+        select('Quốc gia', [['', 'Không lọc'], ['VN', 'region = VN (từ tài khoản)'], ['TH', 'region = TH']], F.region, (v) => { F.region = v; render(); }).node,
+        select('Phiên bản', [['', 'Không lọc'], ['max', 'version mới nhất'], ['eff', 'Đang hiệu lực tại ngày hỏi']], F.ver, (v) => { F.ver = v; render(); }).node,
+        select('Ngày hỏi', DATES.map(([v, t]) => [String(v), t]), String(F.date), (v) => { F.date = +v; render(); }).node]),
+      el('p', { class: 'hint', html: 'Câu hỏi: <b>"Laptop đổi trả trong mấy ngày?"</b>, khách tài khoản VN. Top-k = 3 (chỉ 3 tài liệu giống nhất được đưa cho model). Độ giống là số dựng sẵn cho ví dụ, không phải đo bằng model.' }),
+      flag('warn', '<b>Embedding thật xếp khác lab này.</b> Ở đây bản 2025 đứng đầu khi không lọc (0,91, số dựng sẵn). POC chạy embedding thật <code>paraphrase-multilingual-MiniLM-L12-v2</code> trên cùng câu hỏi thì xếp <b>dự thảo 2027</b> đầu (0,844), rồi 2026 (0,788), rồi 2025 (0,759), nên không lọc sẽ trả "14 ngày". Vì sao: thứ tự do câu chữ của từng tài liệu quyết định, không do năm; đổi model hay đổi cách viết là đổi thứ tự. Không có nghĩa lab sai bài học: bản nào thắng thì cũng là may rủi, và cả hai cách đều ra sai phiên bản. Trong hệ thống thật: không có filter "đang hiệu lực" thì bạn nhận nhầm phiên bản; chỉ VN + đang hiệu lực đúng ở cả ba ngày hỏi trong POC.'),
+      jsonBox, tableBox, stat, flags);
+      render();
+
+      stage.append(el('h4', { text: 'Kiểm tra trích dẫn: quote có nguyên văn trong nguồn không?', style: 'margin:24px 0 4px' }));
+      const C = { nfc: true, quote: '0 đồng nếu lỗi do nhà sản xuất', sid: 'kb://policy/return-2026-vn#sec-2' };
+      const srcBox = el('div'), resBox = el('div'), cflags = el('div'), custom = el('div');
+      srcBox.append(tbl('<tr><th>source_id (đã đưa vào prompt)</th><th>Nội dung</th></tr>' + Object.entries(SRC).map(([k, v]) => `<tr><td class="mono" style="font-size:12px">${k}</td><td>${esc(v)}</td></tr>`).join('')));
+      const qInput = el('input', { type: 'text', value: C.quote, style: 'flex:1;min-width:200px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)', oninput: (e) => { C.quote = e.target.value; renderC(); } });
+      function row(c, i, r) {
+        const where = r.ok ? highlight(SRC[c.source_id], r.at, r.len) : (SRC[c.source_id] ? esc(SRC[c.source_id]) : '<span class="mute">(không có trong context)</span>');
+        const cls = !r.ok ? 'bad' : r.short ? 'warn' : 'ok', st = !r.ok ? 'không đạt: ' + r.why : r.short ? 'đạt, nhưng quote ngắn' : 'đạt';
+        return `<tr><td class="mono">${i}</td><td>${esc(c.claim)}</td><td class="mono" style="font-size:12px">${esc(c.source_id)}<br>"${esc(c.quote)}"${c.nfd ? ' <span class="mute">(lưu dạng NFD)</span>' : ''}</td><td style="color:var(--${cls})"><b>${st}</b></td><td style="font-size:12.5px">${where}</td></tr>`;
+      }
+      function renderC() {
+        const res = CLAIMS.map((c) => checkCitation(c, C.nfc));
+        resBox.replaceChildren(tbl('<tr><th>#</th><th>Khẳng định</th><th>Trích dẫn model trả</th><th>Kết quả</th><th>Vị trí khớp trong nguồn</th></tr>' + CLAIMS.map((c, i) => row(c, i + 1, res[i])).join('')));
+        const cc = { claim: '(quote bạn tự nhập)', source_id: C.sid, quote: C.quote }, cr = checkCitation(cc, C.nfc);
+        custom.replaceChildren(tbl(row(cc, '+', cr)));
+        const fails = res.filter((r) => !r.ok).length, fl = [];
+        fl.push(el('div', { class: 'stat', html: `<span>Trích dẫn không đạt: <b class="${fails ? 'bad' : 'ok'}">${fails}/${CLAIMS.length}</b></span><span>Đạt nhưng quote ngắn: <b>${res.filter((r) => r.ok && r.short).length}</b></span>` }));
+        if (!C.nfc && !res[1].ok) fl.push(flag('bad', '<b>Khẳng định 2 bị đánh trượt dù quote đúng từng chữ.</b> Quote được lưu ở dạng NFD (chữ "ổ" là "o" + 2 dấu tổ hợp), nguồn ở dạng NFC. Nhìn giống hệt, so chuỗi khác. Không có nghĩa model bịa. Trong hệ thống thật: <code>unicodedata.normalize("NFC", s)</code> cả quote lẫn nguồn trước khi so, như hàm <code>_norm</code> của README.'));
+        if (res[2] && !res[2].ok) fl.push(flag('bad', '<b>Khẳng định 3 bịa con số: nguồn ghi 5%, quote ghi 3%.</b> Đây đúng là loại lỗi quote matching được thiết kế để bắt. Trong hệ thống thật: bỏ khẳng định, hiện cảnh báo, hoặc sinh lại; ghi tỉ lệ không đạt thành metric.'));
+        if (res[3] && res[3].ok) fl.push(flag('warn', '<b>Khẳng định 4 đạt, nhưng quote "7 ngày" nằm trong FAQ điện thoại, không phải chính sách laptop, và không nói gì về đơn SV-4821.</b> Chuỗi ngắn dễ khớp tình cờ. Không có nghĩa trình kiểm tra lỗi: nó chỉ hứa kiểm "có trong nguồn". Trong hệ thống thật: highlight chỗ khớp cho người đọc đối chiếu, và đo "có ủng hộ khẳng định không" bằng LLM judge hoặc người (faithfulness).'));
+        if (res[4] && !res[4].ok) fl.push(flag('bad', '<b>Khẳng định 5 trích một nguồn không hề có trong context.</b> Model biết (từ dữ liệu huấn luyện hoặc lượt trước) rằng có chính sách 2025 và tự tạo id. Chỉ id do hệ thống gán khi ghép context mới được chấp nhận.'));
+        if (!cr.ok && cr.why === 'quote không có trong nguồn' && C.quote.trim()) fl.push(flag('warn', 'Quote bạn nhập không có nguyên văn trong nguồn đã chọn. Thử bỏ bớt một chữ, đổi chữ hoa, thêm khoảng trắng thừa: chữ hoa và khoảng trắng được chuẩn hoá, còn chữ thì phải khớp.'));
+        cflags.replaceChildren(...fl);
+      }
+      const nfcSel = select('Chuẩn hoá trước khi so', [['1', 'NFC + chữ thường + gộp khoảng trắng'], ['0', 'Chỉ chữ thường + gộp khoảng trắng (không NFC)']], '1', (v) => { C.nfc = v === '1'; renderC(); });
+      const sidSel = select('Nguồn', Object.keys(SRC).map((k) => [k, k.replace('kb://', '')]), C.sid, (v) => { C.sid = v; renderC(); });
+      stage.append(el('p', { class: 'hint', html: 'Câu hỏi của khách: "Laptop đơn SV-4821 nhận ngày 22/11, đổi được không, có mất phí không?". Model trả lời kèm 5 cặp (source_id, quote). Câu trả lời và trích dẫn là dữ liệu dựng sẵn để minh hoạ, không phải output của model thật.' }),
+        srcBox, el('div', { class: 'row' }, [nfcSel.node]), resBox, cflags,
+        el('h4', { text: 'Tự thử một quote', style: 'margin:16px 0 4px' }),
+        el('div', { class: 'row' }, [sidSel.node, el('label', { class: 'ctl', style: 'display:flex;gap:6px;align-items:center;flex:1' }, ['Quote', qInput])]), custom,
+        el('p', { class: 'hint', text: 'Kiểm tra là bản JavaScript của check_citations trong README §2.8: NFC, casefold (ở đây là toLowerCase), thay ngoặc kép cong bằng ngoặc thẳng, gộp khoảng trắng, rồi tìm chuỗi con. Quote dưới 15 ký tự được đánh dấu "ngắn" theo ngưỡng giả định của lab này.' }));
+      renderC();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

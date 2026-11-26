@@ -1,0 +1,709 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG nâng cao Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-long-context-agentic.html">← Lab trước</a><a href="04-rerank-contextual.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/advanced-rag/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const STOP = new Set('có không ko được là và của cho các một những thì bị khi nào gì với trong từ đã tại theo này đó ra vào mà sau trước như để thế làm sao bao lâu nhiêu hoặc nên hãy còn cần'.split(' '));
+  const SYN = [['máy tính xách tay', 'laptop'], ['đổi trả', 'đổitrả'], ['đổi mới', 'đổitrả'], ['hoàn tiền', 'hoàntiền'], ['bảo hành', 'bảohành'], ['tai nghe', 'tainghe'], ['trả góp', 'trảgóp'], ['mất tiếng', 'lỗi'], ['rè', 'lỗi'], ['hỏng', 'lỗi'], ['thay pin', 'pin bảohành']];
+  const terms = (s) => { let t = s.toLowerCase(); SYN.forEach(([a, b]) => { t = t.split(a).join(b); }); return t.split(/[^\p{L}\p{N}]+/u).filter((w) => w && !STOP.has(w)); };
+  const pretty = (w) => w.replace('đổitrả', 'đổi trả').replace('hoàntiền', 'hoàn tiền').replace('bảohành', 'bảo hành').replace('tainghe', 'tai nghe').replace('trảgóp', 'trả góp');
+  const tok = (s) => Math.max(1, Math.round((s.trim().split(/\s+/).length * 56) / 49));
+  const usd = (v) => '$' + (v >= 1 ? v.toFixed(2) : v >= 0.01 ? v.toFixed(3) : v.toPrecision(2)).replace('.', ',');
+  const DOCS = [
+    { id: 'd1', title: 'Đổi trả chung', text: 'Chính sách đổi trả 2026: sản phẩm lỗi do nhà sản xuất được đổi mới, thời hạn theo nhóm hàng kể từ ngày nhận hàng: laptop và điện thoại 7 ngày, tai nghe và loa 15 ngày.' },
+    { id: 'd2', title: 'Hoàn tiền', text: 'Hoàn tiền: sau khi kho nhận lại hàng, ShopViet hoàn tiền vào tài khoản ngân hàng trong 5 đến 7 ngày làm việc.' },
+    { id: 'd3', title: 'Bảo hành tai nghe', text: 'Tai nghe chính hãng được bảo hành 12 tháng tại trung tâm bảo hành của hãng.' },
+    { id: 'd4', title: 'Sửa tai nghe rè', text: 'Tai nghe bị rè hoặc mất tiếng thường do kết nối Bluetooth yếu. Hãy xoá ghép đôi rồi kết nối lại.' },
+    { id: 'd5', title: 'Bảo hành laptop 2025 (cũ)', text: 'Chính sách cũ cho đơn mua năm 2025: máy được bảo hành 12 tháng, riêng pin bảo hành 6 tháng; chỉ đổi máy mới khi lỗi nguồn hoặc mainboard trong 7 ngày đầu, phí vận chuyển do khách tự trả.' },
+    { id: 'd6', title: 'Laptop 2026: thời hạn', text: 'Bảo hành laptop năm 2026: từ 01/01/2026 laptop được bảo hành 24 tháng, pin bảo hành 12 tháng.' },
+    { id: 'd7', title: 'Laptop 2026: nơi gửi', text: 'Bảo hành laptop năm 2026: mang laptop tới cửa hàng ShopViet hoặc gửi bưu điện, kèm hoá đơn.' },
+    { id: 'd8', title: 'Laptop 2026: đổi mới', text: 'Bảo hành laptop năm 2026: lỗi phần cứng trong 30 ngày đầu được đổi laptop mới.' },
+    { id: 'd9', title: 'Trả góp', text: 'Trả góp 0%: áp dụng cho đơn từ 3 triệu đồng, kỳ hạn 6 hoặc 12 tháng qua thẻ tín dụng.' },
+    { id: 'd10', title: 'Gói Care+', text: 'Gói ShopViet Care+: bảo hành mở rộng thêm 12 tháng, đổi máy khi rơi vỡ một lần mỗi năm.' },
+    { id: 'd11', title: 'Giao hàng', text: 'Giao hàng nhanh 2 giờ tại Hà Nội và TP.HCM cho đơn đặt trước 16 giờ.' },
+    { id: 'd12', title: 'Laptop 2026: màn hình', text: 'Bảo hành laptop năm 2026: màn hình và bàn phím laptop bảo hành 24 tháng, kể cả điểm chết.' }
+  ];
+  const BY = Object.fromEntries(DOCS.map((d) => [d.id, d]));
+  function makeIndex(docs) {
+    const tf = docs.map((d) => { const m = {}; terms(d.text).forEach((w) => { m[w] = (m[w] || 0) + 1; }); return m; });
+    const df = {};
+    tf.forEach((m) => Object.keys(m).forEach((w) => { df[w] = (df[w] || 0) + 1; }));
+    const idf = (w) => Math.log(1 + docs.length / (df[w] || 0.5));
+    const vec = (m) => { const v = {}; for (const w in m) v[w] = (1 + Math.log(m[w])) * idf(w); return v; };
+    const norm = (v) => Math.hypot(...Object.values(v)) || 1;
+    const dv = tf.map(vec), dn = dv.map(norm);
+    return (q) => {
+      const m = {};
+      terms(q).forEach((w) => { m[w] = (m[w] || 0) + 1; });
+      const qv = vec(m), qn = norm(qv);
+      return docs.map((d, i) => { let s = 0; for (const w in qv) if (dv[i][w]) s += qv[w] * dv[i][w]; return { id: d.id, s: s / (qn * dn[i]) }; }).sort((a, b) => b.s - a.s);
+    };
+  }
+  const search = makeIndex(DOCS);
+  const ids = (s) => search(s).filter((x) => x.s > 0).map((x) => x.id);
+  const rrf = (lists, weights, k = 60) => {
+    const sc = {};
+    lists.forEach((ids, li) => { const w = weights ? weights[li] : 1; [...new Set(ids)].forEach((id, r) => { sc[id] = (sc[id] || 0) + w / (k + r + 1); }); });
+    return Object.entries(sc).map(([id, s]) => ({ id, s })).sort((a, b) => b.s - a.s);
+  };
+  const interleave = (lists) => {
+    const out = [], seen = new Set(), L = Math.max(...lists.map((l) => l.length));
+    for (let r = 0; r < L; r++) lists.forEach((l) => { const it = l[r]; if (it && !seen.has(it.id)) { seen.add(it.id); out.push({ id: it.id, s: it.s }); } });
+    return out;
+  };
+  const QS = [
+    { id: 'q1', text: 'tai nghe rè đổi được ko', gold: ['d1'], why: 'Khách viết tắt, dùng từ "rè", "đổi"; tài liệu viết "lỗi", "đổi trả", "đổi mới".',
+      rewrite: 'Tai nghe bị lỗi rè có được đổi trả không, điều kiện đổi trả sản phẩm lỗi',
+      hyde: 'Tai nghe bị rè trong thời gian bảo hành sẽ được bảo hành miễn phí 12 tháng tại trung tâm bảo hành của hãng.',
+      multi: ['tai nghe rè đổi được ko', 'chính sách đổi trả tai nghe bị lỗi', 'tai nghe hỏng có được đổi mới không'],
+      decomp: ['Tai nghe bị lỗi rè có được đổi trả không'] },
+    { id: 'q2', text: 'So sánh bảo hành laptop 2025 và 2026', gold: ['d5', 'd6'], why: 'Câu hỏi hai phần. Kho có bốn đoạn của bản 2026 và chỉ một đoạn của bản 2025.',
+      rewrite: 'So sánh chính sách bảo hành laptop năm 2025 với năm 2026',
+      hyde: 'Năm 2025 laptop được bảo hành 12 tháng, sang năm 2026 ShopViet tăng lên 24 tháng và thêm bảo hành pin.',
+      multi: ['So sánh bảo hành laptop 2025 và 2026', 'khác biệt chính sách bảo hành laptop giữa hai năm', 'thời hạn bảo hành laptop thay đổi thế nào'],
+      decomp: ['Chính sách bảo hành laptop năm 2025', 'Chính sách bảo hành laptop năm 2026'] },
+    { id: 'q3', text: 'Laptop mua đầu năm nay thay pin miễn phí được không?', gold: ['d6'], why: '"Năm nay" là 2026 (hôm nay 27/11/2026). Câu hỏi không có con số năm nào.',
+      rewrite: 'Pin laptop mua năm 2026 được bảo hành bao lâu',
+      hyde: 'Theo chính sách bảo hành, pin laptop chỉ được bảo hành 6 tháng kể từ ngày mua; sau 6 tháng thay pin phải trả phí.',
+      multi: ['Laptop mua đầu năm nay thay pin miễn phí được không?', 'bảo hành pin laptop năm 2026', 'thay pin laptop có mất phí không'],
+      decomp: ['Pin laptop mua năm 2026 được bảo hành bao lâu'] },
+    { id: 'q4', text: 'ShopViet có cho trả tiền dần không?', gold: ['d9'], why: 'Khách nói "trả tiền dần", tài liệu gọi là "trả góp". Không có từ nào chung ngoài tên cửa hàng.',
+      rewrite: 'Chính sách trả góp của ShopViet',
+      hyde: 'ShopViet hỗ trợ mua trả góp 0% qua ví điện tử, kỳ hạn 6 đến 12 tháng.',
+      multi: ['ShopViet có cho trả tiền dần không?', 'ShopViet có hỗ trợ trả góp không', 'trả góp 0% qua thẻ tín dụng'],
+      decomp: ['Chính sách trả góp của ShopViet'] }
+  ];
+  const QBY = Object.fromEntries(QS.map((q) => [q.id, q]));
+  const MODES = [['base', 'Query gốc'], ['rewrite', 'Viết lại'], ['hyde', 'HyDE'], ['hydemix', 'HyDE + gốc (RRF, HyDE nặng 0,5)'], ['multi', 'Multi-query + RRF'], ['decomp', 'Decomposition']];
+  const PROMPT_TOK = 150, HAIKU = { in: 0.10, out: 0.50 };
+  function run(q, mode) {
+    if (mode === 'base') return { sent: [[q.text, 'query gốc']], rank: search(q.text), calls: 0, gen: [] };
+    if (mode === 'rewrite') return { sent: [[q.rewrite, 'LLM viết lại']], rank: search(q.rewrite), calls: 1, gen: [q.rewrite] };
+    if (mode === 'hyde') return { sent: [[q.hyde, 'đoạn văn giả do LLM viết']], rank: search(q.hyde), calls: 1, gen: [q.hyde] };
+    if (mode === 'hydemix') return { sent: [[q.text, 'query gốc, trọng số 1'], [q.hyde, 'đoạn HyDE, trọng số 0,5']], rank: rrf([ids(q.text), ids(q.hyde)], [1, 0.5]), calls: 1, gen: [q.hyde], fused: true };
+    if (mode === 'multi') return { sent: q.multi.map((s, i) => [s, i ? 'biến thể ' + i : 'query gốc']), rank: rrf(q.multi.map(ids)), calls: 1, gen: q.multi.slice(1), fused: true };
+    const subs = q.decomp;
+    return { sent: subs.map((s, i) => [s, 'câu con ' + (i + 1)]), rank: subs.length > 1 ? interleave(subs.map((s) => search(s))) : search(subs[0]), calls: 1, gen: subs, single: subs.length < 2 };
+  }
+  function costOf(q, r) {
+    if (!r.calls) return 0;
+    const out = r.gen.reduce((a, s) => a + tok(s), 0);
+    return ((PROMPT_TOK + tok(q.text)) * HAIKU.in + out * HAIKU.out) / 1e6;
+  }
+  const recall = (rank, gold, k) => gold.filter((g) => rank.slice(0, k).some((x) => x.id === g)).length;
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  return {
+    id: 'query-rewriting', nav: '3. Viết lại query', ref: '§2.1',
+    title: 'Cùng một câu hỏi, viết lại kiểu nào thì kéo đúng tài liệu, kiểu nào kéo sai?',
+    hook: 'Chọn câu hỏi của khách và cách biến đổi query. Bảng xếp hạng được tính lại ngay trong trình duyệt trên 12 đoạn tài liệu của ShopViet.',
+    terms: [
+      ['Retriever, top-k', 'Retriever là bước tìm: so câu hỏi với từng đoạn tài liệu, chấm điểm, xếp hạng. Top-k là k đoạn điểm cao nhất được đưa cho LLM. Ví dụ k = 3: chỉ 3 đoạn đầu bảng xếp hạng vào prompt, đoạn hạng 4 coi như không tìm thấy.'],
+      ['Embedding, cosine', 'Embedding biến một câu thành một dãy số (vector) sao cho câu cùng nghĩa có vector gần nhau. Cosine đo hai vector gần nhau tới đâu: 1 là cùng hướng, 0 là không liên quan. Lab này dùng bộ chấm đồ chơi đếm chữ chung thay cho embedding, nên điểm chỉ dương khi có chữ chung.'],
+      ['Recall@k', 'Trong top-k có bao nhiêu đoạn đúng, trên tổng số đoạn đúng cần. Câu so sánh cần 2 đoạn, top-3 có 1: Recall@3 = 1/2.'],
+      ['Query rewriting', 'Gọi LLM một lần để viết lại câu hỏi cho giống ngôn ngữ tài liệu hơn, trước khi tìm. Ví dụ "tai nghe rè đổi được ko" thành "Tai nghe bị lỗi rè có được đổi trả không".'],
+      ['HyDE', 'Hypothetical Document Embeddings. LLM viết một đoạn văn giả như thể nó là câu trả lời, rồi dùng đoạn đó để tìm thay cho câu hỏi. Ví dụ hỏi về pin, LLM viết "pin được bảo hành 6 tháng..." rồi tìm bằng câu đó.'],
+      ['Multi-query', 'LLM sinh vài cách nói khác nhau của cùng câu hỏi, mỗi cách tìm một lần, rồi trộn các danh sách. Ví dụ "trả tiền dần" thêm "trả góp", "mua trả góp 0%".'],
+      ['RAG-Fusion', 'Tên paper của cách làm multi-query cộng RRF. Ở đây hiểu là multi-query.'],
+      ['Decomposition', 'Tách câu hỏi nhiều phần thành các câu con, mỗi câu con tìm riêng. "So sánh 2025 và 2026" thành hai câu: "bảo hành 2025" và "bảo hành 2026".'],
+      ['RRF', 'Reciprocal Rank Fusion. Trộn nhiều danh sách xếp hạng: mỗi tài liệu được cộng 1/(60 + hạng) ở mỗi danh sách nó xuất hiện. Hạng 1 được 1/61, hạng 2 được 1/62.'],
+      ['Step-back', 'Hỏi một câu tổng quát hơn trước ("chính sách bảo hành laptop gồm những gì?") rồi mới trả lời câu cụ thể.'],
+      ['IRCoT', 'Xen kẽ suy luận và tìm kiếm: mỗi bước suy luận sinh ra một query mới, tìm, rồi suy luận tiếp.'],
+      ['Đường găng (critical path)', 'Chuỗi việc người dùng phải chờ. Bước viết lại chạy trước retrieval, nên mỗi lần gọi LLM ở đây cộng thẳng vào thời gian chờ.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> bán đồ điện tử online. Trợ lý chat dùng RAG cơ bản trên kho chính sách: embed câu hỏi, lấy top-k, đưa vào prompt. Log tuần này có bốn câu bị trả lời sai: "tai nghe rè đổi được ko", "So sánh bảo hành laptop 2025 và 2026", "Laptop mua đầu năm nay thay pin miễn phí được không?", "ShopViet có cho trả tiền dần không?". Trong cả bốn câu, đoạn tài liệu đúng đều có trong kho.',
+      scenario: 'Câu hỏi của khách ngắn, viết tắt, dùng từ khác tài liệu, hoặc gộp hai ý. Retriever so câu hỏi với tài liệu, nên câu hỏi càng khác "hình dạng" tài liệu thì càng dễ trượt.',
+      ask: 'Viết lại câu hỏi trước khi tìm có kéo đúng tài liệu lên không? Cách viết lại nào hợp với loại câu hỏi nào, và cách nào lại kéo sai?',
+      solves: 'Bốn cách biến đổi query trong README §2.1: viết lại, HyDE, multi-query trộn bằng RRF, decomposition. Mỗi cách tốn thêm một lần gọi LLM trên đường găng, nên chỉ bật cho nhóm câu hỏi cần.',
+      read: ['Chọn <b>Câu hỏi</b> và <b>Cách biến đổi</b>. Khung "Gửi tới retriever" là chuỗi thật được chấm điểm.', 'Danh sách xếp hạng: viền xanh lá là tài liệu đúng, nền xanh là tài liệu đúng đã lọt vào top-k, hàng mờ là ngoài top-k.', 'Bảng so sánh chạy cả sáu cách cho cùng câu hỏi để bạn thấy cách nào cứu được, cách nào làm tệ hơn.', 'Điểm số là của một bộ chấm đồ chơi (từ khoá, vài từ đồng nghĩa, trọng số IDF, cosine), không phải embedding thật. Câu viết lại và đoạn HyDE là chuỗi viết sẵn, giả làm output của LLM.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>Câu hỏi của người dùng thường là query tệ: ngắn, mơ hồ, dùng từ khác tài liệu, gộp nhiều ý. Biến đổi query là dùng một lần gọi LLM để viết lại nó trước khi tìm.</p>
+<div class="tbl"><table>
+<tr><th>Kỹ thuật</th><th>Bằng chứng</th><th>Gọi LLM thêm</th><th>Retrieval thêm</th><th>Hỏng thế nào</th></tr>
+<tr><td><b>HyDE</b></td><td>Benchmark retrieval zero-shot</td><td>1</td><td>0</td><td>Đoạn văn giả bịa thực thể</td></tr>
+<tr class="cur"><td><b>Multi-query + RRF</b></td><td>Đánh giá thủ công, một công ty</td><td>1</td><td>N</td><td>Query sinh ra lạc đề</td></tr>
+<tr><td><b>Step-back</b></td><td>Benchmark suy luận</td><td>1</td><td>0–1</td><td>Mất chi tiết cụ thể</td></tr>
+<tr><td><b>Decomposition</b></td><td>Nằm trong Adaptive-RAG, IRCoT</td><td>1</td><td>Số câu con</td><td>Tách sai, mất quan hệ giữa các phần</td></tr>
+<tr><td><b>IRCoT</b></td><td>Benchmark QA nhiều bước</td><td>1 mỗi bước</td><td>1 mỗi bước</td><td>Lỗi tích lũy, độ trễ tăng theo số bước</td></tr>
+</table></div>
+<ul>
+<li><b>HyDE</b> (Gao và cộng sự, 2022): vượt hẳn retriever không giám sát Contriever, ngang retriever đã fine-tune trên nhiều tác vụ. Rủi ro: đoạn văn giả chứa tên, số bịa. Giữ nhánh query gốc song song và trộn.</li>
+<li><b>Multi-query / RAG-Fusion</b> (Rackauckas, 2024): bằng chứng là đánh giá thủ công trên câu hỏi về sản phẩm của Infineon, không có benchmark công khai.</li>
+<li><b>IRCoT</b> (Trivedi và cộng sự, 2022): trên HotpotQA, 2WikiMultihopQA, MuSiQue, IIRC, tăng tới 21 điểm recall và tới 15 điểm QA so với retrieve một lần.</li>
+<li><b>RRF</b>: cộng 1/(k + rank) trên mọi danh sách, không cần chuẩn hoá điểm. Cormack và cộng sự cố định k = 60. Bỏ id trùng trong cùng danh sách trước khi cộng.</li>
+</ul>
+<div class="verdict"><b>Đặt ở đâu trong thứ tự nâng cấp:</b> README xếp biến đổi query ở bước 5, sau hybrid search, rerank và sửa chunk. Chỉ bật cho nhóm câu hỏi cần, qua routing, và dùng model nhỏ, nhanh cho bước viết lại.</div>`,
+    why: {
+      c: 'Chọn theo triệu chứng. Câu hỏi khác từ ngữ tài liệu: viết lại hoặc multi-query. Câu hỏi so sánh, nhiều phần: decomposition. HyDE chỉ dùng khi có nhánh query gốc chạy song song và trộn bằng RRF với trọng số thấp hơn, vì đoạn văn giả có thể bịa.',
+      s: 'Bật HyDE một mình cho mọi câu: đoạn văn giả bịa số liệu sẽ kéo tài liệu sai lên đầu, và còn kéo lên với điểm cao hơn. Bật mọi kỹ thuật cho mọi câu: trả thêm một lần gọi LLM trên đường găng cho cả những câu đã tìm đúng. Tăng top-k thay vì biến đổi query: thêm nhiễu vào context, và với câu "trả tiền dần" thì tài liệu đúng vẫn không có điểm.',
+      p: 'Một lần gọi LLM trước mỗi lần tìm: thêm độ trễ người dùng chờ, thêm tiền (nhỏ với model rẻ). Multi-query và decomposition còn nhân số lần retrieval. Thêm một chỗ có thể sai mà phải log: query trung gian sai thì mọi bước sau sai theo.'
+    },
+    deep: [
+      {
+        q: 'Vì sao câu hỏi của khách lại là "query tệ"? Nó rõ nghĩa với người đọc mà.',
+        a: `<p>Rõ nghĩa với người, nhưng retriever không đọc nghĩa như người. Nó so <b>hình dạng</b> câu hỏi với hình dạng từng đoạn tài liệu: có chung từ nào, từ đó hiếm cỡ nào. Embedding thật thì mềm hơn (biết "rè" gần "lỗi" ở mức nào đó), nhưng vẫn là so hai đoạn văn với nhau.</p>
+<p>Câu hỏi và tài liệu khác hình dạng theo ba cách:</p>
+<ul><li><b>Ngắn và viết tắt.</b> "tai nghe rè đổi được ko" chỉ có vài từ có nghĩa. Mỗi từ trùng hay không trùng tạo ra chênh lệch lớn.</li>
+<li><b>Từ khác nhau.</b> Khách nói "đổi", tài liệu viết "đổi trả", "đổi mới". Khách nói "trả tiền dần", tài liệu viết "trả góp".</li>
+<li><b>Gộp nhiều ý.</b> "So sánh 2025 và 2026" cần hai đoạn khác nhau, nhưng chỉ có một vector câu hỏi.</li></ul>
+<p>Bảng dưới đếm từ chung (sau khi bộ chấm đồ chơi gom vài từ đồng nghĩa) giữa câu "tai nghe rè đổi được ko" và ba đoạn tài liệu. Đoạn đúng là d1.</p>`,
+        viz(box) {
+          const q = QS[0].text, qt = new Set(terms(q)), rank = search(q);
+          const rows = ['d8', 'd4', 'd1'].map((id) => {
+            const dt = new Set(terms(BY[id].text)), common = [...qt].filter((w) => dt.has(w));
+            const r = rank.findIndex((x) => x.id === id) + 1;
+            return `<tr${id === 'd1' ? ' class="cur"' : ''}><td><b>${id}</b> ${BY[id].title}</td><td class="mono">${common.map(pretty).join(', ') || '(không có)'}</td><td class="mono">${r}</td></tr>`;
+          }).join('');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Đoạn</th><th>Từ chung với câu hỏi</th><th>Hạng</th></tr>' + rows })]),
+            el('div', { class: 'cap', html: `Từ có nghĩa trong câu hỏi sau khi bỏ từ chức năng: <span class="mono">${[...qt].map(pretty).join(', ')}</span>. Đoạn d1 chung "tai nghe" và "lỗi" (bộ chấm gom "rè" về "lỗi"), giống hệt d4, nhưng d1 dài hơn nhiều nên điểm bị chia nhỏ: cosine chia cho độ dài, chữ thừa làm loãng điểm. Chữ "đổi" của khách không khớp "đổi mới" của d1, vì bộ chấm coi "đổi mới" là cụm "đổi trả", khác chữ "đổi" đứng một mình. Chỉ d8 ("đổi laptop mới") có đúng chữ "đổi".` }));
+        },
+        take: 'Câu hỏi đúng ý nhưng sai từ. Retriever chấm theo từ (hoặc theo vector của từ), nên câu hỏi phải "nói giống tài liệu" thì mới được điểm.'
+      },
+      {
+        q: 'Viết lại query cụ thể là gửi gì cho LLM, nhận lại gì, tốn bao nhiêu?',
+        a: `<p>Một request bình thường. Messages gửi đi trông như sau (prompt hướng dẫn rút gọn):</p>
+<div class="tbl"><table><tr><td class="mono" style="white-space:pre-wrap">[{"role": "system", "content": "Viết lại câu hỏi của khách thành một câu tìm kiếm đầy đủ, dùng thuật ngữ trong chính sách ShopViet. Hôm nay là 27/11/2026. Chỉ trả về câu đã viết lại."},
+ {"role": "user", "content": "tai nghe rè đổi được ko"}]</td></tr></table></div>
+<p>Model trả về một dòng: "Tai nghe bị lỗi rè có được đổi trả không, điều kiện đổi trả sản phẩm lỗi". Dòng này đi vào retriever thay cho câu gốc.</p>
+<p>Chú ý dòng "Hôm nay là 27/11/2026". Không có nó, model không biết "năm nay" là năm nào, và câu q3 sẽ không sửa được.</p>
+<p>Chi phí nhỏ vì input và output đều ngắn. Hình dưới tính theo giá niêm yết trong Cost optimization §2.1 (ngày 06/11/2026). Prompt hướng dẫn ${PROMPT_TOK} token là con số giả định. Token của câu hỏi và câu viết lại ước lượng từ chuỗi thật: 49 từ tiếng Việt khoảng 56 token với tokenizer o200k (số đo trong Cost optimization §2.1).</p>`,
+        viz(box) {
+          const MODELS = [['haiku', 'Claude Haiku 5.5 ($0,10 / $0,50)', 0.10, 0.50], ['luna', 'gpt-6-luna ($0,10 / $0,50)', 0.10, 0.50], ['sonnet', 'Claude Sonnet 5.5 ($2 / $10)', 2, 10]];
+          const S = { m: 'haiku', day: 4 }, out = el('div');
+          const draw = () => {
+            const [, name, pi, po] = MODELS.find((m) => m[0] === S.m), perDay = Math.round(10 ** S.day);
+            const rows = QS.map((q) => {
+              const i = PROMPT_TOK + tok(q.text), o = tok(q.rewrite), c = (i * pi + o * po) / 1e6;
+              return `<tr><td>${q.text}</td><td class="mono">${i}</td><td class="mono">${o}</td><td class="mono">${usd(c)}</td><td class="mono">${usd(c * perDay * 30)}</td></tr>`;
+            }).join('');
+            out.innerHTML = `<div class="tbl"><table><tr><th>Câu hỏi</th><th>Input</th><th>Output</th><th>Mỗi câu</th><th>30 ngày, ${perDay.toLocaleString('vi-VN')} câu/ngày</th></tr>${rows}</table></div><div class="cap">Model: ${name}, USD / 1 triệu token input / output. Số câu mỗi ngày là giả định để bạn kéo.</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [select('Model viết lại', MODELS.map((m) => [m[0], m[1]]), S.m, (v) => { S.m = v; draw(); }).node,
+            slider('Câu hỏi / ngày', 2, 6, 0.5, S.day, (v) => { S.day = v; draw(); }, (v) => Math.round(10 ** v).toLocaleString('vi-VN'))]), out);
+          draw();
+        },
+        take: 'Tiền của bước viết lại thường nhỏ với model rẻ. Cái đắt hơn là thời gian chờ: thêm một lần gọi LLM trước khi retrieval bắt đầu.'
+      },
+      {
+        q: 'HyDE nghe lạ: dùng một câu trả lời bịa để tìm câu trả lời thật. Sao lại hiệu quả?',
+        a: `<p>Vì <b>câu trả lời giống tài liệu hơn câu hỏi giống tài liệu</b>. Câu hỏi có dạng "X có được Y không?". Tài liệu có dạng "X được Y trong Z ngày, điều kiện W". Đoạn văn giả do LLM viết có đúng dạng của tài liệu: cùng kiểu từ, cùng độ dài, cùng cách nói.</p>
+<p>Gao và cộng sự (2022) báo cáo HyDE vượt hẳn retriever không giám sát Contriever và ngang retriever đã fine-tune trên nhiều tác vụ. Điểm hay: không cần dữ liệu huấn luyện nào.</p>
+<p>Nhưng nội dung của đoạn văn giả có thể sai. Retriever không biết đúng sai, nó chỉ thấy hình dạng. Bảng dưới tính điểm cosine (bộ chấm đồ chơi) của câu gốc và của đoạn HyDE với tài liệu đúng, cùng tài liệu đứng đầu khi tìm bằng HyDE.</p>`,
+        viz(box) {
+          const rows = QS.map((q) => {
+            const b = search(q.text), h = search(q.hyde), g = q.gold[0];
+            const sb = b.find((x) => x.id === g).s, sh = h.find((x) => x.id === g).s, top = h[0], ok = q.gold.includes(top.id);
+            return `<tr><td>${q.text}</td><td class="mono">${sb.toFixed(3)}</td><td class="mono">${sh.toFixed(3)}</td><td class="${ok ? 'ok' : 'bad'}"><b>${top.id}</b> ${BY[top.id].title} (${top.s.toFixed(3)})</td></tr>`;
+          }).join('');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Câu hỏi</th><th>cos(gốc, đoạn đúng)</th><th>cos(HyDE, đoạn đúng)</th><th>Top-1 khi tìm bằng HyDE</th></tr>' + rows })]),
+            el('div', { class: 'cap', text: 'Đoạn đúng lấy là tài liệu đúng đầu tiên của mỗi câu. Đỏ: HyDE kéo một tài liệu sai lên đầu. Đoạn HyDE nói về bảo hành, nên với câu "tai nghe rè" nó kéo đoạn bảo hành tai nghe thay vì đoạn đổi trả.' }));
+        },
+        take: 'HyDE đổi câu hỏi thành một đoạn văn cùng hình dạng với tài liệu. Hình dạng đúng giúp tìm, nhưng nội dung sai thì tìm sai theo.'
+      },
+      {
+        q: 'Câu q3: HyDE viết "pin bảo hành 6 tháng". Con số đó ở đâu ra, và nó làm hỏng gì?',
+        a: `<p>Model không biết chính sách của ShopViet. Nó viết một con số <b>nghe hợp lý</b> từ những gì nó từng đọc. "6 tháng" lại trùng đúng con số của chính sách cũ năm 2025 (d5). Đoạn văn giả vì vậy giống d5 hơn hẳn d6, và d5 lên đầu với điểm còn cao hơn lúc tìm bằng câu gốc.</p>
+<p>Đây là kiểu hỏng nguy hiểm: kết quả sai nhưng <b>tự tin</b>. Nhìn điểm số không phát hiện được.</p>
+<p><b>Nhưng đừng đổ hết cho HyDE.</b> Chọn q3 ở bảng phía trên với "Query gốc": d5 (bản 2025) <b>đã đứng hạng 1</b> trước khi có HyDE. POC chạy embedding thật còn rõ hơn: bản 2025 đứng đầu ở <b>cả sáu cách</b>, kể cả query gốc và câu viết lại có chữ "2026". Vì sao: "năm nay" không mang con số năm nào, embedding không biết hôm nay là ngày nào, và đoạn 2025 có đủ "pin", "bảo hành" như đoạn 2026. HyDE chỉ làm d5 thắng đậm hơn. Điều này không có nghĩa HyDE an toàn: nó vẫn bịa con số, và con số bịa vẫn kéo về tài liệu sai. <b>Trong hệ thống thật:</b> lỗi chọn nhầm phiên bản chính sách sửa bằng filter theo ngày hiệu lực (README §2.6, Lab 6), không sửa được bằng cách chọn kiểu viết lại query.</p>
+<p>README đề xuất giữ nhánh query gốc chạy song song và trộn bằng RRF, với nhánh HyDE nhẹ ký hơn (ví dụ trọng số 0,5). Kéo trọng số bên dưới: ba nhánh là query gốc, câu viết lại, và HyDE. Bảng tính RRF thật.</p>`,
+        viz(box) {
+          const q = QBY.q3;
+          const L = [ids(q.text), ids(q.rewrite), ids(q.hyde)], out = el('div'), cap = el('div', { class: 'cap' });
+          const draw = (w) => {
+            const f = rrf(L, [1, 1, w]).slice(0, 4);
+            out.replaceChildren(hbars(f.map((x) => [`${x.id} ${BY[x.id].title}`, x.s, q.gold.includes(x.id)]), { fmt: (v) => v.toFixed(4) }));
+            const top = f[0].id;
+            cap.innerHTML = top === 'd6' ? `Trọng số HyDE ${w.toFixed(2)}: d6 (đúng) đứng đầu nhờ nhánh câu viết lại. Nhánh HyDE vẫn cộng điểm cho d5 nhưng không đủ lật.` : `<span class="bad">Trọng số HyDE ${w.toFixed(2)}: ${top} ${BY[top].title} đứng đầu.</span> Nhánh HyDE xếp d5 hạng 1, và câu gốc cũng xếp d5 hạng 1 (vì "pin" và "bảo hành" khớp cả hai bản). Hai phiếu thắng một phiếu.`;
+          };
+          const sl = slider('Trọng số nhánh HyDE', 0, 2, 0.1, 0.5, draw, (v) => v.toFixed(1));
+          box.append(el('div', { class: 'row' }, [sl.node]), out, cap,
+            el('div', { class: 'cap', text: 'Thanh màu đậm là tài liệu đúng (d6). Trong hệ thống thật, cách chắc hơn với chính sách có phiên bản là lọc theo metadata ngày hiệu lực (README §2.6), không trông vào việc trộn điểm.' }));
+          draw(0.5);
+        },
+        take: 'Trộn với nhánh gốc giảm thiệt hại của HyDE nhưng không đảm bảo. Khi query gốc cũng nghiêng về bản cũ, thứ sửa được là câu viết lại có ngày, hoặc filter metadata.'
+      },
+      {
+        q: 'Multi-query trộn bằng RRF. Sao không cộng thẳng điểm cosine của các lần tìm?',
+        a: `<p>Vì điểm của các lần tìm không cùng thang. Câu ngắn "trả góp" cho cosine 0,6 với đoạn đúng, câu dài cho 0,2 với cùng đoạn đó. Cộng thẳng thì câu nào cho điểm cao hơn sẽ áp đảo, dù không đúng hơn. Trộn BM25 với cosine còn tệ hơn: một bên có thể ra 12,7, bên kia 0,83.</p>
+<p>RRF bỏ điểm, chỉ dùng <b>hạng</b>. Mỗi tài liệu được cộng 1/(k + hạng) ở mỗi danh sách. Hạng thì luôn cùng thang. Cormack và cộng sự cố định k = 60 sau một thử nghiệm sơ bộ và viết rằng giá trị này gần tối ưu, nhưng lựa chọn không quan trọng lắm.</p>
+<p>k làm gì? k nhỏ thì hạng 1 được thưởng rất đậm so với hạng 5 (1/2 so với 1/6). k lớn thì khoảng cách giữa các hạng nhỏ lại, tài liệu xuất hiện ở <b>nhiều</b> danh sách thắng tài liệu đứng đầu <b>một</b> danh sách. Kéo k và nhìn câu "trả tiền dần" với ba biến thể.</p>`,
+        viz(box) {
+          const q = QBY.q4, lists = q.multi.map(ids), out = el('div');
+          const draw = (k) => {
+            const f = rrf(lists, null, k).slice(0, 5);
+            const head = '<tr><th>Tài liệu</th>' + q.multi.map((s, i) => `<th>${i ? 'Biến thể ' + i : 'Gốc'}</th>`).join('') + '<th>Tổng RRF</th></tr>';
+            const rows = f.map((x) => `<tr${q.gold.includes(x.id) ? ' class="cur"' : ''}><td><b>${x.id}</b> ${BY[x.id].title}</td>` + lists.map((l) => { const r = l.indexOf(x.id) + 1; return r ? `<td class="mono">hạng ${r}: ${(1 / (k + r)).toFixed(4)}</td>` : '<td class="mono">không có (điểm 0)</td>'; }).join('') + `<td class="mono"><b>${x.s.toFixed(4)}</b></td></tr>`).join('');
+            out.innerHTML = `<div class="tbl"><table>${head}${rows}</table></div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('k', 1, 100, 1, 60, draw).node]), out,
+            el('div', { class: 'cap', text: 'Hàng tô màu là tài liệu đúng (d9 Trả góp). Câu gốc không có từ chung nào với d9 nên d9 không có mặt trong danh sách đó. Hai biến thể xếp nó hạng 1, đủ để tổng RRF đưa nó lên đầu.' }));
+          draw(60);
+        },
+        take: 'RRF trộn theo hạng nên không cần chuẩn hoá điểm giữa các retriever. Một tài liệu được nhiều danh sách cùng xếp cao sẽ thắng.'
+      },
+      {
+        q: 'Code RRF trong README có dòng dict.fromkeys để bỏ id trùng. Không bỏ thì sao?',
+        a: `<p>Retriever thật trả về <b>chunk</b>, không phải tài liệu. Một tài liệu dài bị chia thành nhiều chunk. Nếu bạn map chunk về id tài liệu để trộn, một danh sách có thể chứa cùng id nhiều lần: d6, d6, d6, d5...</p>
+<p>Không bỏ trùng thì d6 được cộng điểm ba lần trong cùng một danh sách, chỉ vì nó dài và bị cắt thành nhiều mảnh. README ghi rõ: không loại thì một tài liệu được cộng điểm nhiều lần chỉ vì nó dài.</p>`,
+        viz(box) {
+          const A = ['d6', 'd6', 'd6', 'd8', 'd5'], B = ['d5', 'd6', 'd12'];
+          const naive = {}, dedup = {};
+          [A, B].forEach((l) => { l.forEach((id, r) => { naive[id] = (naive[id] || 0) + 1 / (61 + r); }); [...new Set(l)].forEach((id, r) => { dedup[id] = (dedup[id] || 0) + 1 / (61 + r); }); });
+          const row = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]).map(([id, s]) => `${id}: ${s.toFixed(4)}`).join(' · ');
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: `<tr><th>Danh sách</th><th>Id theo hạng</th></tr><tr><td>Dense (chunk đã map về tài liệu)</td><td class="mono">${A.join(', ')}</td></tr><tr><td>BM25</td><td class="mono">${B.join(', ')}</td></tr><tr><td>RRF không bỏ trùng</td><td class="mono bad">${row(naive)}</td></tr><tr><td>RRF có bỏ trùng</td><td class="mono ok">${row(dedup)}</td></tr>` })]),
+            el('div', { class: 'cap', text: 'Không bỏ trùng, d6 cộng ba lần trong danh sách dense và bỏ xa d5 dù BM25 xếp d5 hạng 1. Có bỏ trùng, khoảng cách giữa hai tài liệu thu lại đúng như thứ hạng thật.' }));
+        },
+        take: 'Trộn ở mức tài liệu thì bỏ id trùng trong từng danh sách trước, giữ hạng đầu tiên.'
+      },
+      {
+        q: 'Decomposition tách "so sánh 2025 và 2026" thành hai câu. Còn câu mà bước sau phụ thuộc bước trước thì sao?',
+        a: `<p>Câu so sánh thì hai phần độc lập: tìm "bảo hành 2025" không cần biết kết quả của "bảo hành 2026". Tách một lần là đủ.</p>
+<p>Câu nhiều bước thì khác. Ví dụ "Laptop tôi mua kèm gói Care+ bị rơi vỡ, mang đi đâu sửa?". Bước 1 phải tìm Care+ có đổi máy khi rơi vỡ không. Chỉ khi biết câu trả lời mới biết bước 2 tìm gì: nơi đổi máy, hay nơi sửa có phí. Query của bước 2 không viết trước được.</p>
+<p>IRCoT (Trivedi và cộng sự, 2022) xen kẽ: mỗi bước suy luận sinh một query mới, tìm, suy luận tiếp. Trên HotpotQA, 2WikiMultihopQA, MuSiQue và IIRC, IRCoT với GPT-3 tăng tới 21 điểm recall và tới 15 điểm QA so với retrieve một lần.</p>
+<p>Cái giá: mỗi bước là một lần gọi LLM và một lần retrieval, độ trễ cộng dồn. Và <b>bước đầu sai thì các bước sau sai theo</b>. README khuyên log từng query trung gian, vì khi câu trả lời cuối sai, bạn cần biết nó đi lạc từ bước nào. Kiểu câu này thuộc agentic RAG (README §1.4).</p>`,
+        take: 'Tách một lần khi các phần độc lập. Khi phần sau phụ thuộc phần trước, cần vòng lặp có giới hạn và log từng bước.'
+      },
+      {
+        q: 'Step-back hỏi câu tổng quát hơn. Vậy có khi nào tổng quát quá thành hỏng?',
+        a: `<p>Có. Step-back (Zheng và cộng sự, 2023) sinh câu hỏi trừu tượng hơn trước, ví dụ "Chính sách bảo hành laptop của ShopViet gồm những gì?", tìm theo câu đó, rồi mới trả lời câu cụ thể.</p>
+<p>Lợi: lấy về bức tranh chung, giúp model suy luận. Hại: câu tổng quát <b>mất chi tiết cụ thể</b>. Câu gốc có "năm nay" và "thay pin"; câu step-back có thể kéo về cả bản 2025 lẫn 2026 và các đoạn về màn hình, bàn phím, nhưng không ưu tiên đoạn có con số của pin.</p>
+<p>Lưu ý bằng chứng: số liệu của paper đo trên tác vụ suy luận (MMLU, TimeQA, MuSiQue), không phải đo retrieval riêng. Nó chưa chứng minh step-back giúp tìm đúng đoạn hơn.</p>`,
+        take: 'Step-back hợp với câu cần nguyên lý chung. Với câu tra một con số cụ thể, nó dễ làm loãng kết quả.'
+      },
+      {
+        q: 'Vậy bật hết các kỹ thuật cho mọi câu hỏi cho chắc được không?',
+        a: `<p>Không nên. Cả bốn kỹ thuật đều nằm trên đường găng: người dùng chờ thêm một lần gọi LLM trước khi retrieval bắt đầu. Multi-query và decomposition còn nhân số lần retrieval.</p>
+<p>Với câu đã tìm đúng bằng query gốc, bạn trả tiền và thời gian mà không được gì, còn có thể bị hỏng (HyDE bịa, biến thể lạc đề). Hình dưới đếm số lần gọi LLM và số lần retrieval của từng cách cho câu q2, và đếm qua bốn câu hỏi xem cách nào vừa đạt Recall@3 đầy đủ vừa có tài liệu đúng ở hạng 1.</p>
+<p>Bạn sẽ thấy "Viết lại" thắng cả bốn câu. Đừng vội kết luận. Câu viết lại ở đây là chuỗi viết sẵn, tốt nhất có thể, có cả ngày hôm nay. LLM thật có lúc viết lại sai ý, bỏ mất chi tiết, hoặc thêm điều kiện khách không hỏi. Và với những câu query gốc đã tìm đúng, bước viết lại chỉ cộng thêm thời gian chờ.</p>
+<p>POC chạy embedding thật cho kết quả gần như ngược lại: "Viết lại" có Recall@3 trung bình 0,62, <b>thấp nhất</b> trong sáu cách, và làm câu pin tệ hơn query gốc; HyDE và multi-query đạt 1,00. Cùng bốn câu, cùng chuỗi viết lại, chỉ đổi bộ chấm điểm mà thứ hạng các cách đổi hẳn. Đó là lý do phải đo trên retriever thật của bạn.</p>
+<p>README khuyên: dùng model nhỏ và nhanh cho bước viết lại, và chỉ bật cho nhóm câu hỏi cần, qua routing (§1.4). Routing có thể là một bộ phân loại rẻ: câu có "so sánh", "và", hai mốc thời gian thì decomposition; câu ngắn dưới vài từ thì viết lại.</p>`,
+        viz(box) {
+          const rows = MODES.map(([m, name]) => {
+            const r2 = run(QBY.q2, m), retr = m === 'base' || m === 'rewrite' || m === 'hyde' ? 1 : r2.sent.length;
+            const full = QS.filter((q) => { const rr = run(q, m).rank; return recall(rr, q.gold, 3) === q.gold.length && q.gold.includes(rr[0].id); }).length;
+            return [name, r2.calls, retr, full];
+          });
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Cách</th><th>Gọi LLM thêm</th><th>Số lần retrieval (q2)</th><th>Số câu đạt Recall@3 đầy đủ và top-1 đúng / 4</th></tr>' + rows.map(([n, c, r, f]) => `<tr><td>${n}</td><td class="mono">${c}</td><td class="mono">${r}</td><td class="mono ${f === 4 ? 'ok' : f <= 1 ? 'bad' : ''}"><b>${f}</b></td></tr>`).join('') })]),
+            el('div', { class: 'cap', text: 'Tính trên bộ chấm đồ chơi và 12 đoạn tài liệu. HyDE một mình chỉ đúng hẳn một câu; trộn HyDE với query gốc không cứu được câu nào, vì cả hai nhánh cùng nghiêng về tài liệu sai. Trên kho thật, đo Recall theo từng nhóm câu hỏi rồi mới quyết định bật gì cho nhóm nào.' }));
+        },
+        take: 'Kết quả tốt nhất phụ thuộc vào chất lượng câu LLM viết ra, và mọi cách đều trả thêm độ trễ. Phân loại câu hỏi trước, rồi bật đúng kỹ thuật cho đúng nhóm.'
+      }
+    ],
+    poc: {
+      goal: "Sáu cách biến đổi query chạy trên embedding thật và RRF của README §2.1. <b>Câu viết lại, đoạn HyDE, biến thể multi-query và câu con là chuỗi viết tay</b>, giả làm output LLM; xếp hạng, Recall@3, token và tiền Haiku là thật.",
+      file: "docs/advanced-rag/pocs/03_query_rewriting.py",
+      run: "uv run docs/advanced-rag/pocs/03_query_rewriting.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi LLM. Embedding <code>paraphrase-multilingual-MiniLM-L12-v2</code> và cross-encoder <code>mmarco-mMiniLMv2</code> chỉ nạp từ cache Hugging Face có sẵn (không tải); thiếu cache thì dense rơi về char-trigram đồ chơi, output ghi rõ.",
+      output: "Retriever: paraphrase-multilingual-MiniLM-L12-v2 (thật, CPU), 32 đoạn. Câu viết lại, đoạn HyDE, biến thể multi-query, câu con: VIẾT TAY, giả làm output LLM.\nPhần thật: embedding và xếp hạng, RRF (hàm của README §2.1), token đếm bằng tiktoken o200k, giá Haiku 5.5 (Cost opt §2.1).\n\n== \"tai nghe rè đổi được ko\"  (cần rhp) ==\nCách                        hạng đoạn cần  top-3  top-3                tiền LLM (Haiku)\n--------------------------  -------------  -----  -------------------  ----------------\nQuery gốc                   2              1/1    fix_re, rhp, o4128   -\nViết lại                    2              1/1    fix_re, rhp, r26fee  $0.00002\nHyDE                        2              1/1    wgen, rhp, w25       $0.00003\nHyDE + gốc (RRF, HyDE 0,5)  1              1/1    rhp, fix_re, o4128   $0.00003\nMulti-query + RRF           1              1/1    rhp, fix_re, care1   $0.00002\nTách câu                    2              1/1    fix_re, rhp, r26fee  $0.00002\n\n== \"So sánh bảo hành laptop 2025 và 2026\"  (cần w25, w26) ==\nCách                        hạng đoạn cần  top-3  top-3              tiền LLM (Haiku)\n--------------------------  -------------  -----  -----------------  ----------------\nQuery gốc                   1 3            2/2    w25, w26send, w26  -\nViết lại                    1 3            2/2    w25, w26send, w26  $0.00002\nHyDE                        2 1            2/2    w26, w25, w26send  $0.00003\nHyDE + gốc (RRF, HyDE 0,5)  1 2            2/2    w25, w26, w26send  $0.00003\nMulti-query + RRF           1 3            2/2    w25, r27, w26      $0.00003\nTách câu                    1 3            2/2    w25, w26send, w26  $0.00003\n\n== \"Laptop mua đầu năm nay thay pin miễn phí được không?\"  (cần w26, w26b) ==\nCách                        hạng đoạn cần  top-3  top-3           tiền LLM (Haiku)\n--------------------------  -------------  -----  --------------  ----------------\nQuery gốc                   3 2            2/2    w25, w26b, w26  -\nViết lại                    2 5            1/2    w25, w26, r27   $0.00003\nHyDE                        2 3            2/2    w25, w26, w26b  $0.00003\nHyDE + gốc (RRF, HyDE 0,5)  3 2            2/2    w25, w26b, w26  $0.00003\nMulti-query + RRF           2 3            2/2    w25, w26, w26b  $0.00002\nTách câu                    2 3            2/2    w25, w26, w26b  $0.00003\n\n== \"ShopViet có cho trả tiền dần không?\"  (cần inst1) ==\nCách                        hạng đoạn cần  top-3  top-3                  tiền LLM (Haiku)\n--------------------------  -------------  -----  ---------------------  ----------------\nQuery gốc                   7              0/1    refund, w26send, r24   -\nViết lại                    6              0/1    gift, refund, w26send  $0.00002\nHyDE                        1              1/1    inst1, refund, r26fee  $0.00003\nHyDE + gốc (RRF, HyDE 0,5)  4              0/1    refund, w26send, r24   $0.00003\nMulti-query + RRF           2              1/1    refund, inst1, care3   $0.00003\nTách câu                    6              0/1    gift, refund, w26send  $0.00002\n\n== Recall@3 trung bình 4 câu ==\nCách                        Recall@3\n--------------------------  --------\nQuery gốc                   0.75\nViết lại                    0.62\nHyDE                        1.00\nHyDE + gốc (RRF, HyDE 0,5)  0.75\nMulti-query + RRF           1.00\nTách câu                    0.75\n\nHyDE câu 'tai nghe rè' tự bịa 'bảo hành miễn phí 12 tháng' → top-1 là wgen: 'Mọi sản phẩm được bảo hành 12 tháng tại trung tâm bảo hành ShopViet, trừ khi bảng bảo hành theo model ghi khác.' (bảo hành, không phải đổi trả).\nHyDE câu 'trả tiền dần' viết đúng chữ 'trả góp' → inst1 lên hạng 1; trộn RRF với nhánh gốc (HyDE 0,5) → rơi về hạng 4.\n\nRút ra: không cách nào thắng mọi câu; cao nhất trên 4 câu này: HyDE, Multi-query + RRF. 'Viết lại' còn làm câu pin tệ hơn query gốc.\nHyDE cứu câu lệch từ vựng nhưng kéo về thực thể nó bịa; hạ trọng số HyDE thì an toàn hơn nhưng mất luôn phần nó cứu được.\nCâu pin: cả 6 cách đều để bản 2025 đứng đầu, vì embedding không biết 'năm nay' là 2026: việc của metadata filter (Lab 06), không phải viết lại query.\nMỗi cách tốn thêm một lần gọi LLM (~$0,00002–0,00003 với Haiku 5.5) nằm trên đường găng.",
+      measured: true,
+      read: ["Mỗi bảng: hạng của đoạn cần theo từng cách. Câu 'trả tiền dần' chỉ được cứu bởi HyDE (hạng 1) và multi-query (hạng 2).", "HyDE câu 'tai nghe rè' bịa 'bảo hành 12 tháng' → top-1 là đoạn bảo hành chung, không phải đổi trả.", "Trộn HyDE trọng số 0,5 với nhánh gốc an toàn hơn nhưng làm rơi đoạn trả góp từ hạng 1 xuống 4.", "Câu pin 'năm nay': cả 6 cách đều để bản 2025 đứng đầu: viết lại query không sửa được lỗi phiên bản, cần metadata filter (Lab 06)."]
+    },
+    mount(stage) {
+      const S = { q: 'q1', m: 'base', k: 3 };
+      const sentBox = el('div', { class: 'chunks' }), list = rankList(32), stat = el('div', { class: 'stat' });
+      const cap = el('div', { class: 'sum', style: 'margin-top:12px;padding-top:0;border:0' }), table = el('div', { class: 'sum', style: 'margin-top:6px;padding-top:0;border:0' });
+      const whyBox = el('p', { class: 'hint', style: 'margin:0 0 10px' });
+      function caption(q, r, base) {
+        const rk = recall(r.rank, q.gold, S.k), rb = recall(base.rank, q.gold, S.k), top = r.rank[0].id, need = q.gold.length;
+        const msgs = [];
+        if ((S.m === 'hyde' || S.m === 'hydemix') && !q.gold.includes(search(q.hyde)[0].id)) {
+          const hydeTop = search(q.hyde)[0].id, goldT = new Set(q.gold.flatMap((g) => terms(BY[g].text))), wrongT = new Set(terms(BY[hydeTop].text));
+          const pull = [...new Set(terms(q.hyde))].filter((w) => !goldT.has(w) && wrongT.has(w));
+          msgs.push(`<p class="bad"><b>Đoạn HyDE kéo tài liệu sai: ${hydeTop} ${BY[hydeTop].title} đứng đầu nhánh HyDE.</b></p><p>Chuyện gì xảy ra: những từ có trong đoạn văn giả, không có trong tài liệu đúng, nhưng có trong ${hydeTop}: <span class="mono">${pull.map(pretty).join(', ') || '(trùng chủ đề, không trùng từ riêng)'}</span>. Vì sao: LLM không biết chính sách của ShopViet, nó viết điều nghe hợp lý. Retriever chỉ so hình dạng, không kiểm đúng sai. Điều này không có nghĩa HyDE vô dụng: với q4 nó vẫn tìm đúng vì đoạn giả viết đúng thuật ngữ "trả góp", dù chính đoạn đó bịa kênh thanh toán ("qua ví điện tử"; chính sách thật là thẻ tín dụng). Retriever chỉ cần hình dạng đúng, nên chi tiết bịa không hại bước tìm, và đoạn HyDE chỉ dùng để tìm, không đưa vào prompt trả lời.</p>${search(q.text)[0].id === hydeTop ? `<p>Lưu ý: query gốc cũng xếp ${hydeTop} hạng 1. HyDE không tạo ra lỗi này, nó chỉ làm lỗi chắc hơn.</p>` : ''}<p><b>Trong hệ thống thật:</b> luôn giữ nhánh query gốc song song, trộn bằng RRF với HyDE nhẹ ký hơn, và với chính sách có phiên bản thì lọc theo ngày hiệu lực.</p>`);
+        }
+        if (rk < need && rk > 0) msgs.push(`<p class="bad"><b>Chỉ lấy được ${rk}/${need} tài liệu cần.</b> Câu hỏi so sánh hai phần, top-${S.k} toàn là đoạn của một phía. Model sẽ trả lời một nửa, hoặc tự đoán nửa còn lại. Đây là điểm hỏng FP7 (Incomplete) trong README §1.1.</p>`);
+        if (rk === 0) msgs.push(`<p class="bad"><b>Không tài liệu đúng nào trong top-${S.k}.</b> Đứng đầu là ${top} ${BY[top].title}. Model sẽ trả lời dựa trên đoạn sai, hoặc nói không biết nếu prompt cho phép.</p>`);
+        if (rk === need && rb < need && S.m !== 'base') msgs.push(`<p class="ok"><b>Cách này cứu được câu hỏi:</b> query gốc lấy ${rb}/${need}, cách này lấy ${rk}/${need} trong top-${S.k}.</p>`);
+        if (rk === need && !q.gold.includes(top)) msgs.push(`<p class="bad"><b>Đủ tài liệu nhưng tài liệu sai đứng đầu: ${top} ${BY[top].title}.</b> Model nhận cả đoạn đúng lẫn đoạn sai trong context, và đoạn sai nằm trên. Với chính sách có hai phiên bản, model có thể lấy con số của bản cũ. Đây là điểm hỏng FP4 (Not Extracted): đáp án có trong context nhưng model không lấy ra. Recall@k đầy đủ không có nghĩa câu trả lời đúng.</p>`);
+        if (r.single) msgs.push('<p>Câu này chỉ có một ý, decomposition không tách được gì, nên chỉ còn tác dụng của việc viết lại.</p>');
+        if (rk === need && S.m === 'base') msgs.push(`<p class="ok">Query gốc đã lấy đủ ${need}/${need} với top-${S.k}. Biến đổi query ở đây chỉ tốn thêm thời gian.</p>`);
+        if (!msgs.length) msgs.push(`<p>Lấy được ${rk}/${need} tài liệu cần, giống query gốc.</p>`);
+        cap.innerHTML = '<div class="verdict">' + msgs.join('') + '</div>';
+      }
+      function render() {
+        const q = QBY[S.q], r = run(q, S.m), base = run(q, 'base');
+        whyBox.textContent = 'Vì sao khó: ' + q.why;
+        sentBox.replaceChildren(el('div', { class: 'hint', style: 'margin:0 0 4px', text: 'Gửi tới retriever:' }), ...r.sent.map(([s, lab]) => el('div', { class: 'ch' }, [el('small', { text: `${lab} · khoảng ${tok(s)} token` }), el('span', { text: s })])));
+        const mx = Math.max(...r.rank.map((x) => x.s)) || 1;
+        const seen = new Set(r.rank.map((x) => x.id)), full = r.rank.concat(DOCS.filter((d) => !seen.has(d.id)).map((d) => ({ id: d.id, s: 0 })));
+        list.update(full.map((x, i) => {
+          const g = q.gold.includes(x.id), inK = i < S.k;
+          return { id: x.id, cls: (g ? 'gold ' : '') + (g && inK ? 'hit' : '') + (inK ? '' : ' dim'), html: `<i>#${i + 1}</i><b>${x.id}</b> ${BY[x.id].title}<i>${r.fused ? 'RRF ' : 'cos '}${x.s.toFixed(r.fused ? 4 : 3)}</i><span class="bar" style="width:${Math.round((x.s / mx) * 90)}px"></span>` };
+        }));
+        const rk = recall(r.rank, q.gold, S.k), c = costOf(q, r);
+        stat.innerHTML = `<span>Recall@${S.k}: <b class="${rk === q.gold.length ? 'ok' : 'bad'}">${rk}/${q.gold.length}</b></span><span>Top-1: <b>${r.rank[0].id}</b></span><span>Gọi LLM thêm: <b>${r.calls}</b></span><span>Lần retrieval: <b>${r.sent.length}</b></span><span>Bước viết lại (Haiku 5.5): <b>${c ? usd(c * 1e6) : '$0'}</b> / 1 triệu câu</span>`;
+        caption(q, r, base);
+        table.innerHTML = '<h4 style="margin:10px 0 6px">Cả sáu cách cho câu này</h4><div class="tbl"><table><tr><th>Cách</th><th>Recall@' + S.k + '</th><th>Top-1</th><th>Gọi LLM thêm</th><th>Retrieval</th></tr>' + MODES.map(([m, name]) => {
+          const rr = run(q, m), k2 = recall(rr.rank, q.gold, S.k), t = rr.rank[0].id;
+          return `<tr${m === S.m ? ' class="cur"' : ''}><td>${name}</td><td class="mono ${k2 === q.gold.length ? 'ok' : 'bad'}"><b>${k2}/${q.gold.length}</b></td><td class="${q.gold.includes(t) ? 'ok' : 'bad'}">${t} ${BY[t].title}</td><td class="mono">${rr.calls}</td><td class="mono">${rr.sent.length}</td></tr>`;
+        }).join('') + '</table></div>';
+      }
+      const own = el('input', { type: 'text', placeholder: 'Gõ câu hỏi của bạn, ví dụ: giao hàng mất bao lâu', style: 'flex:1;min-width:200px;font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)' });
+      const ownOut = el('div', { class: 'hint' });
+      own.addEventListener('input', () => {
+        const v = own.value.trim();
+        if (!v) { ownOut.textContent = ''; return; }
+        const t = terms(v), r = search(v).slice(0, 3);
+        ownOut.innerHTML = `Từ được chấm: <span class="mono">${t.map(pretty).join(', ') || '(không còn từ nào)'}</span><br>Top-3: ` + r.map((x) => `<b>${x.id}</b> ${BY[x.id].title} (${x.s.toFixed(3)})`).join(' · ') + (r[0].s === 0 ? ' <span class="bad">Không đoạn nào có từ chung: retriever trả về đại.</span>' : '');
+      });
+      stage.append(
+        el('div', { class: 'row' }, [
+          select('Câu hỏi', QS.map((q) => [q.id, q.text]), S.q, (v) => { S.q = v; render(); }).node,
+          select('Cách biến đổi', MODES, S.m, (v) => { S.m = v; render(); }).node,
+          slider('top-k', 1, 5, 1, S.k, (v) => { S.k = v; render(); }).node]),
+        whyBox, sentBox, el('div', { style: 'height:8px' }), list.node, stat, cap, table,
+        el('h4', { text: 'Tự gõ câu hỏi (chỉ chạy query gốc)', style: 'margin:18px 0 6px' }), el('div', { class: 'row' }, [own]), ownOut,
+        el('p', { class: 'hint', text: 'Bộ chấm đồ chơi: bỏ từ chức năng, gom vài cụm đồng nghĩa (rè, hỏng, mất tiếng thành "lỗi"; đổi mới thành "đổi trả"), trọng số IDF, cosine. Nó không biết "trả tiền dần" là "trả góp", giống một retriever thật thiếu dữ liệu về cách khách nói. Token ước lượng theo 49 từ ≈ 56 token (o200k, Cost optimization §2.1); prompt hướng dẫn 150 token là giả định; giá Haiku 5.5 $0,10 / $0,50 mỗi triệu token input / output lấy từ Cost optimization §2.1.' }));
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
