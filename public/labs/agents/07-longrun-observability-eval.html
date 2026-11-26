@@ -1,0 +1,724 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agents Lab 07</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="06-stop-budget-hitl.html">← Lab trước</a><a href="08-cost-security-failures.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/agents/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const dec = (x, d = 2) => x.toFixed(d).replace('.', ',');
+  const int = (x) => Math.round(x).toLocaleString('vi-VN');
+  const pct = (x, d = 0) => (x * 100).toFixed(d).replace('.', ',') + '%';
+  const usd = (x) => (x >= 1 ? dec(x, 2) : x >= 0.01 ? dec(x, 3) : dec(x, 4)) + ' USD';
+  const vnd = (x) => int(x) + ' đ';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const flagBox = (l, t) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t });
+  const capHtml = (c) => '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + c.what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + c.why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + c.not + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + c.real + '</p></div>';
+  const check = (label, on, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = on; i.addEventListener('change', () => onChange(i.checked)); return { node: el('label', { class: 'ctl' }, [i, label]), input: i }; };
+  const chip = (txt, kind) => el('span', { class: 'mono', style: 'display:inline-block;font-size:11.5px;padding:3px 7px;margin:2px;border-radius:5px;border:1px solid ' + ({ done: 'var(--line)', off: 'var(--line)', crash: 'var(--bad)', redo: 'var(--warn)', dup: 'var(--bad)', save: 'var(--accent)', fresh: 'var(--ok)', later: 'var(--line)' }[kind]) + ';background:' + ({ crash: 'var(--bad)', dup: 'var(--bad)', save: 'var(--accent-soft)' }[kind] || 'var(--bg)') + ';color:' + ({ crash: '#fff', dup: '#fff', off: 'var(--dim)', later: 'var(--dim)' }[kind] || 'var(--ink)') + (kind === 'off' ? ';text-decoration:line-through' : ''), text: txt });
+  const comb = (n, k) => { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i; return r; };
+  const passAt = (n, c, k) => 1 - comb(n - c, k) / comb(n, k);
+  const passHat = (n, c, k) => comb(c, k) / comb(n, k);
+
+  const PLAN = [
+    { name: 'get_order', args: '{"order_id":"SV-4821"}' },
+    { name: 'check_return_policy', args: '{"category":"audio"}' },
+    { name: 'refund_order', args: '{"order_id":"SV-4821","amount":1290000}', sys: 'pay' },
+    { name: 'send_email', args: '{"template":"refund_done"}', sys: 'email' },
+    { end: true }
+  ];
+  const EVENTS = (() => { const ev = []; PLAN.forEach((p, i) => { ev.push({ t: 'model', i }); if (p.end) { ev.push({ t: 'save', i, kind: 'end' }); return; } ev.push({ t: 'save', i, kind: 'resp' }); ev.push({ t: 'tool', i }); ev.push({ t: 'save', i, kind: 'tool' }); }); return ev; })();
+  const evLabel = (e) => e.t === 'model' ? (PLAN[e.i].end ? 'Model: end_turn' : 'Model → ' + PLAN[e.i].name) : e.t === 'tool' ? 'Chạy ' + PLAN[e.i].name : e.kind === 'resp' ? 'Lưu (sau response)' : e.kind === 'tool' ? 'Lưu (sau tool)' : 'Lưu (done)';
+  const saveOn = (ck, kind) => kind === 'resp' ? ck === 'both' : ck !== 'none';
+  const callCost = (i) => ((2500 + i * 400) * 2 + 120 * 10) / 1e6;
+  const CK = { none: 'Không checkpoint (trạng thái trong RAM)', after: 'Chỉ lưu sau khi chạy tool', both: 'Lưu sau response và sau tool (README §3.2)' };
+  const KEY = { random: 'Ngẫu nhiên mỗi lần chạy (uuid4)', time: 'Theo thời gian (timestamp)', fixed: 'run_id + tool_use_id (README)' };
+
+  function simulateCrash(cfg) {
+    const rnd = seeded(77);
+    let clock = 0;
+    const keyFor = (id) => cfg.key === 'fixed' ? 'run_7f3:' + id : cfg.key === 'time' ? 'ts-' + (1764201000 + clock) : 'k-' + Math.floor(rnd() * 0xffffff).toString(16).padStart(6, '0');
+    const paySeen = new Map(), mailSeen = new Map(), ledger = [];
+    const exec = (i, id, phase) => {
+      const p = PLAN[i]; if (!p.sys) return null;
+      const key = keyFor(id), seen = p.sys === 'pay' ? paySeen : mailSeen, dedupe = p.sys === 'pay' ? cfg.payDedupe : cfg.emailStore;
+      const old = dedupe && seen.has(key);
+      seen.set(key, true);
+      const x = { sys: p.sys, id, key, phase, kind: old ? 'old' : 'new' };
+      ledger.push(x);
+      return x;
+    };
+    const isDup = (x) => !!x && x.kind === 'new' && ledger.filter((y) => y.sys === x.sys && y.kind === 'new').length > 1;
+    const lane1 = [], lane2 = [], model1 = new Set(), tool1 = new Set();
+    let snap = null;
+    const crash = Math.min(cfg.crashAt, EVENTS.length - 1);
+    EVENTS.forEach((e, k) => {
+      clock += 1;
+      if (k > crash) { lane1.push([evLabel(e), 'later']); return; }
+      if (e.t === 'model') { model1.add(e.i); lane1.push([evLabel(e) + (PLAN[e.i].end ? '' : ' (toolu_0' + (e.i + 1) + ')'), 'done']); }
+      else if (e.t === 'tool') { tool1.add(e.i); exec(e.i, 'toolu_0' + (e.i + 1), 1); lane1.push([evLabel(e), 'done']); }
+      else if (saveOn(cfg.ck, e.kind)) { snap = { i: e.i, kind: e.kind }; lane1.push([evLabel(e), 'save']); }
+      else lane1.push([evLabel(e), 'off']);
+      if (k === crash && k < EVENTS.length - 1) lane1.push(['process chết', 'crash']);
+    });
+    const crashed = crash < EVENTS.length - 1;
+    let modelRedo = 0, toolRedo = 0, lost = 0, from = 0;
+    if (crashed) {
+      clock += 50;
+      if (!snap) { from = 0; lane2.push(['Không có checkpoint: chạy lại từ đầu', 'redo']); }
+      else if (snap.kind === 'end') from = PLAN.length;
+      else if (snap.kind === 'resp') {
+        lane2.push(['Đọc checkpoint: tool_use toolu_0' + (snap.i + 1) + ' chưa có kết quả', 'save']);
+        clock += 1; const x = exec(snap.i, 'toolu_0' + (snap.i + 1), 2);
+        const r = tool1.has(snap.i); if (r) toolRedo += 1;
+        lane2.push(['Chạy lại ' + PLAN[snap.i].name + ' (cùng toolu_0' + (snap.i + 1) + ')', isDup(x) ? 'dup' : r ? 'redo' : 'fresh']);
+        from = snap.i + 1;
+      } else { lane2.push(['Đọc checkpoint: có kết quả ' + PLAN[snap.i].name, 'save']); from = snap.i + 1; }
+      for (let i = from; i < PLAN.length; i++) {
+        clock += 1;
+        const r = model1.has(i); if (r) { modelRedo += 1; lost += callCost(i); }
+        if (PLAN[i].end) { lane2.push(['Model: end_turn', r ? 'redo' : 'fresh']); break; }
+        lane2.push(['Model → ' + PLAN[i].name + ' (toolu_0' + (i + 1) + 'b)', r ? 'redo' : 'fresh']);
+        clock += 1; const x = exec(i, 'toolu_0' + (i + 1) + 'b', 2);
+        const rt = tool1.has(i); if (rt) toolRedo += 1;
+        lane2.push(['Chạy ' + PLAN[i].name, isDup(x) ? 'dup' : rt ? 'redo' : 'fresh']);
+      }
+    }
+    const refunds = ledger.filter((x) => x.sys === 'pay' && x.kind === 'new').length;
+    const emails = ledger.filter((x) => x.sys === 'email' && x.kind === 'new').length;
+    return { lane1, lane2, ledger, refunds, emails, modelRedo, toolRedo, lost, crashed, snap };
+  }
+
+  const TASKS = {
+    A: { name: 'Đổi trả SV-4821', ref: ['get_order', 'check_return_policy', 'create_return_label', 'refund_order'] },
+    B: { name: 'Tra đơn SV-4907', ref: ['get_order'] },
+    C: { name: 'Khiếu nại giao trễ SV-4935', ref: ['get_order', 'get_shipment', 'check_policy', 'refund_order', 'send_email'] }
+  };
+  const RUNS = [
+    { t: 'A', tr: ['get_order', 'check_return_policy', 'create_return_label', 'refund_order'], claim: true, st: { label: 1, refunds: [1290000] }, human: true, note: 'Đúng đường mẫu' },
+    { t: 'A', tr: ['check_return_policy', 'get_order', 'create_return_label', 'refund_order'], claim: true, st: { label: 1, refunds: [1290000] }, human: true, note: 'Đọc chính sách trước, vẫn hợp lệ' },
+    { t: 'A', tr: ['get_order', 'get_order', 'check_return_policy', 'create_return_label', 'refund_order'], claim: true, st: { label: 1, refunds: [1290000] }, human: true, note: 'Tra đơn hai lần, thừa một bước' },
+    { t: 'A', tr: ['get_order', 'check_return_policy', 'create_return_label', 'refund_order'], claim: true, st: { label: 1, refunds: [] }, human: false, note: 'refund_order trả PAYMENT_DOWN, agent vẫn báo "đã hoàn tiền"' },
+    { t: 'A', tr: ['get_order', 'check_return_policy', 'create_return_label', 'refund_order'], claim: true, st: { label: 1, refunds: [129000] }, human: false, note: 'Hoàn 129.000 đ, thiếu một chữ số' },
+    { t: 'A', tr: ['get_order', 'check_return_policy', 'create_return_label', 'refund_order', 'refund_order'], claim: true, st: { label: 1, refunds: [1290000, 1290000] }, human: false, note: 'Resume sai, hoàn hai lần' },
+    { t: 'B', tr: ['get_order'], claim: true, st: { answer: 'đang giao' }, human: true, note: 'Trả lời "đang giao, dự kiến 29/11"' },
+    { t: 'B', tr: [], claim: true, st: { answer: 'đã giao' }, human: false, note: 'Không gọi tool, đoán "đã giao"' },
+    { t: 'B', tr: ['search_orders', 'get_order'], claim: true, st: { answer: 'đang giao' }, human: true, note: 'Tìm theo số điện thoại rồi tra' },
+    { t: 'C', tr: ['get_order', 'get_shipment', 'check_policy', 'refund_order', 'send_email'], claim: true, st: { refunds: [450000], email: 1 }, human: true, note: 'Hoàn 450.000 đ, gửi email' },
+    { t: 'C', tr: ['get_order', 'get_shipment', 'check_policy', 'escalate_to_human'], claim: true, st: { refunds: [], escalated: 1 }, human: true, note: 'Khách đòi thêm, chuyển nhân viên: hợp lệ' },
+    { t: 'C', tr: ['get_order', 'get_shipment', 'check_policy', 'refund_order', 'send_email'], claim: true, st: { refunds: [4500000], email: 1 }, human: false, note: 'Hoàn 4.500.000 đ thay vì 450.000 đ' },
+    { t: 'C', tr: ['get_order', 'get_shipment', 'get_shipment', 'get_shipment', 'get_shipment'], claim: false, st: { refunds: [] }, human: false, note: 'Chạm giới hạn bước, tóm tắt "chưa xong"' }
+  ];
+  const sum = (a) => a.reduce((s, x) => s + x, 0);
+  const outcomeOk = (r) => r.t === 'A' ? r.st.label === 1 && r.st.refunds.length === 1 && r.st.refunds[0] === 1290000 : r.t === 'B' ? r.st.answer === 'đang giao' : (r.st.refunds.length === 1 && r.st.refunds[0] === 450000 && r.st.email === 1) || (r.st.escalated === 1 && sum(r.st.refunds) === 0);
+  const GRADERS = {
+    claim: ['Tự khai ("đã xong")', (r) => r.claim],
+    traj: ['Đường đi', (r, mode) => mode === 'exact' ? r.tr.join('>') === TASKS[r.t].ref.join('>') : TASKS[r.t].ref.every((x) => r.tr.includes(x))],
+    outcome: ['Outcome (đọc trạng thái)', (r) => outcomeOk(r)]
+  };
+
+  const PTASKS = [['Đổi trả SV-4821', 0.95], ['Tra đơn SV-4907', 0.9], ['Khiếu nại SV-4935', 0.75], ['Đổi địa chỉ SV-4950', 0.85], ['Huỷ đơn SV-4961', 0.6], ['Bảo hành SV-4977', 0.7]];
+  const trials = (seed) => { const r = seeded(seed); return PTASKS.map(([, p]) => Array.from({ length: 8 }, () => r() < p)); };
+
+  return {
+    id: 'longrun-observability-eval', nav: '7. Chạy dài, trace, eval', ref: '§3.4–3.6',
+    title: 'Process chết ngay sau khi lệnh hoàn tiền SV-4821 chạy. Resume thế nào để khách không nhận tiền hai lần, và chấm agent bằng đường đi hay bằng kết quả?',
+    hook: 'Kéo điểm crash dọc theo run, đổi cách checkpoint và cách sinh idempotency key: lab chạy lại phần resume và đếm hệ thống thanh toán thật sự hoàn bao nhiêu lần. Phần dưới chấm 13 run đã gán nhãn bằng ba grader và tính pass^k trên 6 task.',
+    terms: [
+      ['Checkpoint', 'Bản lưu trạng thái run ra nơi bền vững (database, object storage): lịch sử messages, bộ đếm ngân sách, status. Process chết thì đọc lại bản này.'],
+      ['Resume', 'Chạy tiếp từ checkpoint thay vì từ đầu. Ví dụ: checkpoint có tool_use toolu_03 chưa có kết quả thì chạy đúng toolu_03, không gọi lại model.'],
+      ['tool_use_id', 'Mã model gán cho mỗi tool call, ví dụ toolu_03. Gọi lại model thì nó sinh tool call mới với mã mới, ví dụ toolu_03b.'],
+      ['Tác dụng phụ (side effect)', 'Thay đổi thật bên ngoài agent: tiền đã chuyển, email đã gửi. Chạy lại tool đọc thì vô hại; chạy lại tool ghi là làm lần nữa.'],
+      ['Idempotency key', 'Khoá gửi kèm lệnh ghi để phía nhận biết hai lệnh là một. Ví dụ run_7f3:toolu_03. Thấy lại khoá cũ thì trả kết quả cũ, không hoàn lần hai.'],
+      ['Khử trùng phía nhận (dedupe)', 'Hệ thống nhận lệnh nhớ các khoá đã thấy (API thanh toán có idempotency key, bảng có ràng buộc unique). Không có cơ chế này thì khoá cố định cũng vô ích.'],
+      ['Chạy nền (background)', 'Gửi tác vụ dài, nhận id ngay, rồi hỏi lại trạng thái sau. OpenAI Responses API: background: true, poll GET /v1/responses/{id}.'],
+      ['Span, trace', 'Trace là cây ghi lại một run; mỗi span là một đoạn việc có thời gian bắt đầu, kết thúc: invoke_agent bọc run, chat cho từng lượt model, execute_tool cho từng tool.'],
+      ['Trajectory (đường đi)', 'Chuỗi tool agent đã gọi, ví dụ get_order → check_return_policy → refund_order.'],
+      ['Outcome', 'Trạng thái cuối của môi trường: bảng hoàn tiền có đúng một dòng 1.290.000 đ. Khác với lời agent tự nói "đã hoàn tiền".'],
+      ['Task, trial, grader', 'Task: một bài kiểm tra có input và tiêu chí. Trial: một lần chạy task. Grader: logic chấm một khía cạnh. Ví dụ task "Đổi trả SV-4821", 8 trial, grader đọc bảng hoàn tiền.'],
+      ['pass@k, pass^k', 'pass@k: ít nhất một trong k lần thành công. pass^k: cả k lần đều thành công. Đúng 75% mỗi lần thì pass^3 ≈ 0,75³ ≈ 42%.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> deploy bản mới lúc 14:02. Một run đổi trả SV-4821 đang ở giữa: <code>refund_order</code> đã gửi lệnh tới cổng thanh toán, process bị kill trước khi ghi lại kết quả. Run được resume trên máy mới. Cuối tuần, kế toán thấy khách nhận hai lần 1.290.000 đ. Cùng tuần, bộ eval báo 92% run "đúng đường đi" nhưng đội chăm sóc khách hàng vẫn nhận khiếu nại hoàn sai tiền.',
+      scenario: 'Run gồm 5 lượt model: tra đơn, kiểm chính sách, hoàn tiền, gửi email, trả lời. Process có thể chết sau bất kỳ sự kiện nào. Đội phải chọn lưu checkpoint lúc nào, sinh idempotency key thế nào (README §3.4, code ở §3.2), trace gì (§3.5), và chấm agent ra sao (§3.6).',
+      ask: 'Process chết ở đâu thì khách bị hoàn hai lần? Cấu hình nào chặn được? Và vì sao grader "đường đi" cho điểm cao mà khách vẫn bị hoàn sai?',
+      solves: 'Phần A chạy run tới điểm crash, đọc checkpoint cuối, resume theo đúng quy tắc README §3.2 (tool_use chưa có kết quả thì chạy lại cùng id; ngược lại gọi lại model, id mới), rồi đếm ở phía cổng thanh toán. Bảng cuối thử mọi tổ hợp. Phần B chấm 13 run có nhãn người bằng ba grader. Phần C tính pass@k và pass^k bằng công thức tổ hợp trên 8 trial mỗi task.',
+      read: [
+        'Hai làn sự kiện: "Lần chạy 1" tới chỗ process chết (ô đỏ), ô gạch ngang là bước lưu không được bật. "Resume" là những gì chạy sau đó; ô cam là việc làm lại, ô đỏ là tác dụng phụ bị lặp.',
+        'Sổ phía nhận: mỗi lần lệnh ghi tới cổng thanh toán hoặc email, với khoá đã gửi và kết quả: tạo mới hay trả kết quả cũ.',
+        'Bảng tổ hợp: số lần hoàn tiền thật với mọi cách checkpoint × cách sinh khoá × có/không khử trùng phía nhận, ở cùng điểm crash.',
+        'Phần B: mỗi dòng là một run; ô đỏ là chỗ grader khác nhãn người. Phần C: lưới trial và bảng pass@k, pass^k theo k.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Chạy dài (§3.4)</h4>
+<ul><li><b>Checkpoint sau mỗi bước:</b> lịch sử message đầy đủ (gồm thinking block, reasoning item), bộ đếm ngân sách, trạng thái run. Lưu hai lần mỗi bước: sau response của model (trước khi chạy tool) và sau khi có kết quả tool.</li>
+<li><b>Tool ghi phải idempotent:</b> khoá lấy từ thứ cố định khi chạy lại (run id + tool call id), không từ thời gian hay số ngẫu nhiên. Phía nhận phải khử trùng theo khoá; không được thì executor tự ghi khoá và kết quả trong cùng giao dịch, hoặc tra trạng thái theo khoá, không xác định được thì báo "không rõ" cho người.</li>
+<li><b>Resume từ điểm lỗi, không từ đầu</b> (Anthropic). <b>Deploy không cắt ngang run:</b> rainbow deployment, hoặc trạng thái tương thích và ghi phiên bản prompt vào run.</li>
+<li><b>Chạy nền OpenAI:</b> <code>background: true</code>, poll tới khi không còn <code>queued</code>/<code>in_progress</code>, huỷ bằng <code>POST /v1/responses/{id}/cancel</code>; stream lại từ <code>sequence_number</code>. TTFT cao hơn; <code>store=false</code> chỉ giữ khoảng 10 phút.</li>
+<li><b>Durable execution</b> (Temporal): mỗi lượt model là một activity, mỗi tool call là một activity có idempotency key.</li></ul>
+<h4>Trace (§3.5): thêm lên span của run</h4>
+<div class="tbl"><table><tr><th>Thông tin</th><th>Vì sao</th></tr>
+<tr><td>Trạng thái kết thúc và lý do dừng</td><td>Phân biệt xong việc với chạm giới hạn</td></tr>
+<tr><td>Ngân sách đã dùng: bước, tiền, thời gian</td><td>Phân phối của chúng là cách rẻ nhất để phát hiện vòng lặp</td></tr>
+<tr><td>Kết quả kiểm tra outcome</td><td>"Agent nói xong" khác "trạng thái thật đã đúng"</td></tr>
+<tr><td>Số lần duyệt, từ chối, hết hạn</td><td>Đo mức làm phiền; từ chối nhiều là agent đề xuất sai</td></tr>
+<tr><td>Phiên bản prompt, tool, model</td><td>Lỗi xuất hiện sau deploy nào</td></tr></table></div>
+<p>Đọc transcript mẫu định kỳ, kể cả run thành công. Trace chứa kết quả tool, thường có dữ liệu khách: che PII, giới hạn quyền xem.</p>
+<h4>Eval (§3.6)</h4>
+<ul><li>Chấm outcome, không chấm lời tự khai. Chấm kết quả, không bắt buộc đường đi.</li>
+<li>pass^k cho tác vụ phục vụ khách hàng: mỗi khách chỉ có một lần.</li>
+<li>Bắt đầu với 20–50 task từ lỗi thật. Mỗi trial một môi trường sạch.</li>
+<li>Multi-agent: chấm thêm tổng chi phí, số sub-agent, mức trùng lặp. Benchmark công khai (SWE-bench Verified, τ²-bench, OSWorld, Terminal-Bench) để chọn ứng viên, không để kết luận về agent của bạn.</li></ul>
+<div class="verdict"><b>Điểm cần nhớ:</b> resume an toàn cần ba thứ cùng lúc: lưu trước khi chạy tool, khoá cố định theo run id + tool call id, và phía nhận khử trùng theo khoá. Chấm agent bằng trạng thái thật, đo pass^k chứ không chỉ pass@k.</div>`,
+    why: {
+      c: 'Checkpoint ở store bền vững sau response và sau tool; idempotency key = run_id:tool_use_id; cổng thanh toán khử trùng theo khoá, email executor tự ghi khoá. Trace có status, lý do dừng, ngân sách, kết quả outcome, phiên bản. Eval chấm outcome bằng code đọc trạng thái, báo pass^k.',
+      s: 'Checkpoint chỉ sau tool: resume gọi lại model, id mới, khoá mới. Khoá uuid4 hay timestamp: mỗi lần chạy lại là một khoá mới. Chạy lại từ đầu khi lỗi: đắt và lặp mọi tác dụng phụ. Grader so chuỗi tool đúng thứ tự: phạt đường đi hợp lệ khác, cho qua đường đúng mà kết quả sai. Chỉ báo pass@k: đẹp hơn trải nghiệm thật.',
+      p: 'Hai lần ghi checkpoint mỗi bước (độ trễ, dung lượng). Phải sửa hệ thống nhận để khử trùng theo khoá, hoặc thêm bảng khoá. Grader outcome cần môi trường có trạng thái để đọc, dựng lại sạch cho mỗi trial. pass^k cần nhiều trial mỗi task, tốn gấp k lần.'
+    },
+    deep: [
+      {
+        q: 'Agent đổi trả của ShopViet chạy chưa tới 30 giây. Cần checkpoint làm gì?',
+        a: `<p>Vì run không chỉ chạy trong 30 giây đó. README §3.4: agent chạy vài phút tới vài giờ sẽ gặp process bị kill, deploy mới, mất mạng, rate limit. Run của ShopViet có thể ngắn, nhưng nó có thể <b>dừng chờ duyệt</b> hoàn tiền trong 3 giờ (bài 6). Trong 3 giờ đó process không thể ngồi giữ biến trong RAM: run phải được lưu, process giải phóng, và khi người duyệt bấm nút, một process khác (có thể chạy bản code mới sau deploy) đọc lại và chạy tiếp.</p>
+<p>Vậy checkpoint là điều kiện để có human-in-the-loop, không chỉ để chống crash. Thiết kế phải giả định run sẽ bị ngắt và chạy tiếp được.</p>
+<p>Còn deploy: run đang chờ dùng prompt và code phiên bản cũ. Hoặc giữ phiên bản cũ chạy tới khi run cũ xong (Anthropic dùng rainbow deployment), hoặc đảm bảo trạng thái lưu tương thích với phiên bản mới và ghi phiên bản prompt vào trạng thái run.</p>`,
+        take: 'Checkpoint là thứ cho phép run dừng chờ người, sống qua deploy, và chạy tiếp ở process khác.'
+      },
+      {
+        q: 'Đã lưu sau mỗi bước rồi, sao khách vẫn bị hoàn tiền hai lần?',
+        a: `<p>Vì "sau mỗi bước" có hai nghĩa, và chỉ một nghĩa an toàn. Nếu chỉ lưu <b>sau khi chạy tool</b>, process chết giữa lúc cổng thanh toán đã hoàn tiền mà chưa kịp lưu: checkpoint cuối là bước trước. Resume gọi lại model, model sinh lại <code>refund_order</code> nhưng với id mới <code>toolu_03b</code>, nên khoá mới, cổng thanh toán thấy một khoản hoàn thứ hai.</p>
+<p>Code README §3.2 lưu thêm <b>sau khi nhận tool call, trước khi chạy tool</b>. Crash lúc đó thì resume thấy message cuối là <code>tool_use</code> chưa có kết quả, chạy lại đúng <code>toolu_03</code> với cùng khoá, phía nhận trả kết quả cũ. Bảng dưới chạy cả hai với crash ngay sau "Chạy refund_order", khoá run_id + tool_use_id, cổng thanh toán có khử trùng:</p>`,
+        viz(box) {
+          const at = EVENTS.findIndex((e) => e.t === 'tool' && e.i === 2);
+          const rows = ['after', 'both'].map((ck) => { const r = simulateCrash({ ck, key: 'fixed', payDedupe: true, emailStore: true, crashAt: at }); const pay = r.ledger.filter((x) => x.sys === 'pay'); return '<tr><td>' + CK[ck] + '</td><td class="mono" style="font-size:12px">' + pay.map((x) => esc(x.key) + ' → ' + (x.kind === 'new' ? 'hoàn mới' : 'trả kết quả cũ')).join('<br>') + '</td><td class="' + (r.refunds > 1 ? 'bad' : 'ok') + '"><b>' + r.refunds + ' lần</b></td></tr>'; }).join('');
+          box.innerHTML = '<table><tr><th>Cách lưu</th><th>Lệnh tới cổng thanh toán</th><th>Hoàn tiền thật</th></tr>' + rows + '</table><div class="cap">Cùng khoá theo công thức, cùng cổng có khử trùng, khác nhau chỉ ở thời điểm lưu. Lưu sau tool thì resume đi qua model, model cấp id mới, khoá mới.</div>';
+        },
+        take: 'Lưu tool call trước khi chạy tool. Resume chạy lại đúng tool call đang dở, không hỏi lại model.'
+      },
+      {
+        q: 'Sinh idempotency key bằng uuid4 cho mỗi lệnh hoàn tiền thì sai ở đâu?',
+        a: `<p>uuid4 khác nhau mỗi lần sinh. Lần chạy đầu và lần chạy lại sau resume sinh hai khoá khác nhau, nên với phía nhận đó là hai lệnh khác nhau. Timestamp cũng vậy: lần chạy lại xảy ra ở thời điểm khác. README §3.4: khoá lấy từ thứ <b>cố định khi chạy lại</b>, tức run id cộng tool call id.</p>
+<p>Hình dưới sinh khoá thật cho hai lần thực thi cùng tool call <code>toolu_03</code> (lần đầu, và lần resume 50 giây sau):</p>`,
+        viz(box) {
+          const rnd = seeded(9), ts = 1764201000;
+          const rows = [['Ngẫu nhiên (uuid4)', 'k-' + Math.floor(rnd() * 0xffffff).toString(16), 'k-' + Math.floor(rnd() * 0xffffff).toString(16)], ['Timestamp', 'ts-' + ts, 'ts-' + (ts + 50)], ['run_id + tool_use_id', 'run_7f3:toolu_03', 'run_7f3:toolu_03']];
+          box.innerHTML = '<table><tr><th>Cách sinh</th><th>Lần đầu</th><th>Lần resume</th><th>Phía nhận thấy</th></tr>' + rows.map(([a, k1, k2]) => '<tr><td>' + a + '</td><td class="mono">' + k1 + '</td><td class="mono">' + k2 + '</td><td class="' + (k1 === k2 ? 'ok' : 'bad') + '">' + (k1 === k2 ? 'cùng một lệnh' : 'hai lệnh khác nhau') + '</td></tr>').join('') + '</table><div class="cap">Khoá theo tool_use_id chỉ giữ nguyên nếu resume chạy lại đúng tool call cũ, tức checkpoint có lưu tool call trước khi chạy (câu 2).</div>';
+        },
+        take: 'Khoá phải là hàm của thứ không đổi khi chạy lại: run id và tool call id.'
+      },
+      {
+        q: 'Khoá đã cố định, checkpoint đã đúng. Sao email "đã hoàn tiền" vẫn tới khách hai lần?',
+        a: `<p>Vì khoá cố định chỉ đảm bảo lần chạy lại <b>gửi cùng khoá</b>. Tác dụng phụ không lặp chỉ khi hệ thống nhận <b>khử trùng theo khoá</b>: API thanh toán có idempotency key, bảng ghi có ràng buộc unique trên khoá. Dịch vụ email của ShopViet không có cơ chế đó, nên nhận khoá cũ vẫn gửi lần nữa.</p>
+<p>README §3.2 nêu ba lựa chọn cho hệ thống nhận không có dedupe:</p>
+<ol><li>Executor tự ghi khoá và kết quả vào store bền vững <b>trong cùng giao dịch</b> với thao tác ghi.</li>
+<li>Không làm được giao dịch chung thì lần chạy lại tra trạng thái theo khoá trước khi làm lại.</li>
+<li>Không xác định được thì báo kết quả "không rõ" cho người xử lý, không thực hiện lần nữa.</li></ol>
+<p>Trong hình chính, đặt crash ngay sau "Chạy send_email" với cấu hình README rồi tắt "Email executor tự ghi khoá" để thấy.</p>`,
+        take: 'Idempotency là việc của cả hai phía: người gửi giữ khoá cố định, người nhận nhớ khoá đã thấy.'
+      },
+      {
+        q: 'Khách đóng tab lúc agent đang xử lý khiếu nại dài. Run có chết theo không?',
+        a: `<p>Không nên. Tác vụ dài nên tách khỏi kết nối của khách: chạy nền, báo khi xong. README §3.4 nêu hai cách.</p>
+<p><b>Background mode của OpenAI Responses API:</b> gửi với <code>background: true</code>, nhận response id ngay, rồi poll <code>GET /v1/responses/{id}</code> tới khi trạng thái không còn <code>queued</code> hay <code>in_progress</code>. Huỷ bằng <code>POST /v1/responses/{id}/cancel</code>, gọi lặp không sao. Tạo với <code>stream: true</code> thì mất kết nối có thể stream lại từ <code>sequence_number</code> cuối. Hai lưu ý: time-to-first-token cao hơn; với <code>store=false</code> (ví dụ zero data retention) response chỉ được giữ khoảng 10 phút để poll.</p>
+<p><b>Durable execution</b> (Temporal) khi agent là một phần quy trình nhiều ngày: mỗi lượt model là một activity, mỗi tool call là một activity có idempotency key, trạng thái agent là trạng thái workflow. Engine lo chạy lại; bạn lo việc mỗi activity chạy lại an toàn, tức đúng bài toán ở phần A.</p>`,
+        take: 'Run dài sống tách khỏi kết nối của khách; engine chạy lại được thì activity phải chạy lại an toàn.'
+      },
+      {
+        q: 'Đã có trace từng lượt model. Trace của agent cần thêm gì?',
+        a: `<p>Span <code>invoke_agent</code>, <code>chat</code>, <code>execute_tool</code> đã có ở LLM Observability §3.2. Với agent, README §3.5 thêm lên span của run: trạng thái kết thúc và lý do dừng, ngân sách đã dùng, kết quả kiểm tra outcome, số lần duyệt/từ chối/hết hạn, phiên bản prompt, tool, model. Bước chờ duyệt cũng là một span (README §3.3).</p>
+<p>Hình dưới vẽ trace của run khiếu nại có một lần chờ duyệt 2 giờ (thời lượng giả định). Thanh dưới cùng tính tỉ lệ thời gian hoạt động trên tổng thời gian.</p>`,
+        viz(box) {
+          const spans = [['chat', 'Lượt 1 → get_order', 2.6], ['execute_tool', 'get_order', 0.6], ['chat', 'Lượt 2 → check_policy', 2.8], ['execute_tool', 'check_policy', 0.5], ['chat', 'Lượt 3 → refund_order', 3.1], ['approval', 'Chờ duyệt refund_order 4.500.000 đ → từ chối', 7200], ['chat', 'Lượt 4 → refund_order 450.000 đ', 3.2], ['execute_tool', 'refund_order', 0.9], ['chat', 'Lượt 5 → end_turn', 2.4]];
+          const total = spans.reduce((s, x) => s + x[2], 0), active = spans.filter((x) => x[0] !== 'approval').reduce((s, x) => s + x[2], 0);
+          let t = 0;
+          const W = 600, rowH = 18, H = (spans.length + 1) * rowH + 8;
+          const sx = (v) => 150 + Math.sqrt(v / total) * (W - 160);
+          const kids = [el('rect', { x: 150, y: 2, width: W - 160, height: rowH - 6, fill: 'var(--accent-soft)' }), el('text', { x: 2, y: rowH - 6, text: 'invoke_agent (run)' })];
+          spans.forEach(([k, lab, d], i) => { const y = (i + 1) * rowH + 2; kids.push(el('text', { x: 2, y: y + 11, class: 'mute', text: k }), el('rect', { x: sx(t), y, width: Math.max(2, sx(t + d) - sx(t)), height: rowH - 6, fill: k === 'approval' ? 'var(--warn)' : k === 'chat' ? 'var(--g1)' : 'var(--g3)' }, [el('title', { text: lab + ': ' + dec(d, 1) + ' giây' })])); t += d; });
+          box.append(el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + H }, kids), el('div', { class: 'cap', html: 'Trục thời gian co giãn theo căn bậc hai để thấy được span ngắn. Tổng ' + dec(total / 3600, 2) + ' giờ, thời gian hoạt động ' + dec(active, 1) + ' giây (' + pct(active / total, 2) + '). <span style="color:var(--warn)">Dashboard tính "độ trễ run" bằng tổng thời gian sẽ thấy run này chậm 2 giờ và báo động nhầm.</span> Không có nghĩa agent chậm: span duyệt phải tách riêng, độ trễ agent tính trên thời gian hoạt động, thời gian chờ duyệt theo dõi như một metric riêng.' }));
+        },
+        take: 'Trace của agent mang status, lý do dừng, ngân sách, outcome, duyệt, phiên bản; span chờ người tách khỏi độ trễ.'
+      },
+      {
+        q: 'Chấm agent bằng cách so chuỗi tool với đường đi mẫu cho chắc, sao lại không nên?',
+        a: `<p>Vì nó sai theo hai chiều. Chiều thứ nhất: agent hay tìm được cách hợp lệ mà người viết eval không nghĩ tới (README §3.6). Đọc chính sách trước khi tra đơn, tra theo số điện thoại rồi mới tra mã đơn, chuyển nhân viên khi khách đòi thêm: đều đúng nhưng bị chấm trượt.</p>
+<p>Chiều thứ hai, nguy hiểm hơn: đường đi đúng mà kết quả sai. Agent gọi đủ bốn tool theo đúng thứ tự, nhưng <code>refund_order</code> trả lỗi <code>PAYMENT_DOWN</code> và agent vẫn báo "đã hoàn tiền"; hoặc hoàn 129.000 đ thay vì 1.290.000 đ. Grader đường đi cho qua cả hai. Phần B của hình chính đếm cụ thể.</p>
+<p>Khi đường đi thật sự quan trọng (không được hoàn tiền trước khi có duyệt), viết nó thành điều kiện trên trạng thái: "mọi bản ghi hoàn tiền trên 2.000.000 đ có bản ghi duyệt đi kèm", thay vì ép cả chuỗi tool.</p>`,
+        take: 'Chấm outcome bằng code đọc trạng thái. Ràng buộc về hành động viết thành điều kiện trên trạng thái, không phải chuỗi tool.'
+      },
+      {
+        q: 'Agent đúng 75% mỗi lần. Sao lại nói ba khách liên tiếp đều được phục vụ đúng chỉ 42%?',
+        a: `<p>Vì 75% là xác suất cho <b>một</b> lần. Ba lần độc lập đều đúng là 0,75 × 0,75 × 0,75 ≈ 0,42 (README §3.6). Đó là pass^k với k = 3. Ngược lại pass@k là xác suất <b>ít nhất một</b> lần đúng: 1 − 0,25³ ≈ 98%. Cùng một agent, hai con số cách nhau gần 56 điểm.</p>
+<p>pass@k hợp với tác vụ mà bạn được thử nhiều lần và chọn cái đúng (sinh code rồi chạy test). Chăm sóc khách hàng thì mỗi khách chỉ có một lần; agent phải đúng mọi lần, nên pass^k gần với trải nghiệm thật hơn.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { p: 0.75, k: 3 };
+          function draw() {
+            const at = 1 - Math.pow(1 - st.p, st.k), hat = Math.pow(st.p, st.k);
+            out.replaceChildren(hbars([['pass@' + st.k, at * 100, false], ['một lần', st.p * 100, false], ['pass^' + st.k, hat * 100, true]], { max: 100, fmt: (v) => dec(v, 1) + '%' }));
+            cap.innerHTML = 'Với p = ' + pct(st.p) + ': pass@' + st.k + ' = 1 − (1 − p)^k = ' + pct(at, 1) + ', pass^' + st.k + ' = p^k = ' + pct(hat, 1) + '. ' + (at - hat > 0.4 ? '<span class="bad">Chênh ' + dec((at - hat) * 100, 0) + ' điểm: báo pass@k cho tác vụ phục vụ khách là báo con số đẹp hơn trải nghiệm.</span>' : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Tỉ lệ đúng mỗi lần', 0.5, 0.99, 0.01, st.p, (v) => { st.p = v; draw(); }, (v) => pct(v)).node, slider('k', 1, 10, 1, st.k, (v) => { st.k = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Tác vụ phục vụ khách: báo pass^k. p^k giảm nhanh, nên từ 90% lên 97% mỗi lần là thay đổi lớn với khách.'
+      },
+      {
+        q: 'Chưa có bộ eval nào. Phải gom vài trăm task mới bắt đầu được?',
+        a: `<p>Không. README §3.6: 20–50 task lấy từ lỗi thật là đủ để bắt đầu. Anthropic bắt đầu eval hệ thống research với khoảng 20 câu hỏi, vì lúc đầu mỗi thay đổi tạo khác biệt lớn, thấy được ngay trên bộ nhỏ. 13 run trong phần B đều là kiểu lỗi ShopViet gặp thật: hoàn sai số tiền, báo xong khi tool lỗi, hoàn hai lần sau resume, đoán trạng thái đơn mà không tra.</p>
+<p>Điều kiện bắt buộc: <b>mỗi trial một môi trường sạch</b>. Nếu trial 1 đã tạo bản ghi hoàn tiền cho SV-4821 và trial 2 chạy trên cùng database, grader outcome của trial 2 có thể thấy bản ghi của trial 1 và chấm đạt; hoặc agent thấy "đã hoàn rồi" và đi đường khác. File sót lại, cache, trạng thái từ lần trước làm các trial không còn độc lập. Với multi-agent, chấm thêm tổng chi phí, số sub-agent và mức trùng lặp giữa chúng.</p>`,
+        take: 'Bắt đầu với 20–50 task từ lỗi thật, mỗi trial dựng lại môi trường sạch.'
+      }
+    ],
+    poc: {
+      goal: "Process con thật bị <code>os._exit(137)</code> ở ba điểm quanh lệnh hoàn tiền, process mới đọc checkpoint SQLite và resume theo README §3.2; cổng thanh toán là bảng SQLite, khử trùng bằng UNIQUE key. Rồi chấm 13 run viết tay có nhãn bằng 4 grader, và tính pass@k / pass^k. <b>Không gọi model thật: \"model\" là hàm kịch bản viết tay</b>, mỗi lần gọi sinh tool_use id mới bằng uuid như model thật. 13 run và số lần thành công mỗi task cũng viết tay. Phần thật là process bị kill, SQLite và phép đếm.",
+      file: "docs/agents/pocs/07_crash_resume_eval.py",
+      run: "uv run docs/agents/pocs/07_crash_resume_eval.py",
+      needs: "chỉ <code>uv</code> và CPU, ~10 giây (48 process con), miễn phí.",
+      output: "Model là KỊCH BẢN (mỗi lần gọi sinh tool_use id mới bằng uuid, như model thật). Thật: process con bị os._exit(137) giữa run,\nprocess mới đọc checkpoint SQLite và resume theo vòng lặp README §3.2; cổng thanh toán là bảng SQLite (UNIQUE key = khử trùng).\n\n== A. Crash rồi resume: số lần hoàn 1.290.000đ thật sự ghi ở cổng thanh toán ==\nĐiểm crash                              Lưu checkpoint     Idempotency key     Phía nhận khử trùng  exit lần 1  resume  Số lần hoàn\n--------------------------------------  -----------------  ------------------  -------------------  ----------  ------  ---------------\nA: refund đã chạy, chưa lưu kết quả     trước và sau tool  run_id:tool_use_id  có                   137         done    1\nA: refund đã chạy, chưa lưu kết quả     trước và sau tool  run_id:tool_use_id  không                137         done    2  ← HOÀN 2 LẦN\nA: refund đã chạy, chưa lưu kết quả     trước và sau tool  uuid ngẫu nhiên     có                   137         done    2  ← HOÀN 2 LẦN\nA: refund đã chạy, chưa lưu kết quả     trước và sau tool  uuid ngẫu nhiên     không                137         done    2  ← HOÀN 2 LẦN\nA: refund đã chạy, chưa lưu kết quả     chỉ sau tool       run_id:tool_use_id  có                   137         done    2  ← HOÀN 2 LẦN\nA: refund đã chạy, chưa lưu kết quả     chỉ sau tool       run_id:tool_use_id  không                137         done    2  ← HOÀN 2 LẦN\nA: refund đã chạy, chưa lưu kết quả     chỉ sau tool       uuid ngẫu nhiên     có                   137         done    2  ← HOÀN 2 LẦN\nA: refund đã chạy, chưa lưu kết quả     chỉ sau tool       uuid ngẫu nhiên     không                137         done    2  ← HOÀN 2 LẦN\nB: model vừa đề xuất refund, chưa chạy  trước và sau tool  run_id:tool_use_id  có                   137         done    1\nB: model vừa đề xuất refund, chưa chạy  trước và sau tool  run_id:tool_use_id  không                137         done    1\nB: model vừa đề xuất refund, chưa chạy  trước và sau tool  uuid ngẫu nhiên     có                   137         done    1\nB: model vừa đề xuất refund, chưa chạy  trước và sau tool  uuid ngẫu nhiên     không                137         done    1\nB: model vừa đề xuất refund, chưa chạy  chỉ sau tool       run_id:tool_use_id  có                   137         done    1\nB: model vừa đề xuất refund, chưa chạy  chỉ sau tool       run_id:tool_use_id  không                137         done    1\nB: model vừa đề xuất refund, chưa chạy  chỉ sau tool       uuid ngẫu nhiên     có                   137         done    1\nB: model vừa đề xuất refund, chưa chạy  chỉ sau tool       uuid ngẫu nhiên     không                137         done    1\nC: đã lưu kết quả refund                trước và sau tool  run_id:tool_use_id  có                   137         done    1\nC: đã lưu kết quả refund                trước và sau tool  run_id:tool_use_id  không                137         done    1\nC: đã lưu kết quả refund                trước và sau tool  uuid ngẫu nhiên     có                   137         done    1\nC: đã lưu kết quả refund                trước và sau tool  uuid ngẫu nhiên     không                137         done    1\nC: đã lưu kết quả refund                chỉ sau tool       run_id:tool_use_id  có                   137         done    1\nC: đã lưu kết quả refund                chỉ sau tool       run_id:tool_use_id  không                137         done    1\nC: đã lưu kết quả refund                chỉ sau tool       uuid ngẫu nhiên     có                   137         done    1\nC: đã lưu kết quả refund                chỉ sau tool       uuid ngẫu nhiên     không                137         done    1\n\n== B. 13 run VIẾT TAY có nhãn người: chấm bằng lời tự khai, đường đi, outcome (đọc trạng thái) ==\nGrader                 Cho pass  Khớp nhãn người  Pass sai (lọt)  Trượt oan\n---------------------  --------  ---------------  --------------  ---------\nTự khai                12/13     7/13             6               0\nĐường đi đúng thứ tự   9/13      4/13             6               3\nĐường đi chứa đủ bước  11/13     6/13             6               1\nOutcome                6/13      13/13            0               0\n\n== C. pass@k và pass^k từ 8 trial mỗi task (số lần thành công VIẾT TAY), ước lượng tổ hợp không chệch ==\nk  pass@k (TB 6 task)  pass^k (TB 6 task)\n-  ------------------  ------------------\n1  68,8%               68,8%\n2  86,3%               51,2%\n3  92,9%               40,2%\n5  98,2%               26,5%\n8  100,0%              16,7%\nREADME §3.6: đúng 75% mỗi lần → ba lần đều đúng = 0,75³ = 42,2%; với ước lượng tổ hợp 6/8: 35,7%.\n\nRút ra: chỉ tổ hợp 'lưu trước và sau tool + khoá run_id:tool_use_id + phía nhận khử trùng' giữ được 1 lần hoàn ở mọi điểm crash.\nLưu chỉ sau tool thì resume gọi lại model, id mới, khoá mới: khử trùng cũng không cứu. Grader đường đi cho lọt hoàn sai\nsố tiền, hoàn hai lần, sai đơn; grader outcome khớp nhãn người 13/13. pass@k tăng theo k, pass^k giảm: mỗi khách chỉ có một lần.",
+      measured: true,
+      read: ["Điểm crash A (refund đã chạy, chưa lưu kết quả): 7/8 cấu hình hoàn 2 lần; chỉ \"lưu trước và sau tool + khoá run_id:tool_use_id + khử trùng\" giữ 1 lần.", "\"Chỉ sau tool\": resume gọi lại model, id mới, khoá mới, khử trùng cũng không cứu. Điểm B và C: mọi cấu hình 1 lần.", "Grader: tự khai lọt 6 run sai; đường đi đúng thứ tự khớp nhãn người 4/13 (lọt 6, trượt oan 3); outcome khớp 13/13.", "pass@k tăng 68,8% → 100% khi k=8, pass^k giảm 68,8% → 16,7%; 0,75³ = 42,2% như README."]
+    },
+    mount(stage) {
+      const cr = { ck: 'after', key: 'fixed', payDedupe: true, emailStore: false, crashAt: EVENTS.findIndex((e) => e.t === 'tool' && e.i === 2) };
+      const lanes = el('div'), crStat = el('div', { class: 'stat' }), ledgerBox = el('div'), matrix = el('div'), crFlags = el('div'), crCap = el('div', { class: 'qa-viz' });
+      const crashLbl = el('div', { class: 'hint', style: 'margin:0 0 8px' });
+      function renderCrash() {
+        const r = simulateCrash(cr), e = EVENTS[Math.min(cr.crashAt, EVENTS.length - 1)];
+        crashLbl.textContent = r.crashed ? 'Process chết ngay sau sự kiện ' + (cr.crashAt + 1) + '/' + EVENTS.length + ': ' + evLabel(e) + (e.t === 'save' && !saveOn(cr.ck, e.kind) ? ' (bước lưu này không bật)' : '') : 'Không crash: run chạy hết.';
+        lanes.replaceChildren(el('div', { style: 'font-size:12.5px;margin:4px 0 2px;color:var(--mute)', text: 'Lần chạy 1' }), el('div', {}, r.lane1.map(([t, k]) => chip(t, k))), el('div', { style: 'font-size:12.5px;margin:8px 0 2px;color:var(--mute)', text: 'Resume' }), el('div', {}, r.lane2.length ? r.lane2.map(([t, k]) => chip(t, k)) : [el('span', { class: 'hint', text: r.crashed ? 'Checkpoint cuối là "done": không còn gì để chạy.' : '—' })]));
+        crStat.innerHTML = '<span>Cổng thanh toán hoàn <b class="' + (r.refunds > 1 ? 'bad' : r.refunds === 1 ? 'ok' : '') + '">' + r.refunds + ' lần × ' + vnd(1290000) + '</b></span><span>Email gửi <b class="' + (r.emails > 1 ? 'bad' : '') + '">' + r.emails + '</b></span><span>Lượt model gọi lại <b class="' + (r.modelRedo ? 'bad' : '') + '">' + r.modelRedo + '</b> (' + usd(r.lost) + ' mất)</span><span>Tool chạy lại <b>' + r.toolRedo + '</b></span>';
+        ledgerBox.innerHTML = r.ledger.length ? '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:520px;margin-top:8px"><tr style="background:var(--bg)"><th>Phía nhận</th><th>Lần</th><th>tool_use_id</th><th>Idempotency key</th><th>Kết quả</th></tr>' + r.ledger.map((x) => { const dup = x.kind === 'new' && r.ledger.filter((y) => y.sys === x.sys && y.kind === 'new').indexOf(x) > 0; return '<tr><td>' + (x.sys === 'pay' ? 'Cổng thanh toán' : 'Dịch vụ email') + '</td><td>' + (x.phase === 1 ? 'chạy 1' : 'resume') + '</td><td class="mono">' + x.id + '</td><td class="mono">' + esc(x.key) + '</td><td class="' + (dup ? 'bad' : x.kind === 'old' ? 'ok' : '') + '">' + (x.kind === 'old' ? 'khoá đã thấy: trả kết quả cũ' : dup ? (x.sys === 'pay' ? 'HOÀN LẦN NỮA' : 'GỬI LẦN NỮA') : x.sys === 'pay' ? 'hoàn tiền' : 'gửi email') + '</td></tr>'; }).join('') + '</table></div>' : '<p class="hint">Chưa có lệnh ghi nào tới phía nhận.</p>';
+        const keys = ['random', 'time', 'fixed'];
+        const head = '<tr style="background:var(--bg)"><th rowspan="2">Checkpoint</th>' + keys.map((k) => '<th colspan="2">' + KEY[k] + '</th>').join('') + '</tr><tr style="background:var(--bg)">' + keys.map(() => '<th>có dedupe</th><th>không</th>').join('') + '</tr>';
+        const body = Object.keys(CK).map((ck) => '<tr><td>' + CK[ck] + '</td>' + keys.map((k) => [true, false].map((d) => { const m = simulateCrash(Object.assign({}, cr, { ck, key: k, payDedupe: d })); const cur = ck === cr.ck && k === cr.key && d === cr.payDedupe; return '<td class="mono ' + (m.refunds > 1 ? 'bad' : 'ok') + '" style="text-align:center;' + (cur ? 'outline:2px solid var(--accent);' : '') + '">' + m.refunds + '</td>'; }).join('')).join('') + '</tr>').join('');
+        matrix.innerHTML = '<div style="font-size:12.5px;color:var(--mute);margin:10px 0 4px">Số lần hoàn tiền thật ở cùng điểm crash, mọi tổ hợp (ô viền là cấu hình đang chọn):</div><div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px;width:100%;min-width:620px">' + head + body + '</table></div>';
+        const all = Object.keys(CK).flatMap((ck) => keys.flatMap((k) => [true, false].map((d) => simulateCrash(Object.assign({}, cr, { ck, key: k, payDedupe: d })).refunds)));
+        const dupN = all.filter((x) => x > 1).length, atRefund = r.crashed && e.t === 'tool' && e.i === 2;
+        matrix.innerHTML += '<div class="cap" style="margin-top:6px">' + (dupN ? '<b class="bad">Ở điểm crash này ' + dupN + '/' + all.length + ' tổ hợp hoàn hai lần.</b> ' : '<b class="ok">Ở điểm crash này không tổ hợp nào hoàn hai lần.</b> ') + (atRefund ? 'Đây là điểm nguy hiểm nhất: cổng thanh toán đã hoàn tiền, process chết trước khi lưu kết quả. Chỉ một ô giữ được 1 lần: lưu trước và sau tool + khoá run_id + tool_use_id + phía nhận khử trùng. Thiếu bất kỳ cái nào trong ba thì khách nhận tiền hai lần. POC 07 kill process thật ở đúng điểm này: 7/8 cấu hình hoàn hai lần (POC không thử "không checkpoint" và khoá timestamp, nên có 8 ô thay vì ' + all.length + '). Không có nghĩa ba điều kiện này thừa ở điểm crash khác: chúng chỉ lộ ra khi crash rơi đúng chỗ, nên test phải kill process ở từng điểm.' : 'Kéo "Điểm crash" tới ngay sau "Chạy refund_order" (sự kiện ' + (EVENTS.findIndex((x) => x.t === 'tool' && x.i === 2) + 1) + ') để thấy điểm nguy hiểm nhất.') + '</div>';
+
+        const fl = [];
+        if (r.refunds > 1) fl.push(['bad', 'Khách nhận ' + r.refunds + ' lần ' + vnd(1290000) + '.']);
+        if (r.refunds > 1 && cr.key === 'fixed' && cr.payDedupe && cr.ck === 'after') fl.push(['bad', 'Khoá cố định và phía nhận có dedupe mà vẫn hoàn hai lần: checkpoint chỉ sau tool nên resume gọi lại model, model cấp id mới (toolu_03b), khoá mới.']);
+        if (r.refunds > 1 && cr.key === 'fixed' && !cr.payDedupe && cr.ck === 'both') fl.push(['bad', 'Checkpoint và khoá đúng như README mà vẫn hoàn hai lần: cổng thanh toán không khử trùng theo khoá. Khoá cố định chưa đủ.']);
+        if (r.refunds > 1 && cr.key !== 'fixed' && cr.payDedupe) fl.push(['bad', 'Phía nhận có dedupe nhưng khoá ' + (cr.key === 'random' ? 'ngẫu nhiên' : 'theo thời gian') + ' đổi giữa hai lần chạy, nên dedupe không nhận ra.']);
+        if (r.emails > 1) fl.push(['warn', 'Email gửi ' + r.emails + ' lần: dịch vụ email không khử trùng theo khoá' + (cr.emailStore ? '' : ' và executor không tự ghi khoá') + '.']);
+        if (r.crashed && !r.snap) fl.push(['bad', 'Không có checkpoint: resume chạy lại từ đầu, mất ' + r.modelRedo + ' lượt model (' + usd(r.lost) + ') và lặp mọi tác dụng phụ đã xảy ra.']);
+        if (r.crashed && r.modelRedo && r.snap) fl.push(['warn', 'Resume gọi lại ' + r.modelRedo + ' lượt model đã từng chạy.']);
+        const cell = (ck, k, d) => simulateCrash(Object.assign({}, cr, { ck, key: k, payDedupe: d })).refunds;
+        if (r.crashed && cell('both', 'fixed', true) === 1 && r.refunds <= 1 && cell('after', 'fixed', true) === 1) fl.push(['ok', 'Ở điểm crash này mọi cấu hình đều an toàn với tiền: crash chưa chạm vào refund_order hoặc đã qua bước lưu sau nó. Kéo crash tới ngay sau "Chạy refund_order".']);
+        crFlags.replaceChildren(...(fl.length ? fl.map(([l, t]) => flagBox(l, t)) : [el('div', { class: 'ok', style: 'font-size:13px', text: 'Không phát hiện bất thường ở cấu hình này.' })]));
+        let c;
+        if (r.refunds > 1 && cr.ck === 'after' && cr.key === 'fixed' && cr.payDedupe) c = { what: 'Hoàn hai lần dù khoá theo công thức README và cổng có dedupe.', why: 'Lệnh hoàn tiền đã tới cổng thanh toán, process chết trước bước "Lưu (sau tool)". Checkpoint cuối là kết quả của check_return_policy, nên resume gọi model. Model sinh refund_order mới với id toolu_03b: khoá run_7f3:toolu_03b chưa từng thấy.', not: 'Không có nghĩa khoá theo tool_use_id sai: nó chỉ đúng khi resume chạy lại đúng tool call cũ.', real: 'lưu sau khi nhận response, trước khi chạy tool (README §3.2). Đổi checkpoint sang dòng cuối để thấy cổng trả kết quả cũ.' };
+        else if (r.refunds > 1 && !cr.payDedupe) c = { what: 'Hoàn hai lần vì phía nhận không nhớ khoá.', why: 'Lần chạy lại gửi ' + (cr.key === 'fixed' && cr.ck === 'both' ? 'đúng khoá cũ' : 'một khoá') + ' nhưng cổng thanh toán không kiểm khoá đã thấy.', not: 'Không có nghĩa idempotency key vô dụng: nó là điều kiện cần, không đủ.', real: 'hệ thống nhận có idempotency key hoặc ràng buộc unique; không có thì executor ghi khoá và kết quả trong cùng giao dịch, hoặc báo "không rõ" cho người.' };
+        else if (r.refunds > 1) c = { what: 'Hoàn hai lần.', why: !r.snap ? 'Không có checkpoint nên chạy lại từ đầu, mọi tool call có id mới.' : 'Khoá ' + (cr.key === 'random' ? 'ngẫu nhiên' : 'theo thời gian') + ' khác nhau giữa hai lần thực thi cùng một tool call.', not: 'Không có nghĩa dedupe phía nhận hỏng: nó chỉ nhận ra khoá đã thấy.', real: 'khoá = run_id + tool_use_id, checkpoint trước khi chạy tool.' };
+        else if (r.emails > 1) c = { what: 'Tiền đúng một lần nhưng email gửi ' + r.emails + ' lần.', why: 'Resume chạy lại đúng toolu_04 với đúng khoá, nhưng dịch vụ email không khử trùng.', not: 'Không có nghĩa thiết kế resume sai: phần của người gửi đã đúng.', real: 'executor email ghi khoá vào store bền vững cùng giao dịch, hoặc tra "đã gửi chưa" theo khoá trước khi gửi.' };
+        else if (r.crashed && r.modelRedo) c = { what: 'Không lặp tác dụng phụ, nhưng mất ' + r.modelRedo + ' lượt model.', why: 'Checkpoint cuối nằm trước các lượt đó.', not: 'Không có nghĩa mất tiền khách: chỉ mất token và thời gian.', real: 'lưu hai lần mỗi bước để resume từ điểm lỗi (Anthropic: chạy lại từ đầu vừa đắt vừa gây bực).' };
+        else c = { what: r.crashed ? 'Resume sạch: không lặp, không mất lượt model.' : 'Run chạy hết, không crash.', why: 'Checkpoint nằm đúng chỗ so với điểm crash.', not: 'Không có nghĩa cấu hình an toàn ở mọi điểm crash: xem bảng tổ hợp.', real: 'thử crash ở từng điểm trong test (kill process giữa chừng), không chỉ chạy đường vui vẻ.' };
+        crCap.innerHTML = capHtml(c);
+      }
+
+      const ev = { mode: 'exact' };
+      const evTable = el('div'), evBars = el('div'), evFlags = el('div'), evCap = el('div', { class: 'qa-viz' });
+      function renderEval() {
+        const res = RUNS.map((r) => ({ r, g: Object.fromEntries(Object.entries(GRADERS).map(([k, [, f]]) => [k, f(r, ev.mode)])) }));
+        const cell = (v, h) => '<td style="text-align:center;' + (v !== h ? 'background:var(--bad);color:#fff;' : '') + '">' + (v ? 'đạt' : 'trượt') + '</td>';
+        evTable.innerHTML = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:680px"><tr style="background:var(--bg)"><th>#</th><th>Task</th><th>Đường đi</th><th>Ghi chú</th><th>Nhãn người</th><th>Tự khai</th><th>Đường đi</th><th>Outcome</th></tr>' + res.map(({ r, g }, i) => '<tr><td class="mono">' + (i + 1) + '</td><td>' + TASKS[r.t].name + '</td><td class="mono" style="font-size:11px">' + (r.tr.length ? r.tr.join(' → ') : '(không gọi tool)') + '</td><td style="font-size:12px">' + r.note + '</td><td style="text-align:center"><b class="' + (r.human ? 'ok' : 'bad') + '">' + (r.human ? 'đúng' : 'sai') + '</b></td>' + cell(g.claim, r.human) + cell(g.traj, r.human) + cell(g.outcome, r.human) + '</tr>').join('') + '</table></div>';
+        const stats = Object.keys(GRADERS).map((k) => { const fp = res.filter((x) => x.g[k] && !x.r.human).length, fn = res.filter((x) => !x.g[k] && x.r.human).length, pass = res.filter((x) => x.g[k]).length; return { k, fp, fn, pass, agree: (res.length - fp - fn) / res.length }; });
+        const human = res.filter((x) => x.r.human).length / res.length;
+        evBars.replaceChildren(el('div', { class: 'stat', html: '<span>Tỉ lệ đúng theo nhãn người <b>' + pct(human) + '</b></span>' + stats.map((s) => '<span>' + GRADERS[s.k][0] + ': báo <b>' + pct(s.pass / res.length) + '</b>, cho qua sai <b class="' + (s.fp ? 'bad' : 'ok') + '">' + s.fp + '</b>, đánh trượt nhầm <b class="' + (s.fn ? 'bad' : 'ok') + '">' + s.fn + '</b></span>').join('') }), hbars(stats.map((s) => [GRADERS[s.k][0] + ' khớp nhãn', s.agree * 100, s.k === 'outcome']), { max: 100, fmt: (v) => dec(v, 0) + '%' }));
+        const fl = [], tj = stats[1], cl = stats[0];
+        const trajWrongPass = res.filter((x) => x.g.traj && !x.r.human).map((x) => RUNS.indexOf(x.r) + 1);
+        if (trajWrongPass.length) fl.push(['bad', 'Grader đường đi cho qua ' + trajWrongPass.length + ' run sai (#' + trajWrongPass.join(', #') + '): đi đúng đường, nhưng trạng thái cuối sai.']);
+        if (tj.fn) fl.push(['warn', 'Grader đường đi đánh trượt ' + tj.fn + ' run đúng: agent đi đường hợp lệ khác mẫu.']);
+        if (cl.fp) fl.push(['bad', 'Tự khai báo "xong" ở ' + cl.pass + '/' + res.length + ' run, trong đó ' + cl.fp + ' run sai. Run #4 báo "đã hoàn tiền" khi refund_order trả lỗi.']);
+        if (ev.mode === 'set') fl.push(['warn', 'Chấm theo tập tool bắt buộc bớt đánh trượt nhầm, nhưng run #6 (hoàn hai lần) cũng qua: có đủ tool, thừa một lần.']);
+        evFlags.replaceChildren(...fl.map(([l, t]) => flagBox(l, t)));
+        evCap.innerHTML = capHtml({ what: 'Báo cáo theo đường đi nói ' + pct(tj.pass / res.length) + ' run đạt, theo tự khai ' + pct(cl.pass / res.length) + ', theo outcome ' + pct(stats[2].pass / res.length) + '. Nhãn người: ' + pct(human) + '.', why: 'Đường đi và lời tự khai đều không nhìn vào trạng thái: không biết refund_order có thật sự ghi bản ghi không, số tiền bao nhiêu, có ghi hai lần không. Outcome đọc bảng hoàn tiền nên khớp nhãn người ở cả 13 run.', not: 'Không có nghĩa đường đi vô ích: nó giúp đọc lỗi (agent kẹt ở get_shipment). Nó là dữ liệu để chẩn đoán, không phải tiêu chí đạt.', real: 'grader outcome bằng code (README §3.6); đọc transcript của ca đổi trạng thái đạt/trượt; ràng buộc như "trên 2.000.000 đ phải có duyệt" viết thành điều kiện trên trạng thái.' });
+      }
+
+      const pk = { k: 3, seed: 4821 };
+      const pkGrid = el('div'), pkTable = el('div'), pkFlags = el('div');
+      function renderPk() {
+        const T = trials(pk.seed);
+        pkGrid.replaceChildren(...T.map((row, i) => el('div', { style: 'display:flex;align-items:center;gap:4px;margin:2px 0;font-size:12px' }, [el('span', { style: 'width:150px;flex:none', text: PTASKS[i][0] })].concat(row.map((v) => el('span', { style: 'width:18px;height:14px;border-radius:3px;background:' + (v ? 'var(--ok)' : 'var(--bad)') }))))));
+        const rows = T.map((row, i) => { const c = row.filter(Boolean).length; return { name: PTASKS[i][0], c, at: passAt(8, c, pk.k), hat: passHat(8, c, pk.k) }; });
+        const avg = (f) => rows.reduce((s, r) => s + f(r), 0) / rows.length;
+        const A = avg((r) => r.at), H = avg((r) => r.hat), P = avg((r) => r.c / 8);
+        pkTable.innerHTML = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:480px;margin-top:8px"><tr style="background:var(--bg)"><th>Task</th><th>Đạt / 8</th><th>pass@' + pk.k + '</th><th>pass^' + pk.k + '</th></tr>' + rows.map((r) => '<tr><td>' + r.name + '</td><td class="mono">' + r.c + '</td><td class="mono">' + pct(r.at) + '</td><td class="mono ' + (r.hat < 0.5 ? 'bad' : '') + '">' + pct(r.hat) + '</td></tr>').join('') + '<tr><td><b>Trung bình</b></td><td class="mono">' + pct(P) + '</td><td class="mono"><b>' + pct(A) + '</b></td><td class="mono"><b>' + pct(H) + '</b></td></tr></table></div>';
+        const fl = [];
+        if (A - H > 0.3) fl.push(['bad', 'pass@' + pk.k + ' trung bình ' + pct(A) + ' nhưng pass^' + pk.k + ' chỉ ' + pct(H) + ': ' + pk.k + ' khách liên tiếp cùng một loại yêu cầu thì xác suất cả ' + pk.k + ' được phục vụ đúng thấp hơn nhiều so với con số dashboard.']);
+        const zero = rows.filter((r) => r.hat === 0 && r.c > 0);
+        if (zero.length) fl.push(['warn', zero.map((r) => r.name).join(', ') + ': đạt ' + zero[0].c + '/8 nhưng pass^' + pk.k + ' = 0 vì không đủ ' + pk.k + ' trial đạt trong 8. Cần nhiều trial hơn k để ước lượng.']);
+        if (pk.k === 1) fl.push(['ok', 'k = 1: pass@1 = pass^1 = tỉ lệ đạt mỗi lần. Hai số tách nhau khi k tăng.']);
+        pkFlags.replaceChildren(...fl.map(([l, t]) => flagBox(l, t)));
+      }
+
+      stage.append(
+        el('h4', { text: 'A. Process chết giữa run: mất gì, lặp gì', style: 'margin:0 0 4px' }),
+        el('div', { class: 'row' }, [slider('Điểm crash', 0, EVENTS.length - 1, 1, cr.crashAt, (v) => { cr.crashAt = Math.round(v); renderCrash(); }, (v) => (v + 1) + '/' + EVENTS.length).node]),
+        crashLbl,
+        el('div', { class: 'row' }, [
+          select('Checkpoint', Object.entries(CK), cr.ck, (v) => { cr.ck = v; renderCrash(); }).node,
+          select('Idempotency key', Object.entries(KEY), cr.key, (v) => { cr.key = v; renderCrash(); }).node]),
+        el('div', { class: 'row' }, [
+          check('Cổng thanh toán khử trùng theo khoá', cr.payDedupe, (v) => { cr.payDedupe = v; renderCrash(); }).node,
+          check('Email executor tự ghi khoá', cr.emailStore, (v) => { cr.emailStore = v; renderCrash(); }).node]),
+        lanes, crStat, ledgerBox, matrix,
+        el('h4', { text: 'Phát hiện từ dữ liệu (resume)', style: 'margin:14px 0 4px' }), crFlags, crCap,
+        el('h4', { text: 'B. Chấm 13 run đã gán nhãn: tự khai, đường đi, outcome', style: 'margin:22px 0 4px' }),
+        el('div', { class: 'row' }, [select('Grader đường đi', [['exact', 'Khớp chính xác chuỗi mẫu'], ['set', 'Đủ tập tool bắt buộc, thứ tự tuỳ ý']], ev.mode, (v) => { ev.mode = v; renderEval(); }).node]),
+        evTable, evBars,
+        el('h4', { text: 'Phát hiện từ dữ liệu (eval)', style: 'margin:14px 0 4px' }), evFlags, evCap,
+        el('h4', { text: 'C. pass@k và pass^k trên 6 task × 8 trial', style: 'margin:22px 0 4px' }),
+        el('div', { class: 'row' }, [slider('k', 1, 8, 1, pk.k, (v) => { pk.k = Math.round(v); renderPk(); }).node, el('button', { text: 'Bộ trial khác (seed khác)', onclick: () => { pk.seed += 1; renderPk(); } })]),
+        pkGrid, pkTable, pkFlags,
+        el('p', { class: 'hint', text: 'Phần A: quy tắc resume theo code README §3.2 (message cuối là tool_use chưa có kết quả thì chạy lại đúng các tool call đó; ngược lại gọi model, model cấp id mới). Trong mô phỏng, model khi được gọi lại luôn ra cùng quyết định với id mới. Chi phí một lượt model giả định 2.500 + 400 × số lượt trước token vào, 120 token ra, giá Sonnet 5.5 2 / 10 USD mỗi 1M token (docs/cost-optimization/README.md §2.1), không cache. Phần B: 13 run dựng tay theo các lỗi README nêu; nhãn người là giả định của lab. Phần C: tỉ lệ đạt thật mỗi task là giả định (95%, 90%, 75%, 85%, 60%, 70%), trial rút có seed; pass@k = 1 − C(n−c, k)/C(n, k), pass^k = C(c, k)/C(n, k) với n = 8 trial, c trial đạt.' })
+      );
+      renderCrash(); renderEval(); renderPk();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

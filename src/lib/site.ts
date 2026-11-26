@@ -61,6 +61,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Trace và span cho lượt gọi model, metric riêng của LLM, OpenTelemetry GenAI, công cụ, che PII, chi phí theo tenant, drift khi provider đổi model và alert đáng đánh thức người trực.',
     parts: ['Workflow tổng hợp', 'Vì sao log thôi chưa đủ', 'Metric riêng của LLM', 'Chất lượng và OpenTelemetry GenAI', 'Công cụ observability', 'Log, PII và trace cho agent', 'Chi phí, feedback và drift', 'Eval từ log, alert và failure modes']
   },
+  agents: {
+    title: 'LLM - 13 - Agents',
+    description: 'Khi LLM tự quyết bước tiếp theo: workflow hay agent, các pattern, context và memory, multi-agent, sandbox, điều kiện dừng và ngân sách, human-in-the-loop, chạy dài, eval, chi phí và bảo mật.',
+    parts: ['Workflow tổng hợp', 'Workflow hay agent', 'Các pattern workflow', 'Context và memory', 'Một agent nhiều tool và multi-agent', 'Chạy code, computer use, MCP và framework', 'Điều kiện dừng, ngân sách và duyệt', 'Chạy dài, observability và eval', 'Chi phí, bảo mật và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
