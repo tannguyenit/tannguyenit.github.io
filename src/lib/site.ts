@@ -16,6 +16,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Hội thoại nhiều lượt trên API stateless và prompt caching: vì sao mỗi lượt gửi lại cả lịch sử, cache khớp theo prefix ra sao, và dựng hội thoại không làm vỡ cache.',
     parts: ['Workflow tổng hợp', 'API stateless', 'KV cache và prefix', 'Các vấn đề của multi-turn', 'Kinh tế học prompt caching', 'Caching theo provider', 'Giữ prefix ổn định', 'Context dài: trim, summarize, compact', 'Observability cho cache']
   },
+  'structured-output': {
+    title: 'LLM - 03 - Structured Output',
+    description: 'Để LLM trả về dữ liệu backend tin được: các mức đảm bảo, constrained decoding, JSON Schema theo provider, thiết kế schema, validate nhiều lớp và eval.',
+    parts: ['Workflow tổng hợp', 'Vì sao LLM không tự ra JSON đúng', 'Constrained decoding', 'JSON Schema và các phương ngữ', 'Chất lượng và tính đúng', 'Structured output theo provider', 'Thiết kế schema và chọn format', 'Validate, retry và streaming', 'Structured output trong production']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };
