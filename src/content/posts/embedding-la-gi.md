@@ -5,6 +5,7 @@ description: "Bài mẫu để xem giao diện series có lab tương tác. Nộ
 categories: ["LLM", "embeddings"]
 series: embeddings
 seriesOrder: 1
+lab: embeddings/01-embedding-space
 ---
 
 ## Đặt vấn đề
@@ -19,9 +20,7 @@ Nếu mỗi từ chỉ là một mã số, máy không có cách nào biết t�
 
 Bấm **Mã số (one-hot)** để thấy mọi từ cách nhau như nhau. Bấm **Embedding** để thấy các từ tự gom nhóm. Thử chạy phép `king − man + woman`.
 
-<iframe class="lab-frame" src="/labs/embeddings/01-embedding-space.html" title="Lab 01: Embedding là gì" loading="lazy"></iframe>
-
-<p class="lab-open"><a href="/labs/embeddings/01-embedding-space.html" target="_blank" rel="noopener">Mở lab ở tab riêng</a></p>
+<div data-lab-slot></div>
 
 ## Embedding giải quyết gì
 

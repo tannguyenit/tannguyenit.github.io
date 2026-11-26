@@ -12,6 +12,10 @@ const { post } = Astro.props;
 const d = post.data;
 const { Content, headings } = await render(post);
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const labs = import.meta.glob('../labs/**/*.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+const labHtml = d.lab ? labs[`../labs/${d.lab}.html`] : undefined;
+if (d.lab && !labHtml) throw new Error(`Lab not found: ${d.lab}`);
+const labText = labHtml ? (labHtml.match(/'(?:[^'\\\n]|\\.){30,}'|`[^`]{30,}`/g) ?? []).join(' ').replace(/<[^>]+>/g, ' ') : '';
 const all = await getPosts();
 const s = d.series ? series[d.series] : undefined;
 const mates = d.series ? inSeries(all, d.series) : [];
@@ -30,7 +34,7 @@ const next = idx >= 0 && idx < mates.length - 1 ? mates[idx + 1] : undefined;
         <h1>{d.title}</h1>
         <div class="meta">
           <time datetime={d.date.toISOString()}>{formatDate(d.date)}</time>
-          <span>{readingMinutes(post.body)} phút đọc</span>
+          <span>{readingMinutes(post.body + ' ' + labText)} phút đọc</span>
         </div>
         {d.image && <img class="cover" src={d.image} alt="" />}
       </header>
@@ -50,6 +54,7 @@ const next = idx >= 0 && idx < mates.length - 1 ? mates[idx + 1] : undefined;
       )}
 
       <div class="prose"><Content /></div>
+      {labHtml && <div id="lab-embed" set:html={labHtml} />}
 
       {(prev || next) && (
         <nav class="pager" aria-label="Bài trong series">
@@ -59,7 +64,7 @@ const next = idx >= 0 && idx < mates.length - 1 ? mates[idx + 1] : undefined;
       )}
     </article>
 
-    {toc.length > 0 && (
+    {(toc.length > 0 || labHtml) && (
       <aside class="toc" aria-label="Mục lục">
         <h4>Trong bài này</h4>
         <ul>{toc.map((h) => <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
@@ -67,6 +72,25 @@ const next = idx >= 0 && idx < mates.length - 1 ? mates[idx + 1] : undefined;
     )}
   </div>
   <script is:inline>
+    (function () {
+      var lab = document.getElementById('lab-embed'), slot = document.querySelector('.prose [data-lab-slot]');
+      if (lab && slot) slot.replaceWith(lab);
+      var ul = document.querySelector('aside.toc ul');
+      if (!lab || !ul) return;
+      var hs = [].slice.call(document.querySelectorAll('.prose h2, .prose h3, #lab-embed section.lesson > h2, #lab-embed .deep > h3, #lab-embed .sum > h3'));
+      ul.replaceChildren();
+      hs.forEach(function (h, i) {
+        var inLab = lab.contains(h);
+        if (inLab && !h.matches('#lab-embed section.lesson > h2, #lab-embed .deep > h3, #lab-embed .sum > h3')) return;
+        if (inLab && !h.id) h.id = 'lab-' + i;
+        if (!h.id) return;
+        if (inLab) h.style.scrollMarginTop = '80px';
+        var li = document.createElement('li'), a = document.createElement('a');
+        li.className = inLab || h.tagName === 'H3' ? 'd3' : 'd2';
+        a.href = '#' + h.id; a.textContent = h.textContent;
+        li.append(a); ul.append(li);
+      });
+    })();
     (function () {
       var links = [].slice.call(document.querySelectorAll('aside.toc a'));
       if (!links.length || !('IntersectionObserver' in window)) return;
