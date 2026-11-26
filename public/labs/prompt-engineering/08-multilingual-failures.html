@@ -1,0 +1,710 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt Engineering Lab 08</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="07-versioning-regression-migration.html">← Lab trước</a><a class="off" href="#">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/prompt-engineering/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const bytes = (s) => new TextEncoder().encode(s).length;
+  const cps = (s) => [...s].length;
+  const r2 = (x) => x.toFixed(2).replace('.', ',');
+  const fold = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+  const strip = (s) => s.replace(/đ/g, 'd').replace(/Đ/g, 'D').normalize('NFKD').replace(/[^\x00-\x7f]/g, '');
+  function est(s) {
+    let t = 0;
+    for (const m of s.matchAll(/[\p{L}\p{N}]+|\p{M}|[^\s\p{L}\p{N}\p{M}]/gu)) {
+      const w = m[0];
+      if (!/[\p{L}\p{N}]/u.test(w)) { t += 1; continue; }
+      t += /^[\x00-\x7f]+$/.test(w) ? (w.length <= 8 ? 1 : Math.ceil(w.length / 6)) : 1 + Math.floor(w.length / 6);
+    }
+    return t;
+  }
+  const EN = "You are a customer support assistant for an online electronics store. Answer questions about orders, shipping, returns and warranty. If the customer asks for a refund, check that the order was delivered within the last 30 days and that the product is unopened. If you are not sure about a policy, say so and offer to transfer the customer to a human agent. Keep answers short, polite and in the customer's language. Never promise a delivery date that the order system has not confirmed.";
+  const VI = 'Bạn là trợ lý chăm sóc khách hàng cho một cửa hàng điện tử trực tuyến. Trả lời các câu hỏi về đơn hàng, giao hàng, đổi trả và bảo hành. Nếu khách yêu cầu hoàn tiền, hãy kiểm tra đơn hàng đã được giao trong vòng 30 ngày gần nhất và sản phẩm chưa mở hộp. Nếu bạn không chắc về một chính sách, hãy nói rõ và đề nghị chuyển khách sang nhân viên. Trả lời ngắn gọn, lịch sự và bằng ngôn ngữ của khách. Không bao giờ hứa ngày giao hàng mà hệ thống đơn hàng chưa xác nhận.';
+  const SAMPLES = [
+    ['en', 'Tiếng Anh', EN, { o200k: 96, cl100k: 98 }],
+    ['nfc', 'Tiếng Việt, NFC', VI, { o200k: 123, cl100k: 209 }],
+    ['nd', 'Tiếng Việt, không dấu', strip(VI), { o200k: 137, cl100k: 160 }],
+    ['nfd', 'Tiếng Việt, NFD', VI.normalize('NFD'), { o200k: 339, cl100k: 431 }]
+  ];
+  const LANG_RULE = 'Luôn trả lời bằng tiếng Việt có dấu, kể cả khi khách viết không dấu hoặc tài liệu tham chiếu bằng tiếng Anh. Giữ nguyên tên sản phẩm và mã lỗi.';
+
+  const FAIL = [
+    ['Model gọi tool cho cả câu hỏi không cần', 'Ngôn ngữ tuyệt đối (LUÔN, CRITICAL, "nếu nghi ngờ thì gọi"); tool description quá rộng', 'Viết lại quy tắc có điều kiện và lý do; thêm ca "không được gọi tool" vào eval (§1.3)'],
+    ['Sửa một lỗi, lỗi khác xuất hiện', 'Ảnh hưởng không cục bộ; quy tắc mới mâu thuẫn quy tắc cũ', 'Chạy toàn bộ bộ test, không chỉ ca liên quan; đọc lại toàn prompt khi review (§3.2)'],
+    ['400 does not support assistant message prefill', 'Code prefill trên Claude 4.6+ hoặc Gemini 3.6+', 'Structured output hoặc chỉ dẫn trong system (§2.3)'],
+    ['400 khi gửi temperature', 'Claude Opus 4.7, 4.8, Sonnet 5, Haiku 5.5; GPT-5.x khi reasoning khác none', 'Bỏ tham số; dùng ràng buộc trong prompt và structured output'],
+    ['Mọi câu trả lời mở đầu giống hệt nhau', 'Ví dụ few-shot cùng một câu mở đầu', 'Đa dạng hoá ví dụ; xem model bắt chước đặc điểm bề mặt nào (§1.4)'],
+    ['Phân loại lệch về một nhãn', 'Majority label bias, recency bias trong ví dụ', 'Cân bằng ví dụ, xáo thứ tự; so phân phối nhãn output với phân phối thật'],
+    ['Câu trả lời đầy bullet dù đã dặn viết văn xuôi', 'System prompt tự nó viết bằng bullet và heading', 'Viết phần chỉ dẫn bằng văn xuôi (§2.1)'],
+    ['Câu trả lời dài hơn sau khi đổi model', 'Model mới có độ dài mặc định khác; effort không điều khiển độ dài', 'Chỉ định độ dài theo câu/đoạn; dùng verbosity nếu có'],
+    ['Bỏ sót thông tin có trong tài liệu', 'Thông tin ở giữa context dài; quá nhiều tài liệu không liên quan', 'Câu hỏi đặt cuối; trích dẫn trước khi trả lời; retrieve ít mà đúng (§2.2)'],
+    ['Prompt cũ chạy kém hơn trên model mới', 'Miếng vá cho model cũ gây over-trigger, over-verification', 'Quy trình ở §3.5; bắt đầu lại từ prompt tối thiểu'],
+    ['Chất lượng giảm mà không có deploy nào', 'Alias model trôi sang model mới; ai đó đổi label trong registry', 'Ghim model ID; ghi PromptConfig vào trace; audit log của registry (§3.2)'],
+    ['Instance mới khởi động không có prompt', 'Registry không truy cập được, cache trống, không có fallback', 'Fallback trong code, đồng bộ với version production (§2.6)'],
+    ['Request theo prompt ID của OpenAI bắt đầu lỗi', 'v1/prompts tắt ngày 30/11/2026', 'Chuyển prompt vào code, gửi qua input'],
+    ['Bot trả lời tiếng Anh cho khách viết không dấu', 'Language confusion; system prompt tiếng Anh', 'Quy tắc ngôn ngữ cụ thể; ví dụ tiếng Việt; ca test ngôn ngữ output (§3.6)'],
+    ['Số token tiếng Việt cao bất thường; cache miss dù nội dung giống', 'Văn bản ở dạng Unicode NFD', 'Chuẩn hoá NFC ở ranh giới hệ thống'],
+    ['Kết quả eval dao động giữa các lần chạy với cùng prompt', 'Không deterministic; bộ test quá nhỏ', 'Chạy nhiều lần; so phân phối; tăng số ca (§3.4)'],
+    ['Lời giải thích của model không khớp với lý do thật', 'CoT không faithful', 'Yêu cầu bằng chứng kiểm tra được thay vì dựa vào phần suy luận (§2.4)'],
+    ['Dữ liệu người dùng bị hiểu như chỉ dẫn', 'Không có ranh giới giữa dữ liệu và chỉ dẫn', 'Tag cho dữ liệu; nhưng phòng thủ thật nằm ở tài liệu Bảo mật LLM']
+  ];
+
+  const CHECK = [
+    ['Khi viết hoặc sửa prompt', ['Mỗi quy tắc có điều kiện áp dụng và lý do. Không dùng chữ in hoa hay CRITICAL / MUST để nhấn mạnh.', 'Mỗi lệnh cấm đi kèm hành vi thay thế.', 'Có chỉ dẫn cho trường hợp không chắc, thiếu thông tin, ngoài phạm vi.', 'Không có mâu thuẫn giữa các phần của prompt, tool description và schema.', 'Ví dụ few-shot đa dạng về độ dài, câu mở đầu, nhãn; nhãn cân bằng; được bọc tag riêng.', 'Style của phần chỉ dẫn khớp với style output mong muốn.', 'Với context dài: tài liệu trước, câu hỏi cuối; tài liệu có tag và nguồn.', 'Không có quy tắc bảo mật hay giới hạn nghiệp vụ chỉ nằm trong prompt; mọi giới hạn đều được kiểm tra trong code.', 'Dữ liệu người dùng, tài liệu retrieve và tool result được coi là không đáng tin; prompt không được cấp quyền thay cho code.', 'Output được parse và kiểm tra trước khi đi vào HTML, SQL, shell, URL, đường dẫn file hoặc tool có side effect.', 'Không có bí mật trong prompt.', 'Văn bản tiếng Việt ở dạng NFC; quy tắc ngôn ngữ và xưng hô được ghi rõ.']],
+    ['Khi đưa vào production', ['Prompt nằm trong repo, hoặc trong registry có label bảo vệ, eval chặn và audit log. Không phụ thuộc vào prompt object của provider.', 'Model ID cố định, không dùng alias trôi.', 'PromptConfig (template, model, params, tools, schema) được ghi vào trace của mọi request.', 'Không dùng prefill, temperature, budget_tokens trên model không còn hỗ trợ.', 'Phần tĩnh đứng trước phần động; không có timestamp hay dữ liệu theo request ở đầu prompt.', 'Registry (nếu dùng) có fallback trong code, đồng bộ với version production.', 'Template chỉ đến từ repo; dữ liệu người dùng chỉ là giá trị của biến; render đúng một lần.', 'Tool dùng quyền tối thiểu; hành động có side effect cần idempotency, giới hạn ngân sách và xác nhận phù hợp.', 'Có giới hạn token, độ trễ và chi phí; retry, timeout, fallback và rate limit được kiểm tra ngoài prompt.', 'Log được che PII và gắn với prompt/model/tool/schema version.']],
+    ['Khi thay đổi prompt hoặc model', ['Có baseline eval trước khi đổi.', 'Bộ test có ca áp dụng và ca không áp dụng cho mỗi quy tắc, ca từ sự cố production, ca đối kháng, biến thể cách hỏi.', 'Mỗi ca quan trọng chạy nhiều lần; so phân phối, không so một output.', 'Có metric riêng cho correctness, groundedness, tool use, refusal, latency và cost; LLM-as-judge đã được hiệu chỉnh bằng human review.', 'Khi đổi model: đã gỡ các miếng vá cho model cũ, tinh chỉnh lại few-shot, kiểm tra độ dài và format.', 'Rollout dần, theo dõi tín hiệu production.', 'Đã kiểm tra lịch deprecation của model và tính năng đang dùng.']]
+  ];
+
+  function langRisk(s) {
+    const why = [];
+    let score = 0;
+    const ambiguous = s.input === 'nd' || s.input === 'code';
+    if (s.input === 'teen') why.push(['warn', 'Viết tắt, teencode ("sp", "r", "ad", "ko"): model có thể hiểu sai hoặc trả lời bằng chính lối viết đó. Loại input này nên có trong bộ test (§3.6).']);
+    if (s.sys === 'en' && ambiguous) { score += 2; why.push(['bad', 'System prompt tiếng Anh, khách viết ' + (s.input === 'code' ? 'chỉ mã đơn' : 'không dấu') + ': "' + INPUTS[s.input] + '" không trông giống tiếng Việt, nên model dễ trả lời bằng tiếng Anh (§3.6).']); }
+    else if (s.sys === 'en') { score += 1; why.push(['warn', 'System prompt tiếng Anh: ngôn ngữ của chỉ dẫn kéo output về tiếng Anh khi tín hiệu từ khách yếu.']); }
+    if (s.doc === 'en') { score += 2; why.push(['bad', 'Tài liệu retrieve bằng tiếng Anh: câu trả lời dễ trộn câu tiếng Anh hoặc giữ thuật ngữ tiếng Anh không cần thiết.']); }
+    if (s.turn === 'long') { score += 1; why.push(['warn', 'Hội thoại dài: lượt đầu đúng tiếng Việt, các lượt sau có thể trôi dần sang tiếng Anh.']); }
+    if (s.rule === 'none') { score += 1; why.push(['warn', 'Không có quy tắc ngôn ngữ nào.']); }
+    else if (s.rule === 'generic') { if (ambiguous) { score += 1; why.push(['warn', '"Trả lời bằng ngôn ngữ của khách" không giúp khi chính ngôn ngữ của khách là thứ model đoán sai.']); } }
+    else { score -= 2; why.push(['ok', 'Quy tắc cụ thể: tiếng Việt có dấu kể cả khi khách viết không dấu hoặc tài liệu tiếng Anh; giữ nguyên tên sản phẩm, mã lỗi.']); }
+    if (s.shot === 'vi') { score -= 1; why.push(['ok', 'Ví dụ few-shot tiếng Việt kéo output về tiếng Việt mạnh hơn bất kỳ câu chỉ dẫn nào (§3.6); Marchisio và cộng sự cũng thấy few-shot đúng ngôn ngữ đích giảm một phần language confusion.']); }
+    const lvl = score >= 3 ? 'cao' : score >= 1 ? 'trung bình' : 'thấp';
+    let out, kind = 'ok';
+    if (s.sys === 'en' && ambiguous && s.rule !== 'specific' && s.shot !== 'vi') { out = 'Your order SV-4821 is out for delivery and should arrive within 2 days.'; kind = 'en'; }
+    else if (s.doc === 'en' && s.rule !== 'specific') out = 'Dạ, theo return policy thì sản phẩm unopened được refund trong 30 days ạ.';
+    else if (s.turn === 'long' && s.rule === 'none') { out = 'Sure! The warranty for Pro X covers 12 months from purchase.'; kind = 'drift'; }
+    else if (s.input === 'code') out = 'SV-4821: 1.250.000 đ';
+    else out = 'Dạ, đơn SV-4821 đang được giao, dự kiến tới trong 2 ngày ạ.';
+    return { score, lvl, why, out, kind };
+  }
+  const INPUTS = { vi: 'Đơn SV-4821 của em tới đâu rồi ạ?', nd: 'don SV-4821 cua em toi dau roi a', teen: 'sp đơn SV-4821 ship tới đâu r ad, ko thấy', code: 'SV-4821?' };
+
+  function langCheck(s) {
+    const letters = [...s.normalize('NFC')].filter((c) => /\p{L}/u.test(c));
+    const vn = letters.filter((c) => /[^\x00-\x7f]/.test(c)).length;
+    const ratio = letters.length ? vn / letters.length : 0;
+    const words = s.match(/\p{L}+/gu) || [];
+    const codeOnly = words.filter((w) => !/^(SV|VND|đ|USD)$/i.test(w)).length < 2;
+    return { ratio, codeOnly, naive: ratio === 0 ? 'fail' : 'pass', better: codeOnly ? 'bỏ qua (chỉ có số, mã)' : ratio < 0.04 ? 'xem lại' : 'pass' };
+  }
+
+  function bar(rows, max, fmt) { return hbars(rows, { max, fmt }); }
+
+  return {
+    id: 'multilingual-failures', nav: '8. Đa ngôn ngữ & lỗi', ref: '§3.6–3.8',
+    title: 'Cùng một chỉ dẫn, tiếng Việt tốn 1,28 hay 3,53 lần token tiếng Anh: vì sao, và vì sao bot vẫn trả lời bằng tiếng Anh?',
+    hook: 'Chọn tokenizer và gõ chỉ dẫn của bạn để so số token, code point và byte ở dạng NFC, NFD, không dấu. Sau đó chọn bối cảnh để xem khi nào bot ShopViet dễ trả lời sai ngôn ngữ, tra bảng lỗi thường gặp và đi qua checklist.',
+    terms: [
+      ['Token', 'Mẩu chữ model đọc. Giá và giới hạn context tính theo token, không theo từ. Ví dụ "warranty" có thể là 1 token, "bảo hành" có thể là 2 hoặc hơn tuỳ tokenizer.'],
+      ['Tokenizer', 'Bộ cắt chữ thành token, học từ dữ liệu. Chuỗi gặp nhiều lúc học thì thành một token. o200k_base (GPT-4o trở đi) và cl100k_base (GPT-4, GPT-3.5) là hai tokenizer của OpenAI.'],
+      ['Code point', 'Một "ký tự" trong Unicode, có mã U+xxxx. "ệ" dạng NFC là một code point U+1EC7.'],
+      ['NFC / NFD', 'Hai cách viết cùng một chữ có dấu. NFC: "ệ" là 1 code point, 3 byte. NFD: "e" + dấu nặng + dấu mũ, 3 code point, 5 byte. Hiển thị giống hệt.'],
+      ['Không dấu', 'Tiếng Việt bỏ hết dấu: "bảo hành" → "bao hanh". "bàn", "bán", "bạn" đều thành "ban".'],
+      ['Language confusion', 'Model trả lời bằng ngôn ngữ khác ngôn ngữ người dùng, hoặc đổi ngôn ngữ giữa câu. Ví dụ khách hỏi tiếng Việt, bot trả lời "Your order is out for delivery".'],
+      ['Teencode', 'Lối viết tắt kiểu chat: "ko" (không), "đc" (được), "sp" (sản phẩm), "ib" (nhắn tin riêng).'],
+      ['Failure mode', 'Một kiểu hỏng lặp lại có nguyên nhân rõ. Ví dụ "bot đòi mã đơn khi khách hỏi giờ mở cửa" do quy tắc tuyệt đối.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> có system prompt chăm sóc khách hàng khoảng 80 từ. Đội đang tranh luận: viết bằng tiếng Anh cho rẻ, hay tiếng Việt cho đúng giọng? Có người đề xuất viết tiếng Việt không dấu "để tiết kiệm token". File template được một bạn dùng macOS sửa gần nhất.',
+      scenario: 'Khách viết "don SV-4821 cua em toi dau roi a" và bot trả lời "Your order SV-4821 is out for delivery". Cùng tháng, số token input của prompt tiếng Việt tăng gần gấp ba sau một lần sửa template, dù chữ trên màn hình không đổi.',
+      ask: 'Viết chỉ dẫn bằng ngôn ngữ nào, ở dạng Unicode nào, và kiểm tra ngôn ngữ của output thế nào?',
+      solves: 'So số token thật đo trong README (tiktoken, tháng 11/2026) với một bộ ước lượng thô chạy trong trình duyệt, đếm chính xác code point và byte. Dựng các bối cảnh gây trả lời sai ngôn ngữ theo §3.6, thêm bảng tra lỗi §3.7 và checklist §3.8.',
+      read: ['Thanh ngang: số token của cùng nội dung ở 4 dạng, theo tokenizer đã chọn. Số in đậm là số đo trong README; cột "ước lượng" là con số trình duyệt tính.', 'Ô nhập: gõ chỉ dẫn của bạn, bảng bên dưới tính code point, byte và token ước lượng cho NFC, NFD, không dấu.', 'Khung bối cảnh: chọn ngôn ngữ system prompt, quy tắc, ví dụ, kiểu viết của khách. Mức rủi ro là đánh giá định tính dựng từ README, không phải xác suất đo được.', 'Bảng tra lỗi: gõ triệu chứng, không cần dấu.']
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Token: tự đo, đừng đoán (§3.6)</h4>
+<div class="tbl"><table><tr><th>Phiên bản (~80 từ)</th><th>o200k_base</th><th>cl100k_base</th></tr>
+<tr><td>Tiếng Anh</td><td>96 (1,00×)</td><td>98 (1,00×)</td></tr>
+<tr class="cur"><td>Tiếng Việt, NFC</td><td>123 (1,28×)</td><td>209 (2,13×)</td></tr>
+<tr><td>Tiếng Việt, không dấu</td><td>137 (1,43×)</td><td>160 (1,63×)</td></tr>
+<tr><td>Tiếng Việt, NFD</td><td>339 (3,53×)</td><td>431 (4,40×)</td></tr></table></div>
+<ul><li>Tokenizer mới thu hẹp khoảng cách nhiều (2,13× xuống 1,28×).</li><li>Bỏ dấu không tiết kiệm token với o200k_base (137 so với 123), và làm mất nghĩa. Với cl100k_base thì ngược lại: không dấu rẻ hơn (160 so với 209). Kết luận phụ thuộc tokenizer, nên phải đo.</li><li>NFD đắt hơn NFC nhiều lần, làm vỡ prompt cache và so khớp chuỗi trong eval. Chuẩn hoá NFC ở ranh giới hệ thống: input, tài liệu ingest, chính file template.</li><li>Claude và Gemini dùng tokenizer khác tiktoken: đo bằng API đếm token của provider.</li></ul>
+<h4>Sai ngôn ngữ output</h4>
+<p>Quy tắc cụ thể thay vì "trả lời bằng ngôn ngữ của khách": "${LANG_RULE}" Thêm ca test ngôn ngữ output; loại riêng output chỉ có số, mã đơn, tên sản phẩm, mã lỗi. Tỷ lệ ký tự có dấu chỉ là tín hiệu lọc, không phải điều kiện pass/fail.</p>
+<div class="tbl"><table><tr><th>Viết chỉ dẫn bằng tiếng Anh khi</th><th>Viết chỉ dẫn bằng tiếng Việt khi</th></tr>
+<tr><td>Tác vụ nặng về suy luận, output là dữ liệu (phân loại, trích xuất)</td><td>Output là văn bản tiếng Việt cho người dùng cuối, cần đúng giọng văn</td></tr>
+<tr><td>Đội phát triển đa quốc gia cần review prompt</td><td>Người review và người sửa prompt là đội nghiệp vụ Việt Nam</td></tr>
+<tr><td>Prompt dài, nhiều khối tĩnh, chi phí token quan trọng</td><td>Quy tắc có khái niệm khó dịch (xưng hô "anh/chị/em", "dạ", mức độ lịch sự)</td></tr></table></div>
+<p>Thường chạy tốt: chỉ dẫn cấu trúc bằng tiếng Anh; ví dụ, quy tắc xưng hô và giọng văn bằng tiếng Việt. Quyết định dựa trên eval cho cả hai phiên bản.</p>
+<h4>Chi tiết riêng của tiếng Việt</h4>
+<ul><li>Xưng hô là một phần của prompt; khi không biết giới tính, quy định cách xưng hô trung tính.</li><li>Định dạng số và ngày (<code>1.000.000 đ</code> hay <code>1,000,000 VND</code>; <code>06/11/2026</code> hay <code>2026-11-06</code>): quy định trong prompt, kiểm tra bằng code.</li><li>Viết tắt, teencode ("ko", "đc", "sp", "ib") có trong bộ test.</li></ul>
+<div class="verdict"><b>Bảng lỗi §3.7 và checklist §3.8</b> có đầy đủ trong phần tương tác phía trên: tra theo triệu chứng, tick theo ba giai đoạn viết, đưa vào production, thay đổi.</div>`,
+    why: {
+      c: 'Chuẩn hoá NFC ở mọi ranh giới; đo token bằng tokenizer của đúng provider trên dữ liệu thật; quy tắc ngôn ngữ cụ thể kèm ví dụ tiếng Việt; ca test ngôn ngữ output có loại riêng output chỉ gồm số và mã.',
+      s: 'Viết không dấu để tiết kiệm: không rẻ hơn với o200k_base (chỉ rẻ hơn với tokenizer cũ cl100k_base), lại mất nghĩa. Tin con số "tiếng Việt tốn gấp đôi" trên mạng: thường từ tokenizer cũ. "Trả lời bằng ngôn ngữ của khách": vô dụng khi chính ngôn ngữ của khách bị đoán sai. Pass/fail theo tỷ lệ ký tự có dấu: đánh trượt câu trả lời chỉ có số tiền.',
+      p: 'Phải duy trì hai bản prompt để eval khi cân nhắc đổi ngôn ngữ chỉ dẫn. Ca test ngôn ngữ cần grader đã kiểm tra trên output thật. Prompt tiếng Việt vẫn tốn hơn tiếng Anh khoảng 1,28× với o200k_base.'
+    },
+    deep: [
+      {
+        q: 'Cùng một ý, sao tiếng Việt lại tốn nhiều token hơn tiếng Anh?',
+        a: `<p>Vì tokenizer được <b>học từ dữ liệu</b>. Thuật toán gộp dần những chuỗi ký tự hay đi cùng nhau thành một token. Dữ liệu học có nhiều tiếng Anh thì "warranty", "delivery" đủ phổ biến để thành một token. Tiếng Việt ít hơn trong dữ liệu, nên nhiều âm tiết bị cắt thành vài mẩu.</p>
+<p>Mức chênh có thể rất lớn: Petrov và cộng sự (NeurIPS 2023) thấy cùng nội dung dịch sang các ngôn ngữ khác nhau chênh tới khoảng 15 lần số token, tuỳ tokenizer. Với tiếng Việt và tokenizer hiện tại, README ghi rằng chưa có nghiên cứu có phản biện nào đưa ra con số cụ thể, nên bảng 1,28× ở trên là một lần đo trên một đoạn prompt khoảng 80 từ, không phải hằng số.</p>
+<p>Hệ quả: đừng dùng tỷ lệ chung. Đo trên chính prompt của bạn, bằng tokenizer của đúng provider.</p>`,
+        take: 'Số token phụ thuộc tokenizer và dữ liệu nó đã học. Tỷ lệ của người khác không phải tỷ lệ của bạn.'
+      },
+      {
+        q: 'Vậy sao tokenizer mới lại thu hẹp khoảng cách nhiều thế?',
+        a: `<p>Tokenizer mới học thêm nhiều âm tiết tiếng Việt có dấu thành token riêng. So cùng đoạn prompt ở hai tokenizer của OpenAI (số từ README):</p>`,
+        viz(box) {
+          const rows = [];
+          SAMPLES.forEach(([k, name, , n]) => { rows.push([name + ' · cl100k', n.cl100k / 98, false]); rows.push([name + ' · o200k', n.o200k / 96, true]); });
+          box.append(bar(rows, 4.5, (v) => r2(v) + '×'), el('div', { class: 'cap', text: 'Tỷ lệ so với bản tiếng Anh của cùng tokenizer. Thanh đậm: o200k_base (GPT-4o trở đi). Tiếng Việt NFC từ 2,13× xuống 1,28×; NFD vẫn trên 3×.' }));
+        },
+        take: 'Con số "tiếng Việt tốn gấp đôi" lan truyền trên mạng thường đến từ tokenizer cũ. Với Claude và Gemini, đo bằng API đếm token của provider.'
+      },
+      {
+        q: 'Nếu bỏ dấu thì chữ toàn ASCII, chắc phải rẻ hơn chứ?',
+        a: `<p>Không, ít nhất với <code>o200k_base</code>: bản không dấu tốn 137 token so với 123 của bản có dấu. Lý do: tokenizer đã học âm tiết có dấu phổ biến như "hàng", "được" thành một token; còn "hang", "duoc" không dấu là chuỗi ít gặp hơn trong dữ liệu tiếng Việt nên bị cắt vụn.</p>
+<p>Nhưng kết luận này <b>đảo chiều với tokenizer cũ</b> <code>cl100k_base</code>: không dấu 160 token, có dấu 209. Chuyện gì xảy ra: cùng hai đoạn văn, tokenizer này cho kết quả ngược với o200k. Vì sao: cl100k chưa học nhiều âm tiết có dấu (cùng bản có dấu, nó tốn 209 token so với 123 của o200k), nên chữ có dấu bị cắt vụn còn tệ hơn chữ không dấu. Không có nghĩa là: không có nghĩa nên bỏ dấu khi dùng model đời cũ, vì nghĩa vẫn mất như dưới đây. Trong hệ thống thật: đo trên đúng tokenizer của model đang dùng, đừng mang kết luận của tokenizer này sang tokenizer khác.</p>
+<p>Và bỏ dấu làm mất nghĩa. Gõ một câu vào ô dưới, trình duyệt bỏ dấu từng từ và tìm những từ khác nhau bị gộp thành một.</p>`,
+        viz(box) {
+          const inp = el('input', { type: 'text', value: 'Bạn muốn bán bàn này à? Đơn đã được giao, đổi trả trong 30 ngày, bảo hành ở mọi chi nhánh.', style: 'width:100%;font:13px var(--mono);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' });
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const EXTRA = ['bàn', 'bán', 'bạn', 'ban', 'đơn', 'dơn', 'hàng', 'háng', 'hạng', 'giao', 'giáo', 'đổi', 'đội', 'bảo', 'báo', 'bão'];
+          function draw() {
+            const words = [...new Set((inp.value.match(/\p{L}+/gu) || []).map((w) => w.toLowerCase()))];
+            const groups = {};
+            words.concat(EXTRA).forEach((w) => { const k = strip(w).toLowerCase(); (groups[k] = groups[k] || new Set()).add(w); });
+            const hits = words.map((w) => strip(w).toLowerCase()).filter((k, i, a) => a.indexOf(k) === i && groups[k].size > 1);
+            out.innerHTML = hits.length ? '<div class="tbl"><table><tr><th>Không dấu</th><th>Có thể là</th></tr>' + hits.map((k) => '<tr><td class="mono">' + k + '</td><td>' + [...groups[k]].join(', ') + '</td></tr>').join('') + '</table></div>' : '<p class="hint">Không có từ nào trong câu bị trùng sau khi bỏ dấu.</p>';
+            cap.innerHTML = 'Câu không dấu: <span class="mono">' + esc(strip(inp.value)) + '</span><br>' + hits.length + ' từ trong câu trùng với từ khác sau khi bỏ dấu (so với câu của bạn và một danh sách nhỏ từ hay gặp).';
+          }
+          inp.addEventListener('input', draw);
+          box.append(inp, out, cap);
+          draw();
+        },
+        take: 'Viết không dấu không rẻ hơn với tokenizer mới (chỉ rẻ hơn với cl100k cũ), và luôn làm model phải đoán nghĩa. Giữ tiếng Việt có dấu.'
+      },
+      {
+        q: 'NFD là gì mà làm số token tăng gần gấp ba?',
+        a: `<p>Unicode cho phép viết một chữ có dấu theo hai cách. NFC dùng một code point đã ghép sẵn. NFD tách thành chữ gốc cộng các dấu kết hợp. Gõ một chữ hoặc một từ dưới đây để xem mã từng code point và số byte UTF-8, tính chính xác trong trình duyệt:</p>`,
+        viz(box) {
+          const inp = el('input', { type: 'text', value: 'ệ', style: 'width:200px;font:15px var(--mono);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' });
+          const out = el('div'), cap = el('div', { class: 'cap' });
+          const row = (label, s) => '<tr><td>' + label + '</td><td class="mono" style="font-size:12px">' + [...s].map((c) => 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + (/\p{M}/u.test(c) ? '<span style="color:var(--warn)">*</span>' : '')).join(' ') + '</td><td class="mono">' + cps(s) + '</td><td class="mono">' + bytes(s) + '</td></tr>';
+          function draw() {
+            const s = inp.value.slice(0, 40), a = s.normalize('NFC'), b = s.normalize('NFD');
+            out.innerHTML = '<div class="tbl"><table><tr><th>Dạng</th><th>Code point (* là dấu kết hợp)</th><th>Số code point</th><th>Byte UTF-8</th></tr>' + row('NFC', a) + row('NFD', b) + '</table></div>';
+            cap.innerHTML = a === b ? 'Chuỗi này không có chữ ghép được, hai dạng giống nhau. Thử "ệ", "Nguyễn", "đường".' : 'Cùng hiển thị "' + esc(a) + '", NFD dài hơn <b>' + (cps(b) - cps(a)) + '</b> code point và <b>' + (bytes(b) - bytes(a)) + '</b> byte. Mỗi dấu kết hợp là một ký tự hiếm gặp đứng riêng, tokenizer thường phải cắt nó thành token riêng. Chữ "đ" không phân rã trong NFD.';
+          }
+          inp.addEventListener('input', draw);
+          box.append(inp, out, cap);
+          draw();
+        },
+        take: 'NFD trông giống hệt NFC nhưng dài hơn về code point, byte và token. Tên file trên macOS, copy từ một số PDF và bộ gõ cũ hay sinh ra NFD.'
+      },
+      {
+        q: 'Ngoài tiền token, NFD còn làm hỏng gì?',
+        a: `<p>Ba thứ, đều âm thầm: prompt cache (khác byte nên khác prefix), so khớp chuỗi trong eval, và có thể cả chất lượng vì model ít thấy dạng này lúc huấn luyện. Ví dụ ca test kiểm tra "output có chứa cụm <code>bảo hành 12 tháng</code>". Output của model là NFC, nhưng chuỗi mong đợi trong file test được gõ trên máy lưu NFD:</p>`,
+        viz(box) {
+          const output = 'Dạ, tai nghe Pro X được bảo hành 12 tháng ạ.';
+          const expNFD = 'bảo hành 12 tháng'.normalize('NFD');
+          const out = el('div');
+          const fix = el('button', { text: 'Chuẩn hoá NFC cả hai phía', onclick: () => { st = !st; draw(); } });
+          let st = false;
+          function draw() {
+            const e = st ? expNFD.normalize('NFC') : expNFD, o = st ? output.normalize('NFC') : output;
+            const ok = o.includes(e);
+            fix.classList.toggle('on', st);
+            out.innerHTML = '<div class="tbl"><table><tr><td>Output</td><td>' + esc(o) + '</td><td class="mono">' + bytes(o) + ' byte</td></tr><tr><td>Chuỗi mong đợi</td><td>' + esc(e) + '</td><td class="mono">' + bytes(e) + ' byte</td></tr><tr><td>output.includes(mong đợi)</td><td colspan="2"><b class="' + (ok ? 'ok' : 'bad') + '">' + ok + '</b>' + (ok ? '' : ' <span class="bad">Ca test trượt dù câu trả lời đúng.</span>') + '</td></tr></table></div>';
+          }
+          box.append(fix, out, el('div', { class: 'cap', text: 'Cùng cơ chế: một system prompt lưu NFD và một bản lưu NFC là hai prefix khác nhau với prompt cache, dù diff bằng mắt không thấy gì (xem bài 7).' }));
+          draw();
+        },
+        take: 'Chuẩn hoá NFC ở ranh giới hệ thống (s.normalize("NFC")): input người dùng, tài liệu ingest, file template, và cả file test.'
+      },
+      {
+        q: 'Prompt đã dặn "trả lời bằng ngôn ngữ của khách". Sao bot vẫn trả lời tiếng Anh?',
+        a: `<p>Marchisio và cộng sự (EMNLP 2024) gọi hiện tượng này là <i>language confusion</i> và đo trên 15 ngôn ngữ: ngay cả model mạnh nhất cũng không ổn định hoàn toàn; prompt phức tạp và temperature cao làm tệ hơn; few-shot đúng ngôn ngữ đích giúp giảm một phần.</p>
+<p>Câu "ngôn ngữ của khách" có một lỗ hổng: nó giả định model nhận ra ngôn ngữ của khách. Với "don cua em toi dau roi a", tín hiệu tiếng Việt rất yếu. Trong production tiếng Việt, ba dạng hay gặp:</p>
+<ol><li>System prompt tiếng Anh, khách viết không dấu → trả lời tiếng Anh.</li><li>Tài liệu retrieve bằng tiếng Anh → trộn câu hoặc thuật ngữ tiếng Anh.</li><li>Hội thoại dài → lượt đầu đúng, lượt sau trôi dần sang tiếng Anh.</li></ol>
+<p>Quy tắc hiệu quả nói rõ trường hợp khó: "${LANG_RULE}"</p>`,
+        take: 'Viết quy tắc ngôn ngữ cho đúng trường hợp khó (không dấu, tài liệu tiếng Anh), thêm ví dụ tiếng Việt, và test ngôn ngữ output.'
+      },
+      {
+        q: 'Kiểm tra ngôn ngữ output bằng code: đếm ký tự có dấu là xong?',
+        a: `<p>Đếm tỷ lệ ký tự có dấu rất rẻ, nhưng nó không phân biệt được "không phải tiếng Việt" với "không có chữ". Bảng dưới chấm 5 output của bot bằng hai luật: luật ngây thơ (tỷ lệ bằng 0 là trượt) và luật của README (loại riêng output chỉ có số, mã; tỷ lệ thấp chỉ là tín hiệu để xem lại).</p>`,
+        viz(box) {
+          const OUTS = ['Dạ, đơn SV-4821 đang được giao ạ.', 'Here is the status of your order SV-4821.', '1,000,000 VND', 'SV-4821', 'Dạ, theo return policy thì unopened được refund trong 30 days ạ.'];
+          const rows = OUTS.map((o) => { const c = langCheck(o); return '<tr><td>' + esc(o) + '</td><td class="mono">' + Math.round(c.ratio * 100) + '%</td><td class="' + (c.naive === 'fail' ? 'bad' : 'ok') + '">' + c.naive + '</td><td>' + c.better + '</td></tr>'; });
+          box.innerHTML = '<div class="tbl"><table><tr><th>Output</th><th>Ký tự có dấu / chữ cái</th><th>Luật ngây thơ</th><th>Luật README</th></tr>' + rows.join('') + '</table></div><div class="cap"><span class="bad">Luật ngây thơ đánh trượt "1,000,000 VND" và "SV-4821" giống hệt "Here is the status...", dù chỉ ca thứ hai là lỗi.</span> Câu trộn tiếng Anh ở dòng cuối lại qua được cả hai luật vì vẫn có chữ có dấu: cần grader ngôn ngữ đã được kiểm tra trên chính output của bạn.</div>';
+        },
+        take: 'Tỷ lệ ký tự có dấu chỉ để lọc ca cần xem lại. Pass/fail cần bộ phát hiện ngôn ngữ hoặc grader đã kiểm tra trên dữ liệu thật, và loại riêng output chỉ gồm số, mã.'
+      },
+      {
+        q: 'Rốt cuộc nên viết chỉ dẫn bằng tiếng Anh hay tiếng Việt?',
+        a: `<p>Không có câu trả lời chung. Nghiên cứu cho thấy model suy luận tốt hơn khi tự dịch input sang tiếng Anh rồi giải, và một nghiên cứu năm 2025 xác nhận model thường suy luận tốt nhất bằng tiếng Anh, nhưng bước dịch cũng có thể gây lỗi. Đó là kết quả về <i>suy luận trên input</i>, không trả lời trực tiếp chuyện chỉ dẫn viết bằng gì.</p>
+<p>Với bot ShopViet: output là văn bản tiếng Việt cho khách, giọng văn quan trọng ("dạ", "anh/chị"), người sửa prompt là đội nghiệp vụ Việt Nam. Ba tiêu chí nghiêng về tiếng Việt, chỉ có chi phí token nghiêng về tiếng Anh (1,28× với o200k_base). Cách kết hợp thường chạy tốt: khung cấu trúc bằng tiếng Anh, còn ví dụ, quy tắc xưng hô và giọng văn bằng tiếng Việt. Ví dụ tiếng Việt kéo output về tiếng Việt mạnh hơn bất kỳ câu chỉ dẫn nào.</p>`,
+        take: 'Quyết định bằng eval trên cả hai phiên bản, không bằng cảm nhận. Chênh 1,28× token thường nhỏ hơn cái giá của một câu trả lời sai giọng.'
+      },
+      {
+        q: 'Còn những chi tiết tiếng Việt nào hay làm hỏng output?',
+        a: `<p>Xưng hô, định dạng số và ngày, viết tắt. Xưng hô là một phần của prompt: "anh/chị", "bạn", "quý khách" cho ra giọng văn rất khác nhau; khi không biết giới tính, quy định cách trung tính, đừng để model đoán từ tên. Số và ngày phải quy định trong prompt <b>và</b> kiểm tra bằng code, nhất là khi output được parse lại. Chọn quy ước của ShopViet và xem output nào trượt:</p>`,
+        viz(box) {
+          const OUT = ['Tổng tiền 1.250.000 đ, giao ngày 29/11/2026.', 'Total 1,250,000 VND, delivery 2026-11-29.', 'Tổng tiền 1.250.000đ, giao ngày 29/11.', 'Tổng tiền 1250000 đồng, giao 29-11-2026.'];
+          const RULES = { vn: { money: /\d{1,3}(\.\d{3})+ đ(?!\p{L})/u, date: /\b\d{2}\/\d{2}\/\d{4}\b/, label: '1.000.000 đ và dd/mm/yyyy' }, iso: { money: /\d{1,3}(,\d{3})+ VND/, date: /\b\d{4}-\d{2}-\d{2}\b/, label: '1,000,000 VND và yyyy-mm-dd' } };
+          const out = el('div');
+          const s = select('Quy ước trong prompt', [['vn', RULES.vn.label], ['iso', RULES.iso.label]], 'vn', draw);
+          function draw() {
+            const r = RULES[s.sel.value];
+            out.innerHTML = '<div class="tbl"><table><tr><th>Output</th><th>Số tiền</th><th>Ngày</th></tr>' + OUT.map((o) => '<tr><td>' + esc(o) + '</td><td class="' + (r.money.test(o) ? 'ok' : 'bad') + '">' + (r.money.test(o) ? 'đúng' : 'sai') + '</td><td class="' + (r.date.test(o) ? 'ok' : 'bad') + '">' + (r.date.test(o) ? 'đúng' : 'sai') + '</td></tr>').join('') + '</table></div>';
+          }
+          box.append(s.node, out, el('div', { class: 'cap', text: 'Dòng 3 và 4 trông "gần đúng" với người đọc nhưng làm hỏng code parse lại số tiền hay ngày. Regex ở đây là ví dụ đơn giản cho quy ước đã chọn.' }));
+          draw();
+        },
+        take: 'Ghi rõ quy ước xưng hô, số, ngày trong prompt; kiểm tra bằng code; đưa teencode ("ko", "đc", "sp", "ib") vào bộ test.'
+      }
+    ],
+    poc: {
+      goal: "Đếm lại bảng token của README §3.6 bằng <code>tiktoken</code> thật (o200k_base, cl100k_base) cho tiếng Anh, tiếng Việt NFC, không dấu, NFD. Chạy bộ kiểm tra ngôn ngữ output trên các câu trả lời <b>viết tay</b>, không phải output model thật. Phần gọi OpenAI thật là tuỳ chọn và đã bị bỏ qua vì không có key, nên trong kết quả dưới đây không có câu nào do model viết.",
+      file: "docs/prompt-engineering/pocs/08_multilingual_failures.py",
+      run: "uv run docs/prompt-engineering/pocs/08_multilingual_failures.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí. Phần 3 tuỳ chọn cần <code>OPENAI_API_KEY</code> trong <code>pocs/.env</code>, dưới $0.001.",
+      output: "Phần 1: đoạn system prompt CSKH ở README §3.6, đếm lại bằng tiktoken\n\nPhiên bản             Code point  Byte UTF-8  o200k_base   cl100k_base  So với README\n--------------------  ----------  ----------  -----------  -----------  -------------\nTiếng Anh             486         486         96 (1.00×)   98 (1.00×)   khớp\nTiếng Việt NFC        464         615         123 (1.28×)  209 (2.13×)  khớp\nTiếng Việt không dấu  464         464         137 (1.43×)  160 (1.63×)  khớp\nTiếng Việt NFD        595         734         339 (3.53×)  431 (4.40×)  khớp\n\nNFC và NFD trông giống hệt, chung 1 byte đầu rồi khác ('Bạn': ạ là 1 code point vs a + dấu nặng).\nHai prompt khác byte nên prefix cache gãy ngay từ chữ có dấu đầu tiên.\n\nPhần 2: bộ kiểm tra ngôn ngữ output (tỷ lệ chữ có dấu + từ chức năng), chạy trên output VIẾT TAY\n\nOutput                                                 Tỷ lệ có dấu  Luật ngây thơ (=0 là fail)  Bộ kiểm tra\n-----------------------------------------------------  ------------  --------------------------  ----------------------------\nDạ, đơn SV-4821 đang được giao, dự kiến tới trong 2 …  0.32          pass                        tiếng Việt\nYour order SV-4821 is out for delivery and should ar…  0.00          fail                        TIẾNG ANH\ndon SV-4821 cua anh dang giao, khoang 2 ngay nua toi…  0.00          fail                        tiếng Việt không dấu\nDạ, theo return policy thì sản phẩm unopened được re…  0.14          pass                        tiếng Việt (+4 từ tiếng Anh)\nSV-4821: 1.250.000 đ                                   0.33          pass                        bỏ qua (chỉ số/mã)\n1,000,000 VND                                          0.00          fail                        bỏ qua (chỉ số/mã)\nHere is the warranty info for Pro X.                   0.00          fail                        TIẾNG ANH\n\nPhần 3 (tuỳ chọn): gọi OpenAI thật với khách viết không dấu, cần OPENAI_API_KEY trong pocs/.env, < $0.001\n  Bỏ qua: không có OPENAI_API_KEY trong docs/prompt-engineering/pocs/.env (xem .env.example).\n\nRút ra: số liệu bảng §3.6 tái lập đúng từng token; NFD tốn ~2,8× NFC với o200k. Bỏ dấu đắt hơn\ncó dấu với o200k (137 vs 123) nhưng rẻ hơn với cl100k (160 vs 209): kết luận phụ thuộc tokenizer.\nLuật 'tỷ lệ có dấu = 0 là lỗi' đánh trượt oan '1,000,000 VND' và câu không dấu; ngay cả bộ kiểm tra tốt hơn vẫn\ncho câu trộn 'return policy… refund… 30 days' qua với nhãn tiếng Việt, chỉ đếm được từ tiếng Anh để gắn cờ xem lại.",
+      measured: true,
+      read: ["Phần 1: cả 8 con số của bảng §3.6 khớp đúng từng token. NFD 339 token so với NFC 123 với o200k.", "Bỏ dấu đắt hơn có dấu với o200k (137 vs 123) nhưng rẻ hơn với cl100k (160 vs 209): kết luận phụ thuộc tokenizer.", "Phần 2: luật \"tỷ lệ có dấu = 0 là lỗi\" đánh trượt oan \"1,000,000 VND\" và câu không dấu; câu trộn \"return policy… refund\" vẫn được nhãn tiếng Việt, chỉ gắn cờ số từ tiếng Anh.", "Phần 3 chưa chạy (không có key): mọi output ở Phần 2 là câu viết tay, output model thật chưa được đo."]
+    },
+    mount(stage) {
+      const st = { tok: 'o200k' };
+      const barsBox = el('div'), tokTbl = el('div'), tokFlags = el('div'), tokCap = el('div', { class: 'qa-viz' });
+      const ta = el('textarea', { rows: 3, style: 'width:100%;font:12.5px var(--mono);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' });
+      ta.value = 'Khi khách hỏi về trạng thái đơn hàng, tra cứu bằng lookup_order trước khi trả lời. Xưng "anh/chị", mở đầu bằng "Dạ".';
+      const nfdBtn = el('button', { text: 'Dán bản NFD (như file sửa trên macOS)', onclick: () => { ta.value = ta.value.normalize('NFD'); renderTok(); } });
+
+      function renderTok() {
+        const ref = SAMPLES[0][3][st.tok];
+        barsBox.replaceChildren(hbars(SAMPLES.map(([k, name, , n]) => [name, n[st.tok], k === 'nfc']), { max: 450, fmt: (v) => v + ' tok' }));
+        const ests = SAMPLES.map(([, , s]) => est(s));
+        tokTbl.innerHTML = '<div class="tbl sum" style="border:0;margin:0;padding:0"><table><tr><th>Đoạn mẫu README</th><th>Code point</th><th>Byte UTF-8</th><th>Token đo (README, ' + st.tok + '_base)</th><th>Tỷ lệ</th><th>Ước lượng của lab</th></tr>' +
+          SAMPLES.map(([k, name, s, n], i) => '<tr' + (k === 'nfc' ? ' class="cur"' : '') + '><td>' + name + '</td><td class="mono">' + cps(s) + '</td><td class="mono">' + bytes(s) + '</td><td class="mono"><b>' + n[st.tok] + '</b></td><td class="mono">' + r2(n[st.tok] / ref) + '×</td><td class="mono">' + ests[i] + ' (' + r2(ests[i] / ests[0]) + '×)</td></tr>').join('') + '</table></div>';
+        const s = ta.value, forms = [['NFC', s.normalize('NFC')], ['NFD', s.normalize('NFD')], ['Không dấu', strip(s.normalize('NFC'))]];
+        const flags = [];
+        const n = SAMPLES.map((x) => x[3][st.tok]);
+        if (n[2] > n[1]) flags.push(['bad', 'Với ' + st.tok + '_base, bản <b>không dấu tốn hơn bản có dấu</b> (' + n[2] + ' so với ' + n[1] + ' token). Ước lượng của lab lại cho hai bản gần bằng nhau (' + ests[2] + ' và ' + ests[1] + '): bộ ước lượng không biết tokenizer đã học âm tiết nào.']);
+        else flags.push(['warn', 'Với ' + st.tok + '_base, bản không dấu rẻ hơn bản có dấu (' + n[2] + ' so với ' + n[1] + '), nhưng vẫn đắt hơn tiếng Anh ' + r2(n[2] / n[0]) + '× và mất nghĩa. Đổi sang o200k_base để thấy chiều ngược lại.']);
+        flags.push(['bad', 'NFD tốn ' + r2(n[3] / n[1]) + '× bản NFC cùng chữ, dù hiển thị giống hệt.']);
+        if (s && s !== s.normalize('NFC')) flags.push(['bad', 'Văn bản trong ô đang ở dạng <b>NFD</b>: ' + cps(s) + ' code point thay vì ' + cps(s.normalize('NFC')) + '. Nó sẽ làm vỡ cache và so khớp chuỗi.']);
+        tokFlags.replaceChildren(
+          el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Chỉ dẫn của bạn</th><th>Code point</th><th>Byte UTF-8</th><th>Token (ước lượng)</th></tr>' + forms.map(([nm, f]) => '<tr><td>' + nm + '</td><td class="mono">' + cps(f) + '</td><td class="mono">' + bytes(f) + '</td><td class="mono">' + est(f) + '</td></tr>').join('') })]),
+          ...flags.map(([l, t]) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t })));
+        tokCap.innerHTML = '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> Cùng nội dung, tiếng Việt NFC tốn ' + r2(n[1] / n[0]) + '× tiếng Anh, còn NFD tốn ' + r2(n[3] / n[0]) + '×. ' + (n[2] > n[1] ? 'Bỏ dấu còn đắt hơn giữ dấu.' : 'Với tokenizer cũ này, bỏ dấu rẻ hơn giữ dấu: ngược với o200k_base.') + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> Tokenizer gộp những chuỗi hay gặp lúc học thành một token. ' + (n[2] > n[1] ? 'o200k đã học nhiều âm tiết có dấu dạng NFC thành token riêng; chữ không dấu và dấu kết hợp đứng riêng (NFD) ít gặp hơn, nên bị cắt vụn.' : 'cl100k chưa học nhiều âm tiết có dấu, nên bản có dấu bị cắt vụn hơn bản không dấu. Dấu kết hợp đứng riêng (NFD) vẫn đắt nhất.') + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> Không có nghĩa tiếng Việt luôn tốn ' + r2(n[1] / n[0]) + '×, hay bỏ dấu luôn đắt hơn (o200k: đắt hơn, cl100k: rẻ hơn). Đây là một đoạn 80 từ đo bằng tiktoken; Claude và Gemini dùng tokenizer khác. Bộ ước lượng của lab chỉ để thấy xu hướng, nó sai ngay ở chiều không dấu.</p><p style="margin:0"><b>Trong hệ thống thật:</b> Chuẩn hoá NFC ở ranh giới hệ thống và đo bằng API đếm token của provider trên dữ liệu thật.</p></div>';
+      }
+      ta.addEventListener('input', renderTok);
+      const tk = select('Tokenizer', [['o200k', 'o200k_base (GPT-4o trở đi)'], ['cl100k', 'cl100k_base (GPT-4, GPT-3.5)']], 'o200k', (v) => { st.tok = v; renderTok(); });
+
+      const sc = { sys: 'en', rule: 'generic', shot: 'none', input: 'nd', doc: 'vi', turn: 'first' };
+      const langOut = el('div'), langCap = el('div', { class: 'qa-viz' });
+      const SC = [
+        ['sys', 'System prompt viết bằng', [['en', 'Tiếng Anh'], ['vi', 'Tiếng Việt']]],
+        ['rule', 'Quy tắc ngôn ngữ', [['generic', '"Trả lời bằng ngôn ngữ của khách"'], ['none', 'Không có'], ['specific', 'Quy tắc cụ thể (§3.6)']]],
+        ['shot', 'Ví dụ few-shot', [['none', 'Không có'], ['vi', 'Có, bằng tiếng Việt']]],
+        ['input', 'Khách viết', Object.entries(INPUTS).map(([k, v]) => [k, v])],
+        ['doc', 'Tài liệu retrieve', [['vi', 'Tiếng Việt'], ['en', 'Tiếng Anh']]],
+        ['turn', 'Vị trí trong hội thoại', [['first', 'Lượt 1'], ['long', 'Lượt 15']]]
+      ];
+      const scSel = SC.map(([k, label, opts]) => select(label, opts, sc[k], (v) => { sc[k] = v; renderLang(); }).node);
+      function renderLang() {
+        const r = langRisk(sc), c = langCheck(r.out);
+        const col = r.lvl === 'cao' ? 'bad' : r.lvl === 'trung bình' ? 'warn' : 'ok';
+        langOut.replaceChildren(
+          el('div', { class: 'stat', html: '<span>Rủi ro trả lời sai ngôn ngữ: <b style="color:var(--' + col + ')">' + r.lvl + '</b> (điểm định tính ' + r.score + ')</span>' }),
+          ...r.why.map(([l, t]) => el('div', { style: 'font-size:13px;margin:4px 0;padding:5px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t })),
+          el('div', { style: 'margin-top:8px;font-size:13px', html: '<b>Khách:</b> <span class="mono">' + esc(INPUTS[sc.input]) + '</span><br><b>Kiểu output dễ gặp:</b> <span class="mono">' + esc(r.out) + '</span>' }),
+          el('div', { class: 'stat', html: '<span>Ký tự có dấu / chữ cái: <b>' + Math.round(c.ratio * 100) + '%</b></span><span>Luật ngây thơ: <b class="' + (c.naive === 'fail' ? 'bad' : 'ok') + '">' + c.naive + '</b></span><span>Luật README: <b>' + c.better + '</b></span>' }));
+        const mixed = /policy|refund|days/.test(r.out), eng = c.ratio === 0 && !c.codeOnly, code = c.codeOnly;
+        langCap.innerHTML = '<div style="font-size:13.5px">' + (eng ? '<p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> Bot trả lời hoàn toàn bằng tiếng Anh cho một khách Việt.</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + (r.kind === 'drift' ? 'Hội thoại dài và không có quy tắc ngôn ngữ: lượt đầu đúng tiếng Việt, các lượt sau trôi dần sang tiếng Anh.' : 'Chỉ dẫn tiếng Anh, khách viết không dấu nên tín hiệu tiếng Việt yếu; câu "ngôn ngữ của khách" phụ thuộc đúng vào thứ model đang đoán sai.') + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> Không bắt buộc viết toàn bộ prompt bằng tiếng Việt. Thử chọn quy tắc cụ thể hoặc ví dụ tiếng Việt mà giữ system tiếng Anh.</p>' : mixed ? '<p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> Câu trả lời trộn thuật ngữ tiếng Anh, và vẫn qua luật đếm ký tự có dấu.</p><p style="margin:0 0 4px"><b>Vì sao:</b> Model chép thuật ngữ từ tài liệu tiếng Anh vừa đọc. Luật đếm dấu chỉ cần vài chữ có dấu là cho qua.</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> Không phải lúc nào giữ tiếng Anh cũng sai: tên sản phẩm và mã lỗi nên giữ nguyên.</p>' : code ? '<p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> Output chỉ có mã và số. Luật ngây thơ đánh trượt nó như một câu tiếng Anh.</p><p style="margin:0 0 4px"><b>Vì sao:</b> Không có chữ thì không có ngôn ngữ để đo. Mọi bộ phát hiện ngôn ngữ đều không đáng tin với loại output này.</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> Không phải bot lỗi. Nhưng cũng nên xem lại: khách hỏi "SV-4821?" thì một câu trả lời đầy đủ có lẽ tốt hơn.</p>' : '<p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> Output đúng tiếng Việt có dấu.</p><p style="margin:0 0 4px"><b>Vì sao:</b> Tín hiệu tiếng Việt đủ mạnh (từ khách, quy tắc cụ thể hoặc ví dụ).</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> Language confusion không bao giờ biến mất hoàn toàn, kể cả với model mạnh nhất; vẫn cần ca test ngôn ngữ.</p>') + '<p style="margin:0"><b>Trong hệ thống thật:</b> Ca test ngôn ngữ output có đủ biến thể có dấu, không dấu, teencode, chỉ mã đơn; grader ngôn ngữ đã được kiểm tra trên output thật.</p></div>';
+      }
+
+      const q = el('input', { type: 'text', value: 'tieng anh', 'aria-label': 'Tìm triệu chứng', style: 'flex:1;min-width:200px;font:13px var(--font);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)' });
+      const failOut = el('div');
+      function renderFail() {
+        const terms = fold(q.value).split(/\s+/).filter(Boolean);
+        const rows = FAIL.filter((r) => terms.every((t) => fold(r.join(' ')).includes(t)));
+        failOut.innerHTML = '<div class="hint" style="margin:4px 0">' + rows.length + ' / ' + FAIL.length + ' dòng khớp (tìm không phân biệt dấu: "tieng anh" khớp "tiếng Anh").</div><div class="tbl sum" style="border:0;margin:0;padding:0"><table><tr><th>Triệu chứng</th><th>Nguyên nhân khả dĩ</th><th>Cách kiểm tra / xử lý</th></tr>' + (rows.length ? rows : FAIL).map((r) => '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>').join('') + '</table></div>' + (rows.length ? '' : '<div class="hint">Không có dòng khớp, đang hiện toàn bộ bảng.</div>');
+      }
+      q.addEventListener('input', renderFail);
+
+      const checked = CHECK.map((g) => g[1].map(() => false));
+      const checkStat = el('div', { class: 'stat' }), checkWarn = el('div');
+      const checkBox = el('div', { class: 'cols' }, CHECK.map(([title, items], gi) => el('div', {}, [el('h4', { text: title }), ...items.map((t, ii) => {
+        const cb = el('input', { type: 'checkbox' });
+        cb.addEventListener('change', () => { checked[gi][ii] = cb.checked; renderCheck(); });
+        return el('label', { style: 'display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px;font-size:12.5px;margin-bottom:6px;align-items:start' }, [cb, el('span', { text: t })]);
+      })])));
+      function renderCheck() {
+        const done = checked.map((g) => g.filter(Boolean).length);
+        checkStat.innerHTML = CHECK.map(([t, items], i) => '<span>' + t + ': <b class="' + (done[i] === items.length ? 'ok' : '') + '">' + done[i] + '/' + items.length + '</b></span>').join('');
+        const nfcIdx = 11, langOpen = !checked[0][nfcIdx], secOpen = !checked[0][7];
+        const warns = [];
+        if (langOpen) warns.push('Chưa tick "Văn bản tiếng Việt ở dạng NFC": đây là nguyên nhân của dòng "Số token tiếng Việt cao bất thường; cache miss dù nội dung giống" ở bảng lỗi.');
+        if (secOpen) warns.push('Chưa tick "Không có quy tắc bảo mật hay giới hạn nghiệp vụ chỉ nằm trong prompt": prompt không cấp quyền và không chặn được hành động (bài 6).');
+        checkWarn.replaceChildren(...warns.map((w) => el('div', { style: 'font-size:13px;margin:4px 0;padding:5px 10px;border-left:3px solid var(--warn);background:var(--bg);border-radius:0 6px 6px 0', text: w })));
+      }
+
+      stage.append(
+        el('h4', { text: 'Token của cùng một chỉ dẫn ở 4 dạng', style: 'margin:0 0 6px' }),
+        el('div', { class: 'row' }, [tk.node]), barsBox, tokTbl,
+        el('div', { class: 'hint', style: 'margin:10px 0 4px', text: 'Chỉ dẫn của bạn (gõ hoặc dán):' }), ta, el('div', { class: 'row', style: 'margin-top:6px' }, [nfdBtn, el('button', { text: 'Chuẩn hoá NFC', onclick: () => { ta.value = ta.value.normalize('NFC'); renderTok(); } })]),
+        tokFlags, tokCap,
+        el('p', { class: 'hint', text: 'Số token in đậm đo bằng tiktoken trong README (tháng 11/2026). Code point và byte tính chính xác trong trình duyệt. "Ước lượng của lab" là luật thô: từ ASCII tới 8 ký tự là 1 token, dài hơn thì ký tự/6; từ có chữ ngoài ASCII là 1 + ký tự/6; mỗi dấu câu và mỗi dấu kết hợp là 1 token. Không phải tokenizer thật.' }),
+        el('h4', { text: 'Khi nào bot trả lời sai ngôn ngữ?', style: 'margin:24px 0 6px' }),
+        el('div', { style: 'display:grid;gap:6px;margin-bottom:8px' }, scSel), langOut, langCap,
+        el('p', { class: 'hint', text: 'Mức rủi ro là điểm định tính cộng từ các tình huống README §3.6 mô tả, không phải xác suất đo được. Output mẫu là câu viết tay, không phải output model thật.' }),
+        el('h4', { text: 'Tra lỗi theo triệu chứng (§3.7)', style: 'margin:24px 0 6px' }),
+        el('div', { class: 'row' }, [q]), failOut,
+        el('h4', { text: 'Checklist (§3.8)', style: 'margin:24px 0 6px' }), checkBox, checkStat, checkWarn
+      );
+      renderTok();
+      renderLang();
+      renderFail();
+      renderCheck();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -31,6 +31,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Khi AI chỉ cần chọn, không cần viết: model trả về lựa chọn kèm xác suất, calibration, đặt ngưỡng, provider và các ứng dụng như routing ticket, guardrail, chọn model.',
     parts: ['Workflow tổng hợp', 'System One và hợp đồng vào ra', 'Prefill rồi chấm điểm lựa chọn', 'Xác suất và calibration', 'Giới hạn và lựa chọn thay thế', 'Decision model theo provider', 'Ứng dụng: routing và guardrail', 'Ứng dụng: agent, router và taxonomy', 'Thiết kế, ngưỡng và vận hành']
   },
+  'prompt-engineering': {
+    title: 'LLM - 06 - Prompt Engineering',
+    description: 'Prompt là một phần của chương trình: viết cụ thể, few-shot, cấu trúc, tài liệu dài, chaining, tối ưu tự động, versioning, regression test, đổi model và đa ngôn ngữ.',
+    parts: ['Workflow tổng hợp', 'Vai trò và viết cụ thể', 'Few-shot', 'Model, context và tool contract', 'Cấu trúc và tài liệu dài', 'Độ dài, giọng văn và chaining', 'Tối ưu tự động và quản lý prompt', 'Versioning, regression và đổi model', 'Đa ngôn ngữ và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

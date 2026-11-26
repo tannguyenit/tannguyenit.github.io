@@ -1,0 +1,683 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt Engineering Lab 02</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="01-roles-specificity.html">← Lab trước</a><a href="03-model-context-contract.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/prompt-engineering/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const estTok = (s) => Math.round(s.normalize('NFC').length / 3.3);
+  const LABELS = ['order_status', 'return', 'product', 'other'];
+  const LNAME = { order_status: 'tra đơn', return: 'đổi trả', product: 'hỏi sản phẩm', other: 'khác' };
+  const LCOL = { order_status: 'var(--g1)', return: 'var(--g2)', product: 'var(--g3)', other: 'var(--g4)' };
+  const DIAC = /[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i;
+
+  const POOL = [
+    { id: 'e1', text: 'Đơn SV-4821 tới đâu rồi shop?', label: 'order_status' },
+    { id: 'e2', text: 'SV-5102 giao chua vay shop', label: 'order_status' },
+    { id: 'e3', text: 'Mình đặt hôm qua mà chưa thấy ai gọi giao hàng', label: 'order_status' },
+    { id: 'e4', text: 'Tai nghe mua tuần trước bị rè, đổi được không?', label: 'return' },
+    { id: 'e5', text: 'SV-4790 sạc không vào điện, mình muốn trả lại', label: 'return' },
+    { id: 'e6', text: 'chua boc hop thi tra lai dc ko shop', label: 'return' },
+    { id: 'e7', text: 'Pro X có chống ồn không?', label: 'product' },
+    { id: 'e8', text: 'Sạc nhanh 30W dùng cho iPhone được không shop?', label: 'product' },
+    { id: 'e9', text: 'loa mini z pin dc bao lau', label: 'product' },
+    { id: 'e10', text: 'Shop mở cửa tới mấy giờ?', label: 'other' },
+    { id: 'e11', text: 'Cho mình xin địa chỉ cửa hàng ở Hà Nội', label: 'other' },
+    { id: 'e12', text: 'SV-4821 xuất hoá đơn công ty được không', label: 'other' }
+  ];
+  const TESTS = [
+    { id: 't1', text: 'SV-4821 sạc chậm quá, đổi được không shop', label: 'return' },
+    { id: 't2', text: 'tai nghe pro x con mau trang ko', label: 'product' },
+    { id: 't3', text: 'Giao hàng tới Quận 7 mất mấy ngày?', label: 'other' },
+    { id: 't4', text: 'Cảm ơn shop nha', label: 'other' }
+  ];
+  const PRESETS = [
+    ['demo', 'Bộ demo đầu tiên', ['e7', 'e4', 'e1', 'e2', 'e3']],
+    ['missing', 'Thiếu nhãn "khác"', ['e1', 'e4', 'e7', 'e8']],
+    ['surface', 'Không dấu chỉ ở một nhãn', ['e1', 'e6', 'e7', 'e10', 'e4', 'e11']],
+    ['balanced', 'Cân bằng, đa dạng, xáo', ['e4', 'e10', 'e2', 'e8', 'e5', 'e11', 'e9', 'e1', 'e12', 'e6', 'e7', 'e3']]
+  ];
+  const BY = Object.fromEntries(POOL.map((e) => [e.id, e]));
+  const INSTR = 'Phân loại tin nhắn khách của ShopViet vào một nhãn: order_status (hỏi về một đơn cụ thể), return (đổi, trả, bảo hành), product (hỏi về sản phẩm), other (còn lại). Chỉ trả về nhãn.';
+
+  const F = (t) => {
+    const w = t.toLowerCase().replace(/[?,.!]/g, '').split(/\s+/).filter(Boolean);
+    return { code: /SV-\d{4}/.test(t), nodiac: !DIAC.test(t), short: w.length <= 6, first: w[0] || '', words: new Set(w), n: w.length };
+  };
+  function surface(a, b) {
+    const fa = F(a), fb = F(b);
+    const inter = [...fa.words].filter((x) => fb.words.has(x)).length;
+    const jac = inter / (fa.words.size + fb.words.size - inter || 1);
+    const shared = [];
+    if (fa.code && fb.code) shared.push('có mã đơn');
+    if (fa.nodiac && fb.nodiac) shared.push('không dấu');
+    if (fa.short === fb.short) shared.push(fa.short ? 'ngắn' : 'dài');
+    if (inter) shared.push(inter + ' từ chung');
+    const sim = 0.35 * (fa.code && fb.code ? 1 : 0) + 0.25 * (fa.nodiac === fb.nodiac ? 1 : 0) + 0.15 * (fa.short === fb.short ? 1 : 0) + 0.25 * jac;
+    return { sim, shared };
+  }
+  const renderEx = (e) => `<example>\nKhách: ${e.text}\nNhãn: ${e.label}\n</example>`;
+  const renderPrompt = (ids) => INSTR + (ids.length ? '\n\n<examples>\n' + ids.map((id) => renderEx(BY[id])).join('\n') + '\n</examples>' : '');
+
+  function analyze(ids, test) {
+    const ex = ids.map((id) => BY[id]);
+    const dist = Object.fromEntries(LABELS.map((l) => [l, ex.filter((e) => e.label === l).length]));
+    const n = ex.length;
+    const maxN = Math.max(0, ...Object.values(dist));
+    const tops = LABELS.filter((l) => dist[l] === maxN);
+    const majority = n && tops.length === 1 ? tops[0] : null;
+    const missing = LABELS.filter((l) => !dist[l]);
+    let tail = 0;
+    for (let i = n - 1; i >= 0 && ex[i].label === ex[n - 1].label; i--) tail++;
+    const last = n ? ex[n - 1].label : null;
+    const sims = ex.map((e) => Object.assign({ e }, surface(e.text, test.text)));
+    const near = sims.length ? sims.reduce((a, b) => (b.sim > a.sim ? b : a)) : null;
+    const tf = F(test.text), spur = [];
+    [['code', 'có mã đơn SV-'], ['nodiac', 'viết không dấu']].forEach(([k, name]) => {
+      if (!tf[k]) return;
+      const w = ex.filter((e) => F(e.text)[k]);
+      const labs = [...new Set(w.map((e) => e.label))];
+      if (w.length >= 2 && labs.length === 1 && labs[0] !== test.label) spur.push({ sev: 'bad', name, n: w.length, lab: labs[0] });
+      else if (w.length === 1 && labs[0] !== test.label) spur.push({ sev: 'warn', name, n: 1, lab: labs[0] });
+    });
+    const imbalance = n ? maxN / n : 0;
+    const prompt = renderPrompt(ids);
+    return { ex, n, dist, majority, maxN, missing, tail, last, sims, near, spur, imbalance,
+      tokEx: ids.reduce((s, id) => s + estTok(renderEx(BY[id])), 0), tokBase: estTok(INSTR), tokMsg: estTok(test.text), tokAll: estTok(prompt) + estTok(test.text) };
+  }
+
+  return {
+    id: 'few-shot', nav: '2. Few-shot', ref: '§1.4',
+    title: 'Ba ví dụ dạy model điều gì: cách phân loại, hay nhãn đa số, nhãn của ví dụ cuối và việc "có mã đơn thì là tra đơn"?',
+    hook: 'Chọn ví dụ cho bài phân loại intent của ShopViet, đổi thứ tự, đổi tin nhắn test. Lab tính phân phối nhãn, độ giống bề mặt với tin nhắn test, số token, và đánh dấu bộ ví dụ đang đẩy model về nhãn sai.',
+    terms: [
+      ['Few-shot', 'Đưa vài ví dụ input và output vào prompt để model bắt chước. Ví dụ "Khách: Pro X có chống ồn không? / Nhãn: product". Không có ví dụ nào là zero-shot.'],
+      ['Intent (ý định)', 'Loại yêu cầu của tin nhắn, ở đây là 4 nhãn: order_status (hỏi một đơn cụ thể), return (đổi trả, bảo hành), product (hỏi sản phẩm), other (còn lại).'],
+      ['Phân phối nhãn', 'Mỗi nhãn chiếm bao nhiêu ví dụ. Ví dụ 3 order_status, 1 return, 1 product, 0 other.'],
+      ['Không gian nhãn', 'Tập các nhãn có thể có. Nếu không ví dụ nào mang nhãn other, model khó biết other là một lựa chọn.'],
+      ['Majority label bias', 'Model nghiêng về nhãn xuất hiện nhiều nhất trong ví dụ (Zhao và cộng sự, ICML 2021).'],
+      ['Recency bias', 'Nhãn của ví dụ cuối có trọng số lớn. Chuỗi P P P N làm model đoán N cho phần lớn input.'],
+      ['Đặc điểm bề mặt', 'Thứ nhìn thấy ngay trên chữ, không phải nghĩa: độ dài, có mã đơn SV- không, viết có dấu hay không, câu mở đầu. Ví dụ hai tin cùng có "SV-4821" giống nhau về bề mặt dù một tin hỏi giao hàng, một tin đòi đổi.'],
+      ['Tương quan giả', 'Một đặc điểm bề mặt trùng hợp đi cùng một nhãn trong ví dụ. Ví dụ mọi ví dụ có mã đơn đều là order_status, nên model có thể học "có SV- là tra đơn".'],
+      ['Prompt caching', 'Provider tái dùng phần đầu prompt nếu nó giống hệt request trước, và tính phần đó rẻ hơn nhiều. Ví dụ 12 ví dụ cố định đứng đầu prompt, chỉ tin nhắn khách ở cuối là khác: 12 ví dụ được tái dùng ở mọi request.'],
+      ['Many-shot', 'Dùng hàng chục đến hàng trăm ví dụ thay vì 3–5, khả thi nhờ context dài và prompt caching.'],
+      ['Reasoning model', 'Model được huấn luyện để tự viết một chuỗi suy luận trước khi trả lời, ví dụ dòng o-series của OpenAI hay DeepSeek-R1.'],
+      ['Token (ước lượng)', 'Đơn vị model đọc và tính tiền. Lab ước lượng token = số ký tự ÷ 3,3 (văn bản Unicode NFC), hệ số chỉnh cho khớp số token thật mà POC đếm bằng tokenizer o200k_base trên chính các prompt của lab. Ví dụ prompt bộ "Cân bằng" dài 1.148 ký tự: ước 348 token, đếm thật 381, thấp hơn khoảng 9%. Không phải tokenizer của model thật.']
+    ],
+    problem: {
+      example: 'Trước khi trả lời, trợ lý <b>ShopViet</b> phân loại intent của tin nhắn để chọn luồng: tra đơn, đổi trả, tư vấn sản phẩm, hay luồng chung. Đội thêm vài ví dụ vào prompt phân loại.',
+      scenario: 'Bộ ví dụ đầu tiên được nhặt từ log những ngày nhiều khách hỏi đơn: 3 order_status, 1 return, 1 product, không có other, và ba ví dụ cuối đều là order_status. Khách nhắn "SV-4821 sạc chậm quá, đổi được không shop" bị đưa vào luồng tra đơn.',
+      ask: 'Từ một bộ ví dụ, model học cách phân loại hay học những đặc điểm không ai cố ý dạy: nhãn nào nhiều nhất, nhãn nào ở cuối, tin nào có mã đơn? Làm sao phát hiện bộ ví dụ lệch trước khi nó lên production?',
+      solves: 'Đo bộ ví dụ như đo dữ liệu: phủ mọi nhãn, cân bằng, xáo thứ tự để ví dụ cuối không luôn cùng nhãn, đa dạng đặc điểm bề mặt để không đặc điểm nào đi cùng duy nhất một nhãn. Rồi so phân phối nhãn của output với phân phối thật trên bộ test.',
+      read: [
+        'Bấm ví dụ trong <b>Kho ví dụ</b> để thêm vào cuối danh sách; dùng Lên / Xuống / Bỏ để đổi thứ tự. Hoặc chọn một bộ có sẵn.',
+        'Chọn <b>Tin nhắn test</b>; nhãn đúng của nó ghi bên cạnh.',
+        'Biểu đồ <b>Phân phối nhãn</b> đếm thật trên các ví dụ đang chọn. Viên "lệch" bật lên khi một nhãn chiếm đa số, thiếu nhãn, hoặc nhiều ví dụ cuối cùng nhãn.',
+        'Bảng <b>Độ giống bề mặt</b> chấm từng ví dụ so với tin test, theo một công thức tự đặt (mã đơn, có dấu, độ dài, từ chung). Không phải cách model thật tính; chỉ để thấy ví dụ nào trông giống tin test nhất.',
+        'Ô <b>Nếu model chỉ chép...</b> cho biết nhãn mà ba lối tắt sẽ chọn: nhãn đa số, nhãn ví dụ cuối, nhãn ví dụ giống bề mặt nhất. Khi lối tắt dẫn tới nhãn sai, khung đỏ giải thích vì sao.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Ví dụ dạy model điều gì (README §1.4)</h4>
+<ul><li>Min và cộng sự (EMNLP 2022): thay nhãn đúng bằng nhãn ngẫu nhiên, hiệu năng giảm rất ít trên 12 model. Thứ quan trọng là <b>không gian nhãn</b>, <b>phân phối input</b> và <b>format</b>. Nghiên cứu sau phản biện rằng nhãn đúng vẫn quan trọng hơn trong một số thiết lập, nhưng kết luận chung đứng vững: model lấy từ ví dụ chủ yếu là hình dạng của output.</li>
+<li>Model chép đặc điểm bề mặt không ai cố ý dạy: cùng câu mở đầu, cùng độ dài. Anthropic: ví dụ cần "vary enough that Claude doesn't pick up unintended patterns".</li></ul>
+<h4>Ba nguồn thiên lệch (Zhao và cộng sự, ICML 2021)</h4>
+<div class="tbl"><table><tr><th>Thiên lệch</th><th>Biểu hiện</th><th>Cách giảm</th></tr>
+<tr><td>Majority label</td><td>Nghiêng về nhãn nhiều nhất trong ví dụ</td><td>Cân bằng số ví dụ giữa các nhãn</td></tr>
+<tr><td>Recency</td><td>P P P N → đoán N cho phần lớn input</td><td>Không để ví dụ cuối luôn cùng một nhãn</td></tr>
+<tr><td>Common token</td><td>Nhãn là từ phổ biến được chọn nhiều hơn</td><td>Đo phân phối nhãn output so với phân phối thật</td></tr></table></div>
+<p>Lu và cộng sự (ACL 2022): chỉ riêng thứ tự ví dụ đủ đẩy kết quả từ gần state-of-the-art xuống gần ngẫu nhiên; thứ tự tốt trên model này không chuyển sang model khác. Các nghiên cứu này làm trên GPT-2, GPT-3; biên độ trên model mới nhỏ hơn, nhưng hướng thiên lệch vẫn cần kiểm tra.</p>
+<h4>Khi nào dùng few-shot (README Tra cứu nhanh)</h4>
+<div class="tbl"><table><tr><th>Tình huống</th><th>Few-shot?</th></tr>
+<tr><td>Format, giọng văn, độ dài khó mô tả bằng lời</td><td>Có, 3–5 ví dụ đa dạng</td></tr>
+<tr class="cur"><td>Phân loại với nhãn mà tên không tự giải thích được</td><td>Có, phủ mọi nhãn, cân bằng, xáo thứ tự</td></tr>
+<tr><td>Cấu trúc JSON cố định</td><td>Không cần, dùng structured output</td></tr>
+<tr><td>Reasoning model, bài toán suy luận</td><td>Thử zero-shot trước; chỉ thêm ví dụ nếu eval cho thấy có ích</td></tr>
+<tr><td>Ca biên mà quy tắc diễn đạt bằng lời rất dài</td><td>Có, một ví dụ thường ngắn hơn một đoạn quy tắc</td></tr>
+<tr><td>Nhiều ví dụ gán nhãn, context dài, cache được</td><td>Cân nhắc many-shot</td></tr></table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> một bộ ví dụ là một bộ dữ liệu huấn luyện tí hon. Mọi thứ lặp lại trong nó, kể cả thứ bạn không để ý, đều có thể được học như một quy tắc.</div>`,
+    why: {
+      c: 'Với bài phân loại intent của ShopViet: phủ cả 4 nhãn, mỗi nhãn số ví dụ ngang nhau, xáo thứ tự, và đa dạng đặc điểm bề mặt (có mã đơn, không dấu, ngắn, dài) trên nhiều nhãn. Bọc ví dụ trong &lt;examples&gt;, đặt trong phần tĩnh của prompt để được cache. Đo phân phối nhãn output trên bộ test có nhãn.',
+      s: 'Nhặt ví dụ từ log của vài ngày bận: phân phối lệch theo ngày đó. Chỉ chọn ví dụ "dễ" và điển hình: không có ca biên, đặc điểm bề mặt đồng loạt. Chọn ví dụ động giống input nhất cho từng request: có thể tốt hơn, nhưng mất cache cho mọi thứ phía sau (README §3.3). Few-shot với reasoning model mà không đo: có thể làm kết quả kém đi.',
+      p: 'Mỗi ví dụ tốn token ở mọi request; bộ cân bằng 12 ví dụ dài gấp mấy lần bộ 3 ví dụ. Bộ ví dụ phải bảo trì khi thêm nhãn, và phải tinh chỉnh lại mỗi lần đổi model vì thứ tự tốt không chuyển được giữa model.'
+    },
+    deep: [
+      {
+        q: 'Few-shot nằm ở đâu trong request thật, và tốn bao nhiêu so với zero-shot?',
+        a: `<p>Ví dụ là văn bản nằm trong system prompt, bọc trong tag riêng (Anthropic khuyên <code>&lt;example&gt;</code>). Bên dưới là prompt phân loại thật với bộ "Cân bằng, đa dạng, xáo", và số token ước lượng của từng phần.</p>`,
+        viz(box) {
+          const ids = PRESETS.find((p) => p[0] === 'balanced')[2], a = analyze(ids, TESTS[0]);
+          box.append(el('div', { class: 'mono', style: 'white-space:pre-wrap;font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:8px;max-height:220px;overflow:auto', text: renderPrompt(ids) }),
+            hbars([['Chỉ dẫn (zero-shot)', a.tokBase, false], [ids.length + ' ví dụ', a.tokEx, true], ['Tin nhắn khách', a.tokMsg, false]], { max: Math.max(a.tokBase, a.tokEx), fmt: (v) => '~' + v + ' tok' }),
+            el('div', { class: 'cap', text: `Phần ví dụ dài gấp ${(a.tokEx / a.tokBase).toFixed(1)} lần chỉ dẫn và được gửi ở mọi request. Token ước lượng = số ký tự ÷ 3,3; POC đếm thật bằng o200k_base ra 323 token ví dụ / 58 token chỉ dẫn, tức gấp 5,6 lần.` }));
+        },
+        take: 'Ví dụ không miễn phí: chúng là phần dài nhất của nhiều prompt phân loại, và đi kèm mọi request.'
+      },
+      {
+        q: 'Model học từ ví dụ cách ánh xạ input sang nhãn, đúng không?',
+        a: `<p>Ít hơn bạn nghĩ. Min và cộng sự (EMNLP 2022) thay nhãn đúng trong ví dụ bằng nhãn ngẫu nhiên. Trên 12 model, kể cả GPT-3, hiệu năng giảm rất ít. Thứ thật sự quan trọng là <b>không gian nhãn</b> (có những nhãn nào), <b>phân phối của input</b> và <b>format</b> (README §1.4).</p>
+<p>Một nghiên cứu sau phản biện rằng nhãn đúng vẫn quan trọng hơn mức Min đánh giá trong một số thiết lập. Kết luận chung vẫn đứng: phần lớn thứ model lấy từ ví dụ là <b>hình dạng</b> của output.</p>
+<p>Với ShopViet, điều này giải thích bộ "Thiếu nhãn khác" ở hình chính: không ví dụ nào cho thấy <code>other</code> là một lựa chọn thực tế, nên "Cảm ơn shop nha" dễ bị ép vào một trong ba nhãn còn lại, dù chỉ dẫn có liệt kê <code>other</code>.</p>`,
+        take: 'Ví dụ trước hết nói cho model "output trông như thế nào và có những lựa chọn nào". Phủ đủ nhãn quan trọng hơn chọn ví dụ "hay".'
+      },
+      {
+        q: 'Thứ tự ví dụ thì liên quan gì? Cùng mấy ví dụ đó mà.',
+        a: `<p>Zhao và cộng sự (ICML 2021) chỉ ra recency bias: nhãn của ví dụ cuối có trọng số lớn. Với chuỗi P P P N, model đoán N cho phần lớn input. Lu và cộng sự (ACL 2022) cho thấy chỉ riêng thứ tự đủ đẩy kết quả từ gần state-of-the-art xuống gần ngẫu nhiên, và hiệu ứng còn ở model lớn nhất họ thử (README §1.4).</p>
+<p>Bảng dưới liệt kê mọi thứ tự khác nhau của 3 ví dụ order_status (P) và 1 ví dụ return (N), rồi đếm nhãn ở vị trí cuối.</p>`,
+        viz(box) {
+          const orders = [0, 1, 2, 3].map((k) => Array.from({ length: 4 }, (_, i) => (i === k ? 'N' : 'P')));
+          const endP = orders.filter((o) => o[3] === 'P').length;
+          box.append(el('div', { class: 'tbl' }, [el('table', { html: '<tr><th>Thứ tự</th><th>Nhãn ví dụ cuối</th><th>Lối tắt "chép nhãn cuối" đoán</th></tr>' + orders.map((o) => `<tr class="${o[3] === 'N' ? 'cur' : ''}"><td class="mono">${o.join(' ')}</td><td>${o[3] === 'P' ? 'order_status' : 'return'}</td><td>${o[3] === 'P' ? 'order_status' : 'return cho mọi input'}</td></tr>`).join('') })]),
+            el('div', { class: 'cap', html: `${endP}/4 thứ tự kết thúc bằng nhãn đa số, nên majority bias và recency bias cùng đẩy về order_status. Thứ tự P P P N là ca lạ: nhãn thiểu số đứng cuối và kéo ngược lại. README khuyên: cân bằng số ví dụ, không để ví dụ cuối luôn cùng một nhãn, và đo phân phối nhãn output. Các nghiên cứu này làm trên GPT-2, GPT-3; biên độ trên model mới nhỏ hơn, nhưng hướng thiên lệch vẫn cần kiểm tra.` }));
+        },
+        take: 'Thứ tự là một tham số. Xáo, và không để nhãn cuối trùng nhãn đa số.'
+      },
+      {
+        q: 'Với câu trả lời cho khách (không phải nhãn), model chép bề mặt kiểu gì?',
+        a: `<p>README §1.4: nếu cả ba ví dụ trả lời khách đều mở đầu "Dạ, em chào anh/chị", mọi câu trả lời sẽ mở đầu như vậy, kể cả giữa hội thoại. Nếu cả ba đều dài khoảng 60 từ, câu trả lời cho "cảm ơn em" cũng sẽ dài 60 từ.</p>
+<p>Kéo độ dài ba câu trả lời mẫu. Lab giả định một model chỉ chép bề mặt: dài bằng trung bình ví dụ, mở đầu bằng câu mở đầu chung nếu có.</p>`,
+        viz(box) {
+          const st = { a: 60, b: 58, c: 62, same: true };
+          const out = el('div');
+          const draw = () => {
+            const avg = Math.round((st.a + st.b + st.c) / 3), mn = Math.min(st.a, st.b, st.c);
+            const bad = mn > 15 || st.same;
+            out.innerHTML = `<div class="stat"><span>Câu trả lời dự đoán cho "cảm ơn em": <b>~${avg} từ</b></span><span>Mở đầu: <b>${st.same ? '"Dạ, em chào anh/chị ạ!"' : 'không cố định'}</b></span></div>` +
+              (bad ? `<div class="cap"><b style="color:var(--warn)">"cảm ơn em" nhận ${avg} từ${st.same ? ' và một lời chào lại' : ''}.</b> Vì sao: ${mn > 15 ? 'không ví dụ nào ngắn, nên "ngắn" không nằm trong không gian output model thấy' : 'câu mở đầu lặp ở mọi ví dụ trở thành quy tắc ngầm'}. Không có nghĩa model không hiểu câu "cảm ơn". Trong hệ thống thật: đa dạng độ dài và câu mở đầu, thêm ít nhất một ví dụ rất ngắn, và có ca "cảm ơn" trong golden set (Lab 00).</div>` : '<div class="cap">Có ví dụ ngắn và câu mở đầu đa dạng: output ngắn nằm trong những gì model đã thấy.</div>');
+          };
+          const cb = el('input', { type: 'checkbox', checked: '' });
+          cb.addEventListener('change', () => { st.same = cb.checked; draw(); });
+          box.append(el('div', { class: 'row' }, [slider('Ví dụ 1', 5, 80, 1, st.a, (v) => { st.a = v; draw(); }, (v) => v + ' từ').node, slider('Ví dụ 2', 5, 80, 1, st.b, (v) => { st.b = v; draw(); }, (v) => v + ' từ').node, slider('Ví dụ 3', 5, 80, 1, st.c, (v) => { st.c = v; draw(); }, (v) => v + ' từ').node, el('label', { class: 'ctl' }, [cb, 'Cùng câu mở đầu'])]), out);
+          draw();
+        },
+        take: 'Liệt kê mọi đặc điểm chung của bộ ví dụ. Đặc điểm nào bạn không muốn model chép thì phải làm nó đa dạng.'
+      },
+      {
+        q: 'Vậy reasoning model thì có nên cho ví dụ không?',
+        a: `<p>Ở điểm này các provider khuyên ngược nhau (README §1.4):</p>
+<div class="tbl"><table><tr><th>Nguồn</th><th>Khuyến nghị</th></tr>
+<tr><td>DeepSeek-R1 (paper)</td><td>"Few-shot prompting consistently degrades its performance." Mô tả vấn đề trực tiếp, chỉ định format output, zero-shot</td></tr>
+<tr><td>OpenAI (o-series)</td><td>Thường không cần few-shot; thử zero-shot trước; nếu có ví dụ thì phải khớp rất sát chỉ dẫn</td></tr>
+<tr><td>Google (Gemini)</td><td>"We recommend to always include few-shot examples in your prompts"; quá nhiều ví dụ gây overfitting</td></tr>
+<tr><td>Anthropic</td><td>3–5 ví dụ đa dạng, bọc trong &lt;example&gt;</td></tr></table></div>
+<p>Khuyến nghị của DeepSeek là quan sát của nhóm phát triển, không phải thí nghiệm có kiểm soát đầy đủ; nghiên cứu sau còn thấy one-shot tốt nhất với một số model distill từ R1. Cách hiểu hợp lý: với reasoning model, ví dụ có thể <b>neo</b> quá trình suy luận vào một lối giải. Giúp nếu lối giải đúng, hại nếu bài toán mới cần cách khác.</p>`,
+        take: 'Không có quy tắc chung. Chạy eval cả bản zero-shot và few-shot trên tác vụ của bạn, với đúng model bạn dùng.'
+      },
+      {
+        q: 'Chọn ví dụ giống tin nhắn nhất cho từng request, chẳng phải tốt hơn một bộ cố định?',
+        a: `<p>Có thể tốt hơn về chất lượng, nhưng README §3.3 chỉ ra cái giá: prompt caching chỉ tái dùng phần <b>đầu</b> prompt giống hệt request trước. Ví dụ động nằm trong phần đầu thì mọi thứ phía sau mất cache. Hình dưới render prompt thật cho hai tin nhắn liên tiếp, rồi so từng ký tự để tìm prefix chung.</p>`,
+        viz(box) {
+          const out = el('div');
+          const pick = (t) => POOL.map((e) => [e, surface(e.text, t.text).sim]).sort((a, b) => b[1] - a[1]).slice(0, 4).map((x) => x[0].id);
+          const prefix = (a, b) => { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; };
+          const draw = (mode) => {
+            const fixed = PRESETS.find((p) => p[0] === 'balanced')[2].slice(0, 4);
+            const req = (t) => renderPrompt(mode === 'dyn' ? pick(t) : fixed) + '\n\n<customer_message>\n' + t.text + '\n</customer_message>';
+            const a = req(TESTS[0]), b = req(TESTS[2]), p = prefix(a, b);
+            out.replaceChildren(hbars([['Prefix dùng chung', p, true], ['Cả request 1', a.length, false]], { max: a.length, fmt: (v) => v + ' ký tự' }),
+              el('div', { class: 'cap', html: mode === 'dyn' ? `<b style="color:var(--warn)">Prefix chung dừng ở ký tự ${p} (${Math.round((p / a.length) * 100)}%)</b>, ngay trong khối ví dụ, vì hai tin chọn ra hai bộ ví dụ khác nhau. Nếu sau ví dụ còn chính sách, catalog, chúng cũng mất cache. Trong hệ thống thật: đặt ví dụ động sau phần tĩnh và đo xem chất lượng tăng có đáng với chi phí không (README §3.3).` : `Prefix chung ${Math.round((p / a.length) * 100)}%: chỉ tin nhắn khách ở cuối là khác. So ký tự để minh hoạ; cache thật so theo token và block.` }));
+          };
+          box.append(el('div', { class: 'row' }, [select('Cách chọn ví dụ', [['fixed', '4 ví dụ cố định'], ['dyn', '4 ví dụ giống tin nhắn nhất']], 'fixed', draw).node]), out);
+          draw('fixed');
+        },
+        take: 'Ví dụ cố định nằm trong phần tĩnh, cache được. Ví dụ động là đổi chi phí lấy chất lượng, phải đo mới biết có đáng.'
+      },
+      {
+        q: 'Context giờ dài lắm rồi, sao không cho vài trăm ví dụ luôn?',
+        a: `<p>Đó là many-shot. Agarwal và cộng sự (2024) cho thấy chuyển từ few-shot sang hàng trăm, hàng nghìn ví dụ cải thiện rõ trên nhiều tác vụ, và many-shot còn có thể ghi đè thiên lệch từ pretraining. Chi phí tăng tuyến tính theo số ví dụ, nhưng nếu ví dụ nằm ở phần đầu prompt và được cache, chi phí thực tế giảm còn <b>khoảng một phần mười</b> (README §1.4). Many-shot là lựa chọn trung gian giữa prompt và fine-tuning.</p>
+<p>Hình dưới tính token mỗi request theo số ví dụ, với độ dài trung bình một ví dụ đo từ kho ví dụ của lab.</p>`,
+        viz(box) {
+          const per = POOL.reduce((s, e) => s + estTok(renderEx(e)), 0) / POOL.length;
+          const base = estTok(INSTR) + 10;
+          const st = { n: 100 };
+          const out = el('div');
+          const draw = () => {
+            const ex = Math.round(st.n * per), full = base + ex, cached = Math.round((base + ex) * 0.1) + 10;
+            out.replaceChildren(hbars([['Không cache', full, false], ['Phần tĩnh được cache (~1/10)', cached, true]], { max: full, fmt: (v) => '~' + v.toLocaleString('vi-VN') + ' tok' }),
+              el('div', { class: 'stat', html: `<span>Một ví dụ: <b>~${per.toFixed(1)}</b> token</span><span>${st.n} ví dụ: <b>~${ex.toLocaleString('vi-VN')}</b> token mỗi request</span><span>Có cache: tương đương <b>~${cached.toLocaleString('vi-VN')}</b> token tính phí</span></div>` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Số ví dụ', 3, 500, 1, st.n, (v) => { st.n = v; draw(); }).node]), out,
+            el('div', { class: 'cap', text: 'Hệ số một phần mười là con số xấp xỉ của README §1.4; giá cache cụ thể và độ dài tối thiểu theo từng provider nằm trong tài liệu Multi-turn. Cột "có cache" chỉ đúng khi phần ví dụ giống hệt từng byte giữa các request.' }));
+          draw();
+        },
+        take: 'Many-shot chỉ rẻ khi ví dụ đứng yên ở đầu prompt. Đáng thử trước khi quyết định fine-tune.'
+      },
+      {
+        q: 'Bộ ví dụ chạy tốt rồi. Đổi model thì giữ nguyên được chứ?',
+        a: `<p>Không chắc. Lu và cộng sự (ACL 2022): thứ tự ví dụ tốt trên model này không chuyển được sang model khác. Sclar và cộng sự: format tốt cho model này chỉ tương quan yếu với model khác (README §1.1, §1.4).</p>
+<p>Vì vậy quy trình đổi model của README §3.5 có riêng bước 6: <b>tinh chỉnh lại few-shot</b>. Thứ tự và lựa chọn ví dụ phải được eval lại; với reasoning model, thử bỏ hẳn ví dụ. Bộ ví dụ cũng là một phần của version: đổi một ví dụ là đổi hash template trong PromptConfig (Lab 00).</p>`,
+        take: 'Bộ ví dụ gắn với model đã chọn ra nó. Đổi model thì chạy lại eval cho cả lựa chọn lẫn thứ tự ví dụ.'
+      }
+    ],
+    poc: {
+      goal: "Không gọi model nào, nên không có output model nào ở đây. Nhãn đúng của 12 ví dụ và 4 tin test là nhãn viết tay; ô \"Nếu model chỉ chép...\" trong lab là quy tắc viết tay, không phải dự đoán của model. Bốn bộ ví dụ của lab đi qua một bộ phân tích bằng code: phân phối nhãn, nhãn thiếu, nhãn của ví dụ cuối, và các đường tắt bề mặt như \"có mã SV- thì là order_status\". Token mỗi ví dụ đếm thật bằng <code>tiktoken</code>.",
+      file: "docs/prompt-engineering/pocs/02_few_shot.py",
+      run: "uv run docs/prompt-engineering/pocs/02_few_shot.py",
+      needs: "chỉ <code>uv</code> và CPU, chạy vài giây, miễn phí.",
+      output: "Phân tích bộ ví dụ few-shot của lab 02 bằng code (không gọi model)\n\nBộ                        n   Phân phối nhãn                   Thiếu nhãn  Test có nhãn thiếu  Nhãn đa số        Nhãn cuối ×chuỗi\n------------------------  --  -------------------------------  ----------  ------------------  ----------------  ----------------\nBộ demo đầu tiên          5   order=3 retur=1 produ=1 other=0  other       2/4                 order_status 60%  order_status ×3\nThiếu nhãn other          4   order=1 retur=1 produ=2 other=0  other       2/4                 product 50%       product ×2\nKhông dấu chỉ ở một nhãn  6   order=1 retur=2 produ=1 other=2  -           0/4                 hoà               other ×1\nCân bằng, đa dạng, xáo    12  order=3 retur=3 produ=3 other=3  -           0/4                 hoà               order_status ×1\n\nĐường tắt bề mặt: đặc điểm mà mọi ví dụ có nó đều cùng một nhãn (1 ví dụ: yếu, >= 2: mạnh)\n\nBộ                        Đường tắt                               Ca test bị dẫn sai  Ví dụ\n------------------------  --------------------------------------  ------------------  -----------------------------------------\nBộ demo đầu tiên          'có mã SV-' → order_status (2/2, mạnh)  1                   SV-4821 sạc chậm quá, đổi được không shop\nBộ demo đầu tiên          'không dấu' → order_status (1/1, yếu)   1                   tai nghe pro x con mau trang ko\nThiếu nhãn other          'có mã SV-' → order_status (1/1, yếu)   1                   SV-4821 sạc chậm quá, đổi được không shop\nKhông dấu chỉ ở một nhãn  'có mã SV-' → order_status (1/1, yếu)   1                   SV-4821 sạc chậm quá, đổi được không shop\nKhông dấu chỉ ở một nhãn  'không dấu' → return (1/1, yếu)         1                   tai nghe pro x con mau trang ko\nCân bằng, đa dạng, xáo    không có                                0                   -\n\nToken thật của prompt (instruction + ví dụ), so với công thức số từ × 1,19 của lab\n\nBộ                        Instr  Ví dụ  Token/ví dụ  Tổng thật  Lab ước  Lệch\n------------------------  -----  -----  -----------  ---------  -------  ----\nBộ demo đầu tiên          58     138    27.6         196        118      -40%\nThiếu nhãn other          58     112    28.0         170        104      -39%\nKhông dấu chỉ ở một nhãn  58     158    26.3         216        134      -38%\nCân bằng, đa dạng, xáo    58     323    26.9         381        228      -40%\n\nRút ra: bộ demo 60% order_status, ba ví dụ cuối cùng nhãn, thiếu hẳn 'other' (2/4 ca test có nhãn không ví dụ nào minh hoạ)\nvà dạy 'có mã SV- → order_status' làm ca đổi trả SV-4821 bị dẫn sai. Bộ cân bằng hết các lỗi này, giá ~27 token\nmỗi ví dụ; công thức của lab ước thấp hơn ~40%. Code chỉ đo rủi ro trong bộ ví dụ; model có lệch thật không phải đo bằng eval.",
+      measured: true,
+      read: ["Bảng 1: bộ demo 60% order_status, ba ví dụ cuối cùng nhãn, không có ví dụ \"other\" cho 2/4 ca test.", "Bảng 2: đường tắt \"có mã SV- → order_status\" (2/2 ví dụ) trỏ sai ca đổi trả \"SV-4821 sạc chậm quá\".", "Bảng 3: mỗi ví dụ ~27 token thật. Cột <b>Lab ước</b> là công thức cũ (số từ × 1,19), ước thấp ~40%: tag &lt;example&gt; và nhãn như order_status đếm là một từ nhưng thành nhiều token, nên ví dụ \"Pro X có chống ồn không?\" đầy đủ tag là 11 từ mà 23 token. Lab giờ dùng số ký tự ÷ 3,3: bộ demo ước 183 (thật 196), bộ cân bằng 348 (thật 381), lệch khoảng −8%.", "Bộ phân tích chỉ đo rủi ro trong ví dụ; model có lệch thật không phải đo bằng eval."]
+    },
+    mount(stage) {
+      const st = { ids: PRESETS[0][2].slice(), test: 't1', seed: 7 };
+      const presetRow = el('div', { class: 'row' });
+      const testSel = select('Tin nhắn test', TESTS.map((t) => [t.id, t.text]), st.test, (v) => { st.test = v; draw(); });
+      const testLab = el('span', { class: 'hint', style: 'margin:0' });
+      const pool = el('div', { class: 'row', style: 'gap:6px' });
+      const list = el('div');
+      const distBox = el('div'), surfBox = el('div'), lazy = el('div'), cap = el('div', { style: 'margin-top:10px;font-size:13.5px' }), cost = el('div');
+      const box = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px">${html}</div>`;
+      const tag = (l) => `<span style="display:inline-block;font:500 11.5px var(--mono);color:${LCOL[l]};border:1px solid ${LCOL[l]};border-radius:4px;padding:0 5px">${l}</span>`;
+      const pill = (txt, color) => `<span style="display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;margin:2px 6px 2px 0;border:1px solid ${color};color:${color}">${esc(txt)}</span>`;
+      const reqDay = slider('Request mỗi ngày (giả định)', 1000, 100000, 1000, 20000, () => draw(), (v) => v.toLocaleString('vi-VN'));
+
+      function shuffle() {
+        const rnd = seeded(st.seed++);
+        const a = st.ids.slice();
+        for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+        st.ids = a;
+      }
+      const move = (i, d) => { const j = i + d; if (j < 0 || j >= st.ids.length) return; [st.ids[i], st.ids[j]] = [st.ids[j], st.ids[i]]; draw(); };
+
+      function draw() {
+        const test = TESTS.find((t) => t.id === st.test), a = analyze(st.ids, test);
+        testLab.innerHTML = 'Nhãn đúng: ' + tag(test.label);
+        presetRow.replaceChildren(el('span', { class: 'hint', style: 'margin:0', text: 'Bộ có sẵn:' }), ...PRESETS.map(([k, n, ids]) => el('button', { text: n, onclick: () => { st.ids = ids.slice(); draw(); } })),
+          el('button', { text: 'Xáo thứ tự', onclick: () => { shuffle(); draw(); } }), el('button', { text: 'Xoá hết', onclick: () => { st.ids = []; draw(); } }));
+        pool.replaceChildren(el('span', { class: 'hint', style: 'margin:0', text: 'Kho ví dụ (bấm để thêm):' }), ...POOL.map((e) => {
+          const on = st.ids.includes(e.id);
+          return el('button', { style: `border-left:4px solid ${LCOL[e.label]};${on ? 'opacity:.4' : ''}`, text: e.text, title: e.label, onclick: () => { if (!on) { st.ids.push(e.id); draw(); } } });
+        }));
+        list.replaceChildren(el('h4', { style: 'margin:10px 0 4px;font-size:13px', text: `Ví dụ trong prompt, theo thứ tự (${a.n})` }),
+          ...(a.n ? a.ex.map((e, i) => el('div', { style: `display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;padding:4px 8px;margin-bottom:4px;background:var(--bg);border:1px solid var(--line);border-left:4px solid ${LCOL[e.label]};border-radius:6px` }, [
+            el('span', { class: 'mono', style: 'color:var(--mute);font-size:11px', text: String(i + 1) }), el('span', { style: 'flex:1;min-width:160px', text: e.text }), el('span', { html: tag(e.label) }),
+            el('button', { text: 'Lên', onclick: () => move(i, -1) }), el('button', { text: 'Xuống', onclick: () => move(i, 1) }), el('button', { text: 'Bỏ', onclick: () => { st.ids.splice(i, 1); draw(); } })]))
+            : [el('p', { class: 'hint', text: 'Chưa có ví dụ nào: đây là zero-shot.' })]));
+
+        const flags = [];
+        if (a.majority && a.imbalance >= 0.5 && a.n >= 3) flags.push(pill(`đa số: ${a.majority} ${a.maxN}/${a.n}`, 'var(--bad)'));
+        if (a.n && a.missing.length) flags.push(pill('thiếu nhãn: ' + a.missing.join(', '), 'var(--bad)'));
+        if (a.tail >= 2) flags.push(pill(`${a.tail} ví dụ cuối cùng nhãn ${a.last}`, 'var(--warn)'));
+        a.spur.forEach((s) => flags.push(pill(`${s.name} → luôn ${s.lab}`, s.sev === 'bad' ? 'var(--bad)' : 'var(--warn)')));
+        distBox.replaceChildren(el('h4', { style: 'margin:14px 0 4px;font-size:13px', text: 'Phân phối nhãn trong ví dụ' }),
+          hbars(LABELS.map((l) => [`${l} (${LNAME[l]})`, a.dist[l], l === test.label]), { max: Math.max(1, a.maxN), fmt: (v) => v + (a.n ? ' (' + Math.round((v / a.n) * 100) + '%)' : '') }),
+          el('div', { style: 'margin-top:4px', html: flags.length ? flags.join('') : pill('không phát hiện lệch về nhãn', 'var(--ok)') }));
+
+        const sorted = a.sims.slice().sort((x, y) => y.sim - x.sim);
+        surfBox.innerHTML = a.n ? `<h4 style="margin:14px 0 4px;font-size:13px">Độ giống bề mặt với "${esc(test.text)}" (công thức minh hoạ)</h4><div class="tbl"><table><tr><th>Ví dụ</th><th>Nhãn</th><th>Điểm</th><th>Đặc điểm chung</th></tr>` +
+          sorted.map((x, k) => `<tr class="${k === 0 ? 'cur' : ''}"><td>${esc(x.e.text)}</td><td>${tag(x.e.label)}</td><td class="mono">${x.sim.toFixed(2)}</td><td>${esc(x.shared.join(', ') || '—')}</td></tr>`).join('') + '</table></div><div class="hint">Điểm = 0,35 × cùng có mã đơn + 0,25 × cùng kiểu dấu + 0,15 × cùng nhóm độ dài (≤ 6 từ) + 0,25 × tỷ lệ từ chung. Trọng số tự đặt để minh hoạ.</div>' : '';
+
+        const H = a.n ? [
+          ['nhãn đa số', a.majority, a.majority !== null && a.imbalance >= 0.5, a.majority === null ? 'không có: các nhãn nhiều nhất bằng nhau' : a.imbalance >= 0.5 ? '' : 'đa số mỏng, lực kéo yếu'],
+          ['nhãn ví dụ cuối', a.last, a.tail >= 2, a.tail >= 2 ? '' : 'chỉ 1 ví dụ cuối mang nhãn này, lực kéo yếu'],
+          ['nhãn ví dụ giống bề mặt nhất', a.near.e.label, true, '']] : [];
+        lazy.innerHTML = a.n ? `<h4 style="margin:14px 0 4px;font-size:13px">Nếu model chỉ chép...</h4><div class="tbl"><table>${H.map(([n, l, strong, note]) => `<tr><td>${n}</td><td>${l ? tag(l) : '—'}</td><td class="${!l ? '' : l === test.label ? 'ok' : strong ? 'bad' : ''}" style="${l && l !== test.label && !strong ? 'color:var(--warn)' : ''}">${!l ? note : l === test.label ? 'trùng nhãn đúng' : strong ? 'sai' : 'khác nhãn đúng; ' + note}</td></tr>`).join('')}</table></div>` : '';
+
+        const parts = [];
+        const wrongH = H.filter((h) => h[1] && h[2] && h[1] !== test.label);
+        const sp = a.spur.find((s) => s.sev === 'bad');
+        if (sp) parts.push(box('var(--bad)', `<b>Tương quan giả: cả ${sp.n} ví dụ ${sp.name} đều là ${sp.lab}.</b> Tin test cũng ${sp.name} nhưng nhãn đúng là ${test.label}. Vì sao: trong bộ ví dụ này, "${sp.name}" đi cùng duy nhất một nhãn, nên nó trông như một quy tắc; model lấy hình dạng từ ví dụ nhiều hơn ánh xạ (README §1.4). Không có nghĩa model chắc chắn sai: chỉ dẫn và nghĩa của câu vẫn kéo về nhãn đúng, nhưng bộ ví dụ đang kéo ngược lại. Trong hệ thống thật: thêm ví dụ ${sp.name} ở các nhãn khác (ví dụ "SV-4790 sạc không vào điện, mình muốn trả lại" cho return).`));
+        if (a.missing.includes(test.label)) parts.push(box('var(--bad)', `<b>Nhãn đúng ${test.label} không có trong ví dụ nào.</b> Vì sao: không gian nhãn model thấy qua ví dụ chỉ gồm ${LABELS.filter((l) => a.dist[l]).join(', ')}; README §1.4 xếp không gian nhãn vào nhóm thứ quan trọng nhất ví dụ dạy. Không có nghĩa model không thể trả ${test.label}: chỉ dẫn có liệt kê nó. Trong hệ thống thật: phủ mọi nhãn (README Tra cứu nhanh).`));
+        if (!sp && !a.missing.includes(test.label) && wrongH.length >= 2) parts.push(box('var(--warn)', `<b>${wrongH.length} lối tắt mạnh dẫn tới nhãn sai</b> (${wrongH.map((h) => h[0]).join(', ')}). Bộ ví dụ đang đẩy về ${wrongH[0][1]}, ngược với nhãn đúng. Trong hệ thống thật: cân bằng nhãn, xáo thứ tự, và so phân phối nhãn output với phân phối thật trên bộ test có nhãn.`));
+        if (!sp && !a.missing.includes(test.label) && wrongH.length === 1 && wrongH[0][0].includes('bề mặt')) parts.push(box('var(--warn)', `<b>Ví dụ giống tin test nhất mang nhãn khác:</b> "${esc(a.near.e.text)}" (${a.near.e.label}), chung ${esc(a.near.shared.join(', '))}. Một ví dụ lẻ chưa thành quy tắc như tương quan giả, nhưng nếu model bám bề mặt thì đây là chỗ nó trượt. Trong hệ thống thật: đưa đúng cặp này vào bộ test có nhãn để đo, đừng đoán.`));
+        if (a.n && !wrongH.length && !flags.length) parts.push(box('var(--ok)', 'Không lối tắt mạnh nào dẫn tới nhãn sai và không phát hiện lệch. Không có nghĩa model chắc chắn đúng: lab chỉ kiểm tra bộ ví dụ có đẩy sai hay không. Đổi tin nhắn test để kiểm tra bộ ví dụ trên ca khác.'));
+        if (a.n && !wrongH.length && flags.length) parts.push(box('var(--warn)', 'Với tin nhắn này, các lối tắt mạnh tình cờ trùng nhãn đúng, nên trên tin này bộ ví dụ trông "chạy tốt". Lệch vẫn còn (xem viên màu ở trên); đổi tin nhắn test để thấy nó lộ ra.'));
+        if (!a.n) parts.push(box('var(--line)', 'Zero-shot: không có ví dụ, nên không có thiên lệch từ ví dụ. Với nhãn tự giải thích được, thử zero-shot trước; thêm ví dụ khi eval cho thấy có ích.'));
+        cap.innerHTML = parts.join('');
+
+        const rq = reqDay.get(), staticTok = a.tokBase + a.tokEx;
+        cost.innerHTML = `<h4 style="margin:14px 0 4px;font-size:13px">Chi phí token (ước lượng = số ký tự ÷ 3,3, chỉnh theo o200k_base; với prompt phân loại này ước thấp hơn số thật khoảng 8%)</h4><div class="stat"><span>Ví dụ: <b>~${a.tokEx}</b> tok</span><span>Cả prompt + tin nhắn: <b>~${a.tokAll}</b> tok / request</span><span>Gấp zero-shot: <b>${(a.tokAll / (a.tokBase + a.tokMsg)).toFixed(1)}×</b></span><span>Mỗi ngày: <b>~${(a.tokAll * rq).toLocaleString('vi-VN')}</b> tok</span><span>Nếu phần tĩnh được cache (~1/10, README §1.4): <b>~${Math.round((staticTok * 0.1 + a.tokMsg) * rq).toLocaleString('vi-VN')}</b> tok tương đương</span></div>`;
+      }
+
+      stage.append(presetRow, el('div', { class: 'row' }, [testSel.node, testLab]), pool, list, distBox, surfBox, lazy, cap, el('div', { class: 'row', style: 'margin-top:12px' }, [reqDay.node]), cost,
+        el('p', { class: 'hint', text: 'Lab không gọi model. Nó đo bộ ví dụ (đếm nhãn, so đặc điểm bề mặt, đếm token) và chỉ ra nhãn mà từng lối tắt sẽ chọn; README §1.4 mô tả các lối tắt đó. 12 ví dụ và 4 tin test là dữ liệu dựng sẵn; số request mỗi ngày là giả định.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

@@ -1,0 +1,696 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt Engineering Lab 05</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="04-structure-long-docs.html">← Lab trước</a><a href="06-optimize-manage-limits.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/prompt-engineering/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+const tok = (s) => Math.ceil(s.normalize('NFC').length / 3.2);
+const ABBREVIATION_END = /(?:^|[\s(])(?:TP|Tp|Q|P|TS|ThS|PGS|GS|BS|Mr|Mrs|Dr|St|vs|[A-ZĐ])\.$/;
+const countSentences = (s) => s.trim().split(/(?<=[.!?…])\s+/)
+  .reduce((acc, part) => { if (acc.length && ABBREVIATION_END.test(acc[acc.length - 1])) acc[acc.length - 1] += ' ' + part; else acc.push(part); return acc; }, [])
+  .filter((x) => /[\p{L}\p{N}]/u.test(x)).length;
+lesson({
+  id: 'length-tone-chaining', nav: '5. Độ dài, format, chaining', ref: '§2.3–2.4',
+  title: 'Trả lời một khiếu nại ShopViet bằng một prompt hay chuỗi bốn bước: tốn thêm bao nhiêu lần gọi, token, độ trễ, và mua được gì',
+  hook: 'Chọn khiếu nại, chuyển giữa "Một prompt" và "Chuỗi 4 bước", rồi cài một lỗi vào hệ thống để xem lỗi bị bắt ở bước nào.',
+  terms: [
+    ['Prefill', 'Điền sẵn phần đầu lượt assistant trong request, ví dụ messages kết thúc bằng {"role":"assistant","content":"{"} để ép model viết tiếp JSON. Claude từ 4.6 và Gemini 3.6 trả 400 với request kiểu này.'],
+    ['temperature', 'Tham số độ ngẫu nhiên khi chọn token. Nhiều đội đặt 0 để "ổn định". README: chưa bao giờ cho output deterministic, và nay Claude Opus 4.7, 4.8, Sonnet 5, Haiku 5.5 trả 400 nếu khác mặc định.'],
+    ['Prompt chaining', 'Tách một tác vụ thành nhiều lần gọi nối tiếp, output bước trước là input bước sau. Ví dụ: phân loại khiếu nại → tìm chính sách → soạn trả lời → kiểm tra.'],
+    ['Chain-of-thought (CoT)', 'Yêu cầu model viết các bước suy nghĩ trước khi trả lời, như "Hãy suy nghĩ từng bước". Với reasoning model, README ghi gần như không đổi độ chính xác nhưng tốn thêm token và thời gian.'],
+    ['Reasoning model', 'Model tự suy luận nội bộ trước khi trả lời, không cần được nhắc. Phần suy luận cũng tính token.'],
+    ['TTFT', 'Time to first token: thời gian từ lúc gửi request tới khi nhận token đầu tiên. Lab dùng giá trị giả định, bạn kéo được.'],
+    ['Faithfulness', 'Mức chuỗi suy luận model viết ra phản ánh đúng lý do thật của nó. Nghiên cứu của Anthropic (2025) cài sẵn gợi ý đáp án vào câu hỏi: phần lớn trường hợp model dùng gợi ý nhưng phần suy luận không nhắc tới gợi ý.'],
+    ['Structured output', 'Tính năng của API: bạn gửi kèm JSON Schema, model buộc phải trả JSON đúng schema đó. Ví dụ schema có loai thuộc enum {doi_tra, giao_hang, bao_hanh, khac} thì model không trả được nhãn nào khác.'],
+    ['LLM-as-judge', 'Gọi thêm một model để chấm câu trả lời theo tiêu chí, ví dụ "đúng điều khoản, đúng giọng". Bắt được lỗi ngữ nghĩa mà regex không thấy, nhưng tốn thêm một lần gọi và bản thân nó cũng có thể chấm sai.'],
+    ['Token (ước lượng trong lab)', 'Mẩu chữ model đọc, thường ngắn hơn một từ. Ví dụ với tokenizer o200k_base, "100.000 đ" là 4 token: "100", ".", "000", " đ". Lab ước lượng bằng số ký tự ÷ 3,2, hệ số hiệu chỉnh theo số token thật mà POC đo bằng o200k_base trên chính văn bản của các lab (tổng token vào mỗi lần gọi lệch dưới 4% so với POC). Văn bản ngắn nhiều số hoặc ký hiệu, như câu trả lời có "100.000 đ" hay JSON nhãn phân loại, vẫn bị ước thấp 15–25%.']
+  ],
+  problem: {
+    example: '<b>ShopViet</b> nhận vài trăm khiếu nại mỗi ngày qua Zalo. Trợ lý hiện dùng một prompt lớn: phân loại, tự tìm điều khoản trong toàn bộ chính sách, viết câu trả lời và tự kiểm tra, trong một lần gọi. Khi điểm eval giảm, không ai biết lỗi do phân loại sai, chọn sai điều khoản hay viết sai.',
+    scenario: 'Đội đề xuất tách thành chuỗi: phân loại (model nhỏ) → tra mã đơn và tìm chính sách bằng code → soạn trả lời → kiểm tra bằng code. Người phản đối nói chuỗi chậm hơn và tốn hơn.',
+    ask: 'Chuỗi tốn thêm bao nhiêu lần gọi, bao nhiêu token, bao nhiêu mili giây, và đổi lại bắt được lỗi nào mà một prompt không bắt được?',
+    solves: 'Lab dựng cả hai phương án trên cùng một khiếu nại mẫu, ước lượng token từ đúng chuỗi văn bản mỗi lần gọi gửi đi, tính độ trễ từ giá trị giả định bạn chỉnh được, chạy kiểm tra bằng code thật trên câu trả lời viết tay, và chỉ ra lỗi cài vào bị bắt ở đâu. Không có model nào chạy: mọi output của "model" là văn bản viết sẵn.',
+    read: ['Mỗi ô là một bước. Ô viền xanh là lần gọi LLM, ô viền xám là code. Số trong ô: token vào → ra, mili giây.', 'Ô đỏ là nơi lỗi phát sinh, ô có dấu kiểm xanh là nơi lỗi bị phát hiện lúc chạy.', 'Bảng dưới so tổng số lần gọi, token và độ trễ. Độ trễ dùng giá trị giả định, ghi rõ trên thanh trượt.', 'Bảng "Test riêng được gì" liệt kê thứ bạn đo được ở từng bước khi chạy eval.']
+  },
+  summary: `<h3>Tóm tắt bài</h3>
+<h4>Kiểm soát format khi prefill và temperature biến mất (§2.3)</h4>
+<div class="tbl"><table>
+<tr><th>Mục đích cũ</th><th>Cách thay</th></tr>
+<tr><td>Ép JSON / YAML / nhãn phân loại bằng prefill</td><td>Structured output; với phân loại, enum trong schema</td></tr>
+<tr><td>Bỏ câu dẫn "Here is..."</td><td>Chỉ dẫn trong system: trả lời trực tiếp; hoặc output trong tag rồi cắt bằng code; câu dẫn còn sót thì xoá ở hậu xử lý</td></tr>
+<tr><td>Tiếp tục response bị cắt</td><td>Đưa phần đã có vào lượt user: "Câu trả lời trước bị ngắt ở ... Viết tiếp từ đó."</td></tr>
+<tr><td>"Ổn định" bằng temperature 0</td><td>Ổn định format: structured output. Ổn định quyết định: quy tắc rõ, ví dụ ca biên, đo tỷ lệ đồng thuận. Ổn định để test: so phân phối</td></tr>
+</table></div>
+<ul><li>Độ dài: GPT-5 có <code>verbosity</code>; Opus 5 phải yêu cầu ngắn gọn trong prompt vì <code>effort</code> không đổi độ dài một cách tin cậy; Gemini 3 mặc định ngắn.</li>
+<li>Chỉ định độ dài bằng đơn vị có cấu trúc ("tối đa 3 câu") thường được tuân thủ tốt hơn số từ (kinh nghiệm thực tế, chưa có nghiên cứu xác nhận).</li>
+<li>Format trôi trong hội thoại dài: GPT-5 nhắc lại chỉ dẫn mỗi 3–5 tin nhắn user; trên Claude chèn system message vào giữa hội thoại để không vỡ cache.</li></ul>
+<h4>Khi nào tách tác vụ (§2.4)</h4>
+<div class="tbl"><table>
+<tr><th>Tách khi</th><th>Ví dụ ShopViet</th></tr>
+<tr><td>Các bước cần chỉ dẫn mâu thuẫn nhau</td><td>Trích xuất "chỉ dùng thông tin trong tin nhắn", soạn trả lời "thân thiện, chủ động gợi ý"</td></tr>
+<tr><td>Một bước cần model khác</td><td>Phân loại bằng model rẻ hơn</td></tr>
+<tr><td>Cần kiểm tra bằng code giữa hai bước</td><td>Mã đơn trích ra có tồn tại không, trước khi soạn trả lời</td></tr>
+<tr><td>Muốn eval riêng từng bước</td><td>Biết lỗi nằm ở phân loại, retrieval hay viết</td></tr>
+</table></div>
+<div class="verdict"><b>Giá phải trả:</b> độ trễ cộng dồn và nhiều điểm hỏng hơn. Nếu các bước không cần kiểm tra giữa chừng và dùng chung một model, một prompt có cấu trúc tốt kèm reasoning thường đủ. Với reasoning model, yêu cầu CoT gần như không đổi độ chính xác; mô tả mục tiêu và tiêu chí đúng thay vì viết sẵn quy trình từng bước. Đừng dùng phần suy luận làm lời giải thích: yêu cầu bằng chứng cụ thể rồi xác minh bằng code.</div>`,
+  why: {
+    c: 'Tách khi có lý do cụ thể: cần kiểm tra bằng code giữa hai bước (mã đơn có tồn tại), cần model khác cho một bước, hai bước cần chỉ dẫn mâu thuẫn, hoặc cần eval riêng từng bước. Kiểm soát format bằng structured output và chỉ dẫn trong system, độ dài bằng đơn vị câu, không dựa vào prefill hay temperature.',
+    s: 'Một prompt làm năm việc: khó biết việc nào hỏng, sửa một chỗ phải gọi lại toàn bộ. Chuỗi cho mọi thứ "cho sạch": thêm độ trễ và điểm hỏng mà không mua được gì nếu các bước dùng chung model và không kiểm tra giữa chừng. Thêm "hãy suy nghĩ từng bước" cho reasoning model: tốn token, không thêm độ chính xác.',
+    p: 'Chuỗi cộng dồn độ trễ của mọi lần gọi, có thêm code điều phối và nhiều chỗ cần log. Mỗi bước có prompt và eval riêng phải bảo trì. Bỏ prefill và temperature nghĩa là viết lại phần ép format sang structured output và đổi cách test sang so phân phối.'
+  },
+  deep: [
+    {
+      q: 'Prefill là gì mà code cũ của ShopViet giờ trả lỗi 400?',
+      a: `<p>Prefill là điền sẵn đầu câu trả lời của assistant ngay trong request. Muốn model trả JSON, code thêm một message cuối <code>{"role": "assistant", "content": "{"}</code>; model chỉ việc viết tiếp. Đây từng là cách kiểm soát format mạnh nhất trên Claude.</p>
+<p>Từ Claude 4.6, request có prefill ở lượt assistant cuối trả 400. Gemini 3.6 Flash, 3.5 Flash-Lite và các model sau cũng trả 400 với request kết thúc bằng lượt model không rỗng. Thông báo lỗi README ghi: <code>does not support assistant message prefill</code>.</p>
+<p>Đổi model bên dưới. Trình duyệt kiểm tra message cuối của request mẫu và quyết định request có bị từ chối không.</p>`,
+      viz(box) {
+        const req = { model: '', messages: [{ role: 'user', content: 'Phân loại khiếu nại: Tai nghe bị rè, tôi muốn hoàn tiền.' }, { role: 'assistant', content: '{' }] };
+        const M = [['old', 'Claude trước 4.6', false], ['c46', 'Claude 4.6 trở đi', true], ['g36', 'Gemini 3.6 Flash', true]];
+        const pre = el('pre', { class: 'mono', style: 'font-size:12px;white-space:pre-wrap;margin:0' }), out = el('div', { class: 'stat' });
+        function draw(k) {
+          const m = M.find((x) => x[0] === k), last = req.messages[req.messages.length - 1], pf = last.role === 'assistant' && last.content.length > 0;
+          req.model = m[1];
+          pre.textContent = JSON.stringify(req, null, 2);
+          out.innerHTML = '<span>Message cuối: <b>' + last.role + '</b>, không rỗng: <b>' + (pf ? 'có' : 'không') + '</b></span><span>Kết quả: <b class="' + (pf && m[2] ? 'bad' : 'ok') + '">' + (pf && m[2] ? '400 does not support assistant message prefill' : 'model viết tiếp từ "{"') + '</b></span>';
+        }
+        box.append(el('div', { class: 'row' }, [select('Model', M.map((x) => [x[0], x[1]]), 'old', draw).node]), pre, out,
+          el('div', { class: 'cap', text: 'Cách thay (README §2.3): structured output với enum cho nhãn phân loại; không còn message assistant ở cuối request.' }));
+        draw('old');
+      },
+      take: 'Muốn ép format thì dùng structured output, không dùng prefill. Lỗi 400 dễ thấy, nhưng nó chặn mọi thứ khác khi đổi model.'
+    },
+    {
+      q: 'Không prefill nữa thì làm sao bỏ câu mở đầu kiểu "Dạ, dưới đây là câu trả lời cho anh..."?',
+      a: `<p>README đưa ba cách, dùng kết hợp: dặn trong system "trả lời trực tiếp, không mở đầu bằng 'Dưới đây là...', 'Dựa trên...'"; hoặc yêu cầu output trong tag <code>&lt;answer&gt;</code> rồi cắt bằng code; câu dẫn còn sót thì xoá ở bước hậu xử lý.</p>
+<p>Trình duyệt dưới đây chạy thật một bước hậu xử lý trên bốn output mẫu: lấy nội dung trong <code>&lt;answer&gt;</code> nếu có, rồi xoá các câu dẫn quen thuộc ở đầu.</p>`,
+      viz(box) {
+        const OUT = ['Dạ, dưới đây là câu trả lời cho anh: Tai nghe đã mở hộp chỉ đổi khi lỗi nhà sản xuất trong 7 ngày.', '<answer>Tai nghe đã mở hộp chỉ đổi khi lỗi nhà sản xuất trong 7 ngày.</answer>', 'Dựa trên chính sách của ShopViet, tai nghe đã mở hộp chỉ đổi khi lỗi nhà sản xuất trong 7 ngày.', 'Tai nghe đã mở hộp chỉ đổi khi lỗi nhà sản xuất trong 7 ngày.'];
+        const clean = (s) => { const m = /<answer>([\s\S]*?)<\/answer>/.exec(s); let t = m ? m[1] : s; t = t.replace(/^(Dạ,?\s*)?(dưới đây là[^:]*:\s*|dựa trên [^,]*,\s*)/i, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
+        const rows = OUT.map((o) => { const c = clean(o); return '<tr><td style="font-size:12px">' + o.replace(/</g, '&lt;') + '</td><td style="font-size:12px">' + c + '</td><td class="mono">' + (o.length - c.length) + '</td></tr>'; });
+        box.append(el('div', { html: '<table><tr><th>Output của model</th><th>Sau hậu xử lý</th><th>Ký tự bị cắt</th></tr>' + rows.join('') + '</table>' }),
+          el('div', { class: 'cap', text: 'Regex chỉ bắt các mẫu đã biết. Câu dẫn mới xuất hiện sau khi đổi model sẽ lọt qua; thêm ca test "câu trả lời không bắt đầu bằng câu dẫn" vào bộ regression.' }));
+      },
+      take: 'Câu dẫn là chuyện format: chặn bằng chỉ dẫn, tag và code, không cần prefill.'
+    },
+    {
+      q: 'Bỏ temperature: 0 thì phân loại khiếu nại có còn ổn định không?',
+      a: `<p>temperature 0 chưa bao giờ làm output ổn định. Thinking Machines Lab chạy Qwen3-235B 1.000 lần với cùng prompt, temperature 0, nhận 80 output khác nhau, tách ra từ token 103, vì batch size trên server đổi theo tải. Giờ nhiều model còn không nhận tham số này.</p>
+<p>README tách "ổn định" thành ba nhu cầu: <b>format</b> (structured output), <b>quyết định</b> (quy tắc rõ, ví dụ ca biên, đo tỷ lệ đồng thuận khi chạy nhiều lần), <b>để test</b> (so phân phối thay vì so chuỗi).</p>
+<p>Ví dụ tính tỷ lệ đồng thuận: chạy mỗi khiếu nại 10 lần, đếm nhãn chiếm đa số. Kết quả 10 lần chạy bên dưới là <b>dữ liệu giả định</b> để minh hoạ cách tính.</p>`,
+      viz(box) {
+        const RUNS = [['Tai nghe bị rè, muốn hoàn tiền', 'doi_tra ×9, bao_hanh ×1'], ['Giao trễ 5 ngày, hộp móp', 'giao_hang ×6, doi_tra ×4'], ['Laptop pin chai 60%', 'bao_hanh ×10']];
+        const parse = (s) => s.split(', ').map((x) => { const [l, n] = x.split(' ×'); return [l, +n]; });
+        const sl = slider('Ngưỡng đồng thuận chấp nhận (giả định)', 50, 100, 5, 80, () => draw(), (v) => v + '%');
+        const out = el('div');
+        function draw() {
+          const th = sl.get();
+          out.innerHTML = '<table><tr><th>Khiếu nại</th><th>10 lần chạy (giả định)</th><th>Đồng thuận</th></tr>' + RUNS.map(([c, s]) => { const p = parse(s), tot = p.reduce((a, b) => a + b[1], 0), mx = Math.max(...p.map((x) => x[1])), r = (mx / tot) * 100; return '<tr><td>' + c + '</td><td class="mono">' + s + '</td><td><b class="' + (r >= th ? 'ok' : 'bad') + '">' + r.toFixed(0) + '%</b>' + (r < th ? ' · cần quy tắc rõ hơn hoặc ví dụ ca biên' : '') + '</td></tr>'; }).join('') + '</table>';
+        }
+        box.append(el('div', { class: 'row' }, [sl.node]), out, el('div', { class: 'cap', text: 'Khiếu nại "giao trễ, hộp móp" chạm hai nhãn cùng lúc: dao động ở đây là do quy tắc mơ hồ, không phải do thiếu temperature 0.' }));
+        draw();
+      },
+      take: 'Đo tỷ lệ đồng thuận thay vì đặt temperature 0. Nhãn dao động là tín hiệu quy tắc mơ hồ.'
+    },
+    {
+      q: 'Sao README khuyên "tối đa 3 câu" thay vì "khoảng 80 từ"? Model đếm từ không được à?',
+      a: `<p>README ghi đây là kinh nghiệm thực tế, chưa có nghiên cứu xác nhận: chỉ định bằng đơn vị có cấu trúc ("tối đa 3 câu", "một đoạn") thường được tuân thủ tốt hơn số từ, vì model không đếm từ chính xác. Model đọc token, mà một từ tiếng Việt có thể là một hoặc vài token: "Đổi" là 2 token "Đ" + "ổi" với o200k_base.</p>
+<p>Với tiếng Việt, "từ" còn mơ hồ: một âm tiết, hay một từ ghép? Trình duyệt dưới đây đếm cùng một câu trả lời theo ba cách. Từ ghép tra theo một danh sách nhỏ viết sẵn, chỉ để minh hoạ.</p>
+<p>"Câu" dễ đếm hơn, nhưng code đếm câu cũng phải được test. Tách ở mọi dấu chấm thì "voucher 100.000 đ" bị cắt làm đôi, vì tiếng Việt dùng dấu chấm để ngăn nghìn. Lab chỉ tách khi sau dấu câu có khoảng trắng, và không tách sau chữ viết tắt như "TP." hay "Q.". Chọn câu trả lời "giao trễ" để thấy hai cách đếm khác nhau.</p>`,
+      viz(box) {
+        const R = { c: 'Dạ em xin lỗi vì đơn SV-4907 giao trễ hẹn. Đơn trễ quá 3 ngày được tặng voucher 100.000 đ, em đã ghi nhận cho anh. Với hộp móp, anh chụp ảnh gửi em trong 48 giờ kể từ lúc nhận để em xử lý ạ.', a: 'Dạ, tai nghe đã mở hộp chỉ được đổi khi có lỗi nhà sản xuất, trong vòng 7 ngày kể từ ngày nhận hàng. Đơn của anh đã nhận 20 ngày nên em chuyển anh sang bảo hành 12 tháng của hãng. Em gửi hướng dẫn bảo hành ngay sau tin nhắn này ạ.', b: 'Dạ, sản phẩm của anh vẫn còn bảo hành chính hãng. Anh mang máy và hoá đơn tới trung tâm bảo hành gần nhất giúp em ạ.' };
+        const DICT = ['tai nghe', 'mở hộp', 'nhà sản xuất', 'trong vòng', 'kể từ', 'nhận hàng', 'bảo hành', 'tin nhắn', 'hướng dẫn', 'sản phẩm', 'chính hãng', 'hoá đơn', 'trung tâm', 'gần nhất'];
+        const out = el('div', { class: 'stat' }), txt = el('p', { style: 'font-size:13px;margin:6px 0' });
+        function draw(k) {
+          const s = R[k], syl = s.split(/\s+/).filter(Boolean).length;
+          let words = syl; DICT.forEach((d) => { const n = s.toLowerCase().split(d).length - 1; words -= n * (d.split(' ').length - 1); });
+          const sent = countSentences(s), naive = s.split(/[.!?]+/).filter((x) => x.trim()).length;
+          txt.textContent = s;
+          out.innerHTML = '<span>Âm tiết (đếm theo dấu cách): <b>' + syl + '</b></span><span>Từ (gộp từ ghép): <b>' + words + '</b></span><span>Câu: <b>' + sent + '</b></span><span>Câu nếu tách ở mọi dấu chấm: <b class="' + (naive !== sent ? 'bad' : '') + '">' + naive + '</b></span><span>Token ước lượng: <b>' + Math.ceil(s.length / 3.8) + '</b></span>';
+        }
+        box.append(el('div', { class: 'row' }, [select('Câu trả lời', [['a', 'Câu trả lời đổi trả'], ['b', 'Câu trả lời bảo hành'], ['c', 'Câu trả lời giao trễ (có 100.000 đ)']], 'a', draw).node]), txt, out,
+          el('div', { class: 'cap', text: 'Cùng một văn bản cho nhiều con số "độ dài" khác nhau. "Khoảng 80 từ" không nói rõ đếm cách nào; "tối đa 3 câu" thì code kiểm tra được, miễn là code tách câu đúng. Với câu trả lời "giao trễ", tách ở mọi dấu chấm ra 4 câu và báo lỗi oan một câu trả lời đúng 3 câu.' }));
+        draw('a');
+      },
+      take: 'Chỉ định độ dài bằng đơn vị code đếm được và model nhận biết được: câu, đoạn.'
+    },
+    {
+      q: 'Đổi sang model mới, câu trả lời dài hẳn ra. Chỉnh núm nào?',
+      a: `<p>Mỗi provider một núm khác nhau (README §2.3):</p>
+<div class="tbl"><table><tr><th>Model</th><th>Núm điều khiển độ dài</th></tr>
+<tr><td>GPT-5</td><td>Tham số <code>verbosity</code>, điều khiển độ dài câu trả lời cuối, không phải phần suy luận</td></tr>
+<tr><td>Claude Opus 5</td><td><code>effort</code> không đổi độ dài phần hiển thị một cách tin cậy; phải yêu cầu ngắn gọn ngay trong prompt</td></tr>
+<tr><td>Gemini 3</td><td>Mặc định ngắn; muốn dài hơn phải yêu cầu rõ</td></tr></table></div>
+<p>Với chuỗi của ShopViet, độ dài chỉ cần quy định ở bước soạn trả lời, và bước kiểm tra bằng code đếm số câu. Ở bảng chính, cài lỗi "Trả lời quá dài, có markdown" để thấy bước kiểm tra bắt nó.</p>`,
+      take: 'Độ dài là hành vi mặc định của từng model. Quy định trong prompt, đo bằng code, kiểm tra lại mỗi lần đổi model.'
+    },
+    {
+      q: 'Đầu hội thoại bot viết văn xuôi, tới lượt 15 lại đầy gạch đầu dòng. Vì sao, và nhắc lại thế nào cho không vỡ cache?',
+      a: `<p>Hướng dẫn GPT-5 ghi nhận chỉ dẫn về markdown có thể mất tác dụng sau nhiều lượt, và đề xuất nhắc lại mỗi 3–5 tin nhắn của user. Chỉ dẫn nằm ở đầu, càng nhiều lượt chen vào thì nó càng xa chỗ model đang viết.</p>
+<p>Cách nhắc quan trọng không kém. Nếu sửa nội dung system prompt ở đầu, mọi byte phía sau đổi theo và cache vỡ. Trên Claude, cách tương đương mà không vỡ cache là chèn system message vào giữa hội thoại, tức nối thêm vào cuối. Kéo thanh trượt để xem cả hai cách qua 20 lượt.</p>`,
+      viz(box) {
+        const N = 20; let every = 4, how = 'append';
+        const grid = el('div', { style: 'display:grid;grid-template-columns:repeat(20,1fr);gap:3px;margin:6px 0' }), stat = el('div', { class: 'stat' });
+        function draw() {
+          let rem = 0, breaks = 0;
+          grid.replaceChildren(...Array.from({ length: N }, (_, i) => { const r = (i + 1) % every === 0; if (r) { rem++; if (how === 'edit') breaks++; } return el('span', { title: 'lượt ' + (i + 1) + (r ? ': nhắc lại' : ''), style: 'height:26px;border-radius:3px;background:' + (r ? (how === 'edit' ? 'var(--bad)' : 'var(--ok)') : 'var(--line)') }); }));
+          stat.innerHTML = '<span>Số lần nhắc: <b>' + rem + '</b></span><span>Số lần prefix cache bị đổi: <b class="' + (breaks ? 'bad' : 'ok') + '">' + breaks + '</b></span><span>' + (how === 'edit' ? 'Mỗi lần nhắc viết lại đầu system prompt' : 'Mỗi lần nhắc chèn message mới ở cuối') + '</span>';
+        }
+        box.append(el('div', { class: 'row' }, [slider('Nhắc mỗi', 3, 5, 1, every, (v) => { every = v; draw(); }, (v) => v + ' lượt').node, select('Cách nhắc', [['append', 'Chèn system message vào giữa hội thoại'], ['edit', 'Sửa system prompt ở đầu']], how, (v) => { how = v; draw(); }).node]), grid, stat,
+          el('div', { class: 'cap', text: 'Mỗi ô là một lượt user. Ô màu là lượt có nhắc lại chỉ dẫn format. Chi tiết cơ chế cache ở tài liệu Multi-turn §2.2.' }));
+        draw();
+      },
+      take: 'Nhắc lại chỉ dẫn format theo nhịp, bằng cách nối thêm, không sửa phần đầu prompt.'
+    },
+    {
+      q: 'Vậy khi nào nên tách thành chuỗi? Tách hết cho dễ test có được không?',
+      a: `<p>README §2.4 nêu bốn lý do. Tích vào những lý do đúng với tác vụ của bạn. Nếu không có lý do nào, chuỗi chỉ thêm độ trễ cộng dồn và thêm điểm hỏng.</p>`,
+      viz(box) {
+        const R = [['conf', 'Các bước cần chỉ dẫn mâu thuẫn nhau'], ['model', 'Một bước cần model khác (rẻ hơn hoặc mạnh hơn)'], ['code', 'Cần kiểm tra bằng code giữa hai bước'], ['eval', 'Muốn eval riêng từng bước để biết lỗi ở đâu']];
+        const on = new Set(['code']), row = el('div', { class: 'row' }), out = el('div', { class: 'stat' });
+        function draw() {
+          row.replaceChildren(...R.map(([k, t]) => el('button', { class: on.has(k) ? 'on' : '', text: t, onclick: () => { if (on.has(k)) on.delete(k); else on.add(k); draw(); } })));
+          out.innerHTML = on.size ? '<span>Lý do có thật: <b>' + on.size + '/4</b></span><span>Gợi ý: <b class="ok">tách, và đặt ranh giới đúng ở các điểm trên</b></span>' : '<span>Lý do có thật: <b>0/4</b></span><span>Gợi ý: <b style="color:var(--warn)">một prompt có cấu trúc tốt kèm reasoning thường đủ</b></span>';
+        }
+        box.append(row, out);
+        draw();
+      },
+      take: 'Tách ở chỗ cần kiểm tra, cần model khác, cần chỉ dẫn khác hoặc cần đo riêng. Không tách vì "trông gọn".'
+    },
+    {
+      q: '"Let\'s think step by step" còn đáng dùng không? Bước soạn trả lời có nên viết sẵn quy trình 5 bước?',
+      a: `<p>Prompting Science Report 2 (Wharton, 06/2025) đo lại trên model hiện tại: với model không có reasoning, CoT chỉ cải thiện trung bình một chút, vì nhiều model đã tự suy luận từng bước. Với reasoning model, yêu cầu CoT gần như không đổi độ chính xác nhưng tốn thêm token và thời gian.</p>
+<p>CoT còn có thể gây hại. "Mind Your Step (by Step)" (ICML 2025) tìm ra các nhóm tác vụ mà CoT làm hiệu năng giảm rõ, chẳng hạn học quy luật ngầm từ ví dụ, những tác vụ mà con người cũng làm kém đi khi phải nghĩ thành lời.</p>
+<p>Với reasoning model, Anthropic viết: "A prompt such as 'think thoroughly' often produces better reasoning than a hand-written step-by-step plan". OpenAI viết yêu cầu reasoning model "think step by step" là không cần thiết và có thể làm kết quả kém đi. Một quy trình nghiệp vụ năm bước viết sẵn có thể <b>giới hạn</b> model vào lối giải bạn nghĩ ra. Với bước soạn trả lời của ShopViet: mô tả mục tiêu (khách hiểu được đổi hay không, vì sao, bước tiếp theo) và tiêu chí đúng (dựa trên điều khoản được trích, tối đa 3 câu), để model tự lập kế hoạch.</p>
+<p>Ở bảng chính, bật "Thêm 'hãy suy nghĩ từng bước'" để thấy token và độ trễ tăng thêm bao nhiêu.</p>`,
+      take: 'Với reasoning model, mô tả mục tiêu và tiêu chí đúng, không viết sẵn các bước suy nghĩ.'
+    },
+    {
+      q: 'Model có in ra phần suy luận. Ghi phần đó vào log làm "lý do từ chối đổi trả" cho khách xem được không?',
+      a: `<p>README §2.4 nói đây là giả định nguy hiểm. Anthropic (2025) cài gợi ý vào câu hỏi rồi kiểm tra xem reasoning model có thừa nhận đã dùng gợi ý không. Trong phần lớn trường hợp model dùng gợi ý, chuỗi suy luận <b>không nhắc đến nó</b>. Phần suy luận là văn bản model sinh ra, không phải bản ghi quá trình tính toán thật.</p>
+<p>Nếu ShopViet cần lý do có thể kiểm tra, hãy yêu cầu bằng chứng cụ thể: đoạn trích điều khoản, mã đơn, ngày nhận hàng, rồi xác minh bằng code. Ví dụ lý do từ chối nên là: "Điều khoản mục 3: 'Sản phẩm đã mở hộp chỉ được đổi khi có lỗi nhà sản xuất, trong vòng 7 ngày kể từ ngày nhận hàng.' Đơn SV-4821 nhận ngày 05/11, hôm nay đã quá 7 ngày." Code kiểm tra được đoạn trích có trong chính sách (Lab 4) và phép tính ngày.</p>`,
+      take: 'Lý do để audit phải là bằng chứng kiểm tra được bằng code, không phải chuỗi suy luận.'
+    }
+  ],
+  poc: {
+    goal: "Không có model nào chạy. Mọi \"output của model\" trong POC và trong lab (nhãn phân loại, câu trả lời, kết quả LLM-as-judge) là văn bản do người viết tay sẵn, không phải model sinh ra. Token đếm thật bằng <code>tiktoken</code>, độ trễ tính từ giá trị giả định, các kiểm tra (mã đơn, số câu, markdown, hứa ngày) là code thật chạy trên câu trả lời và trên lỗi cài vào.",
+    file: "docs/prompt-engineering/pocs/05_length_tone_chaining.py",
+    run: "uv run docs/prompt-engineering/pocs/05_length_tone_chaining.py",
+    needs: "chỉ <code>uv</code> và CPU, chạy vài giây, miễn phí.",
+    output: "Phần 1: cùng khiếu nại, một prompt vs chuỗi (phân loại nhỏ → code → soạn lớn → code). Token đếm thật o200k_base\nOutput của model là văn bản viết tay trong lab, không phải output thật. Độ trễ dùng giá trị giả định:\nmodel lớn TTFT 600 ms, 60 token/s; model nhỏ TTFT 300 ms, 150 token/s; bước code 5–80 ms.\n\nCa  Cách        Lần gọi LLM  Token vào  Token ra  ms (giả định)\n--  ----------  -----------  ---------  --------  -------------\nc1  Một prompt  1            452        113       2488\nc1  Chuỗi       2            375        110       2538\nc2  Một prompt  1            450        108       2405\nc2  Chuỗi       2            368        106       2422\nc3  Một prompt  1            443        80        1938\nc3  Chuỗi       2            294        77        1978\n\nPhần 2: kiểm tra bằng code trên câu trả lời viết tay, kèm lỗi cài vào\n\nCâu trả lời    mã đơn tồn tại  <=3 câu (cách lab đếm)  <=3 câu (tách sau dấu câu + khoảng trắng)  không markdown  không hứa ngày\n-------------  --------------  ----------------------  -----------------------------------------  --------------  --------------\nc1 đúng        qua             qua                     qua                                        qua             qua\nc2 đúng        qua             LỖI                     qua                                        qua             qua\nc3 đúng        qua             qua                     qua                                        qua             qua\nc1 hứa ngày    qua             qua                     qua                                        qua             LỖI\nc1 bullet      qua             qua                     qua                                        LỖI             qua\nc1 mã đơn sai  LỖI             qua                     qua                                        qua             qua\n\nc2 có 3 câu nhưng cách đếm của lab (tách mọi dấu chấm) ra 4 câu vì '100.000 đ' chứa dấu chấm.\n\nRút ra: chuỗi tốn 2 lần gọi thay vì 1 và chậm hơn vài chục ms với giả định trên (bước phân loại dùng model nhỏ),\nnhưng tổng token vào lại ít hơn vì bước soạn chỉ đọc điều khoản liên quan thay vì cả 8 điều khoản. Đổi lại, lỗi\nmã đơn bị code chặn trước bước soạn. Nếu bước phân loại cũng dùng model lớn, chuỗi chậm thêm cỡ một TTFT. Kiểm tra cũng cần test:\nquy tắc 'tối đa 3 câu' đếm sai với số tiền kiểu Việt Nam và báo lỗi oan một câu trả lời đúng.",
+    measured: true,
+    read: ["Output của model ở đây là văn bản viết tay: POC đo token, độ trễ giả định và kiểm tra bằng code trên văn bản đó, không đo chất lượng của model nào.", "Phần 1: chuỗi gọi 2 lần thay vì 1, chậm hơn vài chục ms với giả định, nhưng tổng token vào ít hơn vì bước soạn chỉ đọc điều khoản liên quan. Lab ước lượng ÷ 3,2 cho số token vào lệch dưới 4% so với cột này.", "Phần 2: mỗi lỗi cài vào bị đúng một kiểm tra bắt; mã đơn sai bị chặn trước bước soạn.", "Hàng \"c2 đúng\": cách đếm câu cũ của lab (tách mọi dấu chấm) báo lỗi oan vì \"100.000 đ\". Lab đã sửa theo cột \"tách sau dấu câu + khoảng trắng\", nên ở bảng chính c2 đạt \"Tối đa 3 câu\". Bộ kiểm tra cũng cần test."]
+  },
+  mount(stage) {
+    const POLICY = {
+      p2: 'Khách được đổi trả trong 30 ngày kể từ ngày nhận hàng với sản phẩm chưa mở hộp, còn nguyên tem, đủ phụ kiện và hoá đơn.',
+      p3: 'Sản phẩm đã mở hộp chỉ được đổi khi có lỗi nhà sản xuất, trong vòng 7 ngày kể từ ngày nhận hàng.',
+      p4: 'Tiền được hoàn về phương thức thanh toán ban đầu trong 5 đến 7 ngày làm việc sau khi kho xác nhận nhận hàng.',
+      p5: 'Phí vận chuyển đổi trả do ShopViet chịu nếu lỗi từ nhà sản xuất.',
+      p6: 'Tai nghe và loa bảo hành 12 tháng tại trung tâm bảo hành của hãng. Laptop bảo hành 24 tháng, pin bảo hành 12 tháng.',
+      p7: 'Quà tặng kèm phải được trả lại cùng sản phẩm chính khi đổi trả.',
+      p8: 'Khách liên hệ tổng đài hoặc chat Zalo ShopViet từ 8 giờ đến 22 giờ mỗi ngày.',
+      p9: 'Đơn giao trễ quá 3 ngày so với ngày hẹn được tặng voucher 100.000 đ; hộp móp méo phải chụp ảnh trong 48 giờ để được xử lý.'
+    };
+    const ORDERS = { 'SV-4821': 'delivered 2026-11-05', 'SV-4907': 'delivered 2026-11-20', 'SV-3915': 'delivered 2026-03-14' };
+    const CASES = {
+      c1: { text: 'Tai nghe đơn SV-4821 mua 20 ngày, đã mở hộp, bị rè một bên. Tôi muốn hoàn tiền ngay, shop làm ăn kiểu gì vậy?', cls: '{"loai":"doi_tra","muc_do":"cao","order_id":"SV-4821","cam_xuc":"buc_xuc"}', pol: ['p3', 'p6', 'p5'],
+        reply: 'Dạ ShopViet rất tiếc vì tai nghe của anh bị rè. Tai nghe đã mở hộp chỉ đổi khi lỗi nhà sản xuất trong 7 ngày, đơn của anh đã nhận 20 ngày nên em chuyển anh sang bảo hành 12 tháng của hãng, phí gửi do ShopViet chịu. Em gửi hướng dẫn gửi bảo hành ngay sau tin nhắn này ạ.' },
+      c2: { text: 'Đơn SV-4907 giao trễ 5 ngày so với hẹn, hộp bị móp. Tôi cần biết bao giờ được bồi thường.', cls: '{"loai":"giao_hang","muc_do":"trung_binh","order_id":"SV-4907","cam_xuc":"khong_hai_long"}', pol: ['p9', 'p2'],
+        reply: 'Dạ em xin lỗi vì đơn SV-4907 giao trễ hẹn. Đơn trễ quá 3 ngày được tặng voucher 100.000 đ, em đã ghi nhận cho anh. Với hộp móp, anh chụp ảnh gửi em trong 48 giờ kể từ lúc nhận để em xử lý ạ.' },
+      c3: { text: 'Laptop mua tháng 3/2026, đơn SV-3915, pin chai còn 60%, còn bảo hành không?', cls: '{"loai":"bao_hanh","muc_do":"thap","order_id":"SV-3915","cam_xuc":"binh_thuong"}', pol: ['p6'],
+        reply: 'Dạ pin laptop được bảo hành 12 tháng, máy của anh mua tháng 3/2026 nên vẫn còn hạn. Anh mang máy và hoá đơn tới trung tâm bảo hành của hãng giúp em ạ.' }
+    };
+    const SYS_CLS = 'Phân loại khiếu nại của khách ShopViet. Trả JSON đúng schema: loai thuộc {doi_tra, giao_hang, bao_hanh, khac}, muc_do thuộc {thap, trung_binh, cao}, order_id dạng SV-xxxx nếu có, cam_xuc. Chỉ dùng thông tin có trong tin nhắn.';
+    const SYS_DRAFT = 'Bạn trả lời khách của ShopViet qua Zalo. Giọng thân thiện, xưng em, gọi khách là anh/chị, chủ động nêu bước tiếp theo. Tối đa 3 câu văn xuôi, không markdown. Chỉ dựa trên các điều khoản trong <policies>. Không hứa ngày giao hoặc ngày hoàn tiền cụ thể ngoài điều khoản.';
+    const SYS_ONE = 'Bạn là trợ lý CSKH ShopViet trên Zalo. Với mỗi khiếu nại: phân loại (doi_tra, giao_hang, bao_hanh, khac) và mức độ; tìm điều khoản liên quan trong <policies>; viết câu trả lời tối đa 3 câu văn xuôi, giọng thân thiện, xưng em; không hứa ngày ngoài điều khoản; tự kiểm tra trước khi trả. Trả JSON gồm loai, muc_do, order_id, tra_loi.';
+    const SYS_JUDGE = 'Chấm câu trả lời CSKH: đúng điều khoản, đúng giọng, tối đa 3 câu. Trả JSON {"dat": true|false, "ly_do": "..."}';
+    const COT = ' Hãy suy nghĩ từng bước trước khi trả lời.';
+    const S = { mode: 'chain', c: 'c1', fault: 'none', small: true, midCheck: true, judge: false, cot: false, ttft: 600, tps: 60, sTtft: 300, sTps: 150, budget: 3000 };
+    const svgBox = el('div'), sumBox = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), testBox = el('div', { class: 'tbl sum', style: 'border:0;margin:0;padding:0' }), checkBox = el('div', { class: 'chunks' }), flags = el('div'), stat = el('div', { class: 'stat' });
+    const capBox = (what, why, not, real) => el('div', { style: 'font-size:13.5px;margin:8px 0;padding:8px 12px;border-left:3px solid var(--warn);background:var(--bg);border-radius:0 6px 6px 0', html: '<p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + not + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + real + '</p>' });
+    const COT_EXTRA = 250;
+    function codeChecks(reply, orderId) {
+      return [
+        ['Mã đơn tồn tại trong hệ thống', !!ORDERS[orderId]],
+        ['Tối đa 3 câu', countSentences(reply) <= 3],
+        ['Không có markdown', !/(^|\n)\s*([-*#]|\d+\.)\s|\*\*/.test(reply)],
+        ['Không hứa ngày ngoài điều khoản', !/(ngày mai|hôm nay|cam kết giao|hứa)/i.test(reply)]
+      ];
+    }
+    function build() {
+      const C = CASES[S.c];
+      let cls = C.cls, pol = C.pol.slice(), reply = C.reply;
+      if (S.fault === 'cls') cls = cls.replace(/"loai":"[a-z_]+"/, '"loai":"khac"');
+      if (S.fault === 'ret') pol = ['p7', 'p8'];
+      if (S.fault === 'draft') reply = reply.replace(/[^.]*\.\s*$/, ' Em hứa ngày mai shop giao máy mới tận nhà cho anh ạ.');
+      if (S.fault === 'long') reply = '**Về khiếu nại của anh:**\n- ' + reply.split('. ').join('.\n- ') + '\n- Anh cần hỗ trợ thêm cứ nhắn em.\n- ShopViet luôn sẵn sàng.';
+      if (S.fault === 'order') { cls = cls.replace(/SV-\d+/, 'SV-9999'); }
+      const orderId = (/SV-\d+/.exec(cls) || [''])[0];
+      const polText = '<policies>\n' + pol.map((k) => '<policy id="' + k + '">' + POLICY[k] + '</policy>').join('\n') + '\n</policies>';
+      const allPol = '<policies>\n' + Object.entries(POLICY).map(([k, v]) => '<policy id="' + k + '">' + v + '</policy>').join('\n') + '\n</policies>';
+      const llm = (name, sys, inp, out, small, cot) => { const i = tok(sys + (cot ? COT : '')) + tok(inp), o = tok(out) + (cot ? COT_EXTRA : 0), t = small ? S.sTtft : S.ttft, sp = small ? S.sTps : S.tps; return { name, kind: 'llm', small, inT: i, outT: o, ms: Math.round(t + (o / sp) * 1000) }; };
+      const code = (name, ms) => ({ name, kind: 'code', inT: 0, outT: 0, ms });
+      const checks = codeChecks(reply, orderId);
+      let steps, origin = -1, caught = -1, stopAt = -1;
+      const failNames = checks.filter((c) => !c[1]).map((c) => c[0]);
+      if (S.mode === 'chain') {
+        steps = [llm('1. Phân loại', SYS_CLS, C.text, cls, S.small, false)];
+        if (S.midCheck) steps.push(code('Kiểm tra mã đơn', 30));
+        steps.push(code('2. Tìm chính sách', 80));
+        steps.push(llm('3. Soạn trả lời', SYS_DRAFT, polText + '\n<classification>' + cls + '</classification>\n<message>' + C.text + '</message>', reply, false, S.cot));
+        steps.push(code('4. Kiểm tra (code)', 5));
+        if (S.judge) steps.push(llm('4b. LLM-as-judge', SYS_JUDGE, polText + '\n' + reply, '{"dat":true,"ly_do":"Dùng đúng điều khoản, giọng thân thiện, 3 câu."}', S.small, false));
+        const idx = (n) => steps.findIndex((s) => s.name.startsWith(n));
+        if (S.fault === 'cls') { origin = idx('1.'); caught = -1; }
+        if (S.fault === 'ret') { origin = idx('2.'); caught = S.judge ? idx('4b') : -1; }
+        if (S.fault === 'draft' || S.fault === 'long') { origin = idx('3.'); caught = idx('4. '); }
+        if (S.fault === 'order') { origin = idx('1.'); caught = S.midCheck ? idx('Kiểm tra mã') : idx('4. '); if (S.midCheck) stopAt = caught; }
+      } else {
+        const one = '{"loai":"' + (/"loai":"([a-z_]+)"/.exec(cls) || ['', 'khac'])[1] + '","muc_do":"cao","order_id":"' + orderId + '","tra_loi":"' + reply.replace(/\n/g, ' ') + '"}';
+        steps = [llm('Một prompt: phân loại + chọn điều khoản + viết + tự kiểm', SYS_ONE, allPol + '\n<message>' + C.text + '</message>', one, false, S.cot), code('Kiểm tra (code) trên output cuối', 5)];
+        if (S.judge) steps.push(llm('LLM-as-judge', SYS_JUDGE, allPol + '\n' + reply, '{"dat":true,"ly_do":"Dùng đúng điều khoản, giọng thân thiện, 3 câu."}', false, false));
+        if (S.fault !== 'none') origin = 0;
+        if (S.fault === 'draft' || S.fault === 'long' || S.fault === 'order') caught = 1;
+        if (S.fault === 'ret' && S.judge) caught = 2;
+      }
+      const run = stopAt >= 0 ? steps.slice(0, stopAt + 1) : steps;
+      const retryStep = caught >= 0 && stopAt < 0 && (S.fault === 'draft' || S.fault === 'long') ? (S.mode === 'chain' ? steps.find((s) => s.name.startsWith('3.')) : steps[0]) : null;
+      return { steps, run, origin, caught, stopAt, checks, failNames, retryStep, reply };
+    }
+    function render() {
+      const R = build(), W = 640, bh = 74, gap = 14, n = R.steps.length, bw = (W - gap * (n - 1)) / n;
+      const kids = [];
+      R.steps.forEach((s, i) => {
+        const x = i * (bw + gap), skip = R.stopAt >= 0 && i > R.stopAt, isO = i === R.origin, isC = i === R.caught;
+        kids.push(el('rect', { x: x + 1, y: 6, width: bw - 2, height: bh, rx: 8, fill: isO ? 'color-mix(in srgb, var(--bad) 18%, var(--panel))' : 'var(--panel)', stroke: isC ? 'var(--ok)' : s.kind === 'llm' ? 'var(--accent)' : 'var(--line)', 'stroke-width': isC ? 3.5 : 2, opacity: skip ? 0.35 : 1 }, [el('title', { text: s.name })]));
+        const words = s.name.split(' '), lines = []; let cur = '';
+        words.forEach((w) => { if ((cur + ' ' + w).trim().length * 6.4 > bw - 12) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }); lines.push(cur);
+        lines.slice(0, 3).forEach((l, j) => kids.push(el('text', { x: x + 8, y: 22 + j * 13, style: 'font-size:11px;font-weight:700', text: l, opacity: skip ? 0.4 : 1 })));
+        kids.push(el('text', { x: x + 8, y: bh - 6, class: 'mute', style: 'font-size:10.5px', text: (s.kind === 'llm' ? s.inT + '→' + s.outT + ' tok · ' : 'code · ') + s.ms + ' ms', opacity: skip ? 0.4 : 1 }));
+        if (isC) kids.push(el('text', { x: x + bw - 18, y: 22, fill: 'var(--ok)', style: 'font-size:15px;font-weight:700', text: '✓' }));
+        if (i < n - 1) kids.push(el('line', { x1: x + bw + 2, x2: x + bw + gap - 2, y1: 6 + bh / 2, y2: 6 + bh / 2, stroke: 'var(--mute)', 'stroke-width': 2 }));
+      });
+      svgBox.replaceChildren(el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + (bh + 14), role: 'img', 'aria-label': 'Các bước của pipeline và nơi lỗi bị bắt' }, kids));
+      const agg = (arr) => ({ calls: arr.filter((s) => s.kind === 'llm').length, inT: arr.reduce((a, s) => a + s.inT, 0), outT: arr.reduce((a, s) => a + s.outT, 0), ms: arr.reduce((a, s) => a + s.ms, 0) });
+      const A = agg(R.run), rt = R.retryStep ? agg([R.retryStep]) : null;
+      const other = (() => { const save = S.mode; S.mode = save === 'chain' ? 'one' : 'chain'; const o = build(); S.mode = save; return agg(o.run); })();
+      const label = S.mode === 'chain' ? ['Chuỗi', 'Một prompt'] : ['Một prompt', 'Chuỗi'];
+      sumBox.innerHTML = '<table><tr><th></th><th>Lần gọi LLM</th><th>Token vào</th><th>Token ra</th><th>Độ trễ (giả định)</th></tr>' +
+        '<tr class="cur"><td><b>' + label[0] + '</b> (đang xem)</td><td class="mono">' + A.calls + '</td><td class="mono">' + A.inT + '</td><td class="mono">' + A.outT + '</td><td class="mono">' + A.ms + ' ms</td></tr>' +
+        '<tr><td>' + label[1] + '</td><td class="mono">' + other.calls + '</td><td class="mono">' + other.inT + '</td><td class="mono">' + other.outT + '</td><td class="mono">' + other.ms + ' ms</td></tr>' +
+        (rt ? '<tr><td>Gọi lại để sửa lỗi bị bắt (' + R.retryStep.name + ')</td><td class="mono">+' + rt.calls + '</td><td class="mono">+' + rt.inT + '</td><td class="mono">+' + rt.outT + '</td><td class="mono">+' + rt.ms + ' ms</td></tr>' : '') + '</table>';
+      checkBox.replaceChildren(el('div', { class: 'ch' }, [el('small', { text: 'Câu trả lời viết tay (không phải model sinh) đưa vào bước kiểm tra (' + tok(R.reply) + ' token ước lượng)' }), el('div', { style: 'white-space:pre-wrap;font-size:13px', text: R.reply })]),
+        el('div', { class: 'ch' }, [el('small', { text: 'Kiểm tra bằng code, chạy thật trên câu trả lời ở trên' }), el('div', { html: R.checks.map(([n2, ok]) => '<span class="' + (ok ? 'ok' : 'bad') + '">' + (ok ? 'đạt' : 'trượt') + '</span> · ' + n2).join('<br>') })]));
+      const T = S.mode === 'chain' ? [
+        ['1. Phân loại', 'Accuracy và phân phối nhãn trên bộ khiếu nại đã gán nhãn tay; tỷ lệ đồng thuận khi chạy nhiều lần'],
+        ['Kiểm tra mã đơn, 2. Tìm chính sách', 'Unit test thường: mã đơn tồn tại; k điều khoản tìm được có chứa điều khoản đúng không (Recall@k: tỷ lệ câu hỏi mà điều khoản đúng nằm trong k kết quả)'],
+        ['3. Soạn trả lời', 'Với input phân loại và điều khoản cố định: đúng điều khoản, giọng, độ dài (LLM-as-judge sau khi qua kiểm tra code)'],
+        ['4. Kiểm tra', 'Unit test regex trên các câu trả lời mẫu tốt và xấu']] : [
+        ['Một prompt', 'Chỉ đo được output cuối. Nếu có trường loai trong JSON thì đo được nhãn, nhưng nhãn sai đã ảnh hưởng câu trả lời trong cùng lần gọi'],
+        ['Kiểm tra (code)', 'Bắt được lỗi format, độ dài, hứa hẹn trên output cuối; sửa nghĩa là gọi lại toàn bộ prompt']];
+      testBox.innerHTML = '<table><tr><th>Bước</th><th>Test riêng được gì</th></tr>' + T.map(([a, b]) => '<tr><td>' + a + '</td><td style="font-size:12.5px">' + b + '</td></tr>').join('') + '</table>';
+      const FN = { none: '', cls: 'phân loại sai nhãn', ret: 'lấy sai điều khoản', draft: 'bản nháp hứa ngày giao', long: 'trả lời quá dài, có markdown', order: 'mã đơn không tồn tại' };
+      stat.innerHTML = '<span>Lỗi cài vào: <b>' + (S.fault === 'none' ? 'không' : FN[S.fault]) + '</b></span><span>Phát sinh ở: <b>' + (R.origin >= 0 ? R.steps[R.origin].name : '-') + '</b></span><span>Bị bắt lúc chạy ở: <b class="' + (S.fault === 'none' ? '' : R.caught >= 0 ? 'ok' : 'bad') + '">' + (S.fault === 'none' ? '-' : R.caught >= 0 ? R.steps[R.caught].name : 'không bước nào') + '</b></span>';
+      caseEl.textContent = 'Khiếu nại: "' + CASES[S.c].text + '"';
+      const f = [];
+      if (S.mode === 'chain' && A.inT > other.inT) f.push(capBox('Mỗi bước của chuỗi nhỏ hơn prompt lớn, nhưng tổng token vào của chuỗi (' + A.inT + ') lớn hơn một prompt (' + other.inT + ').', 'Mỗi lần gọi gửi lại system riêng và tin nhắn của khách; bước soạn còn nhận thêm kết quả phân loại.', 'Chuỗi luôn đắt hơn. Bước phân loại có thể chạy trên model rẻ hơn, và tài liệu Model Routing bàn cách định giá; lab không dùng giá vì giá phụ thuộc model.', 'so chi phí theo giá từng model của từng bước, không so tổng token thô.'));
+      if (S.mode === 'chain' && A.inT <= other.inT) f.push(el('div', { class: 'hint', html: 'Ở khiếu nại này, chuỗi gửi <b>ít</b> token vào hơn (' + A.inT + ' so với ' + other.inT + ') vì bước soạn chỉ nhận ' + CASES[S.c].pol.length + ' điều khoản tìm được, còn một prompt phải mang toàn bộ chính sách. Chính sách càng dài, chênh lệch càng lớn.' }));
+      if (A.ms > S.budget) f.push(capBox('Độ trễ ' + A.ms + ' ms vượt ngân sách ' + S.budget + ' ms (giả định).', S.mode === 'chain' ? 'Các bước chạy nối tiếp nên độ trễ cộng dồn: mỗi lần gọi LLM trả thêm một TTFT.' : 'Một lần gọi nhưng output dài' + (S.cot ? ', thêm phần suy nghĩ từng bước' : '') + '.', 'Phải bỏ chuỗi. Có thể chạy bước nhỏ trên model nhanh hơn, hoặc stream câu trả lời của bước cuối.', 'đặt ngân sách độ trễ cho cả pipeline và đo p95 thật; xem tài liệu Latency.'));
+      if (S.cot) f.push(capBox('"Hãy suy nghĩ từng bước" thêm ' + COT_EXTRA + ' token ra (giả định) cho mỗi lần gọi có nó.', 'Với reasoning model, model đã tự suy luận; Wharton (06/2025) đo thấy yêu cầu CoT gần như không đổi độ chính xác.', 'Suy luận vô ích. Model vẫn suy luận, chỉ là không cần bạn nhắc.', 'bỏ câu này, mô tả mục tiêu và tiêu chí đúng; chỉ giữ nếu eval trên tác vụ của bạn cho thấy có ích.'));
+      if (S.mode === 'chain' && !S.small && !S.midCheck && !S.judge) f.push(capBox('Chuỗi đang dùng cùng một model cho mọi bước và không kiểm tra gì giữa chừng.', 'Không bước nào dùng tới lý do để tách của README: không đổi model, không kiểm tra bằng code giữa hai bước.', 'Chuỗi sai. Nếu bạn vẫn eval riêng từng bước thì đó là lý do thứ tư.', 'README: trường hợp này một prompt có cấu trúc tốt kèm reasoning thường đủ.'));
+      if (S.fault === 'order') f.push(S.mode === 'chain' && S.midCheck ? el('div', { class: 'hint', html: '<b class="ok">Chuỗi dừng ở bước kiểm tra mã đơn</b>: không gọi bước soạn, tiết kiệm ' + agg(R.steps.slice(R.stopAt + 1)).inT + ' token vào và ' + agg(R.steps.slice(R.stopAt + 1)).ms + ' ms. Bot hỏi lại khách mã đơn đúng thay vì trả lời về một đơn không có thật.' }) : capBox('Mã đơn SV-9999 không tồn tại, nhưng câu trả lời vẫn được soạn đầy đủ.', S.mode === 'one' ? 'Trong một prompt, phân loại và viết xảy ra trong cùng lần gọi; không có chỗ nào để code chen vào giữa.' : 'Đã tắt bước kiểm tra mã đơn giữa phân loại và soạn.', 'Model viết sai. Câu trả lời có thể rất trôi chảy.', 'đây là lý do rõ nhất để tách: kiểm tra bằng code giữa hai bước (README §2.4).'));
+      if ((S.fault === 'cls' || S.fault === 'ret') && R.caught < 0) f.push(capBox('Lỗi "' + FN[S.fault] + '" đi qua mọi kiểm tra lúc chạy.', 'Kiểm tra bằng code chỉ thấy format, độ dài, mã đơn; câu trả lời dựa trên nhãn sai hoặc điều khoản sai vẫn đúng format.', 'Tách bước vô ích với lỗi này. ' + (S.mode === 'chain' ? 'Lỗi không bị bắt lúc chạy, nhưng eval riêng bước ' + (S.fault === 'cls' ? '1' : '2') + ' chỉ thẳng ra nó.' : 'Trong một prompt, eval chỉ thấy câu trả lời cuối kém, không biết do đâu.'), 'lỗi ngữ nghĩa cần eval từng bước trên bộ dữ liệu' + (S.fault === 'ret' ? ', hoặc LLM-as-judge có điều khoản đúng làm tham chiếu (bật thử).' : '.')));
+      flags.replaceChildren(...f);
+      Object.entries(btn).forEach(([k, b]) => b.classList.toggle('on', !!S[k]));
+      modeB.forEach(([k, b]) => b.classList.toggle('on', S.mode === k));
+    }
+    const caseEl = el('p', { class: 'hint', style: 'margin:0 0 8px' });
+    const modeB = [['one', el('button', { text: 'Một prompt', onclick: () => { S.mode = 'one'; render(); } })], ['chain', el('button', { text: 'Chuỗi 4 bước', onclick: () => { S.mode = 'chain'; render(); } })]];
+    const btn = {
+      small: el('button', { text: 'Bước phân loại dùng model nhỏ', onclick: () => { S.small = !S.small; render(); } }),
+      midCheck: el('button', { text: 'Kiểm tra mã đơn bằng code giữa bước', onclick: () => { S.midCheck = !S.midCheck; render(); } }),
+      judge: el('button', { text: 'Thêm LLM-as-judge', onclick: () => { S.judge = !S.judge; render(); } }),
+      cot: el('button', { text: 'Thêm "hãy suy nghĩ từng bước"', onclick: () => { S.cot = !S.cot; render(); } })
+    };
+    stage.append(
+      el('div', { class: 'row' }, [...modeB.map((x) => x[1]), select('Khiếu nại', [['c1', 'Tai nghe rè, muốn hoàn tiền'], ['c2', 'Giao trễ, hộp móp'], ['c3', 'Laptop pin chai']], S.c, (v) => { S.c = v; render(); }).node,
+        select('Cài lỗi', [['none', 'Không có lỗi'], ['cls', 'Phân loại sai nhãn'], ['ret', 'Lấy sai điều khoản'], ['draft', 'Bản nháp hứa ngày giao'], ['long', 'Trả lời quá dài, có markdown'], ['order', 'Mã đơn không tồn tại']], S.fault, (v) => { S.fault = v; render(); }).node]),
+      el('div', { class: 'row' }, Object.values(btn)),
+      caseEl, svgBox, stat, flags,
+      el('h4', { text: 'Tổng chi phí của hai phương án', style: 'margin:16px 0 4px' }), sumBox,
+      el('div', { class: 'row', style: 'margin-top:10px' }, [
+        slider('TTFT model chính', 200, 2000, 100, S.ttft, (v) => { S.ttft = v; render(); }, (v) => v + ' ms').node,
+        slider('Tốc độ ra', 20, 200, 10, S.tps, (v) => { S.tps = v; render(); }, (v) => v + ' tok/s').node,
+        slider('Ngân sách độ trễ', 1000, 8000, 500, S.budget, (v) => { S.budget = v; render(); }, (v) => v + ' ms').node]),
+      el('p', { class: 'hint', style: 'margin:0', text: 'Nhãn phân loại, câu trả lời và kết quả judge là văn bản viết tay, không có model nào chạy; token là ước lượng ký tự ÷ 3,2 (hiệu chỉnh trên o200k_base). Mọi số thời gian là giả định: model nhỏ TTFT 300 ms, 150 tok/s; code tra mã đơn 30 ms, tìm chính sách 80 ms, kiểm tra 5 ms; "suy nghĩ từng bước" thêm 250 token ra. Độ trễ một lần gọi = TTFT + token ra ÷ tốc độ. README không đưa con số độ trễ.' }),
+      el('h4', { text: 'Bước kiểm tra chạy trên gì', style: 'margin:16px 0 4px' }), checkBox,
+      el('h4', { text: 'Test riêng được gì', style: 'margin:16px 0 4px' }), testBox);
+    render();
+  }
+});
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
