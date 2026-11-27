@@ -1,0 +1,691 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cost Optimization Lab 04</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="03-pricing-caching.html">← Lab trước</a><a href="05-model-prompt-output.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/cost-optimization/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const dec = (x, d = 2) => (Number.isFinite(x) ? x : 0).toFixed(d).replace('.', ',');
+  const int = (x) => Math.round(Number.isFinite(x) ? x : 0).toLocaleString('vi-VN');
+  const pct = (x, d = 0) => dec(x * 100, d) + '%';
+  const usd = (x) => (!x ? '0' : Math.abs(x) >= 100 ? int(x) : Math.abs(x) >= 1 ? dec(x, 2) : Math.abs(x) >= 0.01 ? dec(x, 3) : dec(x, 4)) + ' USD';
+  const flagBox = (l, t) => el('div', { style: 'font-size:13px;margin:4px 0;padding:6px 10px;border-left:3px solid var(--' + l + ');background:var(--bg);border-radius:0 6px 6px 0', html: t });
+  const capHtml = (c) => '<div style="font-size:13.5px"><p style="margin:0 0 4px"><b>Chuyện gì xảy ra:</b> ' + c.what + '</p><p style="margin:0 0 4px"><b>Vì sao:</b> ' + c.why + '</p><p style="margin:0 0 4px"><b>Không có nghĩa là:</b> ' + c.not.replace(/^Không có nghĩa (là )?/, '') + '</p><p style="margin:0"><b>Trong hệ thống thật:</b> ' + c.real + '</p></div>';
+  const check = (label, on, onChange) => { const i = el('input', { type: 'checkbox' }); i.checked = on; i.addEventListener('change', () => onChange(i.checked)); return { node: el('label', { class: 'ctl', style: 'font-size:12.5px' }, [i, label]), input: i }; };
+  const PRE = 'font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;white-space:pre-wrap';
+
+  const MODELS = {
+    sonnet: { name: 'Claude Sonnet 5.5', in: 2, out: 10, cr: 0.10, w: 1.25, lim: 100000 },
+    haiku: { name: 'Claude Haiku 5.5', in: 0.10, out: 0.50, cr: 0.01, w: 1.25, lim: 100000 },
+    sol: { name: 'gpt-6.1-sol', in: 2, out: 10, cr: 0.10, w: 1.25, lim: 50000 },
+    terra: { name: 'gpt-6.1-terra', in: 1, out: 5, cr: 0.05, w: 1.25, lim: 50000 },
+    luna: { name: 'gpt-6-luna', in: 0.10, out: 0.50, cr: 0.01, w: 1.25, lim: 50000 },
+    argon: { name: 'Gemini 4 Argon (giá từ 01/12/2026)', in: 4, out: 20, cr: 0.20, w: 1, gem: true },
+    lite: { name: 'Gemini 3.5 Flash-Lite', in: 0.30, out: 2.50, cr: 0.03, w: 1, gem: true }
+  };
+  const WL = [
+    { id: 'chat', name: 'Chat hỗ trợ khách trên web', wait: 'Khách đang chờ vài giây', n: 300000, job: 10000, pre: 6000, v: 500, out: 300, waits: true },
+    { id: 'agent', name: 'Gợi ý trả lời cho nhân viên CSKH', wait: 'Nhân viên đang chờ', n: 60000, job: 2000, pre: 3000, v: 1500, out: 250, waits: true },
+    { id: 'sum', name: 'Tóm tắt hội thoại cuối ngày', wait: 'Không ai chờ, cần trước 8:00', n: 300000, job: 10000, pre: 1500, v: 3000, out: 200 },
+    { id: 'rev', name: 'Gán nhãn lại toàn bộ đánh giá (mỗi tuần)', wait: 'Không ai chờ', n: 480000, job: 120000, pre: 1200, v: 150, out: 20 },
+    { id: 'eval', name: 'Eval hằng tuần trên 2.000 câu', wait: 'Không ai chờ', n: 8000, job: 2000, pre: 6000, v: 600, out: 400 },
+    { id: 'desc', name: 'Sinh mô tả cho 15.000 sản phẩm mới', wait: 'Không ai chờ', n: 15000, job: 15000, pre: 800, v: 400, out: 600 },
+    { id: 'audit', name: 'Agent đối soát khiếu nại (nhiều lượt tool, chạy đêm)', wait: 'Không ai chờ', n: 9000, job: 300, pre: 5000, v: 4000, out: 500, loop: true }
+  ];
+  const PROFILE = [2, 1, 1, 1, 1, 2, 4, 6, 8, 9, 9, 10, 11, 9, 8, 8, 9, 10, 12, 14, 15, 13, 8, 4];
+  const HOURS = 730;
+
+  function reqCost(w, k, batch, hit) {
+    const m = MODELS[k], h = m.gem && w.pre < 4096 ? 0 : hit;
+    const read = w.pre * h * m.cr, write = w.pre * (1 - h) * m.in * m.w, rest = w.v * m.in + w.out * m.out;
+    if (!batch) return (read + write + rest) / 1e6;
+    if (m.gem) return (read + 0.5 * (write + rest)) / 1e6;
+    return 0.5 * (read + write + rest) / 1e6;
+  }
+  const toks = (w) => w.n * (w.pre + w.v + w.out);
+
+  return {
+    id: 'batch-small-selfhost', nav: '4. Batch, model nhỏ, self-host', ref: '§2.3–2.5',
+    title: 'Job tóm tắt ban đêm của ShopViet có cần trả giá đồng bộ không, và GPU riêng phải bận bao nhiêu phần trăm thời gian mới rẻ hơn API?',
+    hook: 'Đánh dấu việc nào chuyển sang Batch API: lab tính lại hoá đơn tháng theo giá README, có cache, và chặn những việc không batch được. Phần dưới kéo giá GPU, throughput và vận hành: biểu đồ cho thấy hệ số sử dụng cần đạt để self-host hoà vốn với từng lựa chọn API.',
+    terms: [
+      ['Batch API', 'Gửi một lô nhiều request, nhận kết quả sau. Giá 50% ở Claude, OpenAI, Gemini; đổi lại kết quả có trong tối đa 24 giờ. Ví dụ: 10.000 bản tóm tắt hội thoại gửi lúc 23:00, sáng ra lấy kết quả.'],
+      ['custom_id', 'Mã bạn tự đặt cho từng request trong lô để ghép kết quả về đúng chỗ, vì kết quả không về theo thứ tự. Ví dụ "tomtat-SV-4821".'],
+      ['Đồng bộ (realtime)', 'Gọi API và chờ câu trả lời ngay trong vài giây, như khung chat. Đây là giá chuẩn.'],
+      ['Ghi cache, đọc cache (nhắc lại lab 03)', 'Request đầu gửi prefix thì provider lưu lại (ghi cache, đắt hơn input thường: Claude 1,25 lần với TTL 5 phút, 2 lần với TTL 1 giờ). Request sau có cùng prefix thì đọc lại (cache hit, Sonnet 5.5 chỉ 0,05 lần giá input). Ví dụ: system prompt 6.000 token của bot chat, request thứ hai trở đi chỉ trả 1/20 giá cho phần đó.'],
+      ['Cache best effort', 'Có cố gắng nhưng không bảo đảm. Trong batch, request chạy đồng thời và không theo thứ tự nên tỉ lệ cache hit của người dùng Claude dao động 30–98% (README §2.3).'],
+      ['Flex processing', 'Tier của OpenAI: gọi đồng bộ bình thường với service_tier: "flex", tính giá bằng giá Batch, đổi lại chậm hơn và đôi khi trả 429 Resource Unavailable (khi đó không tính tiền).'],
+      ['Distillation', 'Cho model lớn sinh câu trả lời cho dữ liệu của bạn, rồi fine-tune model nhỏ trên đó. Ví dụ: Sonnet 5.5 viết 20.000 nhãn đánh giá, rồi dạy model nhỏ gán nhãn y như vậy.'],
+      ['Fine-tune', 'Huấn luyện tiếp một model gốc trên dữ liệu có nhãn của bạn. Model fine-tune có thể đắt hơn model gốc khi chạy: gpt-4.1 fine-tune 3 / 12 USD so với 2 / 8 USD của bản gốc.'],
+      ['Self-host', 'Tự chạy model open-weight (model công bố trọng số, ai cũng tải về chạy được, ví dụ họ Llama hay Qwen) trên GPU thuê hoặc mua. Trả tiền theo giờ GPU, dù có request hay không.'],
+      ['Throughput', 'Số token một máy xử lý được mỗi giờ. Phải đo ở độ trễ bạn chấp nhận được: batch càng lớn thì throughput càng cao nhưng mỗi request càng chậm.'],
+      ['Hệ số sử dụng (utilization)', 'Phần trăm năng lực GPU thật sự dùng. Máy xử lý được 5 triệu token/giờ mà trung bình chỉ nhận 1,5 triệu thì hệ số sử dụng là 30%.'],
+      ['Giá trung bình mỗi 1M token', 'Gộp giá input và output theo tỉ lệ token thật. 90% input ở 2 USD và 10% output ở 10 USD thì trung bình 2,8 USD mỗi 1M token.']
+    ],
+    problem: {
+      example: '<b>ShopViet</b> mở hoá đơn tháng và thấy job tóm tắt hội thoại chạy lúc 23:00 qua API đồng bộ, đúng như câu mở đầu README: "không ai cần kết quả trong vài giây". Job gán nhãn đánh giá, eval hằng tuần và sinh mô tả sản phẩm cũng vậy. Kỹ sư hạ tầng đề xuất thuê GPU tự chạy model open-weight cho "toàn bộ traffic", vì "giá theo token của GPU rẻ hơn nhiều". Sếp hỏi: chuyển gì sang batch, tiết kiệm bao nhiêu, và GPU riêng có thật sự rẻ hơn không?',
+      scenario: 'Bảy loại việc của ShopViet, mỗi loại có số request mỗi tháng, prefix dùng chung (system prompt, tool), phần input riêng và output. Số lượng và token là giả định của lab; giá lấy từ README §2.1 (06/11/2026), hệ số cache và quy tắc batch từ README §2.2–2.3.',
+      ask: 'Việc nào batch được, việc nào không, và vì sao? Batch giảm đúng 50% hay ít hơn? Self-host phải đạt hệ số sử dụng bao nhiêu để rẻ hơn API, và ShopViet thật sự đạt bao nhiêu?',
+      solves: 'Phần A tính chi phí từng request: prefix đọc cache theo tỉ lệ hit (đồng bộ và batch khác nhau), ghi cache khi miss, nhân 0,5 khi batch (Gemini không giảm phần cache hit). Phần B dùng công thức README §2.5: chi phí mỗi 1M token = (giá GPU + vận hành mỗi giờ) / (triệu token mỗi giờ × hệ số sử dụng), với số máy đủ cho giờ cao điểm và tối thiểu hai máy.',
+      read: [
+        'Bảng phần A: đánh dấu cột Batch cho từng việc. Cột cuối là tiền tháng theo cách chạy đã chọn, so với cột chạy đồng bộ.',
+        'Hai thanh ngang: hoá đơn tháng trước và sau. Khung cảnh báo bên dưới bắt các lựa chọn sai: batch việc có người chờ, batch agent nhiều lượt, batch tiết kiệm ít hơn dự tính, lô vượt giới hạn.',
+        'Biểu đồ phần B: trục ngang là hệ số sử dụng, trục dọc (thang log) là USD mỗi 1M token. Đường cong là self-host, các đường ngang là lựa chọn API. Chỗ cắt nhau là điểm hoà vốn; vạch dọc là hệ số ShopViet đạt được với traffic theo giờ.',
+        'Bảng hoà vốn: mỗi lựa chọn API cần self-host bận bao nhiêu phần trăm. Trên 100% nghĩa là không bao giờ hoà vốn.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<h4>Batch API (§2.3)</h4>
+<div class="tbl"><table><tr><th></th><th>Claude Message Batches</th><th>OpenAI Batch</th><th>Gemini Batch</th></tr>
+<tr><td>Giảm giá</td><td>50% mọi token, cộng dồn với cache</td><td>50%, gồm cả cached input</td><td>50%; cache hit tính theo giá context caching thường</td></tr>
+<tr><td>Thời hạn</td><td>Phần lớn xong dưới 1 giờ; hết hạn sau 24 giờ</td><td>Xong trong 24 giờ (completion_window chỉ nhận 24h)</td><td>Mục tiêu 24 giờ, thường nhanh hơn</td></tr>
+<tr><td>Giới hạn một batch</td><td>100.000 request hoặc 256 MB</td><td>50.000 request, file 200 MB</td><td>File input 2 GB; inline dưới 20 MB</td></tr>
+<tr><td>Kết quả lưu</td><td>29 ngày</td><td>Qua output file</td><td>Qua file hoặc inline</td></tr></table></div>
+<ul><li>Cache trong batch là best effort: hit 30–98% ở người dùng Claude. Đặt cache_control giống hệt nhau ở mọi request, cân nhắc TTL 1 giờ. TTL 1 giờ ghi 2 lần giá input thay vì 1,25 lần, nên chỉ đáng khi nó thật sự nâng tỉ lệ hit; ở cùng tỉ lệ hit nó đắt hơn.</li>
+<li>Claude batch không nhận stream, speed (fast mode), fallbacks, max_tokens: 0. Batch là một lượt, không có tool loop giữa chừng.</li>
+<li>Batch hết hạn vẫn tính tiền phần đã xong; job phải biết xử lý item bị bỏ dở.</li>
+<li>Flex (OpenAI): đồng bộ, giá bằng Batch, chậm hơn, đôi khi 429 Resource Unavailable (không tính tiền). Retry có backoff hoặc gửi lại ở tier thường.</li></ul>
+<h4>Model nhỏ, distillation, fine-tune (§2.4)</h4>
+<ul><li>Thử model nhỏ với prompt tốt trước. Haiku 5.5 đạt 85% GPQA Diamond so với 91% của Opus 5.5 và Sonnet 5.5, chi phí mỗi câu đúng khoảng 1/20 Opus 5.5, 1/10 Sonnet 5.5. Hợp với phân loại, trích xuất, định tuyến; không hợp agent loop dài.</li>
+<li>Giá ẩn của fine-tune: chạy có thể đắt hơn model gốc (gpt-4.1 fine-tune 3 / 12 USD so với 2 / 8, cộng 25 USD mỗi 1M token huấn luyện); nền tảng có thể thu hẹp (OpenAI đang thu hẹp fine-tuning tự phục vụ); model gốc cũ đi; dữ liệu và eval là phần đắt nhất.</li></ul>
+<h4>Self-host (§2.5)</h4>
+<p class="mono" style="font-size:12.5px">chi phí / 1M token = (giá GPU mỗi giờ + vận hành mỗi giờ) / (triệu token mỗi giờ × hệ số sử dụng)</p>
+<ul><li>Biến quyết định là hệ số sử dụng: GPU tính tiền theo giờ dù không có request.</li>
+<li>Hay bị quên: throughput phụ thuộc tải và độ trễ chấp nhận được; dự phòng (ít nhất hai máy, dư cho cao điểm); người vận hành; chất lượng model open-weight; API cũng có tier rẻ (batch, flex, model nhỏ).</li>
+<li>Có lý khi traffic lớn và đều, dữ liệu không được rời hạ tầng, hoặc cần model fine-tune mà API không có.</li></ul>
+<div class="verdict"><b>Điểm cần nhớ:</b> việc không ai chờ đi batch trước, gần như không mất gì. Model nhỏ và fine-tune đổi chất lượng lấy tiền, cần eval. Self-host chỉ rẻ khi GPU bận đều; so với giá API rẻ nhất dùng được (model nhỏ, batch), không so với giá chuẩn của model lớn.</div>`,
+    why: {
+      c: 'Chuyển mọi việc không ai chờ (tóm tắt đêm, gán nhãn, eval, backfill) sang Batch API, cùng cache_control giống hệt nhau; bật TTL 1 giờ nếu đo thấy nó nâng tỉ lệ hit trong batch. Giữ chat và gợi ý cho nhân viên ở đồng bộ. Thử model nhỏ cho gán nhãn, đo bằng eval. Ở lại API cho tới khi có traffic lớn, đều, và một lý do khác ngoài giá.',
+      s: 'Batch mọi thứ: khách chat không chờ được tới 24 giờ. Đưa agent đối soát nhiều lượt thẳng vào batch: batch là một lượt. Self-host "toàn bộ traffic" vì giá mỗi token ở tải đầy rẻ: traffic chat dao động theo giờ nên GPU rảnh phần lớn thời gian. Fine-tune ngay để rút prompt: chạy đắt hơn, nền tảng có thể dừng.',
+      p: 'Kết quả batch về chậm, phải viết code xử lý item hết hạn và ghép theo custom_id. Cache trong batch không chắc chắn nên mức giảm thật có thể dưới 50%. Model nhỏ cần eval và có thể sai nhiều hơn ở phần khó. Ở lại API nghĩa là phụ thuộc bảng giá của provider.'
+    },
+    deep: [
+      {
+        q: 'Batch API trông thế nào? Gửi một lô khác gọi từng request ở đâu?',
+        a: `<p>Thay vì gọi 10.000 lần và chờ từng câu trả lời, job tóm tắt của ShopViet gửi một lần một danh sách request. Mỗi phần tử có <code>custom_id</code> do mình đặt và phần <code>params</code> giống hệt request thường:</p>
+<pre class="mono" style="${PRE}">{"requests": [
+  {"custom_id": "tomtat-SV-4821",
+   "params": {"model": "claude-sonnet-5-5", "max_tokens": 400,
+              "system": [{"type": "text", "text": "Bạn tóm tắt hội thoại CSKH...",
+                          "cache_control": {"type": "ephemeral", "ttl": "1h"}}],
+              "messages": [{"role": "user", "content": "Hội thoại: ..."}]}},
+  {"custom_id": "tomtat-SV-4822", "params": {...}}
+]}</pre>
+<p>Provider trả về một mã batch. Job hỏi lại trạng thái (hoặc chờ), rồi tải kết quả. Kết quả không theo thứ tự gửi, nên <code>custom_id</code> là thứ duy nhất ghép kết quả "tomtat-SV-4821" về đúng hội thoại SV-4821.</p>
+<p>Đổi lại: giá 50% mọi token (Claude, OpenAI, Gemini), nhưng không có câu trả lời ngay. Claude: phần lớn xong dưới 1 giờ, hết hạn sau 24 giờ; OpenAI: <code>completion_window</code> chỉ nhận <code>24h</code>.</p>`,
+        take: 'Batch là cùng request, gửi theo lô, đổi độ trễ lấy nửa giá. custom_id là chìa khoá ghép kết quả.'
+      },
+      {
+        q: 'Vậy sao không batch luôn chat với khách cho rẻ một nửa?',
+        a: `<p>Vì "phần lớn xong dưới 1 giờ" không phải "xong trong vài giây", và giới hạn trên là 24 giờ. Khách hỏi "đơn SV-4821 đâu rồi" không chờ một giờ. Tiêu chí là <b>có ai đang chờ kết quả không</b>, không phải loại tác vụ.</p>
+<p>Còn một tiêu chí thứ hai hay bị quên: <b>batch là một lượt</b>. Agent đối soát khiếu nại của ShopViet gọi get_order, rồi đọc kết quả, rồi gọi get_shipment. Mỗi lượt cần câu trả lời của lượt trước. Trong batch không có chỗ cho vòng lặp đó. README nêu cách vòng qua: lấy trước dữ liệu tool cần rồi nén thành một request, nhưng đó là đổi kiến trúc và model sẽ suy luận khác đi, phải eval lại.</p>
+<p>Thử trong hình chính: đánh dấu Batch cho "Chat hỗ trợ khách" hoặc "Agent đối soát", lab sẽ không tính phần tiết kiệm đó và giải thích vì sao.</p>`,
+        take: 'Hai câu hỏi trước khi batch: có ai đang chờ không, và việc này có xong trong một lượt không.'
+      },
+      {
+        q: 'Batch cộng dồn với cache. Sao README lại nói cache hit trong batch chỉ 30–98%?',
+        a: `<p>Cache cần một request ghi trước, request sau đọc. Trong batch, provider chạy nhiều request <b>đồng thời</b> và <b>không theo thứ tự</b>. Đợt đầu chạy cùng lúc thì chưa ai ghi xong, nên cả đợt đều miss. Nếu provider tạm dừng lô lâu hơn TTL (5 phút) giữa hai đợt, cache hết hạn và đợt sau lại miss.</p>
+<p>Mô phỏng dưới đây dựng một lô 1.000 request chạy theo đợt. Số request mỗi đợt, khoảng nghỉ trung bình giữa hai đợt và cách làm mới TTL là <b>giả định</b> của lab (README chỉ cho khoảng 30–98%, không cho cơ chế lập lịch của provider).</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { c: 100, gap: 6, ttl: 5 };
+          function draw() {
+            const rnd = seeded(7), N = 1000, waves = Math.ceil(N / st.c), cells = [];
+            let t = 0, last = -Infinity, hits = 0, done = 0;
+            for (let i = 0; i < waves; i++) {
+              const size = Math.min(st.c, N - done), alive = i > 0 && t - last <= st.ttl;
+              if (alive) hits += size;
+              cells.push({ size, alive, first: i === 0 });
+              done += size; last = t + 1; t += 1 + (-Math.log(1 - rnd() * 0.999) * st.gap);
+            }
+            const W = 600, H = 60, bw = W / waves;
+            out.replaceChildren(el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Đợt hit và miss trong batch' }, cells.map((c, i) => el('rect', { x: i * bw + 0.5, y: 6, width: Math.max(1, bw - 1), height: H - 12, rx: 2, fill: c.alive ? 'var(--ok)' : c.first ? 'var(--warn)' : 'var(--bad)', opacity: 0.85 }))));
+            const r = hits / N;
+            cap.innerHTML = 'Xanh: đợt đọc cache. Vàng: đợt đầu, chưa có cache. Đỏ: cache hết hạn vì nghỉ quá TTL. ' + waves + ' đợt, ' + dec(t, 0) + ' phút. Tỉ lệ hit: <b class="' + (r < 0.6 ? 'bad' : 'ok') + '">' + pct(r) + '</b>' + (r < 0.6 ? '. Với tỉ lệ này, prefix bị ghi lại (1,25 lần giá input) ở phần lớn request, nên batch tiết kiệm ít hơn 50% so với chạy đồng bộ có cache ấm.' : '.') + (st.ttl === 5 && st.gap > 4 ? ' Thử TTL 1 giờ: README khuyên cân nhắc vì batch có thể chạy lâu hơn 5 phút. Nhớ rằng TTL 1 giờ ghi 2 lần giá input (5 phút: 1,25 lần), nên nó chỉ đáng khi biến đợt đỏ thành xanh.' : '');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Request mỗi đợt (giả định)', 10, 500, 10, st.c, (v) => { st.c = v; draw(); }).node, slider('Nghỉ giữa hai đợt, phút (giả định)', 0, 30, 1, st.gap, (v) => { st.gap = v; draw(); }).node, select('TTL', [['5', '5 phút'], ['60', '1 giờ']], '5', (v) => { st.ttl = +v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Batch rẻ hơn ít hơn dự tính khi cache không kịp ấm hoặc hết hạn giữa các đợt (failure mode 4). Đặt cache_control giống hệt nhau, đo hit trong usage của kết quả batch, và chỉ giữ TTL 1 giờ (ghi 2 lần) nếu hit tăng đủ bù phần ghi đắt hơn.'
+      },
+      {
+        q: 'Lô hết hạn sau 24 giờ thì sao? Có mất tiền không?',
+        a: `<p>Có thể có. OpenAI: request chưa xong bị huỷ và ghi vào error file, request đã xong <b>vẫn tính tiền</b>. Claude: batch không xong trong 24 giờ thì hết hạn. Job tóm tắt của ShopViet phải đọc kết quả theo <code>custom_id</code>, tìm những hội thoại chưa có bản tóm tắt, và gửi lại chúng trong lô sau. Không được gửi lại cả lô: phần đã xong sẽ bị trả tiền hai lần.</p>
+<p>Giới hạn kích thước cũng cần tính trước. Job gán nhãn 120.000 đánh giá mỗi tuần vượt 100.000 request của Claude và 50.000 của OpenAI, nên phải chia lô. Hình chính cảnh báo khi một lô vượt giới hạn của provider bạn chọn.</p>
+<p>Thêm vài tham số không dùng được trong Claude batch: <code>stream</code>, <code>speed</code> (fast mode), <code>fallbacks</code>, <code>max_tokens: 0</code>. Batch cũng không dùng được với Managed Agents.</p>`,
+        take: 'Thiết kế job batch như job có thể dở dang: ghi theo custom_id, gửi lại phần thiếu, chia lô theo giới hạn.'
+      },
+      {
+        q: 'Code muốn gọi đồng bộ nhưng việc không gấp. Flex của OpenAI có rẻ như batch không?',
+        a: `<p>Giá thì bằng: Flex tính giá Batch. Khác ở chỗ request vẫn đồng bộ, chỉ chậm hơn, và đôi khi trả <code>429 Resource Unavailable</code> khi thiếu capacity. Lỗi này không bị tính tiền. OpenAI gợi ý hai cách: retry có backoff, hoặc gửi lại ở tier thường nếu chấp nhận trả thêm. Timeout mặc định của SDK là 10 phút, có thể cần tăng.</p>
+<p>Chính sách xử lý 429 quyết định mức tiết kiệm. Hình dưới tính chi phí tương đối so với giá chuẩn. Tỉ lệ 429 là <b>giả định</b> để bạn kéo.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { p: 0.15, pol: 'retry' };
+          function draw() {
+            const cost = st.pol === 'retry' ? 0.5 : (1 - st.p) * 0.5 + st.p * 1, tries = st.pol === 'retry' ? 1 / (1 - Math.min(st.p, 0.95)) : 1 + st.p;
+            out.replaceChildren(hbars([['Giá chuẩn', 1, false], ['Flex, ' + (st.pol === 'retry' ? 'retry flex' : 'lỗi thì gửi tier thường'), cost, true]], { max: 1, fmt: (v) => pct(v) + ' giá chuẩn' }));
+            cap.innerHTML = 'Số lần gửi trung bình mỗi request: <b>' + dec(tries, 2) + '</b>. ' + (st.pol === 'fallback' && st.p > 0.3 ? '<span class="bad">Với ' + pct(st.p) + ' request gặp 429, gửi lại ở tier thường làm mức tiết kiệm chỉ còn ' + pct(1 - cost) + ', không phải 50%.</span> ' : '') + (st.pol === 'retry' && st.p > 0.5 ? '<span class="bad">Retry flex vẫn giữ nửa giá, nhưng trung bình ' + dec(tries, 1) + ' lần gửi mỗi request: job có thể không xong kịp.</span>' : 'Lỗi 429 không tính tiền nên retry không làm tăng giá, chỉ tăng thời gian.');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Tỉ lệ 429 (giả định)', 0, 0.8, 0.05, st.p, (v) => { st.p = v; draw(); }, (v) => pct(v)).node, select('Khi gặp 429', [['retry', 'Retry flex có backoff'], ['fallback', 'Gửi lại ở tier thường']], st.pol, (v) => { st.pol = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Flex hợp với job không gấp mà code muốn gọi đồng bộ. Mức tiết kiệm thật phụ thuộc chính sách khi gặp 429.'
+      },
+      {
+        q: 'Batch rồi. Sao không đổi luôn sang model nhỏ cho job gán nhãn đánh giá?',
+        a: `<p>Nên thử, và README xếp nó là cách đầu tiên trong ba cách dùng model nhỏ, vì rẻ công nhất: dùng model nhỏ với prompt tốt. Anthropic khuyên thử Haiku 5.5 trước cho tác vụ khối lượng lớn mà output kiểm tra được. Trên GPQA Diamond (bộ câu hỏi khoa học khó dùng để so model, điểm là % câu đúng), Haiku 5.5 đạt 85% so với 91% của Opus 5.5 và Sonnet 5.5, với chi phí mỗi câu đúng khoảng một phần hai mươi Opus 5.5 và một phần mười Sonnet 5.5.</p>
+<p>Gán nhãn đánh giá ("tích cực / tiêu cực / khiếu nại giao hàng") đúng là loại hợp: phân loại, output ngắn, kiểm tra được bằng một tập nhãn tay. Không hợp với agent loop dài như agent đối soát.</p>
+<p>Lưu ý đơn vị: "chi phí mỗi câu đúng", không phải giá mỗi token. Haiku 5.5 rẻ hơn Opus 5.5 40 lần theo giá input (0,10 so với 4 USD), nhưng chỉ khoảng 20 lần theo mỗi câu đúng. Phần chênh nằm ở số token mỗi câu và tỉ lệ đúng. Thử đổi model trong hình chính sang Haiku 5.5 cho cả bảng để thấy hoá đơn đổi bao nhiêu, rồi nhớ rằng con số đó chưa tính chất lượng.</p>`,
+        take: 'Model nhỏ với prompt tốt là đòn bẩy rẻ công nhất cho tác vụ khối lượng lớn, kiểm tra được. So bằng chi phí mỗi câu đúng.'
+      },
+      {
+        q: 'Fine-tune model nhỏ để bỏ phần few-shot dài trong prompt thì rẻ hơn chứ?',
+        a: `<p>Không chắc. README lấy ví dụ bảng giá OpenAI: gpt-4.1 fine-tune là 3 USD input, 12 USD output mỗi 1M token, so với 2 và 8 USD của gpt-4.1 gốc, chưa kể 25 USD mỗi 1M token huấn luyện. Prompt ngắn đi nhưng mỗi token đắt hơn 1,5 lần, cả output.</p>
+<p>Hình dưới dùng đúng các giá đó. Độ dài prompt, output và số token huấn luyện là <b>giả định</b>. Lab tìm số request cần để hoà vốn chi phí huấn luyện.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { pb: 2500, pf: 400, o: 150, tr: 5 };
+          function draw() {
+            const base = (st.pb * 2 + st.o * 8) / 1e6, ft = (st.pf * 3 + st.o * 12) / 1e6, save = base - ft, train = st.tr * 25, be = save > 0 ? train / save : Infinity;
+            out.replaceChildren(hbars([['gpt-4.1 gốc, prompt có few-shot', base, false], ['gpt-4.1 fine-tune, prompt ngắn', ft, save > 0]], { max: Math.max(base, ft), fmt: usd }));
+            cap.innerHTML = 'Mỗi request: gốc ' + usd(base) + ', fine-tune ' + usd(ft) + '. Huấn luyện: ' + dec(st.tr, 0) + ' triệu token × 25 USD = <b>' + usd(train) + '</b>. ' + (save > 0 ? 'Hoà vốn sau <b>' + int(be) + ' request</b>' + (be > 480000 ? ' <span class="warn" style="color:var(--warn)">(hơn một tháng gán nhãn của ShopViet)</span>' : '') + '.' : '<span class="bad">Fine-tune đắt hơn ở mọi request: output ' + int(st.o) + ' token tính 12 thay vì 8 USD, phần prompt bỏ đi không bù được. Không bao giờ hoà vốn.</span>');
+          }
+          box.append(el('div', { class: 'row' }, [slider('Prompt gốc (token)', 200, 8000, 100, st.pb, (v) => { st.pb = v; draw(); }, int).node, slider('Prompt sau fine-tune', 50, 2000, 50, st.pf, (v) => { st.pf = v; draw(); }, int).node, slider('Output (token)', 10, 2000, 10, st.o, (v) => { st.o = v; draw(); }, int).node, slider('Token huấn luyện (triệu)', 1, 100, 1, st.tr, (v) => { st.tr = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Fine-tune chỉ rẻ hơn khi phần prompt bỏ được lớn hơn hẳn phần output đắt thêm. Còn phải cộng giá ẩn: nền tảng có thể dừng, model gốc cũ đi, dữ liệu và eval.'
+      },
+      {
+        q: 'GPU thuê theo giờ, giá mỗi token ở tải đầy rẻ hơn API. Sao README nói biến quyết định là hệ số sử dụng?',
+        a: `<p>Vì GPU tính tiền cả khi rảnh. Traffic chat của ShopViet theo giờ trong ngày: gần 0 lúc 3 giờ sáng, cao nhất lúc 20–21 giờ. Số máy phải đủ cho giờ cao điểm (và ít nhất hai máy để không sập khi một máy lỗi), nên phần lớn thời gian máy chạy dưới sức.</p>
+<p>Hình dưới dùng một hồ sơ traffic theo giờ <b>giả định</b> cho ShopViet. Đường ngang là năng lực cần để phục vụ giờ cao điểm cộng phần dư. Hệ số sử dụng = trung bình chia năng lực. Bật "đưa job đêm vào giờ thấp điểm": các job batch được xếp vào chỗ trũng, hệ số sử dụng tăng mà không cần thêm máy.</p>`,
+        viz(box) {
+          const out = el('div'), cap = el('div', { class: 'cap' }), st = { head: 0.2, fill: false };
+          function draw() {
+            const pk = Math.max(...PROFILE), cap0 = pk * (1 + st.head), nightTotal = PROFILE.reduce((s, v) => s + v, 0) * 0.6;
+            let room = PROFILE.map((v) => Math.max(0, cap0 * 0.9 - v)), rs = room.reduce((s, v) => s + v, 0);
+            const add = st.fill ? room.map((r) => (rs ? r / rs : 0) * Math.min(nightTotal, rs)) : PROFILE.map(() => 0);
+            const tot = PROFILE.map((v, i) => v + add[i]), avg = tot.reduce((s, v) => s + v, 0) / 24, u = avg / cap0;
+            const W = 600, H = 150, bw = W / 24, y = (v) => H - 16 - (v / (cap0 * 1.05)) * (H - 26);
+            out.replaceChildren(el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Traffic theo giờ và năng lực' }, [
+              ...PROFILE.map((v, i) => el('rect', { x: i * bw + 2, y: y(v), width: bw - 4, height: H - 16 - y(v), fill: 'var(--accent)', opacity: 0.8 })),
+              ...add.map((a, i) => a > 0 ? el('rect', { x: i * bw + 2, y: y(PROFILE[i] + a), width: bw - 4, height: y(PROFILE[i]) - y(PROFILE[i] + a), fill: 'var(--g3)', opacity: 0.8 }) : null),
+              el('line', { x1: 0, x2: W, y1: y(cap0), y2: y(cap0), stroke: 'var(--bad)', 'stroke-dasharray': '4 3' }),
+              el('text', { x: 4, y: y(cap0) - 4, class: 'mute', text: 'năng lực (cao điểm + ' + pct(st.head) + ')' }),
+              ...[0, 6, 12, 18, 23].map((h) => el('text', { x: h * bw + 2, y: H - 3, class: 'mute', text: h + 'h' }))]));
+            cap.innerHTML = 'Hệ số sử dụng: <b class="' + (u < 0.5 ? 'bad' : 'ok') + '">' + pct(u) + '</b>' + (st.fill ? ' (cột nhạt: job batch xếp vào giờ thấp điểm)' : '') + '. Giá mỗi token thật của self-host = giá ở tải đầy chia ' + dec(u, 2) + ', tức gấp <b>' + dec(1 / u, 1) + ' lần</b> con số benchmark.';
+          }
+          box.append(el('div', { class: 'row' }, [slider('Dư cho cao điểm (giả định)', 0, 1, 0.05, st.head, (v) => { st.head = v; draw(); }, (v) => pct(v)).node, check('Đưa job đêm vào giờ thấp điểm', st.fill, (v) => { st.fill = v; draw(); }).node]), out, cap);
+          draw();
+        },
+        take: 'Giá mỗi token của self-host là giá ở tải đầy chia hệ số sử dụng. Traffic dao động theo giờ làm con số đó gấp vài lần benchmark.'
+      },
+      {
+        q: 'Nếu ShopViet vẫn muốn self-host, còn phải tính gì ngoài giá GPU?',
+        a: `<p>README liệt kê những khoản hay bị quên:</p>
+<ul><li><b>Throughput phụ thuộc tải.</b> Con số benchmark đo ở batch lớn; batch lớn làm mỗi request chậm. Phải đo ở độ trễ chấp nhận được, với độ dài prompt và output thật (output tốn GPU hơn input nhiều, README §1.3).</li>
+<li><b>Dự phòng.</b> Ít nhất hai máy, dư cho cao điểm. Hình chính luôn tính tối thiểu hai máy.</li>
+<li><b>Người vận hành.</b> Nâng cấp model, inference engine, driver, giám sát, trực sự cố. Hình chính có thanh "vận hành mỗi giờ" cho khoản này.</li>
+<li><b>Chất lượng.</b> Model open-weight nhỏ hơn có thể cần prompt dài hơn, nhiều lượt hơn, làm sai nhiều hơn. So theo chi phí mỗi tác vụ hoàn thành.</li>
+<li><b>API cũng có tier rẻ.</b> So với batch, flex, model nhỏ của API, không chỉ giá chuẩn của model lớn. Bảng hoà vốn trong hình chính có Haiku 5.5, gpt-6-luna, Flash-Lite và giá batch.</li></ul>
+<p>Self-host có lý khi traffic lớn và đều, khi dữ liệu không được rời hạ tầng, hoặc khi cần model fine-tune mà API không có. Giá thấp hơn hiếm khi là lý do duy nhất đủ mạnh.</p>`,
+        take: 'So self-host với lựa chọn API rẻ nhất dùng được, cộng người vận hành và dự phòng. Nếu vẫn thắng, kiểm chất lượng bằng chi phí mỗi tác vụ hoàn thành.'
+      }
+    ],
+    poc: {
+      goal: "Tính lại hoá đơn khi chuyển việc không ai chờ sang Batch API, mô phỏng 1.000 lần chạy batch với cache hit dao động 30–98% (dải README), và so self-host với API qua hồ sơ traffic 24 giờ. <b>Giá GPU, throughput, chi phí vận hành và khối lượng là giả định</b> ghi rõ trong output.",
+      file: "docs/cost-optimization/pocs/04_batch_small_selfhost.py",
+      run: "uv run docs/cost-optimization/pocs/04_batch_small_selfhost.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi model.",
+      output: "Thật: phép tính giá README §2.1/§2.3; dải cache hit 30–98% trong batch là số README trích từ Anthropic.\nGIẢ ĐỊNH (lab 04): khối lượng 7 việc, cache hit đồng bộ 80%, giá GPU, throughput, chi phí vận hành, hồ sơ traffic 24 giờ.\n\n== Việc nào chuyển sang Batch API (Sonnet 5.5, cache hit 80% cả hai phía) ==\nViệc                        Đồng bộ/tháng  Batch/tháng\n--------------------------  -------------  ----------------------\nChat hỗ trợ web             2.244 USD      không: khách chờ\nGợi ý cho CSKH              434 USD        không: nhân viên chờ\nTóm tắt cuối ngày           2.661 USD      1.330 USD\nGán nhãn đánh giá           574 USD        287 USD\nEval hằng tuần              69 USD         35 USD\nMô tả 15.000 sản phẩm       109 USD        54 USD\nAgent đối soát (tool loop)  143 USD        không: nhiều lượt tool\nTổng: 6.235 USD → 4.528 USD (−27,4%), không phải −50%: hai việc lớn nhất cần người chờ.\n\n== Cache hit trong batch là best effort: 1.000 lần chạy eval (6.000 prefix), hit ~ đều trong 30–98% (dải README) ==\nCấu hình                 Tiết kiệm p5  p50    p95\n-----------------------  ------------  -----  -----\nSonnet, TTL 5m           12,0%         37,7%  62,5%\nSonnet, TTL 1h (ghi 2×)  -22,2%        19,7%  60,0%\nGemini 3.5 Flash-Lite    26,1%         39,4%  52,2%\nSo với đồng bộ có hit 80%. Gemini: cache hit trong batch tính theo giá cache thường, nên phần giảm 50% chỉ áp lên phần chưa hit.\n\n== Self-host (GIẢ ĐỊNH: GPU 2,50 + vận hành 1,00 USD/giờ; mỗi GPU 20.000 token input/s, 1.500 token output/s ở độ trễ chấp nhận được) ==\nKhối lượng gốc: 4,56 tỉ token/tháng; hồ sơ 24 giờ của lab 04 (giờ cao điểm gấp 2,1 trung bình).\nTraffic  GPU (tối thiểu 2)  Hệ số sử dụng  Self-host/tháng  API Sonnet 5.5  API Sonnet 5.5 + batch  API Haiku 5.5\n-------  -----------------  -------------  ---------------  --------------  ----------------------  -------------\n×1       2                  7%             5.110 USD        6.235 USD ✓     4.528 USD               324 USD\n×3       2                  20%            5.110 USD        18.705 USD ✓    13.585 USD ✓            973 USD\n×10      3                  44%            7.665 USD        62.350 USD ✓    45.282 USD ✓            3.242 USD\n×30      9                  44%            22.995 USD       187.049 USD ✓   135.847 USD ✓           9.726 USD\n×100     28                 47%            71.540 USD       623.498 USD ✓   452.824 USD ✓           32.419 USD\n✓ = self-host rẻ hơn lựa chọn API đó. Chưa tính người trực, nâng cấp, và chất lượng model open-weight (README §2.5).\n\nRút ra: batch chỉ giảm phần việc không ai chờ (ở đây −27%, không phải −50%), và mức giảm dao động theo cache hit của batch;\nTTL 1h chỉ đáng khi nó thật sự nâng hit, ở cùng hit nó đắt hơn vì ghi 2×. GPU tính tiền cả giờ rảnh: hồ sơ 24 giờ lệch nên\nhệ số sử dụng dưới 50% dù đã chia theo giờ cao điểm; self-host không lần nào thắng Haiku 5.5, và thắng Sonnet chỉ khi chất lượng ngang nhau.",
+      measured: true,
+      read: ["<b>Đo vs giả định:</b> script không gọi model. Phần \"thật\" là phép tính theo bảng giá README và dải hit 30–98%; khối lượng 7 việc, hit đồng bộ 80%, giá GPU, throughput, vận hành và hồ sơ 24 giờ là giả định. Con số 27,4% hay 7% đúng cho giả định này, không phải số đo của một hệ thống thật.", "<b>Tổng chỉ giảm 27,4%, không phải 50%.</b> Vì sao: 50% chỉ áp lên việc chuyển được; chat (2.244 USD) và gợi ý CSKH (434 USD) có người chờ, agent đối soát (143 USD) có tool loop, ba việc này giữ giá đồng bộ. Không có nghĩa batch giảm kém: mỗi việc chuyển được vẫn giảm 50%. Trong hệ thống thật: đếm tiền của việc \"không ai chờ\" trước khi hứa con số tiết kiệm.", "<b>TTL 1h có thể làm batch đắt hơn đồng bộ</b> (p5 −22%, so với TTL 5m p5 +12%). Vì sao: script cho hai cấu hình cùng một dải hit 30–98%; TTL 1h ghi prefix 2 lần giá input thay vì 1,25, nên mỗi lần miss đắt hơn mà không có thêm lần hit nào. Không có nghĩa TTL 1h sai: README khuyên cân nhắc vì batch có thể chạy quá 5 phút, và nếu nó đưa hit từ 40% lên 90% thì đáng. Trong hệ thống thật: chạy thử một lô với mỗi TTL, đọc cache_read_input_tokens trong kết quả, chỉ giữ TTL 1h khi hit tăng thật.", "Self-host: hệ số sử dụng 7% ở traffic gốc, dưới 50% ở mọi mức; không lần nào rẻ hơn Haiku 5.5."]
+    },
+    mount(stage) {
+      const st = { model: 'sonnet', rt: 0.9, bh: 0.6, mode: Object.fromEntries(WL.map((w) => [w.id, false])), G: 2.5, ops: 3, T: 5, scope: 'all' };
+      const tblBox = el('div', { style: 'overflow-x:auto' }), barBox = el('div'), statA = el('div', { class: 'stat' }), flagsA = el('div'), capA = el('div', { class: 'qa-viz' });
+      const chartB = el('div'), statB = el('div', { class: 'stat' }), tblB = el('div', { style: 'overflow-x:auto' }), flagsB = el('div'), capB = el('div', { class: 'qa-viz' });
+      const cells = {};
+      const tbl = el('table', { style: 'border-collapse:collapse;font-size:12.5px;width:100%;min-width:640px' });
+      tbl.append(el('tr', { style: 'background:var(--bg)' }, ['Việc', 'Ai chờ?', 'Request/tháng', 'Token/request (prefix + riêng + ra)', 'Batch', 'Đồng bộ/tháng', 'Theo lựa chọn'].map((h) => el('th', { text: h, style: 'text-align:left;padding:5px 7px;border:1px solid var(--line)' }))));
+      WL.forEach((w) => {
+        const cb = check('', false, (v) => { st.mode[w.id] = v; render(); });
+        const td = (k, t) => { const c = el('td', { style: 'padding:5px 7px;border:1px solid var(--line)', html: t || '' }); if (k) cells[w.id + k] = c; return c; };
+        const r = el('tr', {}, [td('', w.name), td('', w.wait), td('', int(w.n)), td('', '<span class="mono">' + int(w.pre) + ' + ' + int(w.v) + ' + ' + int(w.out) + '</span>'), el('td', { style: 'padding:5px 7px;border:1px solid var(--line)' }, [cb.node]), td('rt'), td('ch')]);
+        cells[w.id + 'row'] = r;
+        tbl.append(r);
+      });
+      tblBox.append(tbl);
+
+      function planA() {
+        let before = 0, after = 0, moved = 0, tokAll = 0, tokB = 0, costB = 0, tokRt = 0, costRt = 0;
+        const rows = WL.map((w) => {
+          const rt = w.n * reqCost(w, st.model, false, st.rt), wantB = st.mode[w.id], ok = wantB && !w.waits && !w.loop;
+          const ch = ok ? w.n * reqCost(w, st.model, true, st.bh) : rt;
+          before += rt; after += ch; tokAll += toks(w);
+          if (ok) moved += toks(w);
+          if (w.waits) { tokRt += toks(w); costRt += ch; } else { tokB += toks(w); costB += ch; }
+          return { w, rt, ch, wantB, ok };
+        });
+        return { rows, before, after, moved, tokAll, tokB, costB, tokRt, costRt };
+      }
+
+      function render() {
+        const A = planA(), m = MODELS[st.model];
+        A.rows.forEach((r) => {
+          cells[r.w.id + 'rt'].textContent = usd(r.rt);
+          cells[r.w.id + 'ch'].innerHTML = r.wantB && !r.ok ? '<span class="bad">không batch được</span>' : (r.ok ? '<b>' + usd(r.ch) + '</b> <span class="' + (r.ch / r.rt > 0.65 ? 'bad' : 'ok') + '">(' + pct(r.ch / r.rt) + ')</span>' : usd(r.ch));
+          cells[r.w.id + 'row'].style.background = r.wantB && !r.ok ? 'var(--bg)' : r.ok ? 'var(--accent-soft)' : '';
+        });
+        barBox.replaceChildren(hbars([['Tất cả đồng bộ', A.before, false], ['Theo lựa chọn', A.after, true]], { max: A.before, fmt: usd }));
+        statA.innerHTML = '<span>Model: <b>' + m.name + '</b></span><span>Tiết kiệm <b class="' + (A.before - A.after > 0 ? 'ok' : '') + '">' + usd(A.before - A.after) + '</b>/tháng (' + pct((A.before - A.after) / A.before) + ')</span><span>Token chuyển sang batch <b>' + pct(A.moved / A.tokAll) + '</b></span><span>Tổng token <b>' + int(A.tokAll / 1e6) + 'M</b>/tháng</span>';
+
+        const fl = []; let c = null;
+        A.rows.forEach((r) => {
+          if (r.wantB && r.w.waits) { fl.push(['bad', r.w.name + ': có người chờ. Batch phần lớn xong dưới 1 giờ, hạn chót 24 giờ; lab không tính phần tiết kiệm này.']); c = c || { what: r.w.name + ' được đánh dấu batch nhưng lab giữ giá đồng bộ.', why: 'Batch không trả kết quả ngay: Claude phần lớn xong dưới 1 giờ, hết hạn sau 24 giờ; OpenAI completion_window chỉ nhận 24h.', not: 'Không có nghĩa việc này không tối ưu được: cache prefix, rút ngắn prompt và câu trả lời vẫn áp dụng.', real: 'phân loại việc theo "có ai chờ không" trước khi chọn cách gọi API.' }; }
+          if (r.wantB && r.w.loop) { fl.push(['bad', r.w.name + ': batch là một lượt, không có tool loop giữa chừng. Muốn batch phải lấy trước dữ liệu tool và nén thành một request, tức đổi kiến trúc và phải eval lại.']); c = c || { what: 'Agent đối soát không ai chờ, nhưng vẫn không batch được.', why: 'Mỗi lượt của agent cần kết quả tool của lượt trước. Một request trong batch chỉ có một lượt model.', not: 'Không có nghĩa agent buộc phải trả giá đồng bộ mãi: nếu dữ liệu tool lấy trước được thì gộp thành một request rồi batch.', real: 'thiết kế lại thành "lấy dữ liệu trước, gọi model một lần"; đo lại chất lượng vì model suy luận khác đi.' }; }
+          if (r.ok && r.ch > r.rt) fl.push(['bad', r.w.name + ': batch <b>đắt hơn</b> chạy đồng bộ (' + pct(r.ch / r.rt) + '). Prefix ' + int(r.w.pre) + ' token: đồng bộ đọc cache ' + pct(st.rt) + ' số lần, batch chỉ ' + pct(st.bh) + ', nên phần lớn request trong batch trả 1,25 lần giá input cho prefix.']);
+          if (r.ok && r.ch / r.rt > 0.65) { fl.push(['warn', r.w.name + ': batch chỉ còn ' + pct(r.ch / r.rt) + ' giá đồng bộ, không phải 50%. Cache hit trong batch ' + pct(st.bh) + ' so với ' + pct(st.rt) + ' khi chạy đồng bộ, nên prefix ' + int(r.w.pre) + ' token bị ghi lại ở nhiều request hơn.']); c = c || { what: r.w.name + ': batch rẻ hơn ít hơn dự tính (' + pct(1 - r.ch / r.rt) + ' thay vì 50%).', why: 'Đồng bộ đọc prefix từ cache ' + pct(st.rt) + ' số lần với giá đọc ' + dec(m.cr, 2) + ' USD/1M. Batch chỉ hit ' + pct(st.bh) + ', phần còn lại ghi cache với ' + dec(m.in * m.w, 2) + ' USD/1M. Nửa giá của một số lớn hơn có thể gần bằng giá đủ của một số nhỏ.', not: 'Không có nghĩa batch vô ích: tăng hit trong batch thì mức giảm về gần 50%.', real: 'cache_control giống hệt nhau ở mọi request, TTL 1 giờ, đọc cache_read_input_tokens trong kết quả batch (failure mode 4).' }; }
+          if (r.ok && m.lim && r.w.job > m.lim) fl.push(['warn', r.w.name + ': một lần chạy ' + int(r.w.job) + ' request vượt giới hạn ' + int(m.lim) + ' request mỗi batch của ' + (m.lim === 50000 ? 'OpenAI' : 'Claude') + '. Chia thành ' + Math.ceil(r.w.job / m.lim) + ' lô.']);
+          if (r.ok && m.gem) fl.push(['ok', r.w.name + ' (Gemini): batch giảm 50% phần không cache; cache hit tính theo giá context caching thường.' + (r.w.pre < 4096 ? ' Prefix ' + int(r.w.pre) + ' token dưới ngưỡng implicit cache 4.096 nên không có cache hit.' : '')]);
+        });
+        if (!A.rows.some((r) => r.ok)) fl.push(['ok', 'Chưa có việc nào chạy batch. Đánh dấu cột Batch cho các việc "không ai chờ".']);
+        flagsA.replaceChildren(...fl.map(([l, t]) => flagBox(l, t)));
+        if (!c) c = A.after < A.before ? { what: 'Hoá đơn giảm ' + usd(A.before - A.after) + ' mỗi tháng (' + pct((A.before - A.after) / A.before) + ').', why: 'Mỗi việc chuyển sang batch trả 50% mọi token (Claude, OpenAI cộng dồn với cache).', not: 'Không có nghĩa tổng hoá đơn giảm một nửa: chat có người chờ vẫn ở giá đồng bộ, và nó thường là phần lớn nhất.', real: 'đòn bẩy tiếp theo cho chat là cache, rút prompt, rút câu trả lời (Lab 05).' } : { what: 'Hoá đơn ' + usd(A.before) + ' mỗi tháng, chưa batch gì.', why: 'Mọi việc đang trả giá đồng bộ, kể cả việc không ai chờ.', not: 'Số request và token là giả định; thay bằng số đo từ usage của bạn.', real: 'liệt kê việc không ai chờ: eval, gán nhãn, tóm tắt đêm, backfill (README §2.3).' };
+        capA.innerHTML = capHtml(c);
+        renderB(A);
+      }
+
+      function renderB(A) {
+        const scopeTok = st.scope === 'all' ? A.tokAll : A.tokB, scopeCost = st.scope === 'all' ? A.after : A.costB;
+        const rtTok = st.scope === 'all' ? A.tokRt : 0, bTok = scopeTok - rtTok;
+        const pAvg = PROFILE.reduce((s, v) => s + v, 0) / 24, pk = Math.max(...PROFILE) / pAvg;
+        const rtAvgH = rtTok / 1e6 / HOURS, bAvgH = bTok / 1e6 / HOURS, need = Math.max(rtAvgH * pk * 1.2, rtAvgH + bAvgH);
+        const N = Math.max(2, Math.ceil(need / st.T)), capH = N * st.T, u = (rtAvgH + bAvgH) / capH, hourly = N * st.G + st.ops;
+        const self = (x) => hourly / (capH * x);
+        const inShare = st.scope === 'all' ? WL.reduce((s, w) => s + w.n * (w.pre + w.v), 0) / A.tokAll : WL.filter((w) => !w.waits).reduce((s, w) => s + w.n * (w.pre + w.v), 0) / A.tokB;
+        const blend = (k, b) => (inShare * MODELS[k].in + (1 - inShare) * MODELS[k].out) * (b ? 0.5 : 1);
+        const opts = [['Kế hoạch phần A (' + MODELS[st.model].name + ', có cache)', scopeCost / (scopeTok / 1e6), 'var(--accent)'], ['Claude Haiku 5.5, không cache', blend('haiku'), 'var(--g2)'], ['Claude Haiku 5.5, batch', blend('haiku', true), 'var(--g3)'], ['gpt-6-luna, không cache', blend('luna'), 'var(--g4)'], ['Gemini 3.5 Flash-Lite, không cache', blend('lite'), 'var(--g1)']];
+        const W = 640, H = 220, L = 54, R = 10, T = 10, B = 26, lo = 0.01, hi = 100;
+        const x = (v) => L + (v - 0.05) / 0.95 * (W - L - R), y = (v) => T + (1 - (Math.log10(Math.min(hi, Math.max(lo, v))) + 2) / 4) * (H - T - B);
+        const pts = []; for (let i = 0; i <= 60; i++) { const uu = 0.05 + 0.95 * i / 60; pts.push((i ? 'L' : 'M') + x(uu).toFixed(1) + ' ' + y(self(uu)).toFixed(1)); }
+        const ux = Math.min(1, Math.max(0.05, u));
+        chartB.replaceChildren(el('svg', { class: 'canvas', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Hoà vốn self-host theo hệ số sử dụng' }, [
+          ...[0.01, 0.1, 1, 10, 100].map((v) => el('g', {}, [el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: 'var(--line)' }), el('text', { x: 2, y: y(v) + 4, class: 'mute', text: dec(v, v < 1 ? 2 : 0) })])),
+          ...opts.map(([, p, col]) => el('line', { x1: L, x2: W - R, y1: y(p), y2: y(p), stroke: col, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' })),
+          el('path', { d: pts.join(' '), fill: 'none', stroke: 'var(--bad)', 'stroke-width': 2.2 }),
+          el('line', { x1: x(ux), x2: x(ux), y1: T, y2: H - B, stroke: 'var(--ink)', 'stroke-width': 1.2 }),
+          el('text', { x: Math.min(x(ux) + 4, W - 150), y: T + 12, text: 'ShopViet: ' + pct(u) }),
+          ...[0.05, 0.25, 0.5, 0.75, 1].map((v) => el('text', { x: x(v) - 10, y: H - 8, class: 'mute', text: pct(v) })),
+          el('text', { x: W - R - 170, y: y(self(1)) - 6, fill: 'var(--bad)', text: 'self-host: ' + usd(self(1)) + ' ở 100%' })]));
+        const rows = opts.map(([name, p, col]) => { const be = hourly / (capH * p); return '<tr><td><span style="display:inline-block;width:12px;height:3px;background:' + col + ';vertical-align:middle;margin-right:6px"></span>' + name + '</td><td class="mono">' + usd(p) + '</td><td class="mono ' + (be > 1 ? 'bad' : be > u ? '' : 'ok') + '">' + (be > 1 ? 'trên 100% (' + pct(be) + ')' : pct(be)) + '</td></tr>'; }).join('');
+        tblB.innerHTML = '<table style="border-collapse:collapse;font-size:12.5px;width:100%;min-width:480px"><tr style="background:var(--bg)"><th>So với</th><th>USD / 1M token</th><th>Self-host cần bận</th></tr>' + rows + '</table>';
+        statB.innerHTML = '<span>Máy cần <b>' + N + '</b>' + (Math.ceil(need / st.T) < 2 ? ' (tối thiểu 2 để dự phòng)' : '') + '</span><span>Năng lực <b>' + dec(capH, 1) + 'M</b> token/giờ</span><span>Trung bình cần <b>' + dec(rtAvgH + bAvgH, 1) + 'M</b>/giờ</span><span>Self-host <b>' + usd(hourly * HOURS) + '</b>/tháng</span><span>API (phần A) <b>' + usd(scopeCost) + '</b>/tháng</span>';
+        const plan = opts[0][1], beP = hourly / (capH * plan), cheapest = opts.reduce((a, b) => (b[1] < a[1] ? b : a));
+        const fl = []; let c;
+        if (beP > 1) { fl.push(['bad', 'So với kế hoạch phần A, self-host cần bận ' + pct(beP) + ': không bao giờ hoà vốn, kể cả khi GPU chạy liên tục ở tải đầy.']); c = { what: 'Ngay ở 100% thời gian bận, self-host vẫn đắt hơn API (' + usd(self(1)) + ' so với ' + usd(plan) + ' mỗi 1M token).', why: 'Giá API hiệu quả đã thấp nhờ cache đọc prefix với ' + dec(MODELS[st.model].cr, 2) + ' USD/1M' + (A.moved ? ' và batch giảm nửa giá' : '') + '. Self-host trả (giá GPU × ' + N + ' máy + vận hành) mỗi giờ dù có request hay không.', not: 'Không có nghĩa self-host luôn đắt: throughput cao hơn hoặc GPU rẻ hơn sẽ đổi kết quả. Số GPU, throughput, vận hành là giả định.', real: 'đo throughput ở độ trễ chấp nhận được, với prompt và output thật, rồi so với giá API sau cache và batch, không với giá niêm yết.' }; }
+        else if (u < beP) { fl.push(['warn', 'Hoà vốn cần ' + pct(beP) + ' nhưng traffic ShopViet chỉ cho ' + pct(u) + '. Self-host đắt hơn ' + dec(beP / u, 1) + ' lần.']); c = { what: 'Self-host rẻ hơn API ở tải đầy, nhưng đắt hơn ở hệ số sử dụng thật (' + pct(u) + ').', why: 'Số máy phải đủ cho giờ cao điểm (gấp ' + dec(pk, 1) + ' lần trung bình theo hồ sơ giả định) cộng 20% dư, và tối thiểu hai máy. Ngoài giờ cao điểm máy rảnh nhưng vẫn tính tiền.', not: 'Không có nghĩa con số benchmark sai: nó đúng ở tải đầy, chỉ là traffic thật không đầy.', real: 'chọn phạm vi "chỉ việc không ai chờ": job xếp lịch đều được nên hệ số sử dụng cao hơn; hoặc ở lại API.' }; }
+        else { fl.push(['ok', 'Hệ số sử dụng ' + pct(u) + ' vượt điểm hoà vốn ' + pct(beP) + ' so với kế hoạch phần A.']); c = { what: 'Self-host rẻ hơn kế hoạch API ở cấu hình này.', why: 'Traffic đủ lớn và đều để ' + N + ' máy bận ' + pct(u) + ' thời gian.', not: 'Không có nghĩa nên chuyển ngay: lab chưa tính chất lượng model open-weight (có thể cần prompt dài hơn, nhiều lượt hơn, sai nhiều hơn).', real: 'so theo chi phí mỗi tác vụ hoàn thành trên eval; cộng chi phí nâng cấp model, driver, trực sự cố.' }; }
+        if (cheapest[1] < plan && hourly / (capH * cheapest[1]) > Math.max(u, beP)) fl.push(['warn', 'API cũng có tier rẻ: ' + cheapest[0] + ' chỉ ' + usd(cheapest[1]) + ' mỗi 1M token, self-host cần bận ' + pct(hourly / (capH * cheapest[1])) + ' để thắng. Đổi model API (sau eval) có thể rẻ hơn mọi phương án GPU.']);
+        if (Math.ceil(need / st.T) < 2) fl.push(['warn', 'Nhu cầu vừa một máy, nhưng dự phòng cần hai: một nửa năng lực trả tiền chỉ để không sập.']);
+        flagsB.replaceChildren(...fl.map(([l, t]) => flagBox(l, t)));
+        capB.innerHTML = capHtml(c);
+      }
+
+      const sel = select('Model cho cả bảng', Object.entries(MODELS).map(([k, v]) => [k, v.name]), st.model, (v) => { st.model = v; render(); });
+      stage.append(
+        el('h4', { text: 'A. Việc nào chuyển sang Batch API', style: 'margin:0 0 8px' }),
+        el('div', { class: 'row' }, [sel.node, slider('Cache hit khi đồng bộ (giả định)', 0, 1, 0.05, st.rt, (v) => { st.rt = v; render(); }, (v) => pct(v)).node, slider('Cache hit trong batch (README: 30–98%)', 0.3, 0.98, 0.02, st.bh, (v) => { st.bh = v; render(); }, (v) => pct(v)).node]),
+        tblBox, el('p', { class: 'hint', text: 'Số request và token mỗi việc là giả định của lab. Giá: README §2.1 (06/11/2026); Gemini 4 Argon dùng giá từ 01/12/2026. Ghi cache 1,25 lần giá input (Claude TTL 5 phút, OpenAI); Gemini implicit cache không thu phí ghi, ngưỡng 4.096 token.' }),
+        barBox, statA, flagsA, capA,
+        el('h4', { text: 'B. Self-host: phải bận bao nhiêu mới rẻ hơn API', style: 'margin:18px 0 8px' }),
+        el('div', { class: 'row' }, [slider('Giá GPU mỗi máy, USD/giờ (giả định)', 0.5, 10, 0.5, st.G, (v) => { st.G = v; render(); }, (v) => dec(v, 1)).node, slider('Vận hành, USD/giờ (giả định)', 0, 20, 1, st.ops, (v) => { st.ops = v; render(); }).node, slider('Throughput, triệu token/giờ/máy (giả định)', 0.5, 20, 0.5, st.T, (v) => { st.T = v; render(); }, (v) => dec(v, 1)).node, select('Phạm vi', [['all', 'Toàn bộ traffic'], ['batch', 'Chỉ việc không ai chờ']], st.scope, (v) => { st.scope = v; render(); }).node]),
+        chartB, statB, tblB, el('p', { class: 'hint', text: 'Số máy = đủ cho giờ cao điểm của chat (hồ sơ theo giờ giả định) cộng 20% dư, tối thiểu 2. Job không ai chờ được xếp đều. 730 giờ mỗi tháng. Giá API trung bình theo tỉ lệ input/output thật của các việc trong phạm vi.' }),
+        flagsB, capB);
+      render();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

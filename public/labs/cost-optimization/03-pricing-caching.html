@@ -1,0 +1,660 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cost Optimization Lab 03</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a href="02-output-tradeoffs.html">← Lab trước</a><a href="04-batch-small-selfhost.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/cost-optimization/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const vn = (x, d = 0) => Number(x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const usd = (x, d) => '$' + vn(x, d ?? (Math.abs(x) >= 100 ? 0 : Math.abs(x) >= 1 ? 2 : Math.abs(x) >= 0.01 ? 4 : 6));
+  const num = (x) => Number(x).toLocaleString('vi-VN', { maximumFractionDigits: 3 });
+  const pct = (x, d = 1) => vn(x * 100, d) + '%';
+  const note = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px;font-size:13.5px">${html}</div>`;
+  const TH = 'style="text-align:left;padding:6px 9px;border:1px solid var(--line);background:var(--bg)"';
+  const TD = 'style="text-align:left;padding:6px 9px;border:1px solid var(--line);vertical-align:top"';
+  const table = (head, rows) => `<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;width:100%;min-width:520px"><tr>${head.map((h) => `<th ${TH}>${h}</th>`).join('')}</tr>${rows.map((r) => `<tr>${r.map((c) => `<td ${TD}>${c}</td>`).join('')}</tr>`).join('')}</table></div>`;
+
+  const M = {
+    fable: { p: 'Claude', n: 'Fable 5.1', in: 10, out: 50, read: 0.25, min: 512, ttl: [['5m', 'TTL 5 phút', 1.25], ['1h', 'TTL 1 giờ', 2]] },
+    opus: { p: 'Claude', n: 'Opus 5.5', in: 4, out: 20, read: 0.20, min: 512, ttl: [['5m', 'TTL 5 phút', 1.25], ['1h', 'TTL 1 giờ', 2]] },
+    sonnet: { p: 'Claude', n: 'Sonnet 5.5', in: 2, out: 10, read: 0.10, min: 512, ttl: [['5m', 'TTL 5 phút', 1.25], ['1h', 'TTL 1 giờ', 2]] },
+    haiku: { p: 'Claude', n: 'Haiku 5.5', in: 0.10, out: 0.50, read: 0.01, min: 512, longAt: 100000, long: { in: 0.50, out: 2.50, read: 0.05 }, ttl: [['5m', 'TTL 5 phút', 1.25], ['1h', 'TTL 1 giờ', 2]] },
+    astra: { p: 'OpenAI', n: 'gpt-6-astra', in: 10, out: 50, read: 1.00, min: 1024, openaiLong: true, ttl: [['30m', 'TTL 30 phút', 1.25], ['12h', 'TTL 12 giờ', 2.5]] },
+    sol: { p: 'OpenAI', n: 'gpt-6.1-sol', in: 2, out: 10, read: 0.10, min: 1024, openaiLong: true, long: { in: 4, out: 15 }, ttl: [['30m', 'TTL 30 phút', 1.25], ['12h', 'TTL 12 giờ', 2.5]] },
+    terra: { p: 'OpenAI', n: 'gpt-6.1-terra', in: 1, out: 5, read: 0.05, min: 1024, openaiLong: true, ttl: [['30m', 'TTL 30 phút', 1.25], ['12h', 'TTL 12 giờ', 2.5]] },
+    luna: { p: 'OpenAI', n: 'gpt-6-luna', in: 0.10, out: 0.50, read: 0.01, min: 1024, openaiLong: true, ttl: [['30m', 'TTL 30 phút', 1.25], ['12h', 'TTL 12 giờ', 2.5]] },
+    argon: { p: 'Gemini', n: 'Gemini 4 Argon', in: 2, out: 10, read: 0.10, min: 4096, rise: '01/12/2026', after: { in: 4, out: 20, read: 0.20 }, ttl: [['impl', 'implicit cache', 1]] },
+    flash: { p: 'Gemini', n: 'Gemini 3.8 Flash', in: 0.75, out: 3.75, read: 0.075, min: 4096, rise: '01/01/2027', after: { in: 1.50, out: 7.50, read: 0.15 }, ttl: [['impl', 'implicit cache', 1]] },
+    lite: { p: 'Gemini', n: 'Gemini 3.5 Flash-Lite', in: 0.30, out: 2.50, read: 0.03, min: 4096, ttl: [['impl', 'implicit cache', 1]] }
+  };
+  const DATES = [['now', 'Giá niêm yết 06/11/2026'], ['dec', 'Từ 01/12/2026'], ['jan', 'Từ 01/01/2027']];
+  const LANG = { en: { t: 'Tiếng Anh', inp: 44 / 56, out: 44 / 56 }, nfc: { t: 'Tiếng Việt NFC', inp: 1, out: 1 }, nfd: { t: 'Tiếng Việt NFD (copy từ PDF, macOS)', inp: 162 / 56, out: 1 } };
+
+  function priceAt(k, date) {
+    const m = M[k];
+    const risen = m.after && ((m.rise === '01/12/2026' && (date === 'dec' || date === 'jan')) || (m.rise === '01/01/2027' && date === 'jan'));
+    return Object.assign({}, m, risen ? m.after : {}, { risen: !!risen });
+  }
+
+  function workloadCost(k, w) {
+    const m = priceAt(k, w.date);
+    const L = LANG[w.lang];
+    const P = Math.round(w.prefix * L.inp), D = Math.round(w.dyn * L.inp), O = Math.round(w.out * L.out);
+    const prompt = P + D;
+    let pr = { in: m.in, out: m.out, read: m.read }, flags = [];
+    if (m.longAt && prompt > m.longAt) { pr = m.long; flags.push('prompt > 100.000: giá ×5'); }
+    if (m.openaiLong && prompt > 272000) { if (m.long) { pr = { in: m.long.in, out: m.long.out, read: m.read }; flags.push('long context > 272.000'); } else flags.push('> 272.000: README không có giá long context'); }
+    const cacheable = w.cache && P >= m.min;
+    if (w.cache && !cacheable) flags.push('prefix < ' + vn(m.min) + ' token: không cache');
+    const wm = m.ttl[0][2];
+    const h = cacheable ? w.hit : 0;
+    const per = (D * pr.in + (cacheable ? P * (h * pr.read + (1 - h) * pr.in * wm) : P * pr.in) + O * pr.out) / 1e6;
+    return { k, m, per, month: per * w.reqs, flags, P, D, O, risen: m.risen };
+  }
+
+  function breakEven(m, wm, P) {
+    const rows = [];
+    let be = null;
+    for (let n = 1; n <= 30; n++) {
+      const no = n * P * m.in / 1e6, yes = (P * m.in * wm + (n - 1) * P * m.read) / 1e6;
+      rows.push({ n, no, yes });
+      if (be == null && yes <= no) be = n;
+    }
+    return { rows, be };
+  }
+
+  function lineSvg(rows, n, be) {
+    const W = 700, H = 230, L = 70, R = 16, T = 14, B = 36;
+    const max = Math.max(...rows.map((r) => Math.max(r.no, r.yes)));
+    const x = (v) => L + (v - 1) / 29 * (W - L - R);
+    const y = (v) => T + (1 - v / max) * (H - T - B);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'canvas', role: 'img', 'aria-label': 'Chi phí cộng dồn theo số request trong một cửa sổ TTL, có và không có cache' });
+    [1, 5, 10, 15, 20, 25, 30].forEach((v) => svg.append(el('line', { x1: x(v), x2: x(v), y1: T, y2: H - B, stroke: 'var(--line)' }), el('text', { x: x(v), y: H - B + 15, 'text-anchor': 'middle', class: 'mute', text: v })));
+    [0, 0.5, 1].forEach((f) => svg.append(el('text', { x: L - 6, y: y(max * f) + 4, 'text-anchor': 'end', class: 'mute', text: usd(max * f) })));
+    svg.append(el('text', { x: (L + W - R) / 2, y: H - 4, 'text-anchor': 'middle', class: 'mute', text: 'số request dùng cùng prefix trong một cửa sổ TTL' }));
+    const path = (f, color, dash) => el('path', { d: rows.map((r, i) => (i ? 'L' : 'M') + x(r.n) + ' ' + y(f(r))).join(' '), fill: 'none', stroke: color, 'stroke-width': 2.5, 'stroke-dasharray': dash || '' });
+    svg.append(path((r) => r.no, 'var(--g2)'), path((r) => r.yes, 'var(--accent)', '6 4'));
+    if (be) svg.append(el('line', { x1: x(be), x2: x(be), y1: T, y2: H - B, stroke: 'var(--ok)', 'stroke-dasharray': '3 3' }), el('text', { x: x(be) + 4, y: T + 12, style: 'fill:var(--ok);font-size:11px', text: 'hoà vốn: ' + be + ' request' }));
+    const cur = rows[n - 1];
+    svg.append(el('circle', { cx: x(n), cy: y(cur.no), r: 5, fill: 'var(--g2)' }), el('circle', { cx: x(n), cy: y(cur.yes), r: 5, fill: cur.yes > cur.no ? 'var(--bad)' : 'var(--accent)' }));
+    return svg;
+  }
+
+  return {
+    id: 'pricing-caching', nav: '3. Bảng giá và caching', ref: '§2.1–2.2',
+    title: 'Cùng một workload trên mười một model: provider nào rẻ nhất, và khi nào bật prompt caching lại làm hoá đơn đắt hơn?',
+    hook: 'Phần trên: đặt workload chat của ShopViet (prefix, phần động, output, tỉ lệ cache hit, ngôn ngữ, ngày áp giá) và xem chi phí tháng trên mọi model trong bảng giá README §2.1. Phần dưới: chọn model, TTL và số request trong một cửa sổ TTL; lab tính điểm hoà vốn của cache và báo đỏ khi cache đắt hơn không cache.',
+    terms: [
+      ['Giá mỗi triệu token', 'Đơn vị trong bảng giá. Sonnet 5.5: input 2 USD, nghĩa là 1.000 token input tốn 0,002 USD.'],
+      ['Tokenizer', 'Bộ cắt văn bản thành token. Mỗi model một bộ: cùng câu "Đơn SV-4821 khi nào giao?" có thể là 10 token ở model này, 13 ở model khác.'],
+      ['NFC và NFD', 'Hai cách lưu chữ có dấu. NFC: "ệ" là một ký tự. NFD: "e" + dấu mũ + dấu nặng là ba ký tự. Nhìn giống hệt nhau, nhưng NFD tốn gần gấp ba token (README §2.1).'],
+      ['Prompt caching', 'Provider lưu prefix đã xử lý; request sau có cùng prefix đọc lại với giá rẻ. Claude, OpenAI GPT-5.6+ thu phí ghi; Gemini có implicit cache bật sẵn.'],
+      ['TTL', 'Thời gian cache sống. Claude: 5 phút hoặc 1 giờ; OpenAI GPT-5.6+: 30 phút hoặc 12 giờ. Mỗi lần đọc làm mới TTL (README Multi-turn §2.2).'],
+      ['Implicit cache', 'Cache provider tự bật, bạn không phải đánh dấu gì (Gemini 2.5 trở lên). Ngược lại, Claude cần đánh dấu trong request chỗ nào được cache (cache_control).'],
+      ['Phí ghi cache (write premium)', 'Hệ số nhân lên giá input khi ghi vào cache. Claude 1,25 (5 phút) hoặc 2 (1 giờ); OpenAI 1,25 (30 phút) hoặc 2,5 (12 giờ).'],
+      ['Hoà vốn', 'Số request dùng chung prefix trong một cửa sổ TTL để tổng chi phí có cache bằng không cache. Dưới mức đó, cache làm bạn trả nhiều hơn. Ví dụ Sonnet 5.5 TTL 5 phút: 1 request là 1,25× (lỗ), 2 request là 1,30× so với 2× (đã lời).'],
+      ['Ngưỡng tối thiểu', 'Prefix ngắn hơn ngưỡng không được cache, không có lỗi nào báo. Claude 5.5 và Fable 5.1: 512 token; OpenAI GPT-5.6+: 1.024; Gemini 4 Argon và 3.x: 4.096.'],
+      ['Giá khuyến mãi', 'Giá thấp có ngày hết hạn. Gemini 4 Argon gấp đôi từ 01/12/2026, Gemini 3.8 Flash từ 01/01/2027.']
+    ],
+    problem: {
+      example: 'ShopViet đang so ba provider cho chat hỗ trợ: 2,4 triệu lượt mỗi tháng, prefix (system prompt, tool, chính sách đổi trả) 6.000 token, phần động 400 token, câu trả lời 250 token. Một kỹ sư đề xuất chuyển sang Gemini 4 Argon vì "rẻ bằng Sonnet 5.5". Một kỹ sư khác muốn bật cache TTL 1 giờ cho job tóm tắt từng đơn hàng, mỗi đơn gọi đúng một lần.',
+      scenario: 'Bảng giá chỉ là một lát cắt: có model đổi giá theo độ dài prompt, có giá khuyến mãi sắp hết, mỗi provider tính phí cache khác nhau, và văn bản tiếng Việt copy từ PDF có thể ở dạng NFD.',
+      ask: 'Với workload này, model nào rẻ nhất hôm nay và sau khi khuyến mãi hết? Cache cần bao nhiêu request trong một TTL mới có lời? Khi nào cache làm đắt hơn?',
+      solves: 'Giá lấy nguyên từ README §2.1 (06/11/2026). Hệ số ghi cache và giá đọc theo README §1.1, §2.2. Gemini implicit cache: README không nêu phụ phí ghi, nên lab tính lần miss bằng giá input thường (giả định). Hệ số ngôn ngữ lấy từ phép đo o200k_base của README (Anh 44, Việt NFC 56, Việt NFD 162 token cho cùng đoạn văn); áp cho mọi provider là giả định. Ngưỡng tối thiểu lấy từ README Multi-turn và README §2.2.',
+      read: [
+        'Thanh ngang: chi phí tháng của workload trên từng model, sắp từ rẻ tới đắt. Thanh đậm là model đang chọn ở phần dưới.',
+        'Bảng: chi phí mỗi request, mỗi tháng, và cờ (giá sắp tăng, prefix dưới ngưỡng cache, tier prompt dài).',
+        'Đồ thị dưới: đường cam là không cache, đường đứt xanh là có cache, theo số request dùng chung prefix trong một TTL. Vạch xanh lá là điểm hoà vốn. Chấm đỏ: ở số request bạn chọn, cache đắt hơn.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<div class="tbl"><table><tr><th>Provider</th><th>Model</th><th>Input</th><th>Output</th><th>Đọc cache</th><th>Ghi chú</th></tr>
+<tr><td>Claude</td><td>Fable 5.1</td><td>10</td><td>50</td><td>0,25</td><td>Model mạnh nhất</td></tr>
+<tr><td></td><td>Opus 5.5</td><td>4</td><td>20</td><td>0,20</td><td></td></tr>
+<tr><td></td><td>Sonnet 5.5</td><td>2</td><td>10</td><td>0,10</td><td></td></tr>
+<tr><td></td><td>Haiku 5.5</td><td>0,10 / 0,50</td><td>0,50 / 2,50</td><td>0,01 / 0,05</td><td>Prompt ≤ 100.000 / > 100.000</td></tr>
+<tr><td>OpenAI</td><td>gpt-6-astra</td><td>10</td><td>50</td><td>1,00</td><td></td></tr>
+<tr><td></td><td>gpt-6.1-sol</td><td>2</td><td>10</td><td>0,10</td><td>Input > 272.000: 4 / 15</td></tr>
+<tr><td></td><td>gpt-6.1-terra</td><td>1</td><td>5</td><td>0,05</td><td></td></tr>
+<tr><td></td><td>gpt-6-luna</td><td>0,10</td><td>0,50</td><td>0,01</td><td></td></tr>
+<tr><td>Gemini</td><td>Gemini 4 Argon</td><td>2 → 4</td><td>10 → 20</td><td>0,10 → 0,20</td><td>Tăng từ 01/12/2026; chỉ có implicit cache</td></tr>
+<tr><td></td><td>Gemini 3.8 Flash</td><td>0,75 → 1,50</td><td>3,75 → 7,50</td><td>0,075 → 0,15</td><td>Tăng từ 01/01/2027</td></tr>
+<tr><td></td><td>Gemini 3.5 Flash-Lite</td><td>0,30</td><td>2,50</td><td>0,03</td><td></td></tr></table></div>
+<p>USD mỗi triệu token, ngày 06/11/2026 (README §2.1). Mở lại trang giá trước khi tính.</p>
+<div class="tbl"><table><tr><th>Caching (README §2.2)</th><th>Ghi</th><th>Đọc</th><th>Hoà vốn</th></tr>
+<tr><td>Claude TTL 5 phút</td><td>1,25×</td><td>0,1× (0,05× Opus 5.5, Sonnet 5.5; 0,025× Fable 5.1)</td><td>Có lợi ngay từ lần đọc đầu</td></tr>
+<tr><td>Claude TTL 1 giờ</td><td>2×</td><td>như trên</td><td>Sau hai lần đọc</td></tr>
+<tr><td>OpenAI GPT-5.6+ (30 phút / 12 giờ)</td><td>1,25× / 2,5×</td><td>0,1× (0,05× GPT-6.1 Sol, Terra)</td><td>1 ghi + 1 đọc = 1,35× so với 2×; 10 request = 2,15× so với 10×</td></tr>
+<tr><td>Gemini implicit</td><td>Bật sẵn, Gemini 2.5 trở lên</td><td>theo bảng</td><td>Ngưỡng 4.096 token (Argon, 3.x)</td></tr></table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> so theo chi phí mỗi tác vụ hoàn thành, không theo đơn giá: tokenizer khác nhau (Claude 4.7+ sinh khoảng 30% token nhiều hơn model trước), tiếng Việt tốn hơn tiếng Anh, NFD tốn gần gấp ba NFC. Dự báo bằng giá sau khuyến mãi. Chọn TTL theo khoảng cách giữa các request, không theo trung bình.</div>`,
+    why: {
+      c: 'So provider trên workload thật (prefix, phần động, output, tỉ lệ hit đo được), bằng giá sau khuyến mãi; chuẩn hoá NFC mọi văn bản trước khi đưa vào prompt; bật cache cho prefix dùng lại nhiều lần trong một TTL, chọn TTL theo phân phối khoảng nghỉ.',
+      s: 'So theo đơn giá mỗi triệu token: bỏ qua tokenizer và output. Dùng giá khuyến mãi để dự báo: hoá đơn tăng đầu tháng dù traffic không đổi (failure mode 16). Bật cache TTL dài cho request chỉ chạy một lần: trả phí ghi mà không lần nào đọc.',
+      p: 'Phải đo tỉ lệ hit và khoảng cách giữa các request; phải giữ prefix ổn định từng byte; phải theo dõi ngày hết khuyến mãi và đếm token bằng endpoint của đúng model; tỉ lệ ngôn ngữ trong lab là một phép đo trên một đoạn văn, không phải hằng số.'
+    },
+    deep: [
+      {
+        q: 'Sonnet 5.5 và gpt-6.1-sol cùng giá 2 / 10. Vậy chạy cùng workload thì tốn như nhau?',
+        a: `<p>Không chắc. Giá tính theo token, mà mỗi model đếm token khác nhau. README §2.1: Claude 4.7 trở lên dùng tokenizer mới, sinh khoảng 30% token nhiều hơn cho cùng văn bản so với model trước. So Opus 4.6 với Opus 5.5 theo đơn giá mà không tính điều này sẽ sai. Hai provider khác nhau càng khó so hơn.</p><p>Thêm nữa: model đọc cache rẻ hơn chưa chắc rẻ hơn tổng thể, model rẻ hơn mỗi token có thể cần thêm lượt hoặc làm sai nhiều hơn. Anthropic khuyên so theo <b>chi phí mỗi tác vụ hoàn thành</b>. Bảng ở hình chính dùng cùng số token cho mọi model: đó là giả định đơn giản hoá, không phải sự thật.</p>`,
+        take: 'Đơn giá chỉ là điểm bắt đầu. Chạy cùng bộ tác vụ trên từng model, đọc usage của từng model.'
+      },
+      {
+        q: 'Cùng một chính sách đổi trả, sao bản tiếng Việt tốn token hơn bản tiếng Anh, và NFD là gì mà tốn gấp ba?',
+        a: `<p>Tokenizer học từ dữ liệu nhiều tiếng Anh, nên từ tiếng Anh thường là một token, còn chữ tiếng Việt có dấu hay bị cắt nhỏ. README đo một đoạn chính sách hoàn tiền dịch song song: <code>cl100k_base</code> 44 token tiếng Anh, 93 tiếng Việt NFC; <code>o200k_base</code> 44 và 56. NFD tách mỗi dấu thành ký tự riêng: 199 và 162 token. Dán một đoạn tiếng Việt dưới đây; lab đếm ký tự thật ở hai dạng bằng <code>String.normalize</code> và ước lượng token theo tỉ lệ của README (ước lượng, không phải tokenizer thật).</p>`,
+        viz(box) {
+          const ta = el('textarea', { rows: 3, style: 'width:100%;font:13px var(--font);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px' });
+          ta.value = 'Khách hàng được đổi trả miễn phí trong vòng bảy ngày nếu sản phẩm bị lỗi do nhà sản xuất. Đơn SV-4821 cần giữ nguyên hộp và phụ kiện.';
+          const out = el('div');
+          const draw = () => {
+            const t = ta.value;
+            const nfc = t.normalize('NFC'), nfd = t.normalize('NFD');
+            const words = nfc.trim().split(/\s+/).filter(Boolean).length;
+            const isNfd = t !== nfc;
+            const estNfc = Math.round(words * 56 / 49), estNfd = Math.round(words * 162 / 49);
+            out.innerHTML = `<div class="stat"><span>Đang ở dạng: <b class="${isNfd ? 'bad' : 'ok'}">${isNfd ? 'NFD (hoặc lẫn)' : 'NFC'}</b></span><span>Ký tự NFC: <b>${vn(nfc.length)}</b></span><span>Ký tự NFD: <b>${vn(nfd.length)}</b> (+${pct(nfc.length ? nfd.length / nfc.length - 1 : 0, 0)})</span><span>Token ước lượng NFC: <b>${vn(estNfc)}</b></span><span>NFD: <b>${vn(estNfd)}</b></span></div><div class="cap">${isNfd ? 'Văn bản này đang ở NFD: nhìn y hệt NFC nhưng mỗi dấu là một ký tự riêng. Vì sao gặp: copy từ macOS, PDF, một số hệ thống cũ. Không có nghĩa tiếng Việt luôn tốn gấp ba: chuẩn hoá về NFC là đưa về mức thường. Trong hệ thống thật: unicodedata.normalize("NFC", text) cho mọi văn bản trước khi vào prompt, "đòn bẩy rẻ nhất trong bài này" (README §2.1).' : 'Đang ở NFC. Bấm nút để xem cùng đoạn văn ở NFD.'}</div>`;
+          };
+          ta.addEventListener('input', draw);
+          box.append(ta, el('div', { class: 'row', style: 'margin-top:6px' }, [el('button', { text: 'Chuyển sang NFD', onclick: () => { ta.value = ta.value.normalize('NFD'); draw(); } }), el('button', { text: 'Chuẩn hoá NFC', onclick: () => { ta.value = ta.value.normalize('NFC'); draw(); } })]), out);
+          draw();
+        },
+        take: 'Chuẩn hoá NFC trước khi gửi. Đo lại tỉ lệ bằng endpoint đếm token của model bạn dùng.'
+      },
+      {
+        q: 'Muốn biết một request bao nhiêu token trước khi gửi thì đếm bằng gì?',
+        a: `<p>Bằng endpoint của provider, với đúng model ID (README §2.1). Claude: <code>count_tokens</code> miễn phí, có rate limit riêng, kết quả là ước lượng có thể lệch nhỏ. OpenAI: endpoint đếm input token nhận cùng định dạng Responses API, gồm ảnh, file, tool; <code>tiktoken</code> chỉ đếm văn bản thuần, không tính token định dạng. Gemini: <code>countTokens</code>.</p><p>Ảnh là nguồn token dễ bị đánh giá thấp: Claude tính ⌈rộng/28⌉ × ⌈cao/28⌉ token mỗi ảnh. Khách gửi ảnh màn hình laptop lỗi của đơn SV-4821:</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { w: 1000, h: 1000 };
+          const draw = () => {
+            const tok = Math.ceil(st.w / 28) * Math.ceil(st.h / 28);
+            out.innerHTML = `<div class="stat"><span>Token mỗi ảnh: <b>${vn(tok)}</b></span><span>1.000 ảnh trên Opus 5.5: <b>${usd(tok * 4 / 1e6 * 1000, 2)}</b></span><span>Trên Sonnet 5.5: <b>${usd(tok * 2 / 1e6 * 1000, 2)}</b></span></div><div class="cap">${st.w === 1000 && st.h === 1000 ? 'Khớp README: ảnh 1000×1000 là 1.296 token.' : 'Token tăng theo diện tích: gấp đôi cạnh là gấp bốn token.'} README ghi ảnh 4K trên model 4.7 trở lên là 4.784 token, khoảng 19,14 USD mỗi nghìn ảnh trên Opus 5.5. Thu nhỏ ảnh trước khi gửi nếu tác vụ không cần chi tiết.</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Rộng (px)', 100, 2000, 50, st.w, (v) => { st.w = v; draw(); }).node, slider('Cao (px)', 100, 2000, 50, st.h, (v) => { st.h = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Đếm token bằng endpoint của model sẽ dùng, đừng tự chia số ký tự cho 4.'
+      },
+      {
+        q: 'Ghi cache đắt hơn input thường. Sao vẫn gọi caching là đòn bẩy lớn nhất?',
+        a: `<p>Vì một lần ghi được đọc lại nhiều lần với giá rất rẻ. Claude TTL 5 phút: ghi 1,25×, đọc 0,1× (0,05× ở Opus 5.5, Sonnet 5.5): request thứ hai đã có lời (1,25 + 0,05 = 1,30 so với 2). TTL 1 giờ ghi 2×: hoà vốn sau hai lần đọc. OpenAI: 1 ghi + 1 đọc là 1,35× so với 2×; mười request 2,15× so với 10× (README §2.2).</p><p>Nhưng chỉ khi <b>có</b> lần đọc. Job tóm tắt mỗi đơn hàng một lần với cache TTL 1 giờ trả 2× giá input cho mỗi prefix mà không đọc lại lần nào. Đặt "Số request trong một TTL" bằng 1 ở hình chính để thấy chấm đỏ.</p>`,
+        take: 'Cache là khoản đầu tư: trả trước phí ghi, thu lại qua các lần đọc. Không có lần đọc thì chỉ có phí.'
+      },
+      {
+        q: 'TTL 5 phút hay 1 giờ? Khách ShopViet hay đọc câu trả lời rồi 20 phút sau mới hỏi tiếp.',
+        a: `<p>README §2.2: chọn TTL theo khoảng cách giữa các request, không theo trung bình. Anthropic đo trên agent phân loại bug: TTL 1 giờ đáng dùng khi khoảng 1 trong 20 lượt đến sau khoảng nghỉ 5 phút – 1 giờ; điểm hoà vốn tính từ token là khoảng 1 trong 30 lượt trên Sonnet 5.5 và Opus 5.5. Mô phỏng dưới: hội thoại Sonnet 5.5 có context đã cache, mỗi lượt thêm phần mới; mỗi lần đọc làm mới TTL. TTL 5 phút: lượt sau khoảng nghỉ dài phải ghi lại cả context. TTL 1 giờ: không mất cache, nhưng mọi phần mới ghi với giá 2× thay vì 1,25×. Context và phần mới mỗi lượt là giả định.</p><p><b>Đừng nhầm hai chữ "hoà vốn".</b> Câu hỏi trước là hoà vốn của <i>một prefix</i>: cần mấy request để phí ghi được bù (TTL 1 giờ: request thứ 3). Ở đây là hoà vốn <i>giữa hai TTL</i>: bao nhiêu phần trăm lượt đến sau khoảng nghỉ dài thì TTL 1 giờ mới rẻ hơn.</p><p><b>"1 trong 30" không phải hằng số.</b> Mỗi lượt sau khoảng nghỉ, TTL 5 phút phải ghi lại cả context: tốn thêm khoảng 1,25 − 0,05 = 1,2 × context. TTL 1 giờ thì ở <i>mọi</i> lượt trả thêm 2 − 1,25 = 0,75 × phần mới. Hai bên bằng nhau khi tỉ lệ lượt nghỉ dài = 0,75 × phần mới ÷ (1,2 × context), tức <b>1 trong (1,6 × context ÷ phần mới)</b> lượt. Ví dụ (POC): context 100.000, mới 2.000 → 1 trong 80; context 40.000, mới 2.000 → 1 trong 32; context 20.000, mới 3.000 → 1 trong 11. Con số 1 trong 30 của README ứng với phần mới khoảng 5% context, trên agent của Anthropic. Trong hệ thống thật: tính lại bằng context và phần mới đo từ usage của bạn.</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { ctx: 40000, add: 1500, f: 0.05 };
+          const draw = () => {
+            const m = M.sonnet, N = 200;
+            const pauses = Math.round(N * st.f);
+            const per5 = (st.ctx * m.read + st.add * m.in * 1.25) / 1e6;
+            const miss5 = ((st.ctx + st.add) * m.in * 1.25) / 1e6;
+            const c5 = ((N - pauses) * per5 + pauses * miss5);
+            const c1 = N * (st.ctx * m.read + st.add * m.in * 2) / 1e6;
+            const beF = (0.75 * st.add * m.in) / ((st.ctx + st.add) * m.in * 1.25 - st.ctx * m.read - st.add * m.in * 1.25);
+            const win = c1 < c5;
+            out.replaceChildren(hbars([['TTL 5 phút', c5, !win], ['TTL 1 giờ', c1, win]], { max: Math.max(c5, c1), fmt: (v) => usd(v, 2) }),
+              el('div', { class: 'cap', html: `${N} lượt, ${pauses} lượt sau khoảng nghỉ 5 phút – 1 giờ. Hoà vốn ở khoảng <b>1 trong ${vn(1 / beF, 0)}</b> lượt = 1,6 × ${vn(st.ctx)} ÷ ${vn(st.add)}. README ghi khoảng 1 trong 30, nhưng đó là số của agent Anthropic (phần mới ≈ 5% context); kéo hai thanh đầu để thấy nó trượt từ 1 trong vài lượt tới 1 trong vài trăm. ${win ? 'TTL 1 giờ rẻ hơn: khoảng nghỉ đủ nhiều để phí ghi 2× đáng giá.' : 'TTL 5 phút rẻ hơn: khoảng nghỉ hiếm, phí ghi 2× cho mọi phần mới tốn hơn vài lần ghi lại.'} Phương án thứ ba của README: với Fable 5.1, Opus 5.5, Sonnet 5.5, giữ cache 5 phút ấm bằng request <code>max_tokens: 0</code> mỗi 4 phút có thể rẻ hơn TTL 1 giờ khi khoảng nghỉ chỉ vài phút; request đó bị từ chối nếu có thinking enabled, structured output, ép gọi tool hoặc compaction cấp request.` }));
+          };
+          box.append(el('div', { class: 'row' }, [slider('Context đã cache (token)', 5000, 150000, 5000, st.ctx, (v) => { st.ctx = v; draw(); }, (v) => vn(v)).node, slider('Phần mới mỗi lượt', 200, 10000, 100, st.add, (v) => { st.add = v; draw(); }, (v) => vn(v)).node, slider('Tỉ lệ lượt sau khoảng nghỉ dài', 0, 0.3, 0.005, st.f, (v) => { st.f = v; draw(); }, (v) => vn(v * 100, 1) + '%').node]), out);
+          draw();
+        },
+        take: 'Đo phân phối khoảng nghỉ trong log, rồi chọn TTL. Trung bình 3 phút có thể che một đuôi 20 phút.'
+      },
+      {
+        q: 'Đổi một chữ trong system prompt giữa hội thoại thì tốn bao nhiêu?',
+        a: `<p>Cache khớp theo prefix từng byte, thứ tự tools → system → messages; thay đổi ở đâu làm mất cache từ đó trở đi (README §2.2). Đổi system prompt là đổi gần đầu prefix, nên cả hội thoại phía sau phải ghi lại. Anthropic đo trên hội thoại khoảng 100.000 token đã cache: sửa system prompt tốn khoảng 25–50 lần so với gửi nội dung đó dưới dạng system message giữa hội thoại. Chọn vị trí thay đổi cho request tiếp theo (Sonnet 5.5, tool 3.000, system 5.000, lịch sử 92.000 token, giả định):</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { where: 'none' };
+          const B = [['tools', 3000], ['system', 5000], ['messages', 92000]];
+          const draw = () => {
+            const m = M.sonnet;
+            const idx = { tools: 0, system: 1, messages: 2, none: 3, tail: 3 }[st.where];
+            let read = 0, write = 0;
+            B.forEach(([, t], i) => { if (i < idx) read += t; else write += t; });
+            if (st.where === 'tail' || st.where === 'none') write = st.where === 'tail' ? 25 : 0;
+            const c = (read * m.read + write * m.in * 1.25 + 100 * m.in) / 1e6;
+            const base = (100000 * m.read + 100 * m.in) / 1e6;
+            const bar = B.map(([n, t], i) => `<div style="flex:${t};background:${i < idx ? 'var(--accent)' : 'var(--bad)'};color:var(--panel);font-size:11px;padding:2px 4px;overflow:hidden;white-space:nowrap">${n} ${vn(t)}</div>`).join('');
+            out.innerHTML = `<div style="display:flex;border-radius:4px;overflow:hidden;margin:4px 0">${bar}</div><div class="stat"><span>Đọc cache: <b>${vn(read)}</b></span><span>Ghi lại: <b class="${write > 1000 ? 'bad' : ''}">${vn(write)}</b></span><span>Request này: <b>${usd(c)}</b></span><span>So với không đổi: <b class="${c / base > 3 ? 'bad' : ''}">×${vn(c / base, 1)}</b></span></div><div class="cap">${write > 1000 ? `Một thay đổi ở ${st.where} làm ${vn(write)} token phía sau phải ghi lại với giá 1,25× input. Không có nghĩa không được đổi gì: đặt nội dung động (giờ, trạng thái) ở cuối lượt user mới nhất thì chỉ vài chục token mới. Trong hệ thống thật: kiểm cache_read_input_tokens sau mỗi lần deploy prompt (failure mode 2, 3).` : 'Thay đổi nằm sau toàn bộ phần đã cache: gần như mọi thứ vẫn đọc từ cache.'}</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [select('Thay đổi ở đâu', [['none', 'không đổi gì'], ['tail', 'dòng trạng thái ở cuối lượt user mới nhất'], ['messages', 'sửa một message cũ trong lịch sử'], ['system', 'thêm "Thời gian hiện tại" vào system prompt'], ['tools', 'thêm một tool mới']], st.where, (v) => { st.where = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Đổi model giữa hội thoại cũng là một lần ghi lại toàn bộ, vì cache tách theo model.'
+      },
+      {
+        q: 'Gemini không thu phí ghi cache. Vậy Gemini luôn có lợi khi cache?',
+        a: `<p>Không có phí ghi không có nghĩa là luôn được cache. README §2.2: implicit caching bật sẵn với Gemini 2.5 trở lên, nhưng ngưỡng tối thiểu là 4.096 token với Gemini 4 Argon và các model 3.x. Prefix 3.000 token: không cache, không báo lỗi. Với Gemini 4 trong hội thoại nhiều lượt, request mới chỉ dùng được cache của toàn bộ request trước khi phần thêm vào từ 2.050 token trở lên; nhỏ hơn thì 2.050 token cuối của request trước bị xử lý lại với giá input thường. Cache tường minh (<code>cachedContents</code>) không có trên Gemini 4 Argon và có phí lưu trữ theo giờ ở các model hỗ trợ.</p><p>Thử ở hình chính: đặt prefix 3.000 token, các dòng Gemini hiện cờ "không cache" trong khi Claude (ngưỡng 512) và OpenAI (1.024) vẫn cache.</p>`,
+        take: 'Mỗi provider có ngưỡng, TTL và cách tính riêng. Kiểm bằng trường cached token trong usage, không bằng tài liệu.'
+      },
+      {
+        q: 'Hôm nay Gemini 4 Argon rẻ bằng Sonnet 5.5. Dự báo năm sau dùng giá này được không?',
+        a: `<p>Không. README §2.1: Gemini 4 Argon tăng gấp đôi từ 01/12/2026, Gemini 3.8 Flash từ 01/01/2027. Giá khuyến mãi của GPT-5.6 Sol được ghi là đến 30/11/2026 ở trang giá và "at least through November 21, 2026" ở trang Fast mode: hai trang của cùng provider ghi hai ngày khác nhau. Dự báo chi phí phải dùng giá sau khuyến mãi (README §3.6). Đổi "Ngày áp giá" ở hình chính: Argon từ ngang Sonnet 5.5 thành đắt gấp đôi, còn bảng xếp hạng đổi chỗ.</p><p>Thứ khác thay đổi theo thời gian: tên gọi (OpenAI đổi Priority processing thành Fast mode ngày 30/07/2026), effort mặc định giữa các model, và trần chi tiêu theo bậc tài khoản Claude (500, 1.000, 200.000 USD ở Start, Build, Scale).</p>`,
+        take: 'Ghi ngày hết hạn của mọi giá khuyến mãi vào dự báo, và mở lại trang giá trước mỗi lần tính.'
+      }
+    ],
+    poc: {
+      goal: "Đếm token thật (tiktoken 0.14.0) của cùng đoạn chính sách ở tiếng Anh, tiếng Việt NFC và NFD; tái tạo bảng hội thoại 8/40 lượt của README §2.2; tính điểm hoà vốn cache theo TTL; mô phỏng traffic Poisson và khoảng nghỉ để thấy khi nào cache hoặc TTL 1 giờ làm hoá đơn đắt hơn. Đoạn văn song song tự viết; tốc độ request và kích thước phiên là giả định.",
+      file: "docs/cost-optimization/pocs/03_pricing_caching.py",
+      run: "uv run docs/cost-optimization/pocs/03_pricing_caching.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi model. Phần <code>count_tokens</code> thật của Claude (miễn phí) chỉ chạy khi có <code>ANTHROPIC_API_KEY</code> trong <code>pocs/.env</code>; lần chạy dưới không có key nên bỏ qua.",
+      output: "Thật: token đếm bằng tiktoken 0.14.0; chi phí hội thoại bằng request_cost (README §1.2). Giá README §2.1 (06/11/2026).\nGIẢ ĐỊNH (ghi rõ ở từng bảng): đoạn văn song song tự viết, tốc độ request Poisson, TTL làm mới khi hit, kích thước phiên agent.\n\n== Cùng nội dung chính sách hoàn tiền (tự viết: 65 từ tiếng Việt, 54 từ tiếng Anh) ==\nTokenizer    Tiếng Anh  Việt NFC  Việt NFD  NFC/Anh  NFD/NFC\n-----------  ---------  --------  --------  -------  -------\ncl100k_base  66         128       286       1,94×    2,23×\no200k_base   66         83        226       1,26×    2,72×\nKý tự: NFC 301, NFD 383 — NFD tách dấu thành ký tự tổ hợp riêng; hiển thị y hệt nhau.\n\n== Hội thoại hỗ trợ README §2.2 (Sonnet 5.5, prefix 6.000, 100 token khách, 300 token trả lời) ==\nLượt  Không cache  Có cache    Tỉ lệ  Output / chi phí có cache\n----  -----------  ----------  -----  -------------------------\n8     0,1440 USD   0,0514 USD  2,8×   46,7%\n40    1,2320 USD   0,2277 USD  5,4×   52,7%\nREADME: 0,1440 / 0,0514 / 2,8× (8 lượt), 1,2320 / 0,2277 / 5,4× (40 lượt).\n\n== Hoà vốn: n request cùng prefix trong một cửa sổ TTL (đơn vị: giá input của prefix) ==\nCấu hình         Ghi    Đọc     Hoà vốn ở request thứ  2 request  10 request\n---------------  -----  ------  ---------------------  ---------  ----------\nClaude 5m        1,25×  0,100×  2                      1,35 vs 2  2,15 vs 10\nClaude 1h        2,00×  0,100×  3                      2,10 vs 2  2,90 vs 10\nSonnet/Opus 5m   1,25×  0,050×  2                      1,30 vs 2  1,70 vs 10\nSonnet/Opus 1h   2,00×  0,050×  3                      2,05 vs 2  2,45 vs 10\nFable 1h         2,00×  0,025×  3                      2,02 vs 2  2,23 vs 10\nOpenAI 30m       1,25×  0,100×  2                      1,35 vs 2  2,15 vs 10\nOpenAI 12h       2,50×  0,100×  3                      2,60 vs 2  3,40 vs 10\nGPT-6.1 Sol 12h  2,50×  0,050×  3                      2,55 vs 2  2,95 vs 10\n\n== Traffic thưa: request Poisson trên một prefix 6.000 token, Sonnet 5.5 (GIẢ ĐỊNH: TTL làm mới mỗi lần hit) ==\nRequest/giờ  Hit 5m  Chi phí prefix 5m  Hit 1h  Chi phí prefix 1h\n-----------  ------  -----------------  ------  -----------------\n2            16%     1,06× ĐẮT HƠN      86%     0,32×\n6            40%     0,77×              100%    0,05×\n12           63%     0,49×              100%    0,05×\n30           92%     0,15×              100%    0,05×\n120          100%    0,05×              100%    0,05×\nChi phí prefix so với không cache (1,00×). Dưới 1,00× là cache có lợi.\n\n== TTL 1 giờ hay 5 phút theo tỉ lệ lượt đến sau khoảng nghỉ 5–60 phút (Sonnet 5.5 đọc 0,05×; GIẢ ĐỊNH: context giữ cố định) ==\nContext  Token mới/lượt  Hoà vốn (công thức)  Mô phỏng: rẻ hơn ở 0,7× / 1,4× điểm hoà vốn  1/20 lượt nghỉ 10 / 30 phút: rẻ hơn\n-------  --------------  -------------------  -------------------------------------------  -----------------------------------\n100.000  2.000           1 trong 80           1h / 5m                                      ping / 1h\n40.000   2.000           1 trong 32           1h / 5m                                      ping / ping\n20.000   3.000           1 trong 11           1h / 5m                                      ping / ping\nCông thức: mỗi lượt nghỉ dài, TTL 5m ghi lại cả context (+1,2× ctx); TTL 1h trả thêm 0,75× phần mới ở MỌI lượt.\nREADME §2.2 (đo của Anthropic): hoà vốn khoảng 1 trong 30 lượt — ứng với phần mới ≈ 5% context; điểm này dịch theo tỉ lệ đó.\n\n== 300.000 request/tháng: prefix 6.000, phần động 500, output 300, cache hit 80% (GIẢ ĐỊNH của lab 03) ==\nModel                  Giá 06/11/2026  Từ 01/12/2026  Từ 01/01/2027\n---------------------  --------------  -------------  -------------\nHaiku 5.5              119 USD         119 USD        119 USD\ngpt-6-luna             119 USD         119 USD        119 USD\nGemini 3.5 Flash-Lite  421 USD         421 USD        421 USD\nGemini 3.8 Flash       828 USD         828 USD        1.656 USD\ngpt-6.1-terra          1.122 USD       1.122 USD      1.122 USD\nGemini 4 Argon         2.064 USD       4.128 USD      4.128 USD\nSonnet 5.5             2.244 USD       2.244 USD      2.244 USD\ngpt-6.1-sol            2.244 USD       2.244 USD      2.244 USD\nOpus 5.5               4.488 USD       4.488 USD      4.488 USD\nFable 5.1              10.860 USD      10.860 USD     10.860 USD\ngpt-6-astra            11.940 USD      11.940 USD     11.940 USD\nBỏ qua count_tokens thật: chưa có ANTHROPIC_API_KEY trong docs/cost-optimization/pocs/.env (chép từ .env.example).\n\nRút ra: NFD làm cùng đoạn văn tốn gấp ~2–3 lần token, lớn hơn khoảng cách tiếng Việt–tiếng Anh; hàm README tái tạo đúng số §2.2.\nCache TTL 5 phút có lợi từ lần đọc đầu, nhưng ở 2 request/giờ chỉ hit 16% và đắt hơn không cache (1,06×); TTL 1h cứu được trường hợp này.\nHoà vốn của TTL 1 giờ không cố định ở '1 trong 30': nó phụ thuộc context lớn cỡ nào so với phần thêm mỗi lượt.",
+      measured: true,
+      read: ["NFD tốn 2,2–2,7× token so với NFC, lớn hơn khoảng cách Việt–Anh (1,26× trên o200k) — cùng chiều với bảng README (56 → 162).", "0,1440 / 0,0514 / 1,2320 / 0,2277 USD khớp đúng README §2.2.", "2 request/giờ: TTL 5 phút chỉ hit 16% và đắt hơn không cache (1,06×); TTL 1 giờ còn 0,32×.", "Bất thường: README nói TTL 1 giờ hoà vốn ở khoảng 1 trong 30 lượt, nhưng POC ra 1/80, 1/32, 1/11 ở ba cấu hình. Vì sao: hoà vốn = 1 trong (1,6 × context ÷ phần mới mỗi lượt); 1/30 chỉ đúng khi phần mới ≈ 5% context. Không có nghĩa README sai: đó là số đo trên một agent cụ thể. Trong hệ thống thật: tính lại bằng context và phần mới của bạn.", "Cột 'ping' trong bảng TTL: giữ cache 5 phút ấm bằng request max_tokens: 0 gửi mỗi 4 phút (README §2.2). Traffic 'Poisson' nghĩa là request đến ngẫu nhiên với một tốc độ trung bình cho trước; tốc độ đó là giả định.", "POC không gọi model: đếm token bằng tiktoken và phép tính giá là thật; traffic, kích thước phiên, đoạn văn song song là giả định."]
+    },
+    mount(stage) {
+      const w = { reqs: 2400000, prefix: 6000, dyn: 400, out: 250, hit: 0.84, cache: true, lang: 'nfc', date: 'now' };
+      const b = { k: 'sonnet', ttl: '5m', P: 6000, n: 1 };
+      const topBox = el('div');
+      const botBox = el('div');
+      const ttlWrap = el('span');
+      const drawTop = () => {
+        const R = Object.keys(M).map((k) => workloadCost(k, w)).sort((a, c) => a.month - c.month);
+        const sel = R.find((r) => r.k === b.k);
+        const parts = [];
+        const risers = R.filter((r) => r.m.after && !r.risen);
+        if (risers.length) parts.push(note('var(--warn)', `<b>${risers.map((r) => r.m.n + ' tăng giá từ ' + r.m.rise).join('; ')}.</b> Giá đang dùng là giá khuyến mãi. ${risers.map((r) => r.m.n + ' sau khi tăng: ' + usd(workloadCost(r.k, Object.assign({}, w, { date: 'jan' })).month, 0) + ' / tháng').join('; ')}. Trong hệ thống thật: dự báo bằng giá sau khuyến mãi (README §2.1, failure mode 16).`));
+        if (w.lang === 'nfd') parts.push(note('var(--bad)', `<b>Input ở dạng NFD: prefix ${vn(w.prefix)} token thành khoảng ${vn(R[0].P)} token.</b> Vì sao: mỗi dấu là một ký tự tổ hợp riêng; README đo 162 token NFD so với 56 NFC cho cùng đoạn văn (o200k_base). Không có nghĩa phải viết prompt tiếng Anh: chuẩn hoá NFC đưa chi phí về mức tiếng Việt thường. Trong hệ thống thật: normalize("NFC") mọi văn bản trước khi vào prompt (failure mode 7).`));
+        const uncached = R.filter((r) => r.flags.some((f) => f.includes('không cache')));
+        if (uncached.length) parts.push(note('var(--warn)', `<b>Prefix ${vn(R[0].P)} token dưới ngưỡng cache của ${uncached.map((r) => r.m.n).join(', ')}.</b> Request vẫn chạy bình thường, chỉ là không được cache và không có lỗi nào báo. Ngưỡng: Claude 5.5 512, OpenAI GPT-5.6+ 1.024, Gemini 4 Argon và 3.x 4.096 token.`));
+        if (R.some((r) => r.flags.some((f) => f.includes('×5') || f.includes('272')))) parts.push(note('var(--bad)', `<b>Prompt dài đổi bảng giá:</b> ${R.filter((r) => r.flags.some((f) => f.includes('×5') || f.includes('272'))).map((r) => r.m.n + ' (' + r.flags.filter((f) => f.includes('×5') || f.includes('272')).join(', ') + ')').join('; ')}. Haiku 5.5 vượt 100.000 token thì mọi token đắt gấp 5, kể cả cache read.`));
+        if (w.cache && w.hit < 0.8) parts.push(note('var(--accent)', `Tỉ lệ hit ${pct(w.hit, 0)}. README: agent loop trên traffic thật đọc trung vị 84% input từ cache; dưới khoảng 80% là có thứ làm vỡ cache.`));
+        topBox.replaceChildren(
+          hbars(R.map((r) => [r.m.p + ' · ' + r.m.n + (r.risen ? ' (giá mới)' : ''), r.month, r.k === b.k]), { max: R[R.length - 1].month, fmt: (v) => usd(v, 0) }),
+          el('div', { class: 'stat', html: `<span>Rẻ nhất: <b>${R[0].m.n}</b> ${usd(R[0].month, 0)}</span><span>Đắt nhất: <b>${R[R.length - 1].m.n}</b> ${usd(R[R.length - 1].month, 0)}</span><span>${sel.m.n}: <b>${usd(sel.per)}</b> mỗi request</span><span>Token mỗi request: <b>${vn(R[0].P)} + ${vn(R[0].D)} in, ${vn(R[0].O)} out</b></span>` }),
+          el('div', { style: 'margin-top:8px', html: table(['Model', 'Giá in / out / đọc cache', 'Mỗi request', 'Mỗi tháng', 'Cờ'], R.map((r) => [r.m.p + ' · ' + r.m.n, `${num(r.m.in)} / ${num(r.m.out)} / ${num(r.m.read)}`, usd(r.per), usd(r.month, 0), r.flags.length || (r.m.after && !r.risen) ? `<span style="color:${r.flags.some((f) => f.includes('×5') || f.includes('không cache')) ? 'var(--bad)' : 'var(--warn)'}">${r.flags.concat(r.m.after && !r.risen ? ['tăng giá từ ' + r.m.rise] : []).join('; ')}</span>` : ''])) }),
+          el('div', { html: parts.join('') }));
+      };
+      const buildTtl = () => {
+        const m = M[b.k];
+        if (!m.ttl.some((t) => t[0] === b.ttl)) b.ttl = m.ttl[0][0];
+        ttlWrap.replaceChildren(select('TTL', m.ttl.map((t) => [t[0], t[1] + ' (ghi ' + num(t[2]) + '×)']), b.ttl, (v) => { b.ttl = v; drawBot(); }).node);
+      };
+      const drawBot = () => {
+        const m = priceAt(b.k, w.date);
+        const t = m.ttl.find((x) => x[0] === b.ttl) || m.ttl[0];
+        const below = b.P < m.min;
+        const BE = breakEven(m, t[2], b.P);
+        const cur = BE.rows[b.n - 1];
+        const parts = [];
+        if (below) parts.push(note('var(--bad)', `<b>Prefix ${vn(b.P)} token dưới ngưỡng ${vn(m.min)} của ${m.n}: không được cache.</b> Request vẫn chạy, cache_creation_input_tokens bằng 0, không có lỗi. Đồ thị bên dưới là chi phí nếu được cache, chỉ để tham khảo.`));
+        if (!below && cur.yes > cur.no) parts.push(note('var(--bad)', `<b>Với ${b.n} request trong một TTL, cache đắt hơn không cache ${pct(cur.yes / cur.no - 1, 0)}.</b> Vì sao: phí ghi ${num(t[2])}× chưa được bù bởi đủ lần đọc giá ${num(m.read / m.in)}× input. Không có nghĩa caching tệ: từ ${BE.be ? BE.be + ' request' : 'hơn 30 request'} trở lên là có lời. Trong hệ thống thật: không đặt cache_control cho request chạy một lần (job tóm tắt từng đơn), hoặc dùng TTL ngắn nhất (README §2.2).`));
+        else if (!below) parts.push(note('var(--ok)', `Với ${b.n} request trong một TTL: không cache ${usd(cur.no)}, có cache ${usd(cur.yes)}, rẻ hơn ${pct(1 - cur.yes / cur.no, 0)} (tỉ lệ ${vn(cur.no / cur.yes, 1)} lần).`));
+        if (t[2] === 1 && b.n === 1) parts.push(note('var(--accent)', 'Implicit cache của Gemini: lab giả định lần miss tính giá input thường (README không nêu phụ phí ghi), nên một request đơn không đắt hơn. Gemini 4 Argon không có cache tường minh.'));
+        if (m.p === 'OpenAI' && Math.abs(m.read / m.in - 0.1) < 1e-9 && t[2] === 1.25 && (b.n === 2 || b.n === 10)) parts.push(note('var(--ok)', `Khớp README §2.2: ${b.n === 2 ? 'một lần ghi và một lần đọc tốn 1,35 lần, so với 2 lần' : 'mười request tốn 2,15 lần, so với 10 lần'} khi không cache.`));
+        botBox.replaceChildren(lineSvg(BE.rows, b.n, below ? null : BE.be),
+          el('div', { class: 'legend', html: '<span><i style="background:var(--g2)"></i>không cache: n × prefix × giá input</span><span><i style="background:var(--accent)"></i>có cache: 1 ghi + (n − 1) đọc</span>' }),
+          el('div', { class: 'stat', html: `<span>Hệ số ghi: <b>${num(t[2])}×</b></span><span>Đọc: <b>${num(m.read / m.in)}×</b> giá input</span><span>Hoà vốn: <b class="${below ? 'bad' : ''}">${below ? 'không cache được' : BE.be ? BE.be + ' request' : '> 30'}</b></span><span>Ngưỡng tối thiểu: <b>${vn(m.min)}</b> token</span>` }),
+          el('div', { html: parts.join('') }));
+      };
+      const draw = () => { drawTop(); drawBot(); };
+      const ctlA = el('div', { class: 'row' }, [
+        slider('Request / tháng', 100000, 10000000, 100000, w.reqs, (v) => { w.reqs = v; drawTop(); }, (v) => vn(v)).node,
+        slider('Prefix (token)', 1000, 200000, 500, w.prefix, (v) => { w.prefix = v; drawTop(); }, (v) => vn(v)).node,
+        slider('Phần động', 50, 100000, 50, w.dyn, (v) => { w.dyn = v; drawTop(); }, (v) => vn(v)).node,
+        slider('Output', 20, 4000, 10, w.out, (v) => { w.out = v; drawTop(); }).node,
+        slider('Tỉ lệ cache hit', 0, 1, 0.01, w.hit, (v) => { w.hit = v; drawTop(); }, (v) => Math.round(v * 100) + '%').node,
+        el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', checked: '', onchange: (e) => { w.cache = e.target.checked; drawTop(); } }), 'Bật prompt caching']),
+        select('Ngôn ngữ văn bản', Object.entries(LANG).map(([k, v]) => [k, v.t]), w.lang, (v) => { w.lang = v; drawTop(); }).node,
+        select('Ngày áp giá', DATES, w.date, (v) => { w.date = v; draw(); }).node]);
+      const ctlB = el('div', { class: 'row' }, [
+        select('Model', Object.entries(M).map(([k, v]) => [k, v.p + ' · ' + v.n]), b.k, (v) => { b.k = v; buildTtl(); draw(); }).node,
+        ttlWrap,
+        slider('Prefix (token)', 200, 100000, 100, b.P, (v) => { b.P = v; drawBot(); }, (v) => vn(v)).node,
+        slider('Số request trong một TTL', 1, 30, 1, b.n, (v) => { b.n = v; drawBot(); }).node]);
+      buildTtl();
+      stage.append(el('h4', { text: 'Cùng workload, mười một model', style: 'margin:0 0 6px' }), ctlA, topBox,
+        el('h4', { text: 'Prompt caching: hoà vốn theo số request trong một TTL', style: 'margin:18px 0 6px' }), ctlB, botBox,
+        el('p', { class: 'hint', text: 'Giá README §2.1 (06/11/2026), USD mỗi triệu token. Phần trên giả định mọi model đếm cùng số token cho cùng văn bản (không đúng ngoài đời, xem câu hỏi 1); lần miss cache tính phí ghi của TTL ngắn nhất. Hệ số ngôn ngữ từ phép đo o200k_base trong README.' }));
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>

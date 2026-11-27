@@ -86,6 +86,11 @@ export const series: Record<string, { title: string; description: string; parts?
     description: 'Routing và fallback giữa các model: rate limit, retry và jitter, routing theo độ khó và chi phí, gateway, cloud provider, circuit breaker, quota theo tenant và eval sau khi fallback.',
     parts: ['Workflow tổng hợp', 'Một điểm lỗi và rate limit', 'Retry, backoff và jitter', 'Routing và hệ quả khi fallback', 'Gateway và cloud provider', 'Router classifier, priority và batch', 'Chuỗi fallback, tương thích và circuit breaker', 'Quota theo tenant, eval và failure modes']
   },
+  'cost-optimization': {
+    title: 'LLM - 17 - Cost Optimization',
+    description: 'Tối ưu chi phí cho ứng dụng LLM: tiền đến từ đâu, đo theo request và feature, output đắt hơn input, bảng giá, prompt caching, batch, model nhỏ, self-host, semantic cache, giới hạn theo user và dự báo khi scale.',
+    parts: ['Workflow tổng hợp', 'Chi phí đến từ đâu và cách đo', 'Output token và đánh đổi', 'Bảng giá và prompt caching', 'Batch, model nhỏ và self-host', 'Chọn model, rút prompt, giới hạn output', 'Semantic cache và giới hạn theo user', 'Dự báo chi phí và failure modes']
+  },
   redis: { title: 'Redis', description: 'Tìm hiểu Redis từ tổng quan đến persistence.' },
   typescript: { title: 'TypeScript tutorial', description: 'Làm quen TypeScript và dựng cấu trúc source code.' }
 };

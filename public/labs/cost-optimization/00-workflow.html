@@ -1,0 +1,695 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cost Optimization Lab 00</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Be+Vietnam+Pro:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14202b; --mute: #5a6a77; --line: #d8e0e5;
+  --accent: #0b7a75; --accent-soft: #d6efed; --warn: #b4531a; --bad: #c43b3b; --ok: #1f8a5b;
+  --g1: #2f6fdb; --g2: #c2631a; --g3: #1f8a5b; --g4: #8a4fd6; --dim: #aab6bf;
+  --font: "Be Vietnam Pro", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+    --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+    --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #162028; --ink: #e5edf1; --mute: #92a3af; --line: #2a3a45;
+  --accent: #3cc4bb; --accent-soft: #15383a; --warn: #f0a35e; --bad: #f07575; --ok: #4cc58d;
+  --g1: #6ea0ff; --g2: #f0a35e; --g3: #4cc58d; --g4: #b98af0; --dim: #566874; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); margin: 0;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 920px; margin: 0 auto; }
+header.top { padding-block: 36px 12px; }
+header.top h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+header.top p { margin: 0; color: var(--mute); max-width: 62ch; }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; border-bottom: 1px solid var(--line); }
+nav.tabs a { white-space: nowrap; text-decoration: none; color: var(--mute); font-size: 13px; padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+nav.tabs a:hover, nav.tabs a:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+section.lesson { padding-block: 40px 8px; scroll-margin-top: 56px; }
+.eyebrow { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .06em; text-transform: uppercase; }
+section.lesson h2 { font-size: 1.5rem; margin: 4px 0 6px; text-wrap: balance; }
+.hook { color: var(--mute); margin: 0 0 16px; max-width: 64ch; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+.hint { color: var(--mute); font-size: 13px; margin: 8px 0 0; }
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.why div { border-top: 2px solid var(--line); padding-top: 8px; font-size: 13.5px; min-width: 0; }
+.why b { display: block; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; }
+.why .c b { color: var(--ok); } .why .s b { color: var(--mute); } .why .p b { color: var(--warn); }
+.src { font-size: 12.5px; margin-top: 10px; color: var(--mute); }
+button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+label.ctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mute); }
+label.ctl output { font: 500 13px var(--mono); color: var(--ink); min-width: 4ch; }
+input[type=range] { accent-color: var(--accent); width: 140px; }
+svg.canvas { width: 100%; height: auto; display: block; touch-action: none; }
+svg text { font: 12px var(--font); fill: var(--ink); }
+svg text.mute { fill: var(--mute); }
+.mono { font-family: var(--mono); }
+.stat { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--mute); margin-top: 8px; }
+.stat b { font: 500 15px var(--mono); color: var(--ink); }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.cols h4 { margin: 0 0 6px; font-size: 13px; }
+.cols h4 small { color: var(--mute); font-weight: 400; }
+.rank { position: relative; }
+.rank .it { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 12.5px;
+  transition: transform .55s ease, opacity .4s, background .3s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rank .it.gold { border-color: var(--ok); }
+.rank .it.dim { opacity: .35; }
+.rank .it.hide { opacity: 0; pointer-events: none; }
+.rank .it.hit { background: var(--accent-soft); border-color: var(--accent); }
+.rank .it i { font: 500 11px var(--mono); color: var(--mute); font-style: normal; }
+.rank .it .bar { margin-left: auto; height: 6px; border-radius: 3px; background: var(--accent); flex: none; transition: width .5s; }
+.grid60 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.grid60 span { aspect-ratio: 1; border-radius: 2px; background: var(--line); transition: background .15s; }
+.grid60 span.pre { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.grid60 span.lit { background: var(--accent); }
+.grid60.slow span.lit { background: var(--warn); }
+.chunks .ch { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; background: var(--bg); }
+.chunks .ch small { font: 500 11px var(--mono); color: var(--mute); display: block; }
+.chunks mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+.strip { position: relative; height: 54px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+.strip .seg { position: absolute; height: 20px; border-radius: 4px; background: var(--g1); opacity: .75; transition: left .4s, width .4s; }
+.strip .band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-inline: 2px solid var(--accent); transition: left .4s, width .4s; }
+.cellbar { display: grid; grid-template-columns: repeat(48, 1fr); gap: 2px; margin: 4px 0 14px; }
+.cellbar span { height: 22px; border-radius: 2px; background: var(--accent); transition: background .3s, opacity .3s; }
+.cellbar span.off { background: var(--line); opacity: .6; }
+.mem { display: grid; grid-template-columns: minmax(110px, 170px) 1fr 70px; gap: 8px; align-items: center; font-size: 12.5px; margin-bottom: 6px; }
+.mem .track { height: 14px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.mem .fill { height: 100%; background: var(--g1); transition: width .5s; }
+.mem.cur .fill { background: var(--accent); }
+.mem .v { font: 500 12px var(--mono); text-align: right; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.w { transition: transform .8s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+.w circle { stroke: var(--panel); stroke-width: 2; }
+.w text { font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.w.sel circle { stroke: var(--ink); }
+.pulse { animation: pulse .9s ease-out; }
+@keyframes pulse { 0% { opacity: .2; } 100% { opacity: 1; } }
+@media (max-width: 640px) { .why { grid-template-columns: 1fr; } .grid60 { grid-template-columns: repeat(12, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .w, .rank .it, .strip .seg, .strip .band { transition: none; } .pulse { animation: none; } }
+footer.end { padding-block: 40px 56px; color: var(--mute); font-size: 13px; }
+.sum { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.sum h3 { font-size: 1.05rem; margin: 0 0 10px; }
+.sum h4 { font-size: .9rem; margin: 20px 0 6px; }
+.sum p, .sum li { max-width: 72ch; font-size: 14px; }
+.sum ul, .sum ol { padding-left: 20px; margin: 6px 0; }
+.sum blockquote { margin: 10px 0; padding: 4px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+.sum blockquote p { margin: 6px 0; }
+.sum .tbl { overflow-x: auto; margin: 8px 0; }
+.sum table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; }
+.sum th, .sum td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+.sum th { background: var(--bg); font-weight: 700; }
+.sum tr.cur td { background: var(--accent-soft); }
+.sum .verdict { font-size: 13.5px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px 12px; margin: 10px 0; color: var(--mute); }
+.sum .verdict b { color: var(--ink); }
+.sum code { font: 500 12.5px var(--mono); }
+
+.prob { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; }
+.prob .pr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 14px; }
+.prob .pr > b { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); padding-top: 2px; }
+.prob .ask > div { font-weight: 700; }
+.prob .sol > div { color: var(--ink); }
+.prob ol { margin: 0; padding-left: 18px; }
+.prob li { margin-bottom: 3px; }
+@media (max-width: 640px) { .prob .pr { grid-template-columns: 1fr; gap: 2px; } }
+
+.prob .ex > div { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; }
+.prob .ex > b { color: var(--accent); }
+
+.terms { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 16px; }
+.terms summary { cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--mute); }
+.terms dl { display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 14px; margin: 10px 0 2px; font-size: 13.5px; }
+.terms dt { font-weight: 700; color: var(--accent); }
+.terms dd { margin: 0; }
+@media (max-width: 640px) { .terms dl { grid-template-columns: 1fr; gap: 0; } .terms dd { margin-bottom: 8px; } }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; justify-content: space-between; gap: 8px; align-items: center; padding-block: 10px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 13px; }
+.topbar a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; white-space: nowrap; }
+.topbar a:hover, .topbar a:focus-visible { border-color: var(--accent); outline: none; }
+.topbar .mid { display: flex; gap: 8px; }
+.topbar .off { opacity: .4; pointer-events: none; }
+
+:root { --d-ink: #1f2933; --d-panel: #ffffff; --d-green: #2f9e44; --d-green-soft: #d3f9d8; --d-orange: #e8590c; --d-orange-soft: #fff0e0; --d-blue: #1c7ed6; --d-blue-soft: #d0ebff; --d-purple: #7048e8; --d-purple-soft: #e5dbff; --d-red: #e03131; --d-red-soft: #ffe3e3; --d-pink: #ffc9c9; --d-yellow-soft: #fff3bf; --d-space: #eef0ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; } }
+:root[data-theme="dark"] { --d-ink: #e5edf1; --d-panel: #151e25; --d-green: #51cf66; --d-green-soft: #1b3a26; --d-orange: #ff922b; --d-orange-soft: #3a2a17; --d-blue: #4dabf7; --d-blue-soft: #17324a; --d-purple: #9775fa; --d-purple-soft: #2a2347; --d-red: #ff6b6b; --d-red-soft: #3d1f23; --d-pink: #4a2a2f; --d-yellow-soft: #3d3517; --d-space: #1b2036; }
+.wf-t { font-family: "Patrick Hand", "Be Vietnam Pro", sans-serif; fill: var(--d-ink); font-size: 15px; }
+.wf-h { font-size: 21px; } .wf-h2 { font-size: 17px; } .wf-s { font-size: 14px; } .wf-v { font-size: 16px; } .wf-vec { font-size: 13px; }
+.wf-v.green, .wf-vec.green { fill: var(--d-green); } .wf-v.orange, .wf-vec.orange { fill: var(--d-orange); }
+.wf-cap { font-size: 16px; fill: var(--mute); } .wf-q { font-size: 14px; } .wf-a { font-size: 13px; } .wf-ctx { font-size: 12px; } .wf-pdf { font-size: 15px; fill: var(--d-red); } .wf-bn { font-size: 12px; }
+.wf-box { stroke: var(--d-ink); stroke-width: 2.2; }
+.wf-arrow { fill: none; stroke-width: 2.4; stroke-dasharray: 7 6; }
+.wf-badge { fill: var(--d-yellow-soft); stroke: var(--d-orange); stroke-dasharray: 3 2; stroke-width: 1.5; }
+.wf-doc { fill: var(--d-panel); stroke: var(--d-ink); stroke-width: 2.2; } .wf-docl { stroke: var(--d-ink); stroke-width: 2; }
+.wf-tab { stroke: var(--d-ink); stroke-width: 1.6; } .wf-input { fill: var(--d-yellow-soft); stroke: var(--d-ink); stroke-width: 1.6; }
+.wf-node { cursor: pointer; outline: none; }
+.wf-node:hover .wf-box, .wf-node:focus-visible .wf-box, .wf-node.sel .wf-box { stroke: var(--accent); stroke-width: 3.4; }
+.wf-node.glow .wf-box { stroke: var(--d-orange); stroke-width: 4.5; }
+.wf-dot { fill: var(--d-green); stroke: var(--d-ink); stroke-width: 1.2; transition: fill .3s; }
+.wf-dot.cand { fill: var(--d-blue); } .wf-dot.top { stroke: var(--d-green); stroke-width: 3.5; r: 9; }
+.wf-qdot { fill: var(--d-orange); stroke: var(--d-ink); stroke-width: 2; cursor: grab; }
+.wf-ann { fill: none; stroke: var(--d-red); stroke-width: 2.4; stroke-dasharray: 8 6; } .wf-ann-l { fill: var(--d-red); font-size: 15px; }
+.wf-pkt { fill: var(--pkt, var(--d-orange)); stroke: var(--d-ink); stroke-width: 1.5; }
+.wf-caption { min-height: 26px; margin-top: 8px; font-size: 14px; color: var(--mute); }
+
+.deep { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+.deep > h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.qa { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 8px 0; padding: 0 14px; }
+.qa summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 10px 0; font-weight: 700; font-size: 14.5px; list-style: none; }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa .qn { font: 500 12px var(--mono); color: var(--accent); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); display: inline-grid; place-items: center; }
+.qa[open] summary { border-bottom: 1px dashed var(--line); }
+.qa-a { font-size: 14px; padding: 8px 0 2px; }
+.qa-a p, .qa-a li { max-width: 72ch; }
+.qa-a ul, .qa-a ol { padding-left: 20px; margin: 6px 0; }
+.qa-a code { font: 500 12.5px var(--mono); }
+.qa-a .tbl { overflow-x: auto; margin: 8px 0; }
+.qa-a table, .qa-viz table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.qa-a th, .qa-a td, .qa-viz th, .qa-viz td { text-align: left; vertical-align: top; padding: 6px 9px; border: 1px solid var(--line); }
+.qa-a th, .qa-viz th { background: var(--bg); }
+.qa-viz { margin: 8px 0 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); min-width: 0; }
+.qa-viz .cap { font-size: 12.5px; color: var(--mute); margin-top: 6px; }
+.qa-take { font-size: 13.5px; border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 6px 10px; border-radius: 0 6px 6px 0; margin: 0 0 14px; }
+
+.poc { margin-top: 28px; padding: 16px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); }
+.poc h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.poc p, .poc li { font-size: 14px; max-width: 72ch; }
+.poc-run { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; color: var(--mute); margin: 8px 0; }
+.poc-run code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--bg); padding: 2px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+.poc-out summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--mute); }
+.poc-out pre { overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); margin: 6px 0 10px; }
+.poc ol { padding-left: 20px; margin: 4px 0 0; }
+</style></head><body><div class="wrap">
+<div class="topbar"><a href="index.html">← Danh sách lab</a><div class="mid"><a class="off" href="#">← Lab trước</a><a href="01-where-costs-measure.html">Lab sau →</a></div></div>
+<nav id="tabs" hidden></nav><main id="lessons"></main>
+<footer class="end"><a href="index.html">← Danh sách lab</a> · Nội dung từ docs/cost-optimization/README.md. Dữ liệu trong hình là ví dụ dựng sẵn, không phải kết quả đo.</footer></div><script>
+const SVG_TAGS = ['svg', 'g', 'circle', 'line', 'rect', 'text', 'tspan', 'path', 'polygon', 'defs', 'filter', 'feTurbulence', 'feDisplacementMap', 'marker', 'clipPath', 'title'];
+const lessons = [];
+const lesson = (def) => lessons.push(def);
+
+function el(tag, attrs = {}, kids = []) {
+  const n = SVG_TAGS.includes(tag)
+    ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+    : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'text') n.textContent = v;
+    else if (k === 'html') n.innerHTML = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(kids)) if (c) n.append(c);
+  return n;
+}
+
+function seeded(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function slider(label, min, max, step, value, onInput, fmt = (v) => v) {
+  const out = el('output', { text: fmt(value) });
+  const input = el('input', { type: 'range', min, max, step, value });
+  input.addEventListener('input', () => { out.textContent = fmt(+input.value); onInput(+input.value); });
+  const node = el('label', { class: 'ctl' }, [label, input, out]);
+  return { node, input, get: () => +input.value };
+}
+
+function select(label, options, value, onChange) {
+  const s = el('select');
+  options.forEach(([v, t]) => s.append(el('option', { value: v, text: t })));
+  s.value = value;
+  s.addEventListener('change', () => onChange(s.value));
+  return { node: el('label', { class: 'ctl' }, [label, s]), sel: s };
+}
+
+function rankList(rowH) {
+  const box = el('div', { class: 'rank' });
+  const map = new Map();
+  function update(items) {
+    box.style.height = items.length * rowH + 'px';
+    const seen = new Set();
+    items.forEach((it, i) => {
+      seen.add(it.id);
+      let d = map.get(it.id);
+      if (!d) { d = el('div', { class: 'it' }); d.style.height = rowH - 4 + 'px'; box.append(d); map.set(it.id, d); }
+      d.className = 'it ' + (it.cls || '');
+      d.innerHTML = it.html;
+      d.style.transform = `translateY(${i * rowH}px)`;
+    });
+    for (const [id, d] of map) if (!seen.has(id)) d.className = 'it hide';
+  }
+  return { node: box, update };
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return n / 1e6 + 'M';
+  if (n >= 1e3) return n / 1e3 + 'k';
+  return String(n);
+}
+lesson((() => {
+  const vn = (x, d = 0) => Number(x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const usd = (x, d) => '$' + vn(x, d ?? (Math.abs(x) >= 100 ? 0 : Math.abs(x) >= 1 ? 2 : 4));
+  const pct = (x, d = 1) => vn(x * 100, d) + '%';
+  const note = (color, html) => `<div style="border-left:3px solid ${color};background:var(--bg);padding:8px 12px;border-radius:0 6px 6px 0;margin-top:6px;font-size:13.5px">${html}</div>`;
+  const TH = 'style="text-align:left;padding:6px 9px;border:1px solid var(--line);background:var(--bg)"';
+  const TD = 'style="text-align:left;padding:6px 9px;border:1px solid var(--line);vertical-align:top"';
+  const table = (head, rows) => `<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;width:100%;min-width:520px"><tr>${head.map((h) => `<th ${TH}>${h}</th>`).join('')}</tr>${rows.map((r) => `<tr>${r.map((c) => `<td ${TD}>${c}</td>`).join('')}</tr>`).join('')}</table></div>`;
+
+  const PRICE = {
+    sonnet: { name: 'Sonnet 5.5', in: 2, out: 10, read: 0.10 },
+    haiku: { name: 'Haiku 5.5', in: 0.10, out: 0.50, read: 0.01 }
+  };
+  const W5 = 1.25;
+  const SEM = [
+    ['0.99', 0.235, 0.921, 0.158], ['0.95', 0.560, 0.926, 0.519], ['0.90', 0.745, 0.923, 0.725],
+    ['0.80', 0.876, 0.918, 0.846], ['0.75', 0.903, 0.912, 0.863], ['0.50', 0.943, 0.875, 0.880]
+  ];
+  const A = {
+    convs: 300000, turns: 8, prefix: 6000, trimPrefix: 4000, user: 100, ans: 300, shortAns: 183,
+    abuseSessions: 3000, abuseTurns: 40,
+    sumJobs: 600000, sumIn: 6000, sumOut: 400,
+    intentCalls: 2400000, intentIn: 1500, intentOut: 15,
+    faq: 900000, faqPrefix: 2800, faqDyn: 200, faqOut: 250, faqShortOut: 153,
+    q: { chatSonnet: 0.92, chatHaiku: 0.78, intentSonnet: 0.97, intentHaiku: 0.95, sum: 0.90, faq: 0.95 },
+    maxTok: 200
+  };
+
+  function turnParts(p, turns, prefix, user, ans, cache, outPerTurn) {
+    const res = [];
+    let prev = 0;
+    for (let k = 1; k <= turns; k++) {
+      const prompt = prefix + k * user + (k - 1) * ans;
+      const part = { in: 0, write: 0, read: 0, out: outPerTurn * p.out / 1e6 };
+      if (cache) { const read = k === 1 ? 0 : prev; part.read = read * p.read / 1e6; part.write = (prompt - read) * p.in * W5 / 1e6; } else part.in = prompt * p.in / 1e6;
+      part.total = part.in + part.write + part.read + part.out;
+      res.push(part);
+      prev = prompt;
+    }
+    return res;
+  }
+  const sum = (arr, f = (x) => x.total) => arr.reduce((s, x) => s + f(x), 0);
+  function allowedTurns(parts, cap) {
+    if (cap == null) return parts.length;
+    let c = 0, n = 0;
+    for (const p of parts) { if (c + p.total > cap) break; c += p.total; n++; }
+    return n;
+  }
+
+  function compute(L, o) {
+    const p = L.haikuChat ? PRICE.haiku : PRICE.sonnet;
+    const prefix = L.trim ? A.trimPrefix : A.prefix;
+    let ans = L.short ? A.shortAns : A.ans;
+    let outTok = ans, trunc = 0;
+    if (L.maxtok) { trunc = ans >= 250 ? 0.40 : 0.10; outTok = ans - trunc * (ans >= 250 ? 120 : 40); }
+    const parts = turnParts(p, A.turns, prefix, A.user, ans, L.cache, outTok);
+    const cap = L.cap ? o.cap : null;
+    const okTurns = allowedTurns(parts, cap);
+    const chatConv = sum(parts.slice(0, okTurns));
+    let qChat = (L.haikuChat ? A.q.chatHaiku : A.q.chatSonnet) * (1 - trunc * 0.5);
+    if (okTurns < A.turns) qChat *= okTurns / A.turns;
+    const aParts = turnParts(p, A.abuseTurns, prefix, A.user, ans, L.cache, outTok);
+    const aTurns = allowedTurns(aParts, cap);
+    const abuse = sum(aParts.slice(0, aTurns));
+    const sumJob = (A.sumIn * PRICE.sonnet.in + A.sumOut * PRICE.sonnet.out) / 1e6 * (L.batch ? 0.5 : 1);
+    const ip = L.haikuIntent ? PRICE.haiku : PRICE.sonnet;
+    const intent = (A.intentIn * ip.in + A.intentOut * ip.out) / 1e6;
+    const fo = L.short ? A.faqShortOut : A.faqOut;
+    const sp = PRICE.sonnet;
+    let faq = ((L.cache ? A.faqPrefix * sp.read : A.faqPrefix * sp.in) + A.faqDyn * sp.in + fo * sp.out) / 1e6;
+    let qFaq = A.q.faq;
+    const sem = SEM.find((r) => r[0] === o.sem) || SEM[3];
+    if (L.sem) { faq *= 1 - sem[3]; qFaq = (1 - sem[1]) * A.q.faq + sem[1] * sem[2]; }
+    const rows = [
+      { k: 'chat', name: 'Chat hỗ trợ (' + p.name + ')', color: 'var(--g1)', cost: A.convs * chatConv, q: qChat, tickets: A.convs * (1 - qChat), parts, okTurns },
+      { k: 'abuse', name: 'Phiên lạm dụng / script', color: 'var(--warn)', cost: A.abuseSessions * abuse, q: null, tickets: 0, aTurns },
+      { k: 'sum', name: 'Tóm tắt review hằng đêm', color: 'var(--g2)', cost: A.sumJobs * sumJob, q: A.q.sum, tickets: 0 },
+      { k: 'intent', name: 'Phân loại ý định (' + ip.name + ')', color: 'var(--g3)', cost: A.intentCalls * intent, q: L.haikuIntent ? A.q.intentHaiku : A.q.intentSonnet, tickets: 0 },
+      { k: 'faq', name: 'FAQ trang sản phẩm', color: 'var(--g4)', cost: A.faq * faq, q: qFaq, tickets: A.faq * (1 - qFaq) }
+    ];
+    const total = sum(rows, (r) => r.cost);
+    const tickets = sum(rows, (r) => r.tickets);
+    return { rows, total, tickets, trunc, okTurns, aTurns, chatConv, sem, parts };
+  }
+
+  const LEVERS = [
+    { k: 'cache', g: 'free', t: 'Prompt caching: chuyển dòng "Thời gian hiện tại" xuống cuối lượt user', r: '§2.2' },
+    { k: 'trim', g: 'free', t: 'Bỏ tool không dùng khỏi prefix chat (6.000 → 4.000 token, giả định)', r: '§3.2' },
+    { k: 'short', g: 'free', t: 'Mô tả format trả lời ngắn (−39% output token, số của README)', r: '§3.3' },
+    { k: 'batch', g: 'free', t: 'Batch API cho job tóm tắt đêm (−50%)', r: '§2.3' },
+    { k: 'cap', g: 'free', t: 'Hạn mức đô la mỗi user mỗi ngày', r: '§3.5' },
+    { k: 'haikuIntent', g: 'trade', t: 'Haiku 5.5 cho phân loại ý định', r: '§3.1' },
+    { k: 'haikuChat', g: 'trade', t: 'Haiku 5.5 cho toàn bộ chat hỗ trợ', r: '§3.1' },
+    { k: 'maxtok', g: 'trade', t: 'Hạ max_tokens của chat xuống 200 để "ép" trả lời ngắn', r: '§3.3' },
+    { k: 'sem', g: 'trade', t: 'Semantic cache cho FAQ', r: '§3.4' }
+  ];
+
+  function billSvg(before, after) {
+    const W = 700, H = 150, left = 70, right = 14;
+    const max = before.total;
+    const x = (v) => left + (v / max) * (W - left - right);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, class: 'canvas', role: 'img', 'aria-label': 'Hoá đơn tháng của ShopViet trước và sau khi bật đòn bẩy, chia theo tính năng' });
+    [[before, 'Trước', 22], [after, 'Sau', 82]].forEach(([b, label, y]) => {
+      svg.append(el('text', { x: 4, y: y + 22, text: label, style: 'font-weight:700' }));
+      let acc = 0;
+      b.rows.forEach((r) => {
+        const w = Math.max(0, x(acc + r.cost) - x(acc));
+        if (w > 0.3) svg.append(el('rect', { x: x(acc), y, width: w, height: 34, fill: r.color, opacity: 0.85 }, [el('title', { text: r.name + ': ' + usd(r.cost) })]));
+        if (w > 58) svg.append(el('text', { x: x(acc) + 4, y: y + 21, text: usd(r.cost, 0), style: 'font-size:11px;fill:var(--panel)' }));
+        acc += r.cost;
+      });
+      svg.append(el('text', { x: Math.min(x(acc) + 6, W - 90), y: y + 52, class: 'mute', text: 'tổng ' + usd(b.total, 0) + ' / tháng' }));
+    });
+    return svg;
+  }
+
+  return {
+    id: 'workflow', nav: '0. Workflow', ref: 'Tổng quan',
+    title: 'Hoá đơn AI của ShopViet tăng nhanh hơn số khách: tiền đi đâu, cắt chỗ nào thì rẻ thật mà khách không thấy tệ hơn?',
+    hook: 'Bật tắt từng đòn bẩy. Lab tính lại hoá đơn tháng bằng giá README §2.1 và công thức chi phí README, chia theo năm tính năng, rồi kiểm chất lượng giả định với ngưỡng eval bạn đặt. Đòn bẩy nào cắt tiền nhưng làm chất lượng tụt hoặc làm phát sinh ticket cho người xử lý sẽ bị đánh dấu.',
+    terms: [
+      ['Token', 'Đơn vị model đọc và viết, cũng là đơn vị tính tiền. "Đơn SV-4821 khi nào giao?" khoảng chục token; system prompt 6.000 token là khoảng vài trang chữ.'],
+      ['Input token', 'Mọi thứ gửi lên mỗi lần gọi: system prompt, định nghĩa tool, toàn bộ lịch sử chat. Lượt 8 của một hội thoại gửi lại cả 7 lượt trước.'],
+      ['Output token', 'Chữ model viết ra, gồm cả phần suy nghĩ (thinking) không hiện cho khách. Với Claude hiện tại, 1 token output giá bằng 5 token input.'],
+      ['Prompt caching', 'Provider lưu phần đầu prompt (prefix) đã gửi. Lần sau gửi đúng prefix đó thì đọc từ cache: Sonnet 5.5 tính 0,10 USD mỗi triệu token thay vì 2 USD. Ghi vào cache lần đầu đắt hơn: 1,25 lần giá input với TTL 5 phút. TTL (time to live) là thời gian cache còn sống: 5 phút không ai đọc thì bản lưu bị xoá, lần sau phải ghi lại.'],
+      ['Prefix', 'Phần đầu giống hệt nhau giữa các request, so từng byte theo thứ tự tools → system → messages. Một ký tự khác ở đầu là mất cache từ đó trở đi.'],
+      ['Batch API', 'Gửi một lô request, nhận kết quả trong tối đa 24 giờ, giá giảm 50%. Hợp với việc không ai ngồi chờ, như tóm tắt review lúc 2 giờ sáng.'],
+      ['Semantic cache', 'Đổi câu hỏi mới thành một dãy số biểu diễn nghĩa (embedding), tìm câu hỏi cũ có dãy số gần nhất; đủ giống thì trả lại câu trả lời cũ, không gọi model. "Phí ship về Đà Nẵng bao nhiêu" và "ship ra Đà Nẵng mất bao tiền" có thể dùng chung một câu trả lời.'],
+      ['max_tokens', 'Trần số token output của một request. Model không nhìn thấy con số này; chạm trần thì câu trả lời bị cắt giữa chừng, phần đã sinh vẫn tính tiền.'],
+      ['Effort', 'Tham số bảo model nghĩ nhiều hay ít (low, medium, high). Effort thấp: ít thinking token, rẻ hơn, có thể sai nhiều hơn. Khác max_tokens: model thấy được effort.'],
+      ['Eval', 'Bộ câu hỏi có đáp án hoặc tiêu chí chấm, chạy trước và sau mỗi thay đổi để biết chất lượng có tụt không.'],
+      ['Chi phí mỗi tác vụ hoàn thành', 'Đơn vị so sánh README dùng: tổng tiền token của mọi lượt, mọi retry, cộng chi phí của lần làm hỏng, chia cho số việc làm xong đạt chất lượng.']
+    ],
+    problem: {
+      example: 'ShopViet bán đồ điện tử online. Ba tháng trước hoá đơn API vài nghìn đô, giờ đã hơn 70.000 USD một tháng, trong khi số khách chỉ gấp đôi. Đội có năm chỗ gọi model: chat hỗ trợ (khách hỏi "Đơn SV-4821 khi nào giao?"), FAQ trên trang sản phẩm, phân loại ý định mỗi tin nhắn, tóm tắt review hằng đêm, và một nhóm tài khoản dùng script gọi chat liên tục.',
+      scenario: 'Mọi tính năng đang chạy Sonnet 5.5 qua API đồng bộ. System prompt chat có dòng "Thời gian hiện tại: ..." ở đầu, nên cache không bao giờ khớp. Không ai biết tính năng nào ăn nhiều tiền nhất, và đội đang tranh cãi có nên chuyển hết sang Haiku 5.5 vì rẻ hơn 20 lần.',
+      ask: 'Trong hoá đơn, phần nào lớn nhất? Đòn bẩy nào cắt được tiền mà không đổi chất lượng? Đòn bẩy nào nhìn thì rẻ nhưng tính cả ticket cho người xử lý thì đắt hơn?',
+      solves: 'Lab dựng hoá đơn tháng từ khối lượng giả định và giá README §2.1 (06/11/2026): Sonnet 5.5 2 / 10 / 0,10 USD, Haiku 5.5 0,10 / 0,50 / 0,01 USD mỗi triệu token input / output / đọc cache, ghi cache 1,25 lần. Chat tính lượt theo lượt đúng như ví dụ README §2.2 (prefix 6.000, 100 token khách, 300 token trả lời, 8 lượt: 0,1440 USD không cache, 0,0514 USD có cache). Mức giảm của batch, trả lời ngắn và semantic cache lấy từ README. Chất lượng, khối lượng và giá ticket là số giả định.',
+      read: [
+        'Dải bước trên cùng: workflow README (đo → quy về tính năng → chọn đòn bẩy → đo lại có quality guard). Ô cuối đổi màu theo kết quả kiểm chất lượng.',
+        'Hai thanh ngang: hoá đơn trước và sau, mỗi màu một tính năng. Di chuột lên đoạn để xem số.',
+        'Bảng: chi phí từng tính năng, chất lượng giả định trước → sau. Ô đỏ là dưới ngưỡng eval hoặc tụt quá 2 điểm.',
+        'Dòng số liệu: tiền token tiết kiệm, tiền ticket phát sinh thêm (câu trả lời sai × giá một ticket), và con số ròng.',
+        'Khung chú thích: lab tự phát hiện bất thường từ số liệu và giải thích vì sao.'
+      ]
+    },
+    summary: `<h3>Tóm tắt bài</h3>
+<p>README chốt hai công thức. Một request: mỗi loại token một đơn giá. Một tính năng: số tác vụ nhân chi phí mỗi tác vụ, trong đó mỗi tác vụ cộng mọi lượt, mọi tool call, mọi retry.</p>
+<div class="tbl"><table><tr><th>Dòng trong công thức (Claude)</th><th>Đơn giá</th></tr>
+<tr><td><code>input_tokens</code></td><td>giá input</td></tr>
+<tr><td>cache write TTL 5 phút / 1 giờ</td><td>giá input × 1,25 / × 2</td></tr>
+<tr><td><code>cache_read_input_tokens</code></td><td>giá đọc cache (0,05 lần input ở Opus 5.5, Sonnet 5.5; 0,1 lần ở Haiku 5.5)</td></tr>
+<tr><td><code>output_tokens</code> (gồm thinking)</td><td>giá output</td></tr>
+<tr><td>Batch / fast mode / chỉ chạy ở Mỹ</td><td>× 0,5 / thay giá input, output / × 1,1</td></tr></table></div>
+<div class="tbl"><table><tr><th>Đòn bẩy (Tra cứu nhanh)</th><th>Mức giảm README</th><th>Đánh đổi</th></tr>
+<tr><td>Prompt caching</td><td>4,8–7,2 lần (agent nghiên cứu), 83–86% (agent phân loại bug)</td><td>Không đổi chất lượng; giữ prefix ổn định</td></tr>
+<tr><td>Batch API</td><td>50%</td><td>Kết quả trong tối đa 24 giờ</td></tr>
+<tr><td>Bỏ token thừa trong input</td><td>Thêm 21–26%</td><td>Model có thể phải gọi tool lấy lại</td></tr>
+<tr><td>Yêu cầu trả lời ngắn</td><td>Khoảng 13%, từ 39% ít output hơn</td><td>Không, nếu format vẫn đủ</td></tr>
+<tr><td>Giảm effort</td><td><code>medium</code> rẻ hơn <code>high</code> 30–52% (theo Tra cứu nhanh; bảng §3.3 của chính README chỉ cho 21–28%, xem lab 02)</td><td>Mất tới 34 điểm tuỳ tác vụ</td></tr>
+<tr><td>Đổi model</td><td>Tuỳ hướng</td><td>Chất lượng</td></tr>
+<tr><td>Cache kết quả</td><td>Tới 86% (AWS)</td><td>Semantic cache sai khoảng 8–9% số lần hit</td></tr></table></div>
+<div class="verdict"><b>Điểm cần nhớ:</b> chi phí tăng theo số token, không theo số người dùng. Đo bằng <code>usage</code> trước, làm nhóm không đổi chất lượng trước, mỗi lần một thay đổi và đo lại bằng eval. So theo chi phí mỗi tác vụ hoàn thành đạt chất lượng, cộng chi phí của thất bại. Fast mode không bao giờ là đòn bẩy giảm chi phí.</div>`,
+    why: {
+      c: 'Đo <code>usage</code> của mọi request, gắn feature và user; làm nhóm đòn bẩy không đổi chất lượng trước (cache, bỏ token thừa, batch, trả lời ngắn bằng prompt, hạn mức); nhóm đổi chất lượng (model nhỏ, semantic cache, effort) chỉ làm sau, từng thay đổi một, giữ hay bỏ theo eval.',
+      s: 'Chuyển hết sang model rẻ nhất theo đơn giá token: rẻ trên hoá đơn API, đắt hơn khi cộng ticket. Hạ <code>max_tokens</code> để ép ngắn: model không thấy trần, chỉ bị cắt. Tối ưu chỗ "trông có vẻ đắt" mà không đo: rút system prompt khi 80% tiền nằm ở output.',
+      p: 'Phải log và gộp <code>usage</code> theo feature, user, tác vụ; phải giữ prefix ổn định; phải có bộ eval cho từng tính năng; job đêm nhận kết quả chậm hơn; hạn mức theo user phải đặt theo chi phí đo được, nếu không sẽ chặn cả khách thật.'
+    },
+    deep: [
+      {
+        q: 'Số khách chỉ gấp đôi, sao hoá đơn lại gấp sáu?',
+        a: `<p>Vì API LLM không nhớ gì giữa các request. Lượt thứ k của hội thoại gửi lại system prompt cộng toàn bộ k−1 lượt trước. README §1.1: một tác vụ 40 lượt gửi lượt đầu 40 lần, nên chi phí tăng gần theo <b>bình phương</b> số lượt. Chỉ cần tính năng chat cho phép hội thoại dài hơn, chi phí mỗi khách đã tăng dù số khách không đổi.</p><p>Kéo hai thanh dưới. Chi phí tính lượt theo lượt với số của README §2.2 (Sonnet 5.5, prefix 6.000, 100 token khách, 300 token trả lời, không cache).</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { users: 2, turns: 16 };
+          const draw = () => {
+            const base = sum(turnParts(PRICE.sonnet, 8, 6000, 100, 300, false, 300));
+            const now = sum(turnParts(PRICE.sonnet, st.turns, 6000, 100, 300, false, 300));
+            const mult = st.users * now / base;
+            out.innerHTML = `<div class="stat"><span>Mỗi hội thoại: <b>${usd(base)}</b> → <b>${usd(now)}</b></span><span>Số khách: <b>×${vn(st.users, 1)}</b></span><span>Hoá đơn: <b class="${mult > st.users * 1.5 ? 'bad' : ''}">×${vn(mult, 1)}</b></span></div>` +
+              `<div class="cap">${mult > st.users * 1.5 ? `Hoá đơn tăng ${vn(mult / st.users, 1)} lần nhanh hơn số khách. Vì sao: độ dài hội thoại từ 8 lên ${st.turns} lượt, mỗi lượt gửi lại cả lịch sử. Không có nghĩa khách dùng sai: đó là cách API tính. Trong hệ thống thật: đo chi phí theo độ dài hội thoại (README §3.7 failure mode 1), bật cache và compaction (tóm tắt phần lịch sử cũ rồi chạy tiếp) cho phiên dài.` : 'Độ dài hội thoại gần như không đổi: hoá đơn tăng theo số khách.'}</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Số khách gấp', 1, 4, 0.5, st.users, (v) => { st.users = v; draw(); }, (v) => '×' + v).node, slider('Số lượt trung bình', 2, 40, 1, st.turns, (v) => { st.turns = v; draw(); }).node]), out);
+          draw();
+        },
+        take: 'Theo dõi số lượt trung bình mỗi hội thoại như theo dõi số khách. Nó là biến bậc hai trong hoá đơn.'
+      },
+      {
+        q: 'Sao không cắt ngay system prompt cho ngắn đi? Nhìn nó dài nhất mà.',
+        a: `<p>Vì chưa biết tiền nằm ở đâu. README §1.2: một ứng dụng mà 80% chi phí là output thì rút system prompt gần như không được gì. Bốn câu hỏi đọc profile: tỉ lệ input đọc từ cache, tỉ lệ output trong chi phí, phần traffic không ai chờ, và phân bố chi phí giữa các tác vụ.</p><p>Dưới đây là một hội thoại chat 8 lượt của ShopViet (số của README §2.2) tách theo loại token, trước và sau khi bật caching.</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { cache: false };
+          const draw = () => {
+            const parts = turnParts(PRICE.sonnet, 8, 6000, 100, 300, st.cache, 300);
+            const t = { in: sum(parts, (x) => x.in), write: sum(parts, (x) => x.write), read: sum(parts, (x) => x.read), out: sum(parts, (x) => x.out) };
+            const tot = t.in + t.write + t.read + t.out;
+            out.replaceChildren(hbars([['input thường', t.in, false], ['ghi cache', t.write, false], ['đọc cache', t.read, false], ['output', t.out, true]], { max: tot, fmt: (v) => pct(v / tot) }),
+              el('div', { class: 'cap', html: st.cache ? `Có cache, output chiếm ${pct(t.out / tot)} chi phí một hội thoại. README §2.2 nói đúng điều này: ở 8 lượt gần một nửa chi phí có cache là output, nên đòn bẩy tiếp theo là độ dài câu trả lời, không phải prompt.` : `Chưa có cache, input thường chiếm ${pct(t.in / tot)}: lịch sử gửi lại mỗi lượt. Đây là lúc cache đáng làm nhất.` }));
+          };
+          box.append(el('div', { class: 'row' }, [el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', onchange: (e) => { st.cache = e.target.checked; draw(); } }), 'Đã bật prompt caching'])]), out);
+          draw();
+        },
+        take: 'Đòn bẩy đúng phụ thuộc profile, và profile đổi sau mỗi đòn bẩy. Đo lại sau mỗi bước.'
+      },
+      {
+        q: 'Chỉ một dòng "Thời gian hiện tại: 14:03:27" mà làm mất cả cache à?',
+        a: `<p>Đúng. Cache khớp theo prefix chính xác từng byte, thứ tự tools → system → messages (README §2.2). Dòng thời gian nằm ở đầu system prompt thì mỗi request có một prefix khác ngay từ vài chục byte đầu, nên phần phía sau (6.000 token prompt và toàn bộ lịch sử) đều phải ghi lại. Anthropic đo: một dòng trạng thái 25 token ở đầu system prompt làm mọi request ghi lại toàn bộ hội thoại; chuyển nó xuống cuối lượt user mới nhất thì cache đọc lại bình thường.</p><p>Tệ hơn cả không cache: mỗi lượt ghi cache trả 1,25 lần giá input mà không lần nào được đọc. Trong hình chính, bật "Prompt caching" để thấy chat từ 43.200 USD xuống khoảng 15.400 USD mỗi tháng, khớp README §3.6.</p>`,
+        take: 'Nội dung động (giờ, request ID, tên khách) đi sau breakpoint cuối (điểm đánh dấu "cache tới đây" trong request), thường là cuối lượt user mới nhất. Kiểm bằng usage: ở hội thoại đã ấm, cache_read_input_tokens phải lớn hơn hẳn phần còn lại.'
+      },
+      {
+        q: 'Batch rẻ một nửa, sao không cho chat chạy batch luôn?',
+        a: `<p>Vì batch trả kết quả trong tối đa 24 giờ (Claude: phần lớn xong dưới 1 giờ, hết hạn sau 24 giờ). Khách hỏi "SV-4821 khi nào giao?" không chờ được. Batch cũng là một lượt, không có tool loop giữa chừng, nên agent tra đơn không đưa thẳng vào batch được (README §2.3).</p><p>Job tóm tắt review lúc 2 giờ sáng thì hợp: không ai chờ, mỗi review một request độc lập. Bật "Batch API" trong hình chính: tính năng đó giảm đúng 50%, chất lượng không đổi. Lưu ý thêm của README: cache trong batch là best effort (tỉ lệ hit 30–98%), và batch hết hạn vẫn tính tiền phần đã xong.</p>`,
+        take: 'Hỏi "có ai đang chờ kết quả này không?" cho từng tính năng. Câu trả lời "không" là ứng viên batch hoặc flex (tier của OpenAI: gọi đồng bộ như thường, tính giá bằng batch, đổi lại chậm hơn và đôi khi trả lỗi 429; README §2.3).'
+      },
+      {
+        q: 'Hạ max_tokens xuống 200 thì model buộc phải viết ngắn, rẻ hơn chứ?',
+        a: `<p>Không. Model không thấy <code>max_tokens</code>. Nó vẫn viết như bình thường và bị cắt giữa câu với <code>stop_reason: "max_tokens"</code>; phần đã sinh vẫn tính tiền (README §3.3). Anthropic đo: Opus 5.5 với <code>max_tokens</code> 16.384 có 25% lần thử bị cắt, giải 57,6% bài; ở 64.000 không lần nào bị cắt, giải 75,6%, cùng chi phí mỗi bài giải được.</p><p>Trong hình chính, bật "Hạ max_tokens": lab giả định 40% câu trả lời dài hơn 200 token bị cắt và một nửa số câu bị cắt không dùng được. Tiền token giảm chút ít, chất lượng tụt, ticket tăng. So với "Mô tả format trả lời ngắn": cắt 39% output mà chất lượng giữ nguyên.</p>`,
+        take: 'Muốn ngắn thì mô tả format trong prompt. max_tokens là chốt chặn sự cố, đặt đủ rộng để không chạm trong vận hành bình thường.'
+      },
+      {
+        q: 'Haiku 5.5 rẻ hơn Sonnet 5.5 hai mươi lần. Sao lab lại đánh dấu đỏ khi chuyển chat sang Haiku?',
+        a: `<p>Vì đơn vị đúng là chi phí mỗi tác vụ hoàn thành đạt chất lượng, cộng chi phí thất bại (README §1.4). Một câu trả lời sai về đơn SV-4821 thành một ticket cho nhân viên. README cũng nói Haiku 5.5 hợp với phân loại, trích xuất, định tuyến; không hợp với agent loop dài.</p><p>Kéo giá một ticket: điểm hoà vốn là chỗ tiền token tiết kiệm bằng tiền ticket phát sinh. Chất lượng 92% và 78% là giả định; số thật phải đo bằng eval trên log của bạn.</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { ticket: 0.5 };
+          const draw = () => {
+            const s = A.convs * sum(turnParts(PRICE.sonnet, 8, 6000, 100, 300, true, 300));
+            const h = A.convs * sum(turnParts(PRICE.haiku, 8, 6000, 100, 300, true, 300));
+            const extra = A.convs * (A.q.chatSonnet - A.q.chatHaiku);
+            const be = (s - h) / extra;
+            const net = (s - h) - extra * st.ticket;
+            out.innerHTML = `<div class="stat"><span>Tiền token tiết kiệm: <b>${usd(s - h, 0)}</b></span><span>Ticket thêm mỗi tháng: <b>${vn(extra)}</b></span><span>Tiền ticket thêm: <b>${usd(extra * st.ticket, 0)}</b></span><span>Ròng: <b class="${net < 0 ? 'bad' : 'ok'}">${net < 0 ? 'đắt hơn ' : 'rẻ hơn '}${usd(Math.abs(net), 0)}</b></span><span>Hoà vốn ở ticket <b>${usd(be, 2)}</b></span></div>` +
+              `<div class="cap">${net < 0 ? `Chuyển sang Haiku đắt hơn khi một ticket tốn trên ${usd(be, 2)}. Không có nghĩa Haiku tệ: với phân loại ý định, chất lượng giả định chỉ tụt 2 điểm và lỗi không thành ticket. Trong hệ thống thật: chạy eval trên phần khó nhất của traffic (README §3.1) trước khi đổi model cho tính năng khách đọc trực tiếp.` : 'Ở giá ticket này, Haiku rẻ hơn kể cả khi tính ticket. Vẫn cần eval thật: 78% là số giả định.'}</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Giá một ticket (USD, giả định)', 0, 3, 0.05, st.ticket, (v) => { st.ticket = v; draw(); }, (v) => '$' + v.toFixed(2)).node]), out);
+          draw();
+        },
+        take: 'Rẻ theo token chưa chắc rẻ theo tác vụ. Đưa chi phí thất bại vào phép so sánh.'
+      },
+      {
+        q: 'Semantic cache giảm tới 86% chi phí. Sao README vẫn dặn cẩn thận?',
+        a: `<p>Vì nó trả lại câu trả lời của một câu hỏi <i>khác</i>. AWS đo trên 63.796 câu hỏi chatbot thật: ngay ở ngưỡng 0,99, khoảng 8% câu trả lời lấy từ cache không đúng ý người hỏi. Ngưỡng chặt hơn giảm số hit nhiều hơn là giảm số hit sai (README §3.4). Bảng dưới áp số của AWS lên 900.000 câu FAQ mỗi tháng của ShopViet (việc áp này là giả định).</p>`,
+        viz(box) {
+          const base = A.faq * (A.faqPrefix * 2 + A.faqDyn * 2 + A.faqOut * 10) / 1e6;
+          box.innerHTML = table(['Ngưỡng', 'Tỉ lệ hit', 'Đúng khi hit', 'Chi phí FAQ / tháng', 'Câu trả lời sai từ cache / tháng'], SEM.map((r) => [r[0], pct(r[1]), pct(r[2]), usd(base * (1 - r[3]), 0), `<span class="${r[2] < 0.9 ? 'bad' : ''}">${vn(A.faq * r[1] * (1 - r[2]))}</span>`])) +
+            '<div class="cap">Chi phí gốc tính với giá Sonnet 5.5, chưa cache. Ở ngưỡng 0,80 tiết kiệm nhiều nhất trong vùng "đúng trên 91%", nhưng vẫn là hàng chục nghìn câu sai mỗi tháng. Trong hệ thống thật: chỉ cache câu trả lời chung (phí ship, bảo hành), lọc theo metadata sản phẩm, không bao giờ cache câu về đơn hàng, tài khoản, số dư.</div>';
+        },
+        take: 'Đo độ chính xác của hit trên traffic thật, không chỉ đo tỉ lệ hit.'
+      },
+      {
+        q: 'Hạn mức đô la mỗi user cắt được gì, và khi nào nó chặn nhầm khách thật?',
+        a: `<p>OWASP xếp "Unbounded Consumption" là LLM10 năm 2025: người dùng gọi inference không kiểm soát gây thiệt hại tài chính (README §3.5). Rate limit theo số request không đủ, vì một request dài đắt gấp hàng trăm lần một request ngắn; hạn mức nên tính bằng tiền. Spend limit của workspace là chốt cuối, nhưng một user lạm dụng chạm nó thì mọi user khác cũng dừng.</p><p>Kéo hạn mức. Lab tính lượt theo lượt: phiên script 40 lượt dừng ở lượt nào, và hội thoại 8 lượt của khách thật có lọt qua không.</p>`,
+        viz(box) {
+          const out = el('div');
+          const st = { cap: 0.15, cache: false };
+          const draw = () => {
+            const norm = turnParts(PRICE.sonnet, 8, 6000, 100, 300, st.cache, 300);
+            const ab = turnParts(PRICE.sonnet, 40, 6000, 100, 300, st.cache, 300);
+            const n = allowedTurns(norm, st.cap), a = allowedTurns(ab, st.cap);
+            out.innerHTML = `<div class="stat"><span>Khách thật (8 lượt, ${usd(sum(norm))}): <b class="${n < 8 ? 'bad' : 'ok'}">${n < 8 ? 'bị chặn ở lượt ' + (n + 1) : 'đủ 8 lượt'}</b></span><span>Script 40 lượt (${usd(sum(ab))}): <b>dừng sau ${a} lượt</b></span><span>Tiền chặn được mỗi phiên script: <b>${usd(sum(ab) - sum(ab.slice(0, a)))}</b></span></div>` +
+              `<div class="cap">${n < 8 ? `Hạn mức thấp hơn chi phí một hội thoại bình thường, nên chặn cả khách thật. Vì sao: hạn mức được đặt mà không đo chi phí phân phối của khách thật${st.cache ? '' : ', và chưa có cache nên mỗi hội thoại đắt gấp 2,8 lần'}. Trong hệ thống thật: đặt hạn mức theo phân vị cao (p99) của chi phí mỗi user đo từ log, cảnh báo khi lệch phân phối thay vì chặn cứng ngay.` : 'Khách thật đi hết hội thoại, script bị dừng sớm. Đây là cấu hình mong muốn.'}</div>`;
+          };
+          box.append(el('div', { class: 'row' }, [slider('Hạn mức mỗi user mỗi ngày (USD, giả định)', 0.02, 1, 0.01, st.cap, (v) => { st.cap = v; draw(); }, (v) => '$' + v.toFixed(2)).node, el('label', { class: 'ctl' }, [el('input', { type: 'checkbox', onchange: (e) => { st.cache = e.target.checked; draw(); } }), 'Đã bật prompt caching'])]), out);
+          draw();
+        },
+        take: 'Hạn mức đặt từ phân phối chi phí đo được, và đặt lại sau mỗi đòn bẩy làm chi phí bình thường thay đổi.'
+      },
+      {
+        q: 'Bật xong đòn bẩy rồi, làm sao biết nó thật sự có tác dụng?',
+        a: `<p>Đo lại bằng đúng nguồn đã đo trước: trường <code>usage</code> của mỗi response, gộp theo tính năng. Ba điều README nhấn mạnh:</p><ul><li><b>Mỗi lần một thay đổi.</b> Bật cache và đổi model cùng lúc thì không biết phần nào làm chất lượng đổi.</li><li><b>Kiểm cache bằng số, không bằng đọc code.</b> Agent loop trên traffic thật của khách hàng Anthropic đọc trung vị 84% input từ cache; dưới khoảng 80% là có thứ gì đó làm vỡ cache.</li><li><b>Chạy eval lặp lại.</b> Sai khác một hai tác vụ hay vài cent nằm trong nhiễu của một lần chạy (README §3.1). Ngưỡng eval trong hình chính là quality guard: đòn bẩy làm chất lượng dưới ngưỡng thì bỏ.</li></ul>`,
+        take: 'Workflow là vòng lặp: đo, quy về tính năng, chọn một đòn bẩy, đo lại cả chi phí lẫn chất lượng, rồi mới tới đòn bẩy tiếp.'
+      }
+    ],
+    poc: {
+      goal: "Hoá đơn tháng của ShopViet tính lại bằng hàm <code>request_cost</code> chép nguyên văn README §1.2, rồi bật từng đòn bẩy và kiểm quality guard. <b>Khối lượng, chất lượng và giá ticket là giả định của lab</b>; phần thật là phép tính giá và số token prefix trùng giữa hai request (tiktoken).",
+      file: "docs/cost-optimization/pocs/00_workflow.py",
+      run: "uv run docs/cost-optimization/pocs/00_workflow.py",
+      needs: "chỉ <code>uv</code> và CPU, miễn phí, không gọi model.",
+      output: "Khối lượng, chất lượng và giá ticket là GIẢ ĐỊNH của lab 00 (chép từ labs/src/lessons/00-workflow.js).\nThật: hàm request_cost chép nguyên văn README §1.2, chạy trên usage dựng lượt theo lượt; tiktoken đếm token prefix.\n\n== Hoá đơn tháng ban đầu theo tính năng ==\nTính năng         USD/tháng   Tỉ phần  Chất lượng (giả định)\n----------------  ----------  -------  ---------------------\nChat hỗ trợ       43.200 USD  60,2%    92,0%\nPhiên lạm dụng    3.696 USD   5,2%     —\nTóm tắt đêm       9.600 USD   13,4%    90,0%\nPhân loại ý định  7.560 USD   10,5%    97,0%\nFAQ               7.650 USD   10,7%    95,0%\nTổng: 71.706 USD; ticket cho người xử lý: 69.000 (giá 0,50 USD/ticket, giả định)\n\n== Bật từng đòn bẩy một (so với hoá đơn ban đầu) ==\nĐòn bẩy                           Nhóm          Hoá đơn     Giảm   Δ ticket  Lợi ròng    Quality guard 90%\n--------------------------------  ------------  ----------  -----  --------  ----------  -----------------\nPrompt caching                    không đổi CL  36.113 USD  49,6%  0         35.593 USD  đạt\nBỏ tool không dùng 6.000→4.000    không đổi CL  61.626 USD  14,1%  0         10.080 USD  đạt\nTrả lời ngắn (−39% output)        không đổi CL  65.371 USD  8,8%   0         6.335 USD   đạt\nBatch cho tóm tắt đêm             không đổi CL  66.906 USD  6,7%   0         4.800 USD   đạt\nHạn mức 0,15 USD/user/ngày        không đổi CL  68.442 USD  4,6%   0         3.264 USD   đạt\nHaiku cho phân loại               đổi CL        64.524 USD  10,0%  0         7.182 USD   Phân loại ý định\nHaiku cho chat                    đổi CL        27.155 USD  62,1%  42.000    23.551 USD  Chat hỗ trợ\nSemantic cache FAQ (ngưỡng 0,80)  đổi CL        65.234 USD  9,0%   25.229    -6.142 USD  FAQ\nBật cả 5 đòn bẩy không đổi chất lượng: 24.785 USD (−65,4%), ticket 69.000\n\n== Vì sao dòng 'Thời gian hiện tại' ở đầu system prompt làm vỡ cache (prefix khớp từng byte) ==\nVị trí dòng thời gian  Token request 2  Token prefix trùng request 1  Phần đọc được từ cache\n---------------------  ---------------  ----------------------------  ----------------------\nĐầu prompt             1.112            18                            1,6%\nCuối prompt            1.111            1.110                         99,9%\n\nRút ra: cùng công thức README, cache + trả lời ngắn + batch + hạn mức cắt phần lớn hoá đơn mà chất lượng giả định không đổi;\nHaiku cho chat rẻ hơn nhưng tụt dưới quality guard và sinh thêm ticket. Dòng thời gian ở đầu prompt làm prefix trùng gần 0%.",
+      measured: true,
+      read: ["Bảng ban đầu: chat chiếm 60% hoá đơn, nên caching (−49,6%) là đòn bẩy lớn nhất; 5 đòn bẩy không đổi chất lượng cộng lại −65,4%.", "Haiku cho chat cắt 62% tiền nhưng chất lượng (giả định) tụt dưới guard 90% và thêm 42.000 ticket; semantic cache FAQ ở ngưỡng 0,80 có lợi ròng âm khi tính ticket.", "Bảng cuối: dòng 'Thời gian hiện tại' ở đầu prompt làm prefix trùng chỉ 1,6%; chuyển xuống cuối thì 99,9% — đúng câu chuyện mở đầu README."]
+    },
+    mount(stage) {
+      const L = { cache: false, trim: false, short: false, batch: false, cap: false, haikuIntent: false, haikuChat: false, maxtok: false, sem: false };
+      const o = { ticket: 0.5, guard: 0.90, cap: 0.15, sem: '0.80' };
+      const steps = el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px' });
+      const groups = el('div', { class: 'cols', style: 'margin-bottom:10px' });
+      const ctl = el('div', { class: 'row' });
+      const svgBox = el('div');
+      const stats = el('div');
+      const tblBox = el('div', { style: 'margin-top:10px' });
+      const cap = el('div');
+      const mk = (g, title) => {
+        const box = el('div', {}, [el('h4', { html: title })]);
+        LEVERS.filter((l) => l.g === g).forEach((l) => box.append(el('label', { class: 'ctl', style: 'margin:4px 0;align-items:flex-start' }, [el('input', { type: 'checkbox', onchange: (e) => { L[l.k] = e.target.checked; draw(); } }), el('span', { html: l.t + ' <small class="mono">' + l.r + '</small>' })])));
+        return box;
+      };
+      groups.append(mk('free', 'Không đổi chất lượng <small>(làm trước)</small>'), mk('trade', 'Đổi chất lượng lấy chi phí <small>(cần eval)</small>'));
+      const draw = () => {
+        const B = compute({}, o), Z = compute(L, o);
+        const flags = [];
+        const rows = Z.rows.map((r, i) => {
+          const b = B.rows[i];
+          const dropped = r.q != null && (r.q < o.guard || b.q - r.q > 0.02);
+          if (dropped) flags.push(r);
+          const qTxt = r.q == null ? '—' : `${pct(b.q)} → <b class="${dropped ? 'bad' : ''}">${pct(r.q)}</b>`;
+          const d = b.cost ? 1 - r.cost / b.cost : 0;
+          return [`<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${r.color};margin-right:6px"></span>${r.name}`, usd(b.cost, 0), usd(r.cost, 0), d > 0.0005 ? `<span class="ok">−${pct(d)}</span>` : '0%', qTxt];
+        });
+        const saved = B.total - Z.total;
+        const extraTickets = Z.tickets - B.tickets;
+        const net = saved - extraTickets * o.ticket;
+        const pass = !flags.length;
+        const stepDefs = [['1. Đo', 'usage mỗi request'], ['2. Quy về tính năng', 'chat chiếm ' + pct(B.rows[0].cost / B.total, 0)], ['3. Chọn đòn bẩy', Object.values(L).filter(Boolean).length + ' đang bật'], ['4. Đo lại + quality guard', pass ? 'đạt ngưỡng ' + pct(o.guard, 0) : flags.length + ' tính năng dưới ngưỡng']];
+        steps.replaceChildren(...stepDefs.map(([t, s], i) => el('div', { style: `flex:1 1 150px;border:1px solid ${i === 3 ? (pass ? 'var(--ok)' : 'var(--bad)') : 'var(--line)'};border-radius:8px;padding:6px 10px;background:var(--bg);font-size:13px`, html: `<b>${t}</b><br><span style="color:${i === 3 ? (pass ? 'var(--ok)' : 'var(--bad)') : 'var(--mute)'}">${s}</span>` })));
+        svgBox.replaceChildren(billSvg(B, Z), el('div', { class: 'legend', html: Z.rows.map((r) => `<span><i style="background:${r.color}"></i>${r.name}</span>`).join('') }));
+        stats.innerHTML = `<div class="stat"><span>Hoá đơn: <b>${usd(B.total, 0)}</b> → <b>${usd(Z.total, 0)}</b> / tháng</span><span>Tiền token tiết kiệm: <b class="ok">${usd(saved, 0)}</b> (${pct(saved / B.total)})</span><span>Ticket thêm do trả lời sai: <b class="${extraTickets > 0 ? 'bad' : ''}">${vn(Math.max(0, extraTickets))}</b> × $${o.ticket.toFixed(2)}</span><span>Ròng: <b class="${net < 0 ? 'bad' : 'ok'}">${net < 0 ? '−' : '+'}${usd(Math.abs(net), 0)}</b></span></div>`;
+        tblBox.innerHTML = table(['Tính năng', 'Trước', 'Sau', 'Giảm', 'Chất lượng (giả định)'], rows);
+        const parts = [];
+        if (L.haikuChat) {
+          const tokSave = compute(Object.assign({}, L, { haikuChat: false }), o).rows[0].cost - Z.rows[0].cost;
+          const tk = A.convs * (A.q.chatSonnet - A.q.chatHaiku) * o.ticket;
+          parts.push(note(tk > tokSave ? 'var(--bad)' : 'var(--warn)', `<b>Haiku cho chat cắt ${usd(tokSave, 0)} tiền token nhưng thêm ${usd(tk, 0)} tiền ticket${tk > tokSave ? ': tổng đắt hơn' : ''}.</b> Vì sao: chất lượng giả định 92% → 78%, mỗi hội thoại hỏng thành một ticket. Không có nghĩa model nhỏ vô dụng: phân loại ý định trên Haiku chỉ tụt 2 điểm. Trong hệ thống thật: so chi phí mỗi tác vụ hoàn thành, trên phần khó nhất của traffic (README §1.4, §3.1).`));
+        }
+        if (L.maxtok) parts.push(note('var(--bad)', `<b>max_tokens 200 cắt ${pct(Z.trunc, 0)} câu trả lời chat (giả định), chất lượng tụt, tiền token gần như không giảm.</b> Vì sao: model không thấy max_tokens, vẫn viết dài rồi bị cắt; phần đã sinh vẫn tính tiền. Không có nghĩa câu trả lời không thể ngắn hơn: "Mô tả format trả lời ngắn" cắt 39% output mà không đổi chất lượng. Trong hệ thống thật: max_tokens để chặn sự cố, prompt để điều khiển độ dài (README §3.3).`));
+        if (L.sem) parts.push(note(Z.rows[4].q < o.guard ? 'var(--bad)' : 'var(--warn)', `<b>Semantic cache ngưỡng ${Z.sem[0]}: FAQ rẻ hơn ${pct(Z.sem[3], 0)} nhưng khoảng ${vn(A.faq * Z.sem[1] * (1 - Z.sem[2]))} câu trả lời sai mỗi tháng.</b> Vì sao: hai câu gần nhau về embedding vẫn có thể cần câu trả lời khác ("hoàn tiền trong bao lâu" và "hoàn tiền được không"). Số hit và độ chính xác lấy từ benchmark AWS trong README §3.4, áp lên ShopViet là giả định. Trong hệ thống thật: chỉ cho câu trả lời chung, lọc metadata, chấm mẫu hit định kỳ.`));
+        if (L.cap && Z.okTurns < A.turns) parts.push(note('var(--bad)', `<b>Hạn mức $${o.cap.toFixed(2)} chặn cả khách thật ở lượt ${Z.okTurns + 1}.</b> Vì sao: một hội thoại 8 lượt bình thường đang tốn ${usd(sum(Z.parts))}${L.cache ? '' : ' vì chưa bật cache'}. Không có nghĩa hạn mức là sai: phiên script vẫn cần chặn. Trong hệ thống thật: đặt hạn mức từ phân vị chi phí mỗi user đo trong log, và đặt lại sau khi bật cache (README §3.5).`));
+        else if (L.cap) parts.push(note('var(--ok)', `Hạn mức $${o.cap.toFixed(2)}: phiên script dừng sau ${Z.aTurns} / ${A.abuseTurns} lượt, khách thật đi đủ ${A.turns} lượt.`));
+        if (L.cache && !L.haikuChat) parts.push(note('var(--accent)', `Chat với cache: ${usd(Z.chatConv)} mỗi hội thoại${!L.trim && !L.short && !L.maxtok && !L.cap ? ' (README §2.2: 0,0514 USD)' : ''}. Đây là đòn bẩy lớn nhất trong hoá đơn này và không đổi chất lượng.`));
+        if (!Object.values(L).some(Boolean)) parts.push(note('var(--mute)', 'Chưa bật đòn bẩy nào. Chat hỗ trợ chiếm phần lớn hoá đơn: 300.000 hội thoại × 0,1440 USD (README §3.6: khoảng 43.200 USD không cache). Bắt đầu từ cột bên trái.'));
+        if (pass && Object.values(L).some(Boolean) && net > 0) parts.push(note('var(--ok)', `Mọi tính năng đạt ngưỡng eval ${pct(o.guard, 0)}. Hoá đơn giảm ${pct(saved / B.total)}, không phát sinh ticket.`));
+        cap.innerHTML = parts.join('');
+      };
+      ctl.append(
+        slider('Ngưỡng eval tối thiểu', 0.7, 0.97, 0.01, o.guard, (v) => { o.guard = v; draw(); }, (v) => Math.round(v * 100) + '%').node,
+        slider('Giá một ticket (giả định)', 0, 3, 0.05, o.ticket, (v) => { o.ticket = v; draw(); }, (v) => '$' + v.toFixed(2)).node,
+        slider('Hạn mức mỗi user / ngày', 0.05, 1, 0.01, o.cap, (v) => { o.cap = v; draw(); }, (v) => '$' + v.toFixed(2)).node,
+        select('Ngưỡng semantic cache', SEM.map((r) => [r[0], r[0] + ' (hit ' + Math.round(r[1] * 100) + '%)']), o.sem, (v) => { o.sem = v; draw(); }).node);
+      stage.append(steps, groups, ctl, el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Giá từ README §2.1 (06/11/2026). Khối lượng giả định: 300.000 hội thoại chat 8 lượt, 3.000 phiên script 40 lượt, 600.000 tóm tắt (6.000 in / 400 out), 2,4 triệu lần phân loại (1.500 / 15), 900.000 câu FAQ (3.000 / 250). Chất lượng và giá ticket là giả định.' }), svgBox, stats, tblBox, cap);
+      draw();
+    }
+  };
+})());
+function terms(list) {
+  return el('details', { class: 'terms', open: '' }, [el('summary', { text: 'Thuật ngữ cần biết (' + list.length + ')' }),
+    el('dl', {}, list.flatMap(([t, d]) => [el('dt', { text: t }), el('dd', { text: d })]))]);
+}
+
+function problem(p) {
+  const row = (t, html, cls) => el('div', { class: 'pr ' + (cls || '') }, [el('b', { text: t }), el('div', { html })]);
+  return el('div', { class: 'prob' }, [
+    ...(p.example ? [row('Ví dụ thực tế', p.example, 'ex')] : []), row('Bài toán', p.scenario), row('Câu hỏi', p.ask, 'ask'), row('Giải pháp trong lab này', p.solves, 'sol'),
+    row('Cách đọc hình', '<ol>' + p.read.map((r) => '<li>' + r + '</li>').join('') + '</ol>')
+  ]);
+}
+
+function randn(rnd) {
+  let u = 0, v = 0;
+  while (!u) u = rnd();
+  while (!v) v = rnd();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function unitVec(d, rnd) {
+  const v = Array.from({ length: d }, () => randn(rnd));
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+}
+const dotp = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+
+function hbars(rows, opt = {}) {
+  const max = opt.max ?? Math.max(...rows.map((r) => r[1]));
+  const fmt = opt.fmt || ((v) => v);
+  return el('div', {}, rows.map(([label, v, cur]) => el('div', { class: 'mem' + (cur ? ' cur' : '') }, [
+    el('span', { text: label }), el('div', { class: 'track' }, [el('div', { class: 'fill', style: `width:${Math.max(0, (v / max) * 100)}%` })]), el('span', { class: 'v', text: fmt(v) })])));
+}
+
+function deepDive(list) {
+  if (!list || !list.length) return null;
+  return el('div', { class: 'deep' }, [
+    el('h3', { text: '10 vạn câu hỏi vì sao' }),
+    el('p', { class: 'hint', style: 'margin:0 0 8px', text: 'Mỗi câu trả lời dẫn tới câu hỏi tiếp theo. Đọc theo thứ tự, bấm vào câu hỏi để mở.' }),
+    ...list.map((d, i) => {
+      const box = el('details', Object.assign({ class: 'qa' }, i === 0 ? { open: '' } : {}), [
+        el('summary', {}, [el('span', { class: 'qn', text: String(i + 1) }), el('span', { text: d.q })]),
+        el('div', { class: 'qa-a', html: d.a })]);
+      if (d.viz) {
+        const v = el('div', { class: 'qa-viz' });
+        box.append(v);
+        try { d.viz(v); } catch (e) { v.append(el('p', { class: 'bad', text: 'Lỗi minh hoạ: ' + e.message })); }
+      }
+      if (d.take) box.append(el('div', { class: 'qa-take', html: '<b>Rút ra:</b> ' + d.take }));
+      return box;
+    })]);
+}
+
+function pocBlock(p) {
+  if (!p) return null;
+  return el('div', { class: 'poc' }, [
+    el('h3', { text: 'POC: tự chạy để thấy tận mắt' }),
+    el('p', { html: p.goal }),
+    el('div', { class: 'poc-run' }, [el('span', { text: 'File' }), el('code', { text: p.file }), el('span', { text: 'Chạy' }), el('code', { text: p.run })]),
+    p.needs ? el('p', { class: 'hint', html: 'Cần: ' + p.needs }) : null,
+    p.output ? el('details', { class: 'poc-out' }, [el('summary', { text: p.measured ? 'Output thật khi chạy script' : 'Output mẫu (script chưa chạy được)' }), el('pre', { text: p.output })]) : null,
+    p.read ? el('div', {}, [el('b', { text: 'Nhìn vào đâu' }), el('ol', {}, p.read.map((r) => el('li', { html: r })))]) : null
+  ]);
+}
+
+(function build() {
+  const nav = document.getElementById('tabs'), host = document.getElementById('lessons');
+  lessons.forEach((l) => {
+    nav.append(el('a', { href: '#' + l.id, text: l.nav }));
+    const stage = el('div', { class: 'stage' });
+    host.append(el('section', { class: 'lesson', id: l.id }, [
+      el('div', { class: 'eyebrow', text: (l.id === 'workflow' ? 'Workflow tổng hợp' : `Bài ${parseInt(l.nav, 10)}`) + ` · README ${l.ref}` }),
+      el('h2', { text: l.title }), terms(l.terms), problem(l.problem), el('p', { class: 'hook', text: l.hook }), stage, deepDive(l.deep),
+      el('div', { class: 'sum', html: l.summary || '' }),
+      el('div', { class: 'why' }, [
+        el('div', { class: 'c' }, [el('b', { text: 'Chọn gì, vì sao' }), el('span', { html: l.why.c })]),
+        el('div', { class: 's' }, [el('b', { text: 'Phương án bị loại' }), el('span', { html: l.why.s })]),
+        el('div', { class: 'p' }, [el('b', { text: 'Giá phải trả' }), el('span', { html: l.why.p })])
+      ]),
+      pocBlock(l.poc)
+    ]));
+    try { l.mount(stage); } catch (e) { stage.append(el('p', { class: 'bad', text: 'Lỗi tải minh hoạ: ' + e.message })); }
+  });
+})();
+</script></body></html>
